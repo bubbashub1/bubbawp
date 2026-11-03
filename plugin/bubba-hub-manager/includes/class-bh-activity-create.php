@@ -35,7 +35,7 @@ final class BH_Activity_Create_3 {
         .bh3-steps{display:flex;flex-direction:column;gap:6px}.bh3-steps button{text-align:left;padding:12px;border:1px solid #d5e3d9;border-radius:9px;background:#fff;cursor:pointer}.bh3-steps button[aria-current=step]{background:#eaf3ed;border-color:#397253;font-weight:700}
         .bh3-panel{background:#fff;border:1px solid #dce5de;border-radius:12px;padding:22px;min-width:0}.bh3-panel[hidden]{display:none}
         .bh3-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.bh3-field{display:flex;flex-direction:column;gap:6px;min-width:0;font-weight:600}.bh3-field input,.bh3-field textarea,.bh3-field select{width:100%;max-width:100%;box-sizing:border-box}
-        .bh3-wide{grid-column:1/-1}.bh3-actions{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;margin-top:22px}.bh3-actions .button{min-height:36px}
+        .bh3-wide{grid-column:1/-1}.bh3-actions{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;margin-top:22px}.bh3-actions .button{min-height:36px}.bh3-actions [hidden]{display:none!important}
         .bh3-review{background:#f6f9f6;padding:14px;border-radius:9px;line-height:1.8}
         @media(max-width:782px){.bh3-wizard-layout{grid-template-columns:1fr}.bh3-steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.bh3-fields{grid-template-columns:1fr}.bh3-wide{grid-column:auto}.bh3-panel{padding:14px}}
         </style>';
