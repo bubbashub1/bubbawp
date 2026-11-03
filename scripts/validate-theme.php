@@ -28,6 +28,29 @@ if ($errors) {
 }
 
 $css = file_get_contents($root . '/style.css') ?: '';
+// Validate actual WordPress theme metadata, not just the presence of labels.
+$headers = [];
+if (preg_match_all('/^\\s*\\*?\\s*(Theme Name|Version|Text Domain|Requires at least|Requires PHP):\\s*(.+)$/mi', $css, $headerMatches, PREG_SET_ORDER)) {
+    foreach ($headerMatches as $match) {
+        $headers[strtolower($match[1])] = trim($match[2]);
+    }
+}
+if (($headers['theme name'] ?? '') !== 'Bubba Hub') {
+    $errors[] = 'Unexpected or missing Theme Name header';
+}
+if (!preg_match('/^\\d+\\.\\d+\\.\\d+(?:[-+][A-Za-z0-9.-]+)?$/', $headers['version'] ?? '')) {
+    $errors[] = 'Theme Version must be a semantic version';
+}
+if (($headers['text domain'] ?? '') !== 'bubba-hub') {
+    $errors[] = 'Text Domain must match the theme slug';
+}
+if (!preg_match('/^\\d+\\.\\d+$/', $headers['requires at least'] ?? '')) {
+    $errors[] = 'Requires at least must specify a WordPress version';
+}
+if (!preg_match('/^\\d+\\.\\d+$/', $headers['requires php'] ?? '')) {
+    $errors[] = 'Requires PHP must specify a PHP version';
+}
+
 foreach (['Theme Name:', 'Version:', 'Text Domain:'] as $field) {
     if (strpos($css, $field) === false) {
         $errors[] = 'Missing style.css header: ' . $field;
