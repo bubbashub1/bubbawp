@@ -22,12 +22,22 @@ final class BH_Activity_Create_3 {
     }
     public static function render() {
         if ( ! current_user_can( 'manage_options' ) ) { wp_die( 'Permission denied.' ); }
-        echo '<div class="wrap bh3-wizard"><h1>Add activity</h1>';
+        echo '<div class="wrap bh3-wizard"><h1>' . ( absint( $_GET['activity_id'] ?? 0 ) ? 'Edit draft activity' : 'Add activity' ) . '</h1>';
         if ( ! self::allowed() ) { echo '<p>Activity creation is restricted to staging administrators.</p></div>'; return; }
         if ( isset( $_GET['created'] ) ) {
             echo '<div class="notice notice-success"><p>Draft created successfully. ID: ' . esc_html( (string) absint( $_GET['created'] ) ) . '</p></div>';
         }
         global $wpdb;
+        $edit_id = absint( $_GET['activity_id'] ?? 0 );
+        $existing = null;
+        $existing_venue_ids = array();
+        $existing_sessions = array();
+        if ( $edit_id ) {
+            $existing = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM `{$wpdb->prefix}activities` WHERE id=%d AND status='draft' LIMIT 1", $edit_id ), ARRAY_A );
+            if ( ! $existing ) { wp_die( 'Only existing draft activities can be edited.', '', array( 'response' => 404 ) ); }
+            $existing_venue_ids = array_map( 'intval', $wpdb->get_col( $wpdb->prepare( "SELECT venue_id FROM `{$wpdb->prefix}activity_venues` WHERE activity_id=%d", $edit_id ) ) );
+            $existing_sessions = $wpdb->get_results( $wpdb->prepare( "SELECT day_of_week AS day, LEFT(start_time,5) AS start, LEFT(end_time,5) AS end, venue_id, term_time_only FROM `{$wpdb->prefix}sessions` WHERE activity_id=%d AND frequency='weekly' AND status='scheduled' ORDER BY id ASC LIMIT 100", $edit_id ), ARRAY_A );
+        }
         $organisers = $wpdb->get_results( "SELECT id,name FROM `{$wpdb->prefix}organisers` ORDER BY name ASC LIMIT 1000", ARRAY_A );
         $venues_table = $wpdb->prefix . 'venues';
         $venues = array();
@@ -55,6 +65,7 @@ final class BH_Activity_Create_3 {
         foreach ( $steps as $i => $label ) { echo '<button type="button" data-step="' . esc_attr( (string) $i ) . '" aria-current="' . ( $i === 0 ? 'step' : 'false' ) . '">' . esc_html( ( $i + 1 ) . '. ' . $label ) . '</button>'; }
         echo '</nav><form id="bh3-listing-wizard" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="bh3_create_activity">';
         wp_nonce_field( 'bh3_create_activity' );
+        echo '<input type="hidden" name="activity_id" value="' . esc_attr( (string) $edit_id ) . '">';
         echo '<section class="bh3-panel" data-panel="0"><h2>Basics</h2><div class="bh3-fields">';
         self::field( 'title', 'Activity title', 'text', '', 'required maxlength="255"' );
         echo '<label class="bh3-field"><span>Organiser</span><select name="organiser_id"><option value="0">Select organiser (optional)</option>';
@@ -114,16 +125,20 @@ final class BH_Activity_Create_3 {
         echo '<div><h3>Weekly sessions</h3><div id="bh3-session-rows"></div><button type="button" class="button" id="bh3-add-session">+ Add weekly session</button><p class="description">Each session repeats weekly. Add separate rows for different days or times.</p></div></div></section>';
         echo '<section class="bh3-panel" data-panel="6" hidden><h2>Review your listing</h2><div class="bh3-review" id="bh3-review-summary">Review the fields above before saving.</div><p>This creates a draft only. Publishing remains administrator-controlled.</p></section>';
         echo '<div class="bh3-actions"><div><button type="button" class="button" id="bh3-prev" disabled>← Back</button> <button type="button" class="button button-primary" id="bh3-next">Continue →</button></div><button type="submit" class="button button-primary" id="bh3-submit" hidden>Save draft activity</button></div></form></div>';
-        echo '<script>
-        (function(){const form=document.getElementById("bh3-listing-wizard");if(!form)return;let step=0;const panels=[...form.querySelectorAll("[data-panel]")],nav=[...document.querySelectorAll(".bh3-steps [data-step]")],prev=document.getElementById("bh3-prev"),next=document.getElementById("bh3-next"),save=document.getElementById("bh3-submit"),summary=document.getElementById("bh3-review-summary");
+        echo '<script>const bh3SavedListing=' . wp_json_encode( $existing ?: array() ) . ';const bh3SavedVenues=' . wp_json_encode( $existing_venue_ids ) . ';const bh3SavedSessions=' . wp_json_encode( $existing_sessions ) . ';';
+        echo <<<'BH3_WIZARD_SCRIPT'
+(function(){const form=document.getElementById("bh3-listing-wizard");if(!form)return;let step=0;const panels=[...form.querySelectorAll("[data-panel]")],nav=[...document.querySelectorAll(".bh3-steps [data-step]")],prev=document.getElementById("bh3-prev"),next=document.getElementById("bh3-next"),save=document.getElementById("bh3-submit"),summary=document.getElementById("bh3-review-summary");
         const show=n=>{n=Math.max(0,Math.min(6,n));if(step===5&&n>5){for(const row of sessionRows.querySelectorAll('.bh3-session-row')){const day=row.querySelector('select'),times=row.querySelectorAll('input[type=time]'),start=times[0],end=times[1];if(!day.value||!start.value||!end.value||end.value<=start.value){alert('Complete each weekly session and make sure its end time is later than its start.');(!day.value?day:!start.value?start:end).focus();return;}}}step=n;panels.forEach((p,i)=>p.hidden=i!==step);nav.forEach((b,i)=>b.setAttribute("aria-current",i===step?"step":"false"));prev.disabled=step===0;next.hidden=step===6;save.hidden=step!==6;if(step===6){const fields=[["Activity", "title"],["Category","category"],["Organiser","organiser_id"],["Age range","age_range"],["Price from","price_from"],["Contact email","contact_email"],["Website","website"]];summary.innerHTML=fields.map(([label,name])=>{const el=form.elements.namedItem(name);return "<p><strong>"+label+":</strong> "+String(el?.selectedOptions?.[0]?.textContent||el?.value||"—").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]))+"</p>"}).join("");}};
         prev.addEventListener("click",()=>show(step-1));next.addEventListener("click",()=>{if(step===0&&!form.elements.namedItem("title").value.trim()){form.elements.namedItem("title").focus();return;}show(step+1)});nav.forEach(b=>b.addEventListener("click",()=>show(Number(b.dataset.step))));form.addEventListener("submit",e=>{if(!form.elements.namedItem("title").value.trim()){e.preventDefault();show(0);form.elements.namedItem("title").focus();}});
         const venueSearch=document.getElementById("bh3-venue-search"),venueOptions=[...document.querySelectorAll(".bh3-venue-option")],sessionRows=document.getElementById("bh3-session-rows"),addSession=document.getElementById("bh3-add-session");
         venueSearch?.addEventListener("input",()=>{const q=venueSearch.value.trim().toLowerCase();venueOptions.forEach(row=>{row.hidden=q!==""&&!row.dataset.search.includes(q);});});
         let sessionIndex=0;const addSessionRow=()=>{const i=sessionIndex++,row=document.createElement("div");row.className="bh3-session-row";row.innerHTML='<label>Day<select name="sessions['+i+'][day]"><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option><option value="7">Sunday</option></select></label><label>Start<input type="time" name="sessions['+i+'][start]"></label><label>End<input type="time" name="sessions['+i+'][end]"></label><label>Venue<select name="sessions['+i+'][venue_id]"><option value="0">No specific venue</option>'+venueOptions.map(v=>{const cb=v.querySelector("input");return '<option value="'+cb.value+'">'+v.querySelector("strong").textContent.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))+'</option>';}).join("")+'</select></label><button type="button" class="button bh3-session-remove">Remove</button><label class="bh3-session-term"><input type="checkbox" name="sessions['+i+'][term_time_only]" value="1"> Term time only</label>';sessionRows.appendChild(row);};
         addSession?.addEventListener("click",addSessionRow);sessionRows?.addEventListener("click",e=>{if(e.target.classList.contains("bh3-session-remove"))e.target.closest(".bh3-session-row").remove();});
+        if(bh3SavedListing&&bh3SavedListing.id){for(const [name,value] of Object.entries(bh3SavedListing)){const el=form.elements.namedItem(name);if(!el)continue;if(el instanceof RadioNodeList)continue;if(el.type==="checkbox")el.checked=Number(value)===1;else if(name==="gallery_images"){try{el.value=JSON.parse(value||"[]").join("\\n");}catch(e){el.value=value||"";}}else if(value!==null)el.value=String(value);}for(const id of bh3SavedVenues){const el=form.querySelector('input[name="venue_ids[]"][value="'+Number(id)+'"]');if(el)el.checked=true;}for(const s of bh3SavedSessions){addSessionRow();const row=sessionRows.lastElementChild;row.querySelector('select[name$="[day]"]').value=String(s.day);row.querySelector('input[name$="[start]"]').value=s.start;row.querySelector('input[name$="[end]"]').value=s.end;row.querySelector('select[name$="[venue_id]"]').value=String(s.venue_id||0);row.querySelector('input[type=checkbox]').checked=Number(s.term_time_only)===1;}}
         show(0);})();
-        </script></div>';
+        </script></div>
+BH3_WIZARD_SCRIPT;
+
     }
     private static function checkbox( $key ) { return ! empty( $_POST[$key] ) ? 1 : 0; }
     private static function text_value( $key, $max = 0 ) {
@@ -153,6 +168,10 @@ final class BH_Activity_Create_3 {
         if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ) !== $table ) { wp_die( 'Activities table is missing.', '', array( 'response' => 409 ) ); }
         $title = self::text_value( 'title', 255 );
         if ( $title === '' ) { wp_die( 'Enter an activity title.', '', array( 'response' => 400 ) ); }
+        $edit_id = absint( $_POST['activity_id'] ?? 0 );
+        if ( $edit_id && ! $wpdb->get_var( $wpdb->prepare( "SELECT id FROM `{$table}` WHERE id=%d AND status='draft' LIMIT 1", $edit_id ) ) ) {
+            wp_die( 'Draft activity not found or no longer editable.', '', array( 'response' => 409 ) );
+        }
         $organiser_id = absint( $_POST['organiser_id'] ?? 0 );
         if ( $organiser_id ) {
             $org_table = $wpdb->prefix . 'organisers';
@@ -169,7 +188,7 @@ final class BH_Activity_Create_3 {
         $slug = sanitize_title( wp_unslash( $_POST['slug'] ?? '' ) );
         if ( $slug === '' ) { $slug = sanitize_title( $title ); }
         $base = substr( $slug ?: 'activity', 0, 220 ); $slug = $base;
-        for ( $suffix = 2; $wpdb->get_var( $wpdb->prepare( "SELECT id FROM `{$table}` WHERE slug=%s LIMIT 1", $slug ) ); ++$suffix ) {
+        for ( $suffix = 2; $wpdb->get_var( $wpdb->prepare( "SELECT id FROM `{$table}` WHERE slug=%s AND id<>%d LIMIT 1", $slug, $edit_id ) ); ++$suffix ) {
             $slug = substr( $base, 0, 220 ) . '-' . $suffix;
             if ( $suffix > 10000 ) { wp_die( 'Unable to allocate a unique slug.', '', array( 'response' => 409 ) ); }
         }
@@ -230,8 +249,18 @@ final class BH_Activity_Create_3 {
             'accessibility' => $accessibility, 'created_by' => get_current_user_id(), 'created_at' => $now, 'updated_at' => $now,
         );
         $wpdb->query( 'START TRANSACTION' );
-        if ( $wpdb->insert( $table, $data ) === false ) { $wpdb->query( 'ROLLBACK' ); wp_die( 'Unable to save activity: ' . esc_html( $wpdb->last_error ), '', array( 'response' => 500 ) ); }
-        $activity_id = (int) $wpdb->insert_id;
+        if ( $edit_id ) {
+            unset( $data['created_at'], $data['created_by'] );
+            $updated = $wpdb->update( $table, $data, array( 'id' => $edit_id, 'status' => 'draft' ) );
+            if ( $updated === false ) { $wpdb->query( 'ROLLBACK' ); wp_die( 'Unable to update activity.', '', array( 'response' => 500 ) ); }
+            $activity_id = $edit_id;
+            $deleted_links = $wpdb->delete( $wpdb->prefix . 'activity_venues', array( 'activity_id' => $activity_id ), array( '%d' ) );
+            $deleted_sessions = $wpdb->query( $wpdb->prepare( "DELETE FROM `{$wpdb->prefix}sessions` WHERE activity_id=%d AND frequency='weekly' AND status='scheduled'", $activity_id ) );
+            if ( $deleted_links === false || $deleted_sessions === false ) { $wpdb->query( 'ROLLBACK' ); wp_die( 'Unable to update related records.', '', array( 'response' => 500 ) ); }
+        } else {
+            if ( $wpdb->insert( $table, $data ) === false ) { $wpdb->query( 'ROLLBACK' ); wp_die( 'Unable to save activity: ' . esc_html( $wpdb->last_error ), '', array( 'response' => 500 ) ); }
+            $activity_id = (int) $wpdb->insert_id;
+        }
         foreach ( $venue_ids as $venue_id ) {
             if ( false === $wpdb->insert( $wpdb->prefix . 'activity_venues', array( 'activity_id' => $activity_id, 'venue_id' => $venue_id ), array( '%d', '%d' ) ) ) {
                 $wpdb->query( 'ROLLBACK' ); wp_die( 'Unable to save venue assignments: ' . esc_html( $wpdb->last_error ), '', array( 'response' => 500 ) );
@@ -250,7 +279,7 @@ final class BH_Activity_Create_3 {
             }
         }
         if ( false === $wpdb->query( 'COMMIT' ) ) { $wpdb->query( 'ROLLBACK' ); wp_die( 'Unable to complete activity save.', '', array( 'response' => 500 ) ); }
-        wp_safe_redirect( add_query_arg( array( 'page' => 'bh3-add-activity', 'created' => $activity_id ), admin_url( 'admin.php' ) ) );
+        wp_safe_redirect( add_query_arg( array( 'page' => 'bh3-add-activity', 'created' => $activity_id, 'edited' => $edit_id ? 1 : 0 ), admin_url( 'admin.php' ) ) );
         exit;
     }
 }
