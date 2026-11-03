@@ -83,3 +83,63 @@ button:focus-visible {
   .wp-site-blocks > header .wp-block-site-logo img { max-height: 2.75rem; }
   .wp-site-blocks > footer .wp-block-group.alignwide { gap: .75rem; }
 }
+
+/* Design iteration: preserve the existing Bubba Hub green, soften panels, prioritise CTAs. */
+.bh-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding-block: clamp(3rem, 7vw, 6rem);
+  background-image: radial-gradient(ellipse at 92% 15%, rgb(230 154 131 / 22%), transparent 40%),
+    radial-gradient(ellipse at 8% 95%, rgb(255 255 255 / 80%), transparent 42%);
+}
+.bh-hero::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: min(45vw, 540px);
+  aspect-ratio: 1;
+  border: 2px solid rgb(23 79 70 / 8%);
+  border-radius: 50%;
+  right: -8%;
+  bottom: -65%;
+  pointer-events: none;
+}
+.bh-hero-inner { max-width: 1200px; }
+.bh-hero-inner > * { max-width: 700px; }
+.bh-hero .wp-block-heading {
+  margin-block: .65rem 1rem;
+  font-size: clamp(2.35rem, 5.6vw, 4.5rem);
+  line-height: 1.07;
+  letter-spacing: -.045em;
+  text-wrap: balance;
+}
+.bh-eyebrow { font-weight: 800; letter-spacing: .1em; }
+.bh-hero .has-large-font-size { max-width: 570px; }
+.bh-hero-actions { margin-block-start: 1.8rem; gap: .75rem; }
+.bh-hero-actions .wp-block-button__link {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 5px 14px rgb(23 79 70 / 10%);
+}
+.bh-button-secondary .wp-block-button__link { background: white; color: var(--wp--preset--color--forest); }
+.bh-hero-note { opacity: .82; margin-block-start: 1.25rem; }
+.bh-category-grid .bh-card { height: 100%; background: #fff; transition: transform .18s ease, box-shadow .18s ease; }
+.bh-category-grid .bh-card h3 { margin-block-end: .5rem; }
+.bh-category-grid .bh-card p { color: var(--wp--preset--color--muted); }
+@media (hover: hover) {
+  .bh-category-grid .bh-card:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgb(23 79 70 / 11%); }
+}
+@media (max-width: 600px) {
+  .bh-hero { padding-block: 2.75rem; }
+  .bh-hero::after { display: none; }
+  .bh-hero .wp-block-heading { font-size: clamp(2.2rem, 9vw, 3rem); }
+  .bh-hero-actions { flex-direction: column; align-items: stretch; }
+  .bh-hero-actions .wp-block-button { width: 100%; }
+  .bh-hero-actions .wp-block-button__link { width: 100%; box-sizing: border-box; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bh-category-grid .bh-card { transition: none; }
+}
