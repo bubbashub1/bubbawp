@@ -58,6 +58,22 @@ final class BH_Activity_Create_3 {
         .bh3-wide{grid-column:1/-1}.bh3-actions{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;margin-top:22px}.bh3-actions .button{min-height:36px}.bh3-actions [hidden]{display:none!important}
         .bh3-review{background:#f6f9f6;padding:14px;border-radius:9px;line-height:1.8}
         .bh3-location-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}.bh3-venue-results{max-height:280px;overflow:auto;border:1px solid #dcdcde;border-radius:8px;padding:8px;margin-top:10px}.bh3-venue-option{display:flex;gap:8px;align-items:flex-start;padding:8px;border-bottom:1px solid #eee}.bh3-venue-option:last-child{border:0}.bh3-session-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:8px;align-items:end;padding:12px;border:1px solid #dcdcde;border-radius:8px;margin:0 0 10px}.bh3-session-row label{display:flex;flex-direction:column;gap:5px;font-weight:600}.bh3-session-row input,.bh3-session-row select{max-width:100%;width:100%}.bh3-session-row .bh3-session-term{display:flex;align-items:center;gap:6px;white-space:nowrap}.bh3-session-row .bh3-session-term input{width:auto}@media(max-width:782px){.bh3-location-grid{grid-template-columns:1fr}.bh3-session-row{grid-template-columns:1fr 1fr}.bh3-session-row .bh3-session-remove{grid-column:1/-1}}
+        /* Wizard controls: prevent WP admin styles from stretching checkboxes and timetable inputs. */
+        .bh3-wizard{max-width:1320px}
+        .bh3-wizard .bh3-field:has(input[type=checkbox]){display:flex;flex-direction:row-reverse;justify-content:flex-end;align-items:center;gap:10px;min-height:40px;font-weight:600}
+        .bh3-wizard .bh3-field input[type=checkbox],.bh3-wizard .bh3-venue-option input[type=checkbox],.bh3-wizard .bh3-session-term input[type=checkbox]{width:18px!important;min-width:18px;max-width:18px!important;height:18px!important;min-height:18px;margin:0!important;flex:0 0 18px;accent-color:#397253}
+        .bh3-wizard .bh3-field:has(input[type=checkbox]) input{box-sizing:border-box}
+        .bh3-location-grid{grid-template-columns:minmax(0,0.85fr) minmax(0,1.35fr);gap:20px}
+        .bh3-location-grid>div{min-width:0}
+        .bh3-venue-option{align-items:center;min-height:38px;box-sizing:border-box}
+        .bh3-session-row{grid-template-columns:minmax(90px,1.15fr) minmax(100px,1fr) minmax(100px,1fr) minmax(125px,1.2fr);gap:10px;align-items:end}
+        .bh3-session-row label{min-width:0}
+        .bh3-session-row input[type=time],.bh3-session-row select{min-width:0;max-width:100%;width:100%;box-sizing:border-box}
+        .bh3-session-row .bh3-session-remove{grid-column:4;justify-self:end}
+        .bh3-session-row .bh3-session-term{grid-column:1/4;grid-row:auto;display:flex;flex-direction:row;align-items:center;gap:8px}
+        .bh3-wizard .bh3-actions .button{border-radius:7px;padding:5px 16px}
+        @media(max-width:1150px){.bh3-location-grid{grid-template-columns:1fr}.bh3-session-row{grid-template-columns:repeat(2,minmax(0,1fr))}.bh3-session-row .bh3-session-remove{grid-column:2}.bh3-session-row .bh3-session-term{grid-column:1}}
+        @media(max-width:560px){.bh3-session-row{grid-template-columns:1fr}.bh3-session-row .bh3-session-remove,.bh3-session-row .bh3-session-term{grid-column:1}.bh3-steps{grid-template-columns:1fr 1fr}}
         @media(max-width:782px){.bh3-wizard-layout{grid-template-columns:1fr}.bh3-steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.bh3-fields{grid-template-columns:1fr}.bh3-wide{grid-column:auto}.bh3-panel{padding:14px}}
         </style>';
         echo '<div class="bh3-wizard-layout"><nav class="bh3-steps" aria-label="Listing steps">';
