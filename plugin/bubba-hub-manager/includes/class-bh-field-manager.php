@@ -188,7 +188,9 @@ final class BH_Field_Manager_3 {
         switch ( $type ) {
             case 'number':
                 if ( $value !== '' && ! is_numeric( $value ) ) { return new WP_Error( 'invalid_number', 'Invalid number.' ); }
-                return $value === '' ? '' : (float) $value;
+                if ( $value === '' ) { return ''; }
+                $number = (float) $value;
+                return is_finite( $number ) ? $number : new WP_Error( 'invalid_number', 'Number is out of range.' );
             case 'select':
                 if ( $value !== '' && ! in_array( $value, $options, true ) ) { return new WP_Error( 'invalid_option', 'Invalid selection.' ); }
                 return $value;
@@ -215,24 +217,23 @@ final class BH_Field_Manager_3 {
         $type = sanitize_key( $_POST['object_type'] ?? '' );
         $id = absint( $_POST['object_id'] ?? 0 );
         if ( ! self::object_exists( $type, $id ) ) { wp_die( 'Record not found.', '', array( 'response' => 404 ) ); }
-        $submitted = isset( $_POST['custom_fields'] ) && is_array( $_POST['custom_fields'] ) ? wp_unslash( $_POST['custom_fields'] ) : array();
-        $definitions = self::definitions_for( $type );
-        $updates = array();
-        foreach ( $definitions as $field ) {
-            $field_id = (int) $field['field_id'];
-            $raw = $submitted[ $field_id ] ?? ( $field['field_type'] === 'multiselect' ? array() : '' );
-            $value = self::normalized_value( $field, $raw );
-            if ( is_wp_error( $value ) ) { wp_die( esc_html( $field['label'] . ': ' . $value->get_error_message() ), '', array( 'response' => 400 ) ); }
-            if ( $field['is_required'] && ( $value === '' || $value === array() ) ) { wp_die( esc_html( $field['label'] . ' is required.' ), '', array( 'response' => 400 ) ); }
-            $updates[ $field_id ] = wp_json_encode( $value );
+        $submitted = $_POST['custom_fields'] ?? array();
+        $updates = self::validate_submitted_values( $type, is_array( $submitted ) ? wp_unslash( $submitted ) : $submitted );
+        if ( is_wp_error( $updates ) ) {
+            wp_die( esc_html( $updates->get_error_message() ), '', array( 'response' => 400 ) );
         }
-        global $wpdb; $t = self::tables();
-        $wpdb->query( 'START TRANSACTION' );
-        foreach ( $updates as $field_id => $json ) {
-            $ok = $wpdb->replace( $t['values'], array( 'object_type' => $type, 'object_id' => $id, 'field_id' => $field_id, 'value_json' => $json, 'updated_at' => current_time( 'mysql', true ) ) );
-            if ( $ok === false ) { $wpdb->query( 'ROLLBACK' ); wp_die( 'Could not save field values.', '', array( 'response' => 500 ) ); }
+        global $wpdb;
+        if ( false === $wpdb->query( 'START TRANSACTION' ) ) {
+            wp_die( 'Could not begin the custom field save.', '', array( 'response' => 500 ) );
         }
-        $wpdb->query( 'COMMIT' );
+        if ( ! self::persist_validated_values( $type, $id, $updates ) ) {
+            $wpdb->query( 'ROLLBACK' );
+            wp_die( 'Could not save field values.', '', array( 'response' => 500 ) );
+        }
+        if ( false === $wpdb->query( 'COMMIT' ) ) {
+            $wpdb->query( 'ROLLBACK' );
+            wp_die( 'Could not complete custom field save.', '', array( 'response' => 500 ) );
+        }
         wp_safe_redirect( add_query_arg( array( 'page' => 'bh3-field-manager', 'object_type' => $type, 'object_id' => $id, 'notice' => 'values_saved' ), admin_url( 'admin.php' ) ) );
         exit;
     }
