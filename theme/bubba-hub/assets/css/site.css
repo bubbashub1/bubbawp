@@ -169,3 +169,40 @@ button:focus-visible {
   .bh-activity-layout > .wp-block-column { flex-basis: auto !important; width: 100%; }
   .bh-activity-gallery { min-height: 190px; }
 }
+
+/* Shared theme surfaces: native forms, navigation and accessible action targets. */
+.wp-site-blocks > header .wp-block-navigation a {
+  font-weight: 650;
+  text-underline-offset: .2em;
+}
+.wp-site-blocks > header .wp-block-navigation a:hover,
+.wp-site-blocks > footer a:hover { text-decoration: underline; }
+.wp-block-button__link,
+.wp-block-navigation-item__content { min-height: 44px; }
+.wp-block-button__link { display: inline-flex; align-items: center; justify-content: center; }
+.wp-block-search__input,
+.wp-block-query-filter input,
+.wp-block-query-filter select,
+input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+select,
+textarea {
+  box-sizing: border-box;
+  max-width: 100%;
+  border: 1px solid #a4b6ae;
+  border-radius: 12px;
+  padding: .7rem .85rem;
+  font: inherit;
+  color: #20332f;
+  background-color: #fff;
+}
+:where(input,select,textarea,button,a):focus-visible {
+  outline: 3px solid #174f46;
+  outline-offset: 3px;
+}
+.wp-block-navigation__responsive-container.is-menu-open {
+  padding: clamp(1rem, 5vw, 2rem);
+}
+@media (max-width: 600px) {
+  .wp-site-blocks > header .wp-block-group.alignwide { gap: .75rem; }
+  .wp-site-blocks > header .wp-block-site-logo img { max-width: 48px; height: auto; }
+}
