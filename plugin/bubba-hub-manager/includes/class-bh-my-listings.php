@@ -25,16 +25,16 @@ final class BH_My_Listings_3 {
         $name = $wpdb->get_var( $wpdb->prepare( "SELECT name FROM `{$organisers}` WHERE id = %d LIMIT 1", $organiser_id ) );
         if ( ! $name ) { echo '<p>Linked organiser was not found. Contact an administrator.</p></div>'; return; }
         echo '<p>Organiser: <strong>' . esc_html( $name ) . '</strong></p>';
-        echo '<p>Read-only preview. Editing and publishing require separate permission testing.</p>';
+        echo '<p>Edit your own draft listings. Publishing and deletion remain administrator-controlled.</p>';
         $rows = $wpdb->get_results( $wpdb->prepare(
             "SELECT id, title, status, category FROM `{$activities}` WHERE organiser_id = %d ORDER BY id DESC LIMIT 100", $organiser_id
         ), ARRAY_A );
         echo '<table class="widefat striped"><thead><tr><th>Activity</th><th>Category</th><th>Status</th></tr></thead><tbody>';
         foreach ( $rows as $row ) {
             echo '<tr><td>' . esc_html( $row['title'] ) . '</td><td>' . esc_html( (string) $row['category'] ) .
-                '</td><td>' . esc_html( $row['status'] ) . '</td></tr>';
+                '</td><td>' . esc_html( $row['status'] ) . '</td><td>' . ( $row['status'] === 'draft' ? '<a class="button" href="' . esc_url( add_query_arg( array( 'page' => 'bh3-leader-edit', 'activity_id' => absint( $row['id'] ) ), admin_url( 'admin.php' ) ) ) . '">Edit</a>' : 'View only' ) . '</td></tr>';
         }
-        if ( ! $rows ) { echo '<tr><td colspan="3">No activities assigned to this organiser.</td></tr>'; }
+        if ( ! $rows ) { echo '<tr><td colspan="4">No activities assigned to this organiser.</td></tr>'; }
         echo '</tbody></table></div>';
     }
 }
