@@ -1,0 +1,1257 @@
+/* Bubba Hub 2.0 directory — isolated presentation layer.
+   Mirrors the approved homepage palette and search treatment.
+   Does not change result grids, modal visibility, or API functionality. */
+body.bh-directory:not(.bh-calendar-page){background:#fffdf7;font-family:'Quicksand',Calibri,Arial,sans-serif}
+body.bh-directory:not(.bh-calendar-page) .app-shell{padding-top:24px}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-fullwidth{width:100%;max-width:none;margin:0 0 18px}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-search{
+  background:#fff;border:1px solid #e1ebe2;border-radius:28px;
+  box-shadow:0 15px 40px rgba(23,78,59,.09);
+  padding:clamp(18px,2.5vw,30px);
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-search h2{
+  color:#174e3b;font-weight:700;font-size:clamp(1.6rem,3vw,2.5rem);line-height:1.13;
+  letter-spacing:-.04em;margin:0 0 18px;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-search-fields{
+  display:grid;grid-template-columns:minmax(0,1.4fr) repeat(4,minmax(0,1fr)) auto;
+  gap:10px;align-items:stretch;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-search-fields label{
+  display:flex;align-items:center;min-width:0;min-height:52px;
+  padding:0 12px;border:1px solid #dce8df;border-radius:14px;background:#fff;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-search-fields :is(input,select){
+  min-width:0;width:100%;border:0;box-shadow:none;background:transparent;
+  font:700 .92rem 'Quicksand',Calibri,Arial,sans-serif;color:#174e3b;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-search-fields label:focus-within{
+  border-color:#3c8e96;box-shadow:0 0 0 3px rgba(60,142,150,.13);
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-search-fields button{
+  min-height:52px;border-radius:999px;background:#174e3b;color:#fff;padding:11px 23px;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-search-fields button:hover{background:#ee822c;color:#123f31}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-actions{
+  display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:16px;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-actions :is(a,button){
+  border-radius:999px;min-height:42px;padding:10px 17px;
+  font-weight:700;text-decoration:none;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-actions .directory-search-advanced-link{
+  background:#e5f1df;color:#174e3b;border:1px solid #cfe3d2;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-actions .directory-search-advanced-link:hover{
+  background:#d3e8d7;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-popular{margin-top:15px}
+body.bh-directory:not(.bh-calendar-page) .directory-results-heading{margin-top:12px}
+body.bh-directory:not(.bh-calendar-page) #results .activity-card{
+  border-radius:24px;overflow:hidden;background:#fff;
+  border:1px solid #e1ebe2;box-shadow:0 8px 24px rgba(23,78,59,.07);
+}
+body.bh-directory:not(.bh-calendar-page) #results .activity-card h3{
+  color:#174e3b;font-weight:700;letter-spacing:-.025em;
+}
+body.bh-directory:not(.bh-calendar-page) #results .activity-card .button{
+  border-radius:999px;
+}
+body.bh-directory:not(.bh-calendar-page) #directoryFilters .directory-more-search-panel:not([hidden]){
+  background:#e5f1df;border:1px solid #d1e4d4;border-radius:22px;
+  padding:clamp(12px,2vw,24px);margin:10px 0 18px;
+}
+body.bh-directory:not(.bh-calendar-page) #directoryFilters .directory-more-search-toggle{
+  border-radius:999px;
+}
+@media(max-width:1100px){
+  body.bh-directory:not(.bh-calendar-page) .directory-hero-search-fields{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+}
+@media(max-width:760px){
+  body.bh-directory:not(.bh-calendar-page) .app-shell{padding-top:14px}
+  body.bh-directory:not(.bh-calendar-page) .directory-hero-search{
+    padding:16px;border-radius:22px;
+  }
+  body.bh-directory:not(.bh-calendar-page) .directory-hero-search-fields{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  body.bh-directory:not(.bh-calendar-page) .directory-hero-search-fields button{
+    grid-column:1/-1;
+  }
+  body.bh-directory:not(.bh-calendar-page) .directory-hero-actions :is(a,button){
+    flex:1 1 auto;text-align:center;
+  }
+  body.bh-directory:not(.bh-calendar-page) #results .activity-card{border-radius:20px}
+}
+@media(max-width:390px){
+  body.bh-directory:not(.bh-calendar-page) .directory-hero-search-fields{grid-template-columns:minmax(0,1fr)}
+  body.bh-directory:not(.bh-calendar-page) .directory-hero-search-fields button{grid-column:auto}
+}
+@media(prefers-reduced-motion:reduce){
+  body.bh-directory:not(.bh-calendar-page) #results .activity-card{transition:none}
+}
+
+/* Desktop action toolbar: override legacy block-width button rules. */
+@media(min-width:761px){
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-search .directory-hero-actions{
+   display:flex!important;flex-direction:row!important;flex-wrap:wrap!important;
+   justify-content:flex-start!important;align-items:center!important;
+   gap:10px!important;width:100%;max-width:none;
+ }
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-search .directory-hero-actions > :is(a,button){
+   display:inline-flex!important;flex:0 0 auto!important;width:auto!important;
+   max-width:none!important;min-width:0!important;margin:0!important;
+   align-items:center;justify-content:center;white-space:nowrap;
+   line-height:1.25;box-sizing:border-box;
+ }
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-actions > :is(a,button){
+  display:inline-flex;align-items:center;justify-content:center;
+  border:1px solid #d1e3d6;border-radius:999px;
+  box-shadow:0 3px 9px rgba(23,78,59,.055);
+  font-size:.9rem;line-height:1.25;transition:background-color .2s ease,transform .2s ease,box-shadow .2s ease;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-actions > :is(a,button):hover{
+  transform:translateY(-2px);box-shadow:0 6px 15px rgba(23,78,59,.13);
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-actions .directory-calendar-hero-button{
+  background:#def1f4;color:#174e3b;border-color:#c7e7e9;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-actions .directory-map-hero-button{
+  background:#fff0d0;color:#174e3b;border-color:#f2dfb5;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-actions .directory-planner-action-button{
+  background:#174e3b;color:#fff;border-color:#174e3b;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-actions .directory-planner-action-button:hover{
+  background:#ee822c;color:#123f31;border-color:#ee822c;
+}
+@media(max-width:760px){
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-search .directory-hero-actions{
+   display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;
+ }
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-actions > :is(a,button){
+   width:100%!important;min-width:0;white-space:normal;text-align:center;margin:0;
+ }
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-actions > :first-child{
+   grid-column:1/-1;
+ }
+}
+@media(max-width:390px){
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-search .directory-hero-actions{
+   grid-template-columns:minmax(0,1fr);
+ }
+}
+
+/* October launch polish: legible dark-green CTA labels on light pastel fills. */
+body.bh-directory:not(.bh-calendar-page) .directory-hero-search-fields button,
+body.bh-directory:not(.bh-calendar-page) .directory-hero-actions > :is(a,button),
+body.bh-directory:not(.bh-calendar-page) #results .activity-card :is(.button,.button-primary,a.button-primary){
+  color:#174e3b!important;
+  font-weight:800;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-search-fields button{
+  background:#f7bf7d!important;border-color:#f7bf7d!important;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-search-fields button:hover{
+  background:#ee822c!important;border-color:#ee822c!important;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-actions .directory-planner-action-button{
+  background:#e5f1df!important;border-color:#cfe3d2!important;color:#174e3b!important;
+}
+body.bh-directory:not(.bh-calendar-page) #results .activity-card :is(.button-primary,a.button-primary){
+  background:#e5f1df!important;border-color:#cfe3d2!important;color:#174e3b!important;
+}
+body.bh-directory:not(.bh-calendar-page) #results .activity-card :is(.button-primary,a.button-primary):hover{
+  background:#f7bf7d!important;border-color:#f7bf7d!important;
+}
+/* Keep results inside a scrollable listings panel on desktop and tablet.
+   IntersectionObserver in directory.js already observes #results as its root. */
+@media(min-width:761px){
+ body.bh-directory:not(.bh-calendar-page) #results.activity-grid:not([hidden]){
+   max-height:min(76vh,940px)!important;
+   overflow-y:auto!important;overflow-x:hidden!important;
+   overscroll-behavior-y:contain;scrollbar-gutter:stable;
+   align-content:start;
+   padding:8px 12px 16px 5px;
+   scrollbar-width:thin;scrollbar-color:#9fb7a5 #edf5ec;
+   border-radius:20px;
+ }
+ body.bh-directory:not(.bh-calendar-page) #results.activity-grid::-webkit-scrollbar{width:9px}
+ body.bh-directory:not(.bh-calendar-page) #results.activity-grid::-webkit-scrollbar-track{background:#edf5ec;border-radius:999px}
+ body.bh-directory:not(.bh-calendar-page) #results.activity-grid::-webkit-scrollbar-thumb{background:#9fb7a5;border-radius:999px}
+}
+@media(max-width:760px){
+ body.bh-directory:not(.bh-calendar-page) #results.activity-grid{
+   max-height:none!important;overflow:visible!important;
+ }
+}
+
+/* Keyword input: remove nested native input outline/border; retain the outer field focus ring. */
+body.bh-directory:not(.bh-calendar-page) .directory-hero-search-fields label:has(input[data-bh-hero-field="keyword"]) input[data-bh-hero-field="keyword"]{
+  border:0!important;border-radius:0!important;outline:0!important;
+  box-shadow:none!important;background:transparent!important;
+  appearance:none;-webkit-appearance:none;
+  padding-inline:0!important;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-search-fields label:has(input[data-bh-hero-field="keyword"]){
+  overflow:hidden;
+}
+
+/* Advanced search lives inside the hero, expanding its height instead of opening a modal. */
+body.bh-directory:not(.bh-calendar-page) .directory-hero-search{
+  height:auto!important;max-height:none!important;overflow:visible!important;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters{
+  display:block!important;position:static!important;inset:auto!important;
+  width:100%!important;max-width:none!important;height:auto!important;
+  max-height:none!important;overflow:visible!important;
+  margin:14px 0 0!important;padding:0!important;
+  background:transparent!important;border:0!important;box-shadow:none!important;
+  transform:none!important;opacity:1!important;visibility:visible!important;
+  backdrop-filter:none!important;z-index:auto!important;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters::before,
+body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters::after{
+  content:none!important;display:none!important;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters .directory-more-search-toggle{
+  display:none!important;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #advancedFields[hidden]{
+  display:none!important;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #advancedFields:not([hidden]){
+  display:block!important;position:static!important;
+  width:100%!important;height:auto!important;max-height:none!important;
+  overflow:visible!important;transform:none!important;visibility:visible!important;
+  opacity:1!important;margin:0!important;
+  background:#e5f1df!important;border:1px solid #d1e4d4!important;
+  border-radius:22px!important;padding:clamp(14px,2vw,24px)!important;
+  box-shadow:none!important;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters .bh-advanced-filters{
+  position:static!important;width:100%!important;max-width:none!important;
+  background:transparent!important;box-shadow:none!important;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters .directory-filter-fields{
+  position:static!important;max-height:none!important;
+}
+body.bh-directory:not(.bh-calendar-page).directory-filter-open::before{
+  display:none!important;
+}
+
+
+/* Directory: persistent left search sidebar and expansive map/list content. */
+@media (min-width: 901px) {
+  body.bh-directory:not(.bh-calendar-page) .app-shell {
+    display:grid!important;
+    grid-template-columns:minmax(280px,320px) minmax(0,1fr);
+    gap:20px;align-items:start;
+    max-width:1600px;margin-inline:auto;
+  }
+  body.bh-directory:not(.bh-calendar-page) [data-bh-directory-hero-placeholder] {
+    grid-column:1;min-width:0;position:sticky;top:18px;
+    max-height:calc(100dvh - 36px);overflow-y:auto;overscroll-behavior:contain;
+    scrollbar-width:thin;
+  }
+  body.bh-directory:not(.bh-calendar-page) .directory-layout {
+    grid-column:2;min-width:0;width:100%;margin:0!important;
+    display:block!important;
+  }
+  body.bh-directory:not(.bh-calendar-page) .directory-results-column {
+    width:100%!important;max-width:none!important;min-width:0;
+  }
+  body.bh-directory:not(.bh-calendar-page) .directory-hero-search-fields {
+    display:flex!important;flex-direction:column!important;gap:10px;
+  }
+  body.bh-directory:not(.bh-calendar-page) .directory-hero-search-fields > * {
+    width:100%;min-width:0;
+  }
+  body.bh-directory:not(.bh-calendar-page) .directory-hero-actions {
+    display:flex!important;flex-direction:column!important;align-items:stretch!important;
+  }
+  body.bh-directory:not(.bh-calendar-page) .directory-hero-search .directory-hero-actions > :is(a,button) {
+    width:100%!important;max-width:none!important;justify-content:center!important;
+    white-space:normal!important;
+  }
+  body.bh-directory:not(.bh-calendar-page) .directory-hero-search h2 {
+    font-size:1.7rem;
+  }
+  body.bh-directory:not(.bh-calendar-page) .directory-results-heading {
+    margin-top:0;
+  }
+  body.bh-directory:not(.bh-calendar-page) #mapView {
+    height:clamp(490px,76dvh,900px);min-height:490px;
+  }
+}
+/* Advanced search opens downward inside the filter column, never as an overlay. */
+body.bh-directory:not(.bh-calendar-page) #directoryFilters,
+body.bh-directory:not(.bh-calendar-page) #directoryFilters .directory-more-search-panel {
+  position:static!important;inset:auto!important;transform:none!important;
+  width:100%;max-width:100%;box-sizing:border-box;
+}
+body.bh-directory:not(.bh-calendar-page) #directoryFilters .directory-more-search-panel[hidden] {
+  display:none!important;
+}
+@media (max-width:900px) {
+  body.bh-directory:not(.bh-calendar-page) .app-shell {
+    display:block!important;
+  }
+  body.bh-directory:not(.bh-calendar-page) [data-bh-directory-hero-placeholder] {
+    position:static;max-height:none;overflow:visible;
+  }
+  body.bh-directory:not(.bh-calendar-page) .directory-layout {
+    width:100%;min-width:0;
+  }
+  body.bh-directory:not(.bh-calendar-page) #mapView {
+    min-height:350px;height:65dvh;
+  }
+}
+
+
+/* Directory polish: aligned sidebar, clear introduction and action bar above map. */
+body.bh-directory:not(.bh-calendar-page) .app-shell{
+  align-items:start;
+}
+body.bh-directory:not(.bh-calendar-page) [data-bh-directory-hero-placeholder]{
+  padding-top:14px;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-results-column{
+  display:flex;flex-direction:column;min-width:0;gap:0;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-results-heading{
+  width:100%;max-width:none!important;margin:0!important;
+  padding:18px 0 10px!important;min-height:0!important;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-intro{
+  width:100%;max-width:760px!important;margin:0!important;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-intro h1{
+  margin:7px 0 9px!important;font-size:clamp(1.8rem,3vw,2.7rem);
+  line-height:1.14;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-intro p{
+  margin:0!important;line-height:1.55;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-view-actions{
+  margin:14px 0 12px!important;display:flex!important;
+  gap:10px;align-items:center;flex-wrap:wrap;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-view-actions > :is(button,a){
+  display:inline-flex;align-items:center;justify-content:center;
+  min-height:44px;padding:10px 18px;text-decoration:none;
+  border-radius:999px;font:700 .9rem 'Quicksand',Calibri,Arial,sans-serif;
+  border:1px solid #144400;white-space:normal;text-align:center;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-view-actions .bh-directory-action-link{
+  background:#d8e6db;color:#144400;border-color:#d8e6db;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-view-actions .bh-directory-action-link:hover{
+  background:#f6b66d;border-color:#f6b66d;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-view-actions #directoryShowMap{
+  margin-left:auto;background:transparent;color:#144400;
+  border-color:#c8d7cb;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-view-actions #directoryShowMap[aria-pressed="true"]{
+  background:#144400;color:white;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-map-hint{
+  margin:0 0 12px!important;font-size:.9rem;
+}
+body.bh-directory:not(.bh-calendar-page) #mapView{
+  width:100%!important;max-width:none!important;
+  border-radius:22px;overflow:hidden;
+}
+/* Links to views and tools are in the right-hand toolbar, not duplicated in filters. */
+body.bh-directory:not(.bh-calendar-page) .directory-hero-actions > a{
+  display:none!important;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-actions{
+  margin-top:8px!important;
+}
+@media(min-width:901px){
+  body.bh-directory:not(.bh-calendar-page) .directory-results-heading{
+    padding-top:14px!important;
+  }
+  body.bh-directory:not(.bh-calendar-page) #mapView{
+    height:clamp(470px,69dvh,790px)!important;
+  }
+}
+@media(max-width:900px){
+  body.bh-directory:not(.bh-calendar-page) [data-bh-directory-hero-placeholder]{
+    padding-top:8px;
+  }
+  body.bh-directory:not(.bh-calendar-page) .directory-results-heading{
+    padding:14px 0 8px!important;
+  }
+  body.bh-directory:not(.bh-calendar-page) .bh-directory-view-actions{
+    position:static!important;padding:0!important;
+    background:transparent!important;
+  }
+  body.bh-directory:not(.bh-calendar-page) .bh-directory-view-actions > :is(button,a){
+    flex:1 1 calc(50% - 10px);min-width:0;
+  }
+  body.bh-directory:not(.bh-calendar-page) .bh-directory-view-actions #directoryShowMap{
+    margin-left:0;
+  }
+  body.bh-directory:not(.bh-calendar-page) #mapView{
+    height:60dvh!important;min-height:340px!important;
+  }
+}
+
+
+/* Directory L-shaped search layout: sidebar flush with top of results. */
+@media(min-width:901px){
+ body.bh-directory:not(.bh-calendar-page) .app-shell{
+   display:grid!important;
+   grid-template-columns:288px minmax(0,1fr)!important;
+   gap:18px!important;
+   align-items:start!important;
+   padding-top:0!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) [data-bh-directory-hero-placeholder]{
+   grid-column:1!important;grid-row:1!important;
+   align-self:start!important;padding-top:0!important;margin-top:0!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .directory-layout{
+   grid-column:2!important;grid-row:1!important;
+   min-width:0!important;margin-top:0!important;padding-top:0!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-fullwidth,
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-search{
+   margin-top:0!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .directory-results-heading{
+   padding-top:0!important;
+ }
+}
+@media(max-width:900px){
+ body.bh-directory:not(.bh-calendar-page) .app-shell{display:block!important}
+ body.bh-directory:not(.bh-calendar-page) [data-bh-directory-hero-placeholder]{padding-top:0!important}
+}
+
+
+/* Main sidebar owns these fields; avoid duplicate controls in expanded filters. */
+body.bh-directory:not(.bh-calendar-page) #directoryFilters [data-filter-key="category"],
+body.bh-directory:not(.bh-calendar-page) #directoryFilters [data-filter-key="region"],
+body.bh-directory:not(.bh-calendar-page) #directoryFilters [data-filter-key="town"],
+body.bh-directory:not(.bh-calendar-page) #directoryFilters [data-filter-key="day"]{
+ display:none!important;
+}
+body.bh-directory:not(.bh-calendar-page) #directoryFilters .directory-more-search-panel:not([hidden]){
+ background:#e8f1e7;
+ border-radius:18px;
+ padding:16px 14px;
+}
+body.bh-directory:not(.bh-calendar-page) #directoryFilters .directory-advanced-filter-field :is(select,input:not([type="checkbox"])){
+ border-radius:12px;
+}
+
+
+/* Popular categories now sit in the results column, immediately above the map. */
+body.bh-directory:not(.bh-calendar-page) .directory-results-column > .directory-popular{
+ display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px;
+ margin:12px 0 14px;padding:12px 0;
+ border-top:1px solid #e1e9e0;border-bottom:1px solid #e1e9e0;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-results-column > .directory-popular .directory-popular-label{
+ font-weight:700;color:#416651;
+}
+
+/* Expanded search is part of the main search card, not a separate green sidebar. */
+body.bh-directory:not(.bh-calendar-page) #directoryFilters{
+  margin:12px 0 0!important;padding:0!important;
+  background:transparent!important;border:0!important;box-shadow:none!important;
+}
+body.bh-directory:not(.bh-calendar-page) #directoryFilters .directory-more-search-toggle{
+  display:none!important;
+}
+body.bh-directory:not(.bh-calendar-page) #directoryFilters .directory-more-search-panel:not([hidden]){
+  margin:0!important;padding:14px 0 0!important;
+  background:transparent!important;border:0!important;border-top:1px solid #dce8df!important;
+  border-radius:0!important;box-shadow:none!important;
+}
+body.bh-directory:not(.bh-calendar-page) #directoryFilters .directory-filter-fields{
+  display:flex!important;flex-direction:column!important;gap:12px!important;
+}
+body.bh-directory:not(.bh-calendar-page) #directoryFilters .directory-advanced-section{
+  display:flex;flex-direction:column;gap:12px;min-width:0;
+}
+body.bh-directory:not(.bh-calendar-page) #directoryFilters .directory-advanced-filter-field,
+body.bh-directory:not(.bh-calendar-page) #directoryFilters .directory-nearby-control{
+  width:100%;min-width:0;box-sizing:border-box;margin:0!important;
+}
+body.bh-directory:not(.bh-calendar-page) #directoryFilters :is(select,.directory-accessibility-expand,.directory-nearby-button){
+  width:100%;min-height:46px;border:1px solid #dce8df!important;
+  border-radius:14px!important;background:#fff!important;color:#144400!important;
+  font:700 .9rem 'Quicksand',Calibri,Arial,sans-serif;
+}
+body.bh-directory:not(.bh-calendar-page) #directoryFilters .directory-filter-label{
+  display:block;margin:0 0 6px;color:#416651;font-weight:700;
+}
+body.bh-directory:not(.bh-calendar-page) #directoryFilters .directory-filter-actions{
+  display:grid;grid-template-columns:1fr;gap:8px;margin-top:14px;
+}
+body.bh-directory:not(.bh-calendar-page) #directoryFilters .directory-filter-actions button{
+  width:100%;min-height:46px;border-radius:999px;font-weight:700;
+}
+body.bh-directory:not(.bh-calendar-page) #directoryFilters #applyFilters{
+  background:#144400;color:#fff;
+}
+body.bh-directory:not(.bh-calendar-page) #directoryFilters #clear{
+  background:#d8e6db;color:#144400;
+}
+body.bh-directory:not(.bh-calendar-page) #directoryFilters .filter-free{
+  display:flex;align-items:center;gap:9px;font-weight:700;color:#416651;
+}
+
+/* Directory search sidebar: square top edge beneath the site header. */
+body.bh-directory:not(.bh-calendar-page) .directory-hero-search{
+  border-top-left-radius:0!important;
+  border-top-right-radius:0!important;
+}
+
+/* Visible custom Leaflet pins. Marker markup is supplied by map-core.js. */
+body.bh-directory .leaflet-marker-icon.custom-sleek-dark-marker{
+  background:transparent!important;
+  border:0!important;
+  overflow:visible!important;
+}
+body.bh-directory .custom-sleek-dark-marker .bubba-dark-pin{
+  position:relative;
+  width:28px;
+  height:28px;
+  margin:1px 0 0 4px;
+  border:3px solid #fff;
+  border-radius:50% 50% 50% 0;
+  background:#144400;
+  box-shadow:0 2px 8px rgba(0,0,0,.35);
+  transform:rotate(-45deg);
+  box-sizing:border-box;
+}
+body.bh-directory .custom-sleek-dark-marker .dark-core{
+  position:absolute;
+  width:10px;
+  height:10px;
+  left:6px;
+  top:6px;
+  border-radius:50%;
+  background:#d8e6db;
+}
+body.bh-directory .custom-sleek-dark-marker:hover .bubba-dark-pin{
+  background:#3c8e96;
+}
+
+/* Mobile directory: stacked, usable search and full-width interactive map. */
+@media (max-width:900px){
+ body.bh-directory:not(.bh-calendar-page) .app-shell,
+ body.bh-directory:not(.bh-calendar-page) .directory-layout,
+ body.bh-directory:not(.bh-calendar-page) .directory-results-column{
+   display:block!important;width:100%!important;max-width:100%!important;
+   min-width:0!important;box-sizing:border-box!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) [data-bh-directory-hero-placeholder]{
+   position:relative!important;top:auto!important;max-height:none!important;
+   overflow:visible!important;width:100%!important;min-width:0!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-search{
+   width:100%!important;max-width:100%!important;box-sizing:border-box!important;
+   overflow:visible!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-search-fields{
+   display:grid!important;grid-template-columns:minmax(0,1fr)!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-search .directory-hero-actions,
+ body.bh-directory:not(.bh-calendar-page) .directory-search-advanced-link{
+   display:block!important;visibility:visible!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) #directoryFilters{
+   position:static!important;display:block!important;visibility:visible!important;
+   height:auto!important;max-height:none!important;overflow:visible!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) #advancedFields:not([hidden]){
+   display:block!important;visibility:visible!important;height:auto!important;
+   max-height:none!important;overflow:visible!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-view-actions{
+   display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+   gap:8px!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-view-actions > *{
+   width:100%!important;min-width:0!important;box-sizing:border-box!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) #mapView:not([hidden]){
+   display:block!important;width:100%!important;height:58dvh!important;
+   min-height:360px!important;max-height:none!important;
+ }
+}
+
+/* Full-width photo header above the existing desktop filter/results grid.
+   The directory shell uses a two-column grid, so explicitly span the banner. */
+@media(min-width:901px){
+ body.bh-directory:not(.bh-calendar-page) .app-shell>.bh-directory-banner{
+   grid-column:1 / -1!important;grid-row:1!important;min-width:0!important;
+   width:100%!important;box-sizing:border-box!important;margin:18px 0 8px!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .app-shell>[data-bh-directory-hero-placeholder],
+ body.bh-directory:not(.bh-calendar-page) .app-shell>[data-bh-directory-hero]{
+   grid-column:1!important;grid-row:2!important;min-width:0!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .app-shell>.directory-layout{
+   grid-column:2!important;grid-row:2!important;min-width:0!important;
+   display:block!important;width:100%!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .app-shell>.directory-layout>.directory-results-column{
+   min-width:0!important;width:100%!important;
+ }
+}
+@media(max-width:900px){
+ body.bh-directory:not(.bh-calendar-page) .app-shell>.bh-directory-banner{
+   display:flex!important;width:100%!important;box-sizing:border-box!important;
+   margin:12px 0 18px!important;
+ }
+}
+
+/* Full-width Directory refresh (34014 artwork). Keep search and map JS unchanged. */
+body.bh-directory:not(.bh-calendar-page) .app-shell{
+ box-sizing:border-box!important;width:100%!important;max-width:none!important;
+ padding-left:clamp(14px,2.4vw,44px)!important;padding-right:clamp(14px,2.4vw,44px)!important;
+}
+body.bh-directory:not(.bh-calendar-page) .app-shell>.bh-directory-banner{
+ background-image:linear-gradient(90deg,rgba(239,249,239,.98) 0%,rgba(239,249,239,.87) 37%,rgba(239,249,239,.03) 76%),url('/images/logos/34014-20261020-162343-86fd9f.png')!important;
+ background-position:center!important;background-size:cover!important;
+ width:100%!important;max-width:none!important;box-sizing:border-box!important;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-view-actions{
+ gap:10px!important;margin:14px 0 20px!important;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-view-actions>*{
+ min-height:46px;display:inline-flex;align-items:center;justify-content:center;
+ border-radius:999px!important;padding:10px 16px!important;
+ font-size:clamp(.83rem,1vw,.96rem)!important;line-height:1.3;text-align:center;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-view-actions button[aria-pressed="true"]{
+ background:#174e3b!important;color:#fff!important;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-results-heading{margin-bottom:12px}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-intro h2{font-size:clamp(1.65rem,2.5vw,2.45rem);line-height:1.2;color:#174e3b}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-search,
+body.bh-directory:not(.bh-calendar-page) #directoryFilters{border-radius:22px;box-shadow:0 10px 30px rgba(23,78,59,.07)}
+body.bh-directory:not(.bh-calendar-page) #advancedToggle{min-height:44px;border-radius:14px;font-weight:800}
+body.bh-directory:not(.bh-calendar-page) #advancedFields:not([hidden]){border-radius:18px}
+body.bh-directory:not(.bh-calendar-page) .activity-grid{gap:clamp(12px,1.5vw,22px)}
+body.bh-directory:not(.bh-calendar-page) .activity-card{min-width:0;border-radius:20px;overflow:hidden;box-shadow:0 7px 24px rgba(23,78,59,.08)}
+@media(min-width:901px){
+ body.bh-directory:not(.bh-calendar-page) .app-shell>.bh-directory-banner{grid-column:1/-1!important;grid-row:1!important}
+ body.bh-directory:not(.bh-calendar-page) .app-shell>.directory-layout{min-width:0!important;width:100%!important}
+}
+@media(max-width:900px){
+ body.bh-directory:not(.bh-calendar-page) .app-shell{padding-left:14px!important;padding-right:14px!important}
+ body.bh-directory:not(.bh-calendar-page) .app-shell>.bh-directory-banner{
+  min-height:340px!important;padding:22px 18px 160px!important;
+  background-image:linear-gradient(180deg,rgba(239,249,239,.99) 0%,rgba(239,249,239,.94) 44%,rgba(239,249,239,.02) 100%),url('/images/logos/34014-20261020-162343-86fd9f.png')!important;
+  background-size:cover,auto 100%!important;background-position:center,bottom center!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-banner-copy{max-width:100%!important}
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-view-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;position:relative!important;top:auto!important;z-index:1!important}
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-view-actions>*{min-width:0!important;width:100%!important;min-height:46px!important;padding:10px 8px!important;white-space:normal!important}
+ body.bh-directory:not(.bh-calendar-page) #mapView:not([hidden]){width:100%!important;min-height:350px!important}
+}
+@media(max-width:420px){
+ body.bh-directory:not(.bh-calendar-page) .app-shell{padding-left:10px!important;padding-right:10px!important}
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-view-actions>*{font-size:.82rem!important}
+}
+
+/* Correct the actual desktop grid: banner, search, results are stacked full-width. */
+@media(min-width:901px){
+ body.bh-directory:not(.bh-calendar-page) main.app-shell{
+  display:grid!important;grid-template-columns:minmax(0,1fr)!important;
+  grid-template-rows:auto auto auto!important;gap:18px!important;
+  width:100%!important;max-width:none!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) main.app-shell>.bh-directory-banner{
+  grid-column:1!important;grid-row:1!important;margin:0!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) main.app-shell>[data-bh-directory-hero-placeholder],
+ body.bh-directory:not(.bh-calendar-page) main.app-shell>[data-bh-directory-hero]{
+  grid-column:1!important;grid-row:2!important;min-width:0!important;
+  width:100%!important;max-width:none!important;margin:0!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) main.app-shell>.directory-layout{
+  grid-column:1!important;grid-row:3!important;display:block!important;
+  width:100%!important;max-width:none!important;min-width:0!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .directory-results-column{
+  width:100%!important;max-width:none!important;min-width:0!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-search-fields{
+  display:grid!important;grid-template-columns:minmax(180px,1.7fr) repeat(4,minmax(110px,1fr)) auto!important;
+  gap:10px!important;align-items:stretch!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-view-actions{
+  display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .activity-grid{
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ }
+}
+@media(min-width:901px) and (max-width:1180px){
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-search-fields{
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ }
+}
+@media(max-width:900px){
+ body.bh-directory:not(.bh-calendar-page) main.app-shell{
+  display:flex!important;flex-direction:column!important;gap:14px!important;
+  width:100%!important;max-width:none!important;min-width:0!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) main.app-shell>.bh-directory-banner,
+ body.bh-directory:not(.bh-calendar-page) main.app-shell>[data-bh-directory-hero-placeholder],
+ body.bh-directory:not(.bh-calendar-page) main.app-shell>.directory-layout{
+  width:100%!important;max-width:none!important;min-width:0!important;
+  margin-left:0!important;margin-right:0!important;
+ }
+}
+
+/* Approved Directory mockup: full-width search, compact view tabs, cards + map. */
+body.bh-directory:not(.bh-calendar-page) main.app-shell{max-width:none!important;width:100%!important}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase{min-width:0!important}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase .bh-directory-view-actions{
+ display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;
+ gap:5px!important;padding:5px!important;background:#edf5ed!important;border-radius:19px!important;
+ margin:12px 0 18px!important;position:relative!important;top:auto!important;z-index:2!important;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase .bh-directory-view-actions>*{
+ display:flex!important;justify-content:center!important;align-items:center!important;
+ border:0!important;border-radius:15px!important;min-width:0!important;
+ padding:13px 8px!important;font-weight:800!important;color:#174e3b!important;
+ background:transparent!important;text-decoration:none!important;box-shadow:none!important;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase .bh-directory-view-actions button[aria-pressed="true"]{
+ background:#075b42!important;color:white!important;box-shadow:0 3px 12px #174e3b22!important;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-content-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(285px,29%);gap:22px;align-items:start;min-width:0}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-list-pane{min-width:0}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-map-pane{min-width:0;position:sticky;top:16px;border:1px solid #d8e8dd;border-radius:20px;overflow:hidden;background:#fff;box-shadow:0 8px 24px #174e3b12}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-map-pane-title{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;color:#174e3b}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-map-pane-title a{font-weight:800;font-size:.85rem;color:#08705d}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-map-pane #mapView:not([hidden]){height:550px!important;min-height:400px!important;width:100%!important;border-radius:0!important;margin:0!important}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-list-pane .activity-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:14px!important}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-list-pane .activity-card{min-width:0!important;border:1px solid #e2ebe3!important;border-radius:18px!important;overflow:hidden!important;background:#fff!important;box-shadow:0 7px 22px #174e3b12!important}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-list-pane .activity-card img{max-width:100%}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-search{padding:18px!important;border-radius:20px!important}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-search h2{font-size:clamp(1.1rem,1.8vw,1.55rem)!important}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-search-fields{gap:10px!important}
+body.bh-directory:not(.bh-calendar-page) #advancedFields:not([hidden]){background:#edf6ed!important;padding:14px!important;border-radius:16px!important}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase:has(#results[hidden]) .bh-directory-content-grid{grid-template-columns:minmax(0,1fr)}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase:has(#results[hidden]) .bh-directory-map-pane{position:relative;top:auto}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase:has(#results[hidden]) .bh-directory-map-pane #mapView:not([hidden]){height:65vh!important}
+@media(max-width:1250px) and (min-width:901px){
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-list-pane .activity-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:900px){
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-content-grid{display:flex!important;flex-direction:column!important;gap:12px!important}
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-list-pane,
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-map-pane{width:100%!important;min-width:0!important}
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-map-pane{position:static!important}
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-map-pane:has(#mapView[hidden]){display:none!important}
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-list-pane .activity-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase .bh-directory-view-actions{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:3px!important}
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase .bh-directory-view-actions>*{font-size:.77rem!important;padding:12px 3px!important;min-height:44px!important}
+}
+@media(max-width:540px){
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-list-pane .activity-grid{grid-template-columns:1fr!important}
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase .bh-directory-view-actions{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase .bh-directory-view-actions>*{font-size:.82rem!important}
+}
+
+/* Map-only mode and hidden panes must not leave an empty column. */
+body.bh-directory:not(.bh-calendar-page) .bh-directory-map-pane[hidden]{display:none!important}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-content-grid.is-map-only{grid-template-columns:minmax(0,1fr)!important}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-content-grid.is-map-only .bh-directory-list-pane{display:none!important}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-content-grid.is-map-only .bh-directory-map-pane{position:static!important;top:auto!important;width:100%!important}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-content-grid.is-map-only #mapView{height:min(72vh,740px)!important;min-height:380px!important}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-view-actions a:focus-visible,
+body.bh-directory:not(.bh-calendar-page) .bh-directory-view-actions button:focus-visible{outline:3px solid #f5822c!important;outline-offset:2px}
+@media(max-width:900px){
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-content-grid.is-map-only{display:block!important}
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-content-grid.is-map-only .bh-directory-map-pane{display:block!important}
+}
+
+/* Directory polish after PR 297: reduce search height, balance tabs and cards. */
+body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase .bh-directory-view-actions{
+ width:100%!important;max-width:none!important;box-sizing:border-box!important;
+ grid-template-columns:repeat(5,minmax(0,1fr))!important;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase .bh-directory-view-actions > *{
+ width:100%!important;box-sizing:border-box!important;white-space:nowrap!important;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #advancedFields:not([hidden]){
+ padding:16px!important;background:#f1f7ee!important;border:1px solid #dbe8dc!important;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #advancedFields:not([hidden]) .directory-filter-fields,
+body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #advancedFields:not([hidden]) .bh-advanced-filter-fields{
+ display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ gap:12px 16px!important;align-items:end!important;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #advancedFields:not([hidden]) .directory-filter-fields > *,
+body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #advancedFields:not([hidden]) .bh-advanced-filter-fields > *{
+ min-width:0!important;width:100%!important;max-width:100%!important;margin:0!important;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #advancedFields:not([hidden]) :is(input,select,button){
+ max-width:100%;box-sizing:border-box;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #advancedFields:not([hidden]) :is(input:not([type="checkbox"]):not([type="radio"]),select){
+ min-height:43px!important;
+}
+body.bh-directory:not(.bh-calendar-page) #advancedToggle{
+ min-height:42px!important;padding:9px 18px!important;font-size:.91rem!important;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-content-grid{
+ grid-template-columns:minmax(0,1fr) minmax(340px,32%)!important;gap:20px!important;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-list-pane .activity-card .activity-image{
+ overflow:hidden!important;aspect-ratio:16/9!important;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-list-pane .activity-card .activity-image img{
+ width:100%!important;height:100%!important;object-fit:cover!important;display:block!important;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-list-pane .activity-card .activity-body{
+ display:flex!important;flex-direction:column!important;gap:7px!important;padding:13px!important;min-width:0!important;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-list-pane .activity-card .activity-meta{
+ font-size:.7rem!important;line-height:1.4!important;letter-spacing:.02em!important;overflow-wrap:anywhere!important;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-list-pane .activity-card h3{
+ font-size:clamp(1rem,1.25vw,1.2rem)!important;line-height:1.25!important;margin:0!important;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-list-pane .activity-card p{
+ font-size:.82rem!important;line-height:1.45!important;margin:0!important;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-list-pane .activity-card .activity-footer{
+ margin-top:auto!important;display:flex!important;align-items:center!important;justify-content:space-between!important;
+ gap:8px!important;flex-wrap:wrap!important;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-list-pane .activity-card .bh-save{
+ min-height:36px!important;padding:7px 11px!important;font-size:.78rem!important;
+}
+@media(max-width:1250px) and (min-width:901px){
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-content-grid{grid-template-columns:minmax(0,1fr) minmax(300px,34%)!important}
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #advancedFields:not([hidden]) .directory-filter-fields,
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #advancedFields:not([hidden]) .bh-advanced-filter-fields{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ }
+}
+@media(max-width:900px){
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-content-grid{display:flex!important;flex-direction:column!important;gap:12px!important}
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #advancedFields:not([hidden]) .directory-filter-fields,
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #advancedFields:not([hidden]) .bh-advanced-filter-fields{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ }
+}
+@media(max-width:540px){
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #advancedFields:not([hidden]) .directory-filter-fields,
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #advancedFields:not([hidden]) .bh-advanced-filter-fields{
+  grid-template-columns:minmax(0,1fr)!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase .bh-directory-view-actions{
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-list-pane .activity-card h3{font-size:1.12rem!important}
+}
+
+/* PR 299 follow-up: the actual shared filter markup uses #directoryFilters.
+   Override the old high-specificity sidebar flex-column rule. */
+@media(min-width:901px){
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #directoryFilters .directory-filter-fields{
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:14px 18px!important;align-items:end!important;width:100%!important;max-width:none!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #directoryFilters .directory-advanced-section{
+  display:contents!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #directoryFilters .directory-advanced-filter-field,
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #directoryFilters .directory-nearby-control{
+  width:100%!important;max-width:none!important;min-width:0!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #directoryFilters .directory-filter-actions{
+  grid-column:1/-1!important;display:flex!important;flex-wrap:wrap!important;
+  justify-content:flex-end!important;gap:10px!important;margin-top:4px!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #directoryFilters .directory-filter-actions button{
+  width:auto!important;min-width:145px!important;
+ }
+}
+@media(min-width:601px) and (max-width:900px){
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #directoryFilters .directory-filter-fields{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #directoryFilters .directory-advanced-section{display:contents!important}
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #directoryFilters .directory-filter-actions{grid-column:1/-1!important}
+}
+@media(max-width:600px){
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #directoryFilters .directory-filter-fields{
+  display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:12px!important;
+ }
+}
+
+/* Fix the real nested filter section, not just its parent. */
+@media(min-width:901px){
+ body.bh-directory:not(.bh-calendar-page) #advancedFields:not([hidden]) #directoryFilters .directory-advanced-section,
+ body.bh-directory:not(.bh-calendar-page) #advancedFields:not([hidden]) .directory-advanced-section{
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:14px 18px!important;align-items:end!important;width:100%!important;
+  grid-column:1/-1!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) #advancedFields:not([hidden]) .directory-advanced-section > *{
+  width:100%!important;min-width:0!important;max-width:none!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) #advancedFields:not([hidden]) .directory-filter-fields{
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:14px 18px!important;
+ }
+}
+@media(min-width:601px) and (max-width:900px){
+ body.bh-directory:not(.bh-calendar-page) #advancedFields:not([hidden]) .directory-advanced-section{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important;grid-column:1/-1!important;
+ }
+}
+@media(max-width:600px){
+ body.bh-directory:not(.bh-calendar-page) #advancedFields:not([hidden]) .directory-advanced-section{
+  display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:12px!important;
+ }
+}
+body.bh-directory:not(.bh-calendar-page) .directory-planner-embed{min-width:0;background:#fff;border:1px solid #dce8df;border-radius:20px;padding:14px;overflow:hidden}
+body.bh-directory:not(.bh-calendar-page) .directory-planner-embed[hidden]{display:none!important}
+body.bh-directory:not(.bh-calendar-page) .directory-planner-embed .bh-directory-embedded-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+body.bh-directory:not(.bh-calendar-page) .directory-planner-embed .bh-directory-embedded-heading h2{margin:0 0 12px;color:#174e3b}
+body.bh-directory:not(.bh-calendar-page) .directory-planner-embed iframe{width:100%;height:75vh;min-height:520px;border:0;border-radius:12px}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase:has(#calendarView:not([hidden])) .bh-directory-content-grid,
+body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase:has(#directoryPlannerView:not([hidden])) .bh-directory-content-grid,
+body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase:has(#directoryEventsView:not([hidden])) .bh-directory-content-grid{display:none!important}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase .bh-directory-view-actions button[aria-pressed="true"]{background:#075b42!important;color:#fff!important}
+
+/* Higher specificity than PR 300's display:contents override. */
+@media(min-width:901px){
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #directoryFilters #advancedFields:not([hidden]) .directory-advanced-section,
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #advancedFields:not([hidden]) #directoryFilters .directory-advanced-section{
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:14px 18px!important;grid-column:1/-1!important;
+ }
+}
+@media(min-width:601px) and (max-width:900px){
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #directoryFilters #advancedFields:not([hidden]) .directory-advanced-section{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important;
+ }
+}
+
+/* PR 301 follow-up: tab contents must occupy the whole Directory results column.
+   Previous 29%-wide map pane remained narrow in map-only view. */
+body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase .bh-directory-content-grid.is-map-only{
+ display:block!important;width:100%!important;max-width:none!important;
+ grid-template-columns:none!important;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase .bh-directory-content-grid.is-map-only .bh-directory-map-pane{
+ display:block!important;width:100%!important;max-width:none!important;min-width:0!important;
+ position:static!important;top:auto!important;float:none!important;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase .bh-directory-content-grid.is-map-only .bh-directory-map-pane #mapView:not([hidden]){
+ width:100%!important;height:min(72vh,760px)!important;min-height:430px!important;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase #directoryPlannerView:not([hidden]),
+body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase #calendarView:not([hidden]),
+body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase #directoryEventsView:not([hidden]){
+ display:block!important;box-sizing:border-box!important;width:100%!important;max-width:none!important;
+ min-width:0!important;grid-column:1/-1!important;float:none!important;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase #directoryPlannerView:not([hidden]) iframe{
+ display:block!important;width:100%!important;max-width:none!important;height:760px;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase .bh-directory-view-actions{
+ width:100%!important;max-width:none!important;
+}
+@media(max-width:900px){
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase .bh-directory-content-grid.is-map-only .bh-directory-map-pane #mapView:not([hidden]){
+  height:65vh!important;min-height:360px!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase #directoryPlannerView:not([hidden]) iframe{
+  height:760px;min-height:560px!important;
+ }
+}
+
+/* Keep the Advanced Search action buttons on a single row on desktop. */
+@media(min-width:701px){
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #directoryFilters .directory-filter-fields > .directory-filter-actions,
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #advancedFields:not([hidden]) .directory-filter-actions{
+  display:flex!important;flex-direction:row!important;grid-column:1/-1!important;
+  justify-content:flex-end!important;align-items:center!important;gap:12px!important;
+  width:100%!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #advancedFields:not([hidden]) .directory-filter-actions > button{
+  width:auto!important;min-width:160px!important;max-width:230px!important;margin:0!important;
+ }
+}
+
+/* Seamless Directory Planner: remove frame card and let JS match content height. */
+body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase #directoryPlannerView:not([hidden]){
+ border:0!important;background:transparent!important;box-shadow:none!important;
+ padding:0!important;margin:0!important;overflow:visible!important;
+}
+body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase #directoryPlannerView:not([hidden]) iframe{
+ display:block!important;border:0!important;border-radius:0!important;background:transparent!important;
+ width:100%!important;max-width:100%!important;min-height:520px!important;
+ height:var(--bh-planner-frame-height,760px);
+}
+
+/* Directory 2.0: fixed desktop filter sidebar + full-width active content panel. */
+@media(min-width:1001px){
+ body.bh-directory:not(.bh-calendar-page) main.app-shell{
+  display:grid!important;grid-template-columns:minmax(265px,300px) minmax(0,1fr)!important;
+  grid-template-rows:auto minmax(0,1fr)!important;column-gap:22px!important;
+  align-items:start!important;max-width:1600px!important;margin-inline:auto!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) main.app-shell>.bh-directory-banner{
+  grid-column:1/-1!important;grid-row:1!important;width:100%!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) main.app-shell>[data-bh-directory-hero-placeholder]{
+  grid-column:1!important;grid-row:2!important;min-width:0!important;
+  width:100%!important;max-width:none!important;margin:0!important;
+  position:sticky!important;top:12px!important;align-self:start!important;z-index:5!important;
+  max-height:calc(100vh - 24px)!important;overflow-y:auto!important;scrollbar-width:thin;
+ }
+ body.bh-directory:not(.bh-calendar-page) main.app-shell>.directory-layout{
+  grid-column:2!important;grid-row:2!important;min-width:0!important;
+  width:100%!important;max-width:none!important;margin:0!important;display:block!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-search{
+  padding:16px!important;border-radius:20px!important;box-shadow:0 5px 22px #174e3b13!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-search-fields,
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #directoryFilters .directory-filter-fields,
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #advancedFields:not([hidden]) .directory-advanced-section{
+  display:grid!important;grid-template-columns:minmax(0,1fr)!important;
+  gap:9px!important;width:100%!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-search-fields > *,
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #directoryFilters .directory-filter-fields > *,
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #advancedFields:not([hidden]) .directory-advanced-section > *{
+  width:100%!important;max-width:none!important;min-width:0!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #directoryFilters .directory-filter-actions{
+  display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #directoryFilters .directory-filter-actions button{
+  width:100%!important;min-width:0!important;max-width:none!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-content-grid{
+  grid-template-columns:minmax(0,1fr) minmax(260px,32%)!important;gap:14px!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-list-pane .activity-grid{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase .bh-directory-view-actions{
+  margin-top:0!important;
+ }
+}
+@media(min-width:1001px) and (max-width:1180px){
+ body.bh-directory:not(.bh-calendar-page) main.app-shell{
+  grid-template-columns:minmax(230px,260px) minmax(0,1fr)!important;column-gap:14px!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-content-grid{
+  grid-template-columns:minmax(0,1fr)!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-map-pane{display:none!important}
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-content-grid.is-map-only .bh-directory-map-pane{display:block!important}
+}
+@media(max-width:1000px){
+ body.bh-directory:not(.bh-calendar-page) main.app-shell{
+  display:flex!important;flex-direction:column!important;align-items:stretch!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) main.app-shell>[data-bh-directory-hero-placeholder]{
+  width:100%!important;position:static!important;max-height:none!important;overflow:visible!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) main.app-shell>.directory-layout{
+  width:100%!important;min-width:0!important;max-width:none!important;
+ }
+}
+body.bh-directory:not(.bh-calendar-page) #calendarView:not([hidden]){
+ min-height:480px!important;
+}
+body.bh-directory:not(.bh-calendar-page) .directory-calendar-week-grid .directory-calendar-day{
+ min-width:0!important;
+}
+
+/* Let dense weekly calendar scroll inside the workspace, never the whole page. */
+body.bh-directory:not(.bh-calendar-page) #calendarView:not([hidden]){overflow-x:auto!important;scrollbar-width:thin}
+body.bh-directory:not(.bh-calendar-page) #calendarView .directory-calendar-week-grid{min-width:700px}
+body.bh-directory:not(.bh-calendar-page) #calendarView .directory-calendar-event{
+ overflow-wrap:anywhere!important;
+}
+@media(min-width:1001px){
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase #directoryPlannerView:not([hidden]),
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase #calendarView:not([hidden]),
+ body.bh-directory:not(.bh-calendar-page) .bh-directory-showcase #directoryEventsView:not([hidden]){
+  width:100%!important;max-width:none!important;min-width:0!important;
+ }
+}
+
+/* Directory weekly calendar: explicit grid styles (were missing on this page). */
+body.bh-directory:not(.bh-calendar-page) #calendarView .directory-calendar-head{
+ display:flex!important;align-items:center!important;justify-content:space-between!important;
+ gap:12px!important;flex-wrap:wrap!important;margin:4px 0 16px!important;
+}
+body.bh-directory:not(.bh-calendar-page) #calendarView .directory-calendar-head>div:first-child{
+ display:flex!important;flex-direction:column!important;gap:5px!important;
+}
+body.bh-directory:not(.bh-calendar-page) #calendarView .directory-calendar-head strong{
+ font-size:1.2rem!important;color:#174e3b!important;
+}
+body.bh-directory:not(.bh-calendar-page) #calendarView .directory-calendar-head span{
+ font-size:.78rem!important;color:#416651!important;
+}
+body.bh-directory:not(.bh-calendar-page) #calendarView .directory-calendar-actions{
+ display:flex!important;gap:7px!important;align-items:center!important;
+}
+body.bh-directory:not(.bh-calendar-page) #calendarView .directory-calendar-actions button{
+ min-height:38px!important;padding:7px 12px!important;border-radius:999px!important;
+ background:#e3eee5!important;color:#174e3b!important;border:0!important;
+ font-weight:800!important;cursor:pointer!important;
+}
+body.bh-directory:not(.bh-calendar-page) #calendarView .directory-calendar-week-grid{
+ display:grid!important;grid-template-columns:repeat(7,minmax(100px,1fr))!important;
+ gap:5px!important;min-width:735px!important;width:100%!important;
+}
+body.bh-directory:not(.bh-calendar-page) #calendarView .directory-calendar-weekday{
+ display:flex!important;justify-content:center!important;align-items:center!important;gap:6px!important;
+ background:#174e3b!important;color:white!important;padding:11px 5px!important;
+ border-radius:10px 10px 3px 3px!important;font-size:.85rem!important;font-weight:800!important;
+}
+body.bh-directory:not(.bh-calendar-page) #calendarView .directory-calendar-day{
+ background:#f3f8f2!important;border:1px solid #dce9df!important;
+ border-radius:4px 4px 12px 12px!important;padding:8px!important;
+ min-height:195px!important;min-width:0!important;overflow-wrap:anywhere!important;
+}
+body.bh-directory:not(.bh-calendar-page) #calendarView .directory-calendar-day.is-today{
+ background:#fff8e9!important;border-color:#f3b873!important;
+}
+body.bh-directory:not(.bh-calendar-page) #calendarView .directory-calendar-date{
+ font-size:.7rem!important;color:#416651!important;margin-bottom:8px!important;
+}
+body.bh-directory:not(.bh-calendar-page) #calendarView .directory-calendar-events{
+ display:flex!important;flex-direction:column!important;gap:6px!important;
+}
+body.bh-directory:not(.bh-calendar-page) #calendarView .directory-calendar-event{
+ display:flex!important;flex-direction:column!important;gap:3px!important;
+ background:white!important;border:1px solid #d9e8dc!important;border-left:3px solid #278c83!important;
+ border-radius:9px!important;padding:8px!important;text-decoration:none!important;
+ font-size:.73rem!important;color:#174e3b!important;
+}
+body.bh-directory:not(.bh-calendar-page) #calendarView .directory-calendar-event strong{
+ font-size:.76rem!important;line-height:1.3!important;
+}
+body.bh-directory:not(.bh-calendar-page) #calendarView .directory-calendar-empty{
+ color:#6d8477!important;font-size:.74rem!important;
+}
+@media(min-width:1001px){
+ body.bh-directory:not(.bh-calendar-page) main.app-shell>[data-bh-directory-hero-placeholder]{
+  overflow-x:hidden!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #directoryFilters .directory-filter-actions,
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #advancedFields:not([hidden]) .directory-filter-actions{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:8px!important;width:100%!important;min-width:0!important;
+  justify-content:stretch!important;box-sizing:border-box!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #directoryFilters .directory-filter-actions>*,
+ body.bh-directory:not(.bh-calendar-page) .directory-hero-expanded-filters #advancedFields:not([hidden]) .directory-filter-actions>button{
+  display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;
+  padding:10px 5px!important;box-sizing:border-box!important;font-size:.79rem!important;
+ }
+}
+
+body.bh-directory:not(.bh-calendar-page) #directoryPlannerView .bh-planner-auth-notice[hidden],
+body.bh-directory:not(.bh-calendar-page) #directoryPlannerView iframe[hidden]{display:none!important}
+body.bh-directory:not(.bh-calendar-page) #directoryPlannerView .bh-planner-auth-notice:not([hidden]){
+ display:block!important;background:#edf6ef!important;border:1px solid #d5e5d8!important;
+ border-radius:20px!important;padding:28px!important;margin:16px 0!important;text-align:center!important;
+}
+body.bh-directory:not(.bh-calendar-page) #directoryPlannerView .bh-planner-auth-notice h3{
+ margin:0 0 8px!important;color:#174e3b!important;
+}
+body.bh-directory:not(.bh-calendar-page) #directoryPlannerView .bh-planner-auth-notice p{
+ margin:0 0 18px!important;
+}
+
+/* Guest Planner remains usable; warn that local-only plans are not backed up. */
+body.bh-directory:not(.bh-calendar-page) #directoryPlannerView .bh-planner-guest-warning{
+ display:block!important;background:#fff8e9!important;border:1px solid #f0d6a5!important;
+ border-radius:16px!important;padding:15px 18px!important;margin:10px 0 16px!important;
+ color:#174e3b!important;line-height:1.5!important;
+}
+body.bh-directory:not(.bh-calendar-page) #directoryPlannerView .bh-planner-guest-warning[hidden]{display:none!important}
+body.bh-directory:not(.bh-calendar-page) #directoryPlannerView .bh-planner-guest-warning strong{display:block!important;margin-bottom:4px!important}
+body.bh-directory:not(.bh-calendar-page) #directoryPlannerView .bh-planner-guest-warning p{margin:0!important}
+body.bh-directory:not(.bh-calendar-page) #directoryPlannerView .bh-planner-guest-warning a{color:#075b42!important;font-weight:800!important;text-decoration:underline!important}
+
+/* Native Planner: no iframe, no second website, no duplicate navigation. */
+body.bh-directory:not(.bh-calendar-page) #directoryPlannerView .bh-directory-native-planner{
+ display:block!important;width:100%!important;max-width:none!important;
+ min-width:0!important;background:transparent!important;padding:0!important;margin:0!important;
+}
+body.bh-directory:not(.bh-calendar-page) #directoryPlannerView .bh-directory-native-planner .planner-hero-actions{
+ display:flex!important;flex-wrap:wrap!important;gap:9px!important;
+ justify-content:flex-end!important;margin:0 0 16px!important;
+}
+body.bh-directory:not(.bh-calendar-page) #directoryPlannerView .bh-directory-native-planner .planner-shell{
+ width:100%!important;max-width:none!important;min-width:0!important;margin:0!important;
+ box-sizing:border-box!important;
+}
+body.bh-directory:not(.bh-calendar-page) #directoryPlannerView .bh-directory-native-planner .planner-print-sheet{
+ display:none!important;
+}
+@media(max-width:700px){
+ body.bh-directory:not(.bh-calendar-page) #directoryPlannerView .bh-directory-native-planner .planner-hero-actions{
+  justify-content:stretch!important;
+ }
+ body.bh-directory:not(.bh-calendar-page) #directoryPlannerView .bh-directory-native-planner .planner-hero-actions>*{
+  flex:1 1 140px!important;
+ }
+}
+
+/* Full-width activity cards; the map is available only through the Map tab. */
+body.bh-directory .bh-directory-content-grid{display:block!important;grid-template-columns:minmax(0,1fr)!important;width:100%;min-width:0}
+body.bh-directory .bh-directory-list-pane{width:100%;max-width:none!important;min-width:0}
+body.bh-directory .bh-directory-map-pane{display:none!important}
+body.bh-directory #results.activity-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:16px;width:100%;min-width:0}
+body.bh-directory #results .activity-card{min-width:0;width:100%;max-width:none;overflow:hidden}
+body.bh-directory #results .activity-body{min-width:0;overflow-wrap:anywhere}
+body.bh-directory #results .activity-meta{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;font-size:.78rem}
+body.bh-directory #results .activity-card h3{overflow-wrap:break-word;word-break:normal}
+body.bh-directory #mapView:not([hidden]){display:block!important;width:100%;height:min(70vh,680px);min-height:380px}
+@media(max-width:1050px){body.bh-directory #results.activity-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr))}}
+@media(max-width:600px){body.bh-directory #results.activity-grid{grid-template-columns:minmax(0,1fr);gap:14px}body.bh-directory .directory-layout{min-width:0}body.bh-directory #results .activity-card{max-width:100%}}
+
+/* Calendar AM/PM control */
+.bh-directory .directory-calendar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bh-directory .directory-calendar-actions label{font-size:.85rem;font-weight:800;color:#174e3b}
+.bh-directory #directoryCalendarTime{min-height:39px;max-width:210px;border:1px solid #cfe3d2;border-radius:12px;background:#fff;color:#174e3b;padding:7px 10px;font:700 .85rem Quicksand,sans-serif}
+@media(max-width:600px){.bh-directory #directoryCalendarTime{max-width:160px}}
+
+
+/* Main directory search: postcode and distance belong to the same compact form. */
+body.bh-directory .directory-hero-search-fields .bh-search-location-fields{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:8px;min-width:0;width:100%}
+body.bh-directory .directory-hero-search-fields .bh-search-location-fields>label{display:flex;align-items:center;gap:10px;min-width:0;width:100%;box-sizing:border-box}
+body.bh-directory .directory-hero-search-fields .bh-search-location-fields input,body.bh-directory .directory-hero-search-fields .bh-search-location-fields select{width:100%;min-width:0;max-width:100%;box-sizing:border-box;background:transparent;border:0;box-shadow:none;font:inherit}
+body.bh-directory .directory-hero-search-fields .bh-search-location-fields input{padding:0}
+body.bh-directory .directory-hero-search-fields .bh-search-location-fields input::placeholder{font-size:13px}
+body.bh-directory .directory-hero-search-fields .bh-search-submit{width:100%;min-width:0}
+body.bh-directory .directory-hero-search-fields .bh-search-location-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+body.bh-directory .directory-hero-search-fields .bh-search-location-actions button{flex:1 1 auto;min-width:0;padding:10px 12px;font-size:13px;line-height:1.3}
+body.bh-directory .directory-hero-search-fields #bhPostcodeClear{background:#edf3ed;color:#25543e}
+body.bh-directory .directory-hero-search-fields .bh-search-location-status:empty{display:none}
+body.bh-directory .directory-hero-search-fields .bh-search-location-status{font-size:12px;color:#285d48;line-height:1.5}
+@media(max-width:380px){body.bh-directory .directory-hero-search-fields .bh-search-location-fields{grid-template-columns:minmax(0,1fr)}}
+
+.bh-location-prompt[hidden]{display:none!important}.bh-location-prompt{display:grid;gap:10px;padding:14px;margin:0 0 12px;border:1px solid #cfe3d6;border-radius:16px;background:#edf7f0;color:#174e3b}.bh-location-prompt strong{font-size:15px}.bh-location-prompt p{font-size:12px;margin:5px 0 0;line-height:1.5}.bh-location-prompt-actions{display:flex;flex-wrap:wrap;gap:8px}.bh-location-prompt-actions button{font-size:12px;padding:9px 12px}

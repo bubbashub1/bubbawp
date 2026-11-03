@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Planner Pro · Bubba Hub</title>
+<meta name="description" content="Bubba Hub Pro family planning tools.">
+<link rel="stylesheet" href="assets/css/styles.css"><link rel="stylesheet" href="assets/css/planner.css">
+<link rel="stylesheet" href="assets/css/planner-pro.css"><link rel="stylesheet" href="/assets/css/family-tools-v2.css">
+</head>
+<body class="bh-planner-pro-v2">
+<header class="site-header">
+  <a class="brand" href="index.html" aria-label="Bubba Hub home"><img class="brand-logo" src="/wp-content/uploads/logo/logoheader.png" alt="Bubba Hub"></a>
+  <nav class="main-nav" aria-label="Main navigation">
+    <a href="/directory.html">Find activities</a><a href="/my-hub.html">My Hub</a><a href="/help-support.html">Support &amp; Guidance</a><a href="/leader.html">Class Leaders</a><a href="/account.html">My Account</a>
+  </nav>
+  <a class="button button-soft" href="/planner.html">My Planner</a>
+</header>
+
+<main class="app-shell planner-pro-page">
+  <section class="pro-hero">
+    <div>
+      <span class="eyebrow">Bubba Hub Pro</span>
+      <h1>Family Planner Pro</h1>
+      <p>Build your family plans your way — with separate planners, child-focused planning, reminders, activity lists and more.</p>
+    </div>
+    <div class="pro-hero-actions">
+      <a class="button button-primary" href="/planner.html">← Back to My Planner</a>
+      <button class="button button-soft" id="addPlannerTop" type="button">＋ New planner</button>
+    </div>
+  </section>
+
+  <div class="pro-dashboard">
+    <aside class="pro-sidebar" aria-label="Planner Pro sections">
+      <div class="pro-sidebar-heading"><span class="pro-icon">✦</span><div><strong>Planner Pro</strong><small>Your planning tools</small></div></div>
+      <div class="pro-mobile-jump">
+        <label for="proJumpTo">Jump to</label>
+        <select id="proJumpTo" aria-label="Jump to Planner Pro section">
+          <option value="">Choose a section…</option>
+          <option value="planners">Planners</option>
+          <option value="family">Family</option>
+          <option value="sharing">Sharing</option>
+          <option value="month">Calendar View</option>
+          <option value="day-plan">Plan a day</option>
+          <option value="notes">Notes & reminders</option>
+          <option value="activity-lists">Activity lists</option><option value="favourites">Favourites</option>
+          <option value="calendars">Calendars</option>
+        </select>
+      </div>
+      <nav class="pro-nav" aria-label="Pro planner sections">
+        <a href="#planners" data-pro-section="planners" class="is-active">▦ <span>Planners</span></a>
+        <a href="#family" data-pro-section="family">👨‍👩‍👧 <span>Family</span></a>
+        <a href="#sharing" data-pro-section="sharing">↗ <span>Sharing</span></a>
+        <a href="#month" data-pro-section="month">▤ <span>Calendar View</span></a>
+        <a href="#day-plan" data-pro-section="day-plan">☀ <span>Plan a day</span></a>
+        <a href="#notes" data-pro-section="notes">📝 <span>Notes & reminders</span></a>
+        <a href="#activity-lists" data-pro-section="activity-lists">☷ <span>Activity lists</span></a><a href="#favourites" data-pro-section="favourites">♡ <span>Favourites</span></a>
+        <a href="#calendars" data-pro-section="calendars">📅 <span>Calendars</span></a>
+      </nav>
+      <a class="pro-sidebar-back" href="/planner.html">← Back to My Planner</a>
+    </aside>
+    <div class="pro-content">
+  <section class="pro-section" id="planners">
+    <div class="pro-section-head"><div><span class="eyebrow">Your planning spaces</span><h2>Multiple planners</h2><p>Create separate plans for family life, school, holidays or a particular child.</p></div><button class="button button-primary" id="addPlanner" type="button">＋ Create planner</button></div>
+    <div class="pro-planner-layout">
+      <div class="pro-planner-list" id="proPlannerList"></div>
+      <aside class="pro-side-card"><span class="pro-icon">▦</span><h3>One family, different plans</h3><p>Keep everyday activities separate from school planning, holidays or a child's own schedule.</p><ul><li>Choose a planner when adding activities</li><li>Keep planners private or share them</li><li>Switch between planners without losing your main family plan</li></ul></aside>
+    </div>
+  </section>
+
+  <section class="pro-section" id="family">
+    <div class="pro-section-head"><div><span class="eyebrow">People</span><h2>Plans for your family</h2><p>Keep plans focused on the people they matter to and make your family week easier to scan.</p></div><button class="button button-primary" id="addFamily" type="button">＋ Add family member</button></div>
+    <div class="pro-family-grid" id="familyGrid"></div>
+  </section>
+
+  <section class="pro-section" id="sharing">
+    <div class="pro-section-head"><div><span class="eyebrow">Share safely</span><h2>Shared planners</h2><p>Create a view-only link for grandparents, carers or co-parents without giving them your account.</p></div></div>
+    <div class="pro-share-layout"><div class="pro-share-list" id="shareList"></div><aside class="pro-side-card"><span class="pro-icon">↗</span><h3>Simple sharing</h3><p>Choose a planner, create a private link and decide whether it is view-only.</p><button class="button button-soft" id="createShare" type="button">＋ Create share link</button></aside></div>
+  </section>
+
+  <section class="pro-section" id="month">
+    <div class="pro-section-head"><div><span class="eyebrow">Your planner calendar</span><h2>Calendar</h2><p>Select a planner first, then switch between list, day, week and month views.</p></div></div>
+    <div class="pro-calendar-picker">
+      <label for="proCalendarPlanner">Planner</label>
+      <select id="proCalendarPlanner" aria-label="Select planner"></select>
+    </div>
+    <div class="pro-calendar-toolbar">
+      <div class="pro-calendar-views" role="tablist" aria-label="Calendar view">
+        <button type="button" class="pro-calendar-view is-active" data-calendar-view="list">List</button>
+        <button type="button" class="pro-calendar-view" data-calendar-view="day">Day</button>
+        <button type="button" class="pro-calendar-view" data-calendar-view="week">Week</button>
+        <button type="button" class="pro-calendar-view" data-calendar-view="month">Month</button>
+      </div>
+      <div class="pro-calendar-nav">
+        <button class="button button-soft" id="prevMonth" type="button" aria-label="Previous">‹</button>
+        <button class="button button-soft" id="calendarToday" type="button">Today</button>
+        <strong id="monthLabel"></strong>
+        <button class="button button-soft" id="nextMonth" type="button" aria-label="Next">›</button>
+      </div>
+    </div>
+    <div id="proCalendar" class="pro-calendar-content" aria-live="polite"></div>
+    <div class="pro-print-actions">
+      <button class="button button-soft" id="printMonth" type="button">🖨️ Print calendar</button>
+    </div>
+  </section>
+
+  <section class="pro-section" id="day-plan">
+    <div class="pro-section-head"><div><span class="eyebrow">Make a day work</span><h2>Plan a day</h2><p>Put activities, travel time and preparation into a simple sequence.</p></div><button class="button button-primary" id="addDayPlan" type="button">＋ Add to day</button></div>
+    <div class="pro-day-plan" id="dayPlan"></div>
+  </section>
+
+  <section class="pro-section" id="notes">
+    <div class="pro-section-head"><div><span class="eyebrow">Little things that matter</span><h2>Notes &amp; reminders</h2><p>Keep booking prompts, what-to-bring notes and preparation reminders alongside your plans.</p></div><button class="button button-primary" id="addNote" type="button">＋ Add note</button></div>
+    <div class="pro-notes-grid" id="notesGrid"></div>
+  </section>
+
+  <section class="pro-section" id="activity-lists">
+    <div class="pro-section-head"><div><span class="eyebrow">Curated family ideas</span><h2>My activity lists</h2><p>Build reusable lists for each child, rainy days, weekends, holidays or activities you want to try.</p></div><button class="button button-primary" id="addActivityList" type="button">＋ New activity list</button></div>
+    <div class="pro-planner-list" id="activityListsGrid"></div>
+  </section>
+
+  <section class="pro-section" id="favourites">
+    <div class="pro-section-head"><div><span class="eyebrow">Ready when you are</span><h2>Favourites</h2><p>Your saved activities are ready to drop into a planner when dates become available.</p></div><a class="button button-soft" href="directory.html?saved=1">Browse saved activities</a></div>
+    <div class="pro-favourites-grid" id="favouritesGrid"></div>
+  </section>
+
+  <section class="pro-section" id="calendars">
+    <div class="pro-section-head"><div><span class="eyebrow">Keep everyone in sync</span><h2>Shared calendars</h2><p>Keep different planning spaces separate while choosing which calendar you want to share.</p></div></div>
+    <div class="pro-calendar-grid">
+      <article class="pro-calendar-card is-active"><span>📅</span><div><h3>Family</h3><p>Everyday activities and shared family plans.</p></div><b>Active</b></article>
+      <article class="pro-calendar-card"><span>🎓</span><div><h3>School &amp; clubs</h3><p>School events, clubs, appointments and term dates.</p></div><button class="pro-text-button" type="button" data-calendar-action="school">Set up</button></article>
+      <article class="pro-calendar-card"><span>✈️</span><div><h3>Holidays</h3><p>Trips, travel days and holiday activities.</p></div><button class="pro-text-button" type="button" data-calendar-action="holiday">Set up</button></article>
+    </div>
+  </section>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer"><div class="site-footer-grid"><div class="site-footer-brand"><a href="index.html" class="site-footer-logo" aria-label="Bubba Hub home"><img src="/wp-content/uploads/logo/logoheader.png" alt="Bubba Hub"></a><div class="site-footer-brand-copy"><a href="index.html" class="site-footer-title">Bubba Hub</a><p>Find, plan &amp; book family activities across Devon &amp; Cornwall.</p></div></div><div class="site-footer-column"><h2>Main menu</h2><nav class="site-footer-links"><a href="/directory.html">Find activities</a><a href="/my-hub.html">My Hub</a><a href="/planner.html">Planner</a><a href="/account.html">Account</a></nav></div><div class="site-footer-column"><h2>Explore</h2><nav class="site-footer-links"><a href="/events.html">Events</a><a href="/venues.html">Venues</a><a href="/calendar.html">Calendar</a></nav></div><div class="site-footer-column"><h2>Legal &amp; contact</h2><nav class="site-footer-links"><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms &amp; Conditions</a><a href="mailto:contact@bubbahub.co.uk">Contact Bubba Hub</a></nav></div></div><div class="site-footer-bottom"><span>&copy; 2026 Bubba Hub</span><span>Devon &amp; Cornwall</span></div></footer>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/planner-pro.js"></script>
+</body>
+</html>

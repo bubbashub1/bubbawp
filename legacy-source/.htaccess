@@ -1,0 +1,140 @@
+DirectoryIndex index.html index.php
+
+RewriteEngine On
+
+# Canonical host: send www traffic to the same Bubba Hub homepage and paths.
+# Keep HTTPS and preserve the requested path/query string.
+RewriteCond %{HTTP_HOST} ^www\.bubbahub\.co\.uk$ [NC]
+RewriteRule ^ https://bubbahub.co.uk%{REQUEST_URI} [R=301,L,NE]
+
+# Revalidate page documents after deployments; do not cache personalised responses.
+<IfModule mod_headers.c>
+  <FilesMatch "\\.(html|htm)$">
+    Header always set Cache-Control "no-cache, must-revalidate, max-age=0"
+  </FilesMatch>
+  <FilesMatch "^(auth|stripe-checkout|my-hub)\\.php$">
+    Header always set Cache-Control "no-store"
+  </FilesMatch>
+</IfModule>
+# Development/launch cache control: always revalidate CSS and JavaScript.
+# This prevents phones and CDNs from keeping an older Bubba Hub build.
+<IfModule mod_headers.c>
+  <FilesMatch "\\.(css|js)$">
+    Header set Cache-Control "no-cache, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+  </FilesMatch>
+</IfModule>
+
+RewriteBase /
+
+# Allow WordPress to resolve the three Expo Forminator pages without
+# changing the custom Bubba Hub homepage or activity URL routing.
+RewriteRule ^events/(expo-banner-booking|raffle-entry|sponsor-bubba-hub)/?$ index.php [L,QSA]
+
+# The volunteer interest form is a WordPress/Forminator page, not an activity slug.
+RewriteRule ^volunteer-interest/?$ index.php [L,QSA]
+
+# Serve the custom homepage before WordPress can redirect the root request.
+RewriteRule ^$ index.html [L]
+
+# Treat /index and /index/ as the homepage, not an activity slug.
+RewriteRule ^index/?$ index.html [L,QSA]
+
+# Redirect legacy activity URLs to the clean activity permalink when a slug exists.
+RewriteCond %{THE_REQUEST} \s/+activity\.html[?\s] [NC]
+RewriteCond %{QUERY_STRING} (?:^|&)slug=([a-z0-9-]+)(?:&|$) [NC]
+RewriteRule ^activity\.html$ /activity/%1? [R=301,L,NE]
+
+# ID-backed legacy clean URLs remain supported for existing links.
+RewriteRule ^activity/([0-9]+)/([a-z0-9-]+)/?$ activity.html?id=$1 [L,QSA]
+
+# Resolve canonical activity URLs before the generic slug fallback.
+RewriteRule ^activity/([a-z0-9-]+)/?$ activity.html?pretty_slug=$1 [B,L,QSA]
+
+# Dedicated authentication pages must be handled before the generic activity-slug rule.
+RewriteRule ^admin-login/?$ admin-login.html [L,QSA]
+RewriteRule ^leader-login(?:\.html)?/?$ /auth.html?context=leader [R=302,L,NE]
+
+# Admin dashboard
+# /admin/ is the canonical dashboard URL.
+# Keep legacy /admin/admin.html working by redirecting it to /admin/.
+RewriteRule ^admin/admin\.html$ /admin/ [R=301,L]
+RewriteRule ^admin/?$ admin.html [L,QSA]
+
+# IMPORTANT: keep the internal admin dashboard rewrite from being processed
+# again by the generic clean activity URL rule on the next Apache pass.
+RewriteRule ^admin\.html$ - [L]
+
+# Never pass /admin/* pages into the generic clean activity URL rule.
+# All physical admin HTML/PHP/API assets must be served from the admin directory.
+RewriteRule ^admin(?:/|$) - [L]
+
+# Class leader dashboard
+RewriteRule ^leader/?$ leader.html [L,QSA]
+# Serve clean leader subpage URLs from their actual HTML files.
+RewriteCond %{DOCUMENT_ROOT}/leader/$1.html -f
+RewriteRule ^leader/([a-z0-9-]+)/?$ leader/$1.html [L,QSA]
+
+# Redirect the old nested calendar URL to the canonical root calendar.
+RewriteRule ^planner/calendar(?:\.html)?/?$ /calendar.html [R=301,L]
+
+# Redirect old family URL to the real family account page.
+RewriteRule ^family(?:\.html)?/?$ /account/family.html [R=302,L,NE]
+
+# Canonical Expo page
+RewriteCond %{THE_REQUEST} \s/+expo\.html(?:[\s?]|$) [NC]
+RewriteRule ^expo\.html$ /expo [R=301,L,NE]
+RewriteRule ^expo/?$ expo.html [L,QSA]
+
+# Clean section URLs
+RewriteRule ^my-hub/?$ my-hub.html [L,QSA]
+RewriteRule ^planner/?$ planner.html [L,QSA]
+RewriteRule ^directory/?$ directory.html [L,QSA]
+RewriteRule ^map/?$ map.html [L,QSA]
+RewriteRule ^events/?$ events.html [L,QSA]
+RewriteRule ^venues/?$ venues.html [L,QSA]
+RewriteRule ^calendar/?$ calendar.html [L,QSA]
+RewriteRule ^help-support/?$ help-support.html [L,QSA]
+RewriteRule ^account/?$ account.html [L,QSA]
+RewriteRule ^schools/?$ schools.html [L,QSA]
+RewriteRule ^support/?$ support.html [L,QSA]
+RewriteRule ^sponsor/?$ sponsor.html [L,QSA]
+
+# Clean personalised finder URL: /choose
+RewriteRule ^choose/?$ choose.html [L,QSA]
+
+# Keep the old personalised URL working and move it to /choose
+RewriteRule ^personalise(?:\.html)?/?$ /choose [R=301,L]
+
+# Clean account sub-pages: /account/profile, /account/preferences, etc.
+# Keep the physical account/*.html files as the source of truth.
+RewriteCond %{DOCUMENT_ROOT}/account/$1.html -f
+RewriteRule ^account/([a-z0-9-]+)/?$ account/$1.html [L,QSA]
+
+# Organiser custom Terms URLs: /{organiser-slug}terms.html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^([a-z0-9-]+)terms\.html$ organiser-terms.html?slug=$1 [B,L,QSA]
+
+RewriteRule ^organiser/([^/]+)/terms\.html$ organiser-terms.html?slug=$1 [B,L,QSA]
+
+# Organiser storefront URLs: /organiser/{company-name}/
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^organiser/([^/]+)/?$ organiser.html?slug=$1 [B,L,QSA]
+
+# WordPress REST API: the editor and publishing requests require JSON.
+# Route these before the generic activity-slug fallback.
+RewriteRule ^wp-json/?$ index.php?rest_route=/ [L,QSA]
+RewriteRule ^wp-json/(.*)$ index.php?rest_route=/$1 [B,L,QSA]
+
+# WordPress content inside the custom site shell.
+RewriteRule ^articles/?$ articles.html [L,QSA]
+RewriteRule ^promo/?$ wordpress-content.html [L,QSA]
+RewriteRule ^(?:pages|articles)/[a-z0-9-]+/?$ wordpress-content.html [L,QSA]
+
+# Clean activity URLs: /{activity-slug}/
+# IMPORTANT: never rewrite an existing physical file as an activity slug.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^([^/]+)/?$ activity.html?slug=$1 [L,QSA]

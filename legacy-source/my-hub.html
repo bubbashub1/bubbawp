@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/assets/css/styles.css">
+<title>My Hub · Bubba Hub</title>
+<link rel="stylesheet" href="/assets/css/my-hub.css">
+<link rel="stylesheet" href="/assets/css/inspire-me.css">
+<link rel="stylesheet" href="/assets/css/my-hub-v2.css">
+<link rel="stylesheet" href="/assets/css/expo-inspired-headers.css?v=20261020-cta2"><link rel="stylesheet" href="/assets/css/family-hub-unified.css?v=20261029"></head>
+<body class="bh-my-hub">
+<header class="site-header"><a class="brand" href="index.html" aria-label="Bubba Hub home"><img class="brand-logo" src="/wp-content/uploads/logo/logoheader.png" alt="Bubba Hub"></a><nav class="main-nav" aria-label="Main menu">
+    <a href="directory.html">Find activities</a>
+    <a href="my-hub.html">My Hub</a>
+    <a href="help-support.html">Support &amp; Guidance</a>
+    <a href="leader.html">Class Leaders</a>
+    <a href="account.html">My Account</a>
+  </nav><a class="button button-soft" href="account.html">My account</a></header>
+
+<nav class="bh-family-nav" aria-label="Family Hub navigation"><a href="/my-hub.html" aria-current="page">My Hub</a><a href="/planner.html">My Planner</a><a href="/account/saved-activities.html">Saved</a><a href="/account/preferences.html">Preferences</a><a href="/account.html">My Account</a></nav><main class="app-shell my-hub-page">
+<div class="my-hub-hero">
+  <div class="my-hub-hero-copy">
+    <span class="hub-pro-status" id="hubProStatus" hidden>⭐ Family Pro</span><span class="eyebrow">Your family space</span>
+    <h1>Hello <span id="hubHeroName">there</span></h1>
+    <p>Everything your family has saved, planned and booked — all in one place.</p>
+  </div>
+  <div class="my-hub-hero-actions">
+    <a class="button button-primary" href="directory.html">＋ Find an activity</a>
+    <a class="button button-soft" href="planner.html">📅 Open planner</a>
+  </div>
+  <div id="hubProPitch" class="hub-pro-pitch" hidden><strong>⭐ Family Pro</strong><span>Unlock multiple planners, child-specific plans, reminders and smarter family recommendations.</span><a class="button button-primary" href="/pro.html">Explore Pro →</a></div>
+</div>
+
+<section id="myHubApp">
+  <div class="hub-welcome">
+  <div>
+    <span class="eyebrow">Welcome back</span>
+    <h2>Ready for your next family adventure?</h2>
+    <p id="hubEmail"></p>
+  </div>
+  <div class="hub-upcoming-ticker" id="hubUpcomingTicker" aria-label="Upcoming planner events">
+    <span class="hub-ticker-label">📅 Coming up</span>
+    <div class="hub-ticker-track" id="hubTickerTrack"></div>
+  </div>
+  <a class="hub-account-link" href="account.html">Account settings →</a>
+</div>
+
+  <div class="hub-stats" id="hubStats"></div><section class="hub-personal-cta">
+  <div>
+    <span class="eyebrow">Your next idea</span>
+    <h2>Not sure what to do?</h2>
+    <p>Not sure what would work today? Tell us a little about what you fancy and we’ll help you find something that fits.</p>
+  </div>
+  <div class="hub-personal-actions"><button class="button button-primary" id="openWhatShallI" type="button">✨ Help me find something</button><a class="button button-soft" href="account/preferences.html">Personalise my ideas</a></div>
+</section>
+  <section class="hub-suggestions" id="hubSuggestions">
+    <div class="hub-suggestions-head">
+      <div>
+        <span class="eyebrow">Picked for your family</span>
+        <h2>Suggested groups &amp; activities</h2>
+        <p>Up to 12 ideas based on your family and preferences.</p>
+      </div>
+      <a class="button button-soft" href="account/preferences.html">Update preferences</a>
+    </div>
+    <div class="hub-suggestions-carousel">
+      <button class="hub-carousel-arrow" id="hubSuggestionsPrev" type="button" aria-label="Previous suggestions">‹</button>
+      <div class="hub-suggestions-track" id="hubSuggestionsTrack"></div>
+      <button class="hub-carousel-arrow" id="hubSuggestionsNext" type="button" aria-label="Next suggestions">›</button>
+    </div>
+  </section>
+  <div data-bh-inspire-me></div>
+  <section class="admin-panel hub-panel hub-family-panel" id="family">
+      <div class="admin-panel-head">
+        <div><h2>My family</h2></div>
+        <div class="hub-section-actions">
+          <button class="button button-soft" id="addChild" type="button">＋ Child</button>
+          <button class="button button-soft" id="addBump" type="button">＋ Bump</button>
+        </div>
+      </div>
+      <div class="hub-family-list hub-family-expanded" id="hubFamily"><div class="hub-empty">Loading…</div></div>
+      <div class="hub-family-footer"><a class="button button-soft" href="schools">🎓 Local schools</a><a class="button button-soft" href="account/preferences.html">Family preferences</a></div>
+  </section>
+
+  <div class="hub-dashboard-grid hub-main-dashboard">
+  <section class="hub-brief" id="hubBrief">
+    <div class="hub-brief-head">
+      <div><span class="eyebrow">Your family plans</span><h2>My Plans</h2><p id="hubBriefIntro">Loading your family-friendly ideas…</p></div>
+      <a class="button button-soft" href="account/preferences.html">Update preferences</a>
+    </div>
+    <div class="hub-brief-grid" id="hubBriefItems"><div class="hub-empty">Finding useful ideas…</div></div>
+  </section>
+
+    <section class="admin-panel hub-panel">
+      <div class="admin-panel-head">
+        <div><span class="eyebrow">Your activities</span><h2>Visited Groups</h2></div>
+        <a class="button button-soft" href="directory.html">Find more</a>
+      </div>
+      <div class="hub-list" id="hubVisited"><div class="hub-empty">Loading…</div></div>
+    </section>
+
+    <section class="admin-panel hub-panel">
+      <div class="admin-panel-head">
+        <div><span class="eyebrow">Keep exploring</span><h2>Recently Viewed</h2></div>
+        <a class="button button-soft" href="directory.html">Browse activities</a>
+      </div>
+      <div class="hub-list" id="hubRecent"><div class="hub-empty">Loading…</div></div>
+    </section>
+
+    <section class="admin-panel hub-panel">
+      <div class="admin-panel-head">
+        <div><span class="eyebrow">Your favourites</span><h2>Saved activities</h2></div>
+        <a class="button button-soft" href="directory.html?saved=1">View all</a>
+      </div>
+      <div class="hub-list" id="hubSaved"><div class="hub-empty">Loading…</div></div>
+    </section>
+
+    <section class="admin-panel hub-panel">
+      <div class="admin-panel-head">
+        <div><span class="eyebrow">Bookings</span><h2>Upcoming</h2></div>
+        <a class="button button-soft" href="planner.html">Planner</a>
+      </div>
+      <div class="hub-list" id="hubBookings"><div class="hub-empty">Loading…</div></div>
+    </section>
+  </div>
+
+  <section class="admin-panel hub-panel" id="my-messages" aria-labelledby="myMessagesHeading">
+    <div class="admin-panel-head">
+      <div><span class="eyebrow">Your private conversations</span><h2 id="myMessagesHeading">My Messages</h2><p>View your support questions, submission status and replies.</p></div>
+      <a class="button button-soft" href="/help-support#ask">Ask another question →</a>
+    </div>
+    <div id="hubSupportMessages" aria-live="polite"><p>Loading your messages…</p></div>
+  </section>
+  <section class="hub-tools-grid">
+    <a class="feature-card" href="account/preferences.html"><span class="feature-icon">⚙</span><h3>Preferences</h3><p>Set the areas, days and family planning options Bubba Hub should use for you.</p></a>
+    <a class="feature-card" href="account/consent.html"><span class="feature-icon">🔒</span><h3>Booking consent</h3><p>Manage the information and permissions you choose to share during bookings.</p></a>
+    <a class="feature-card" href="help-support.html"><span class="feature-icon">💛</span><h3>Help &amp; Support</h3><p>Get guidance or send a private support question.</p></a>
+    <a class="feature-card" href="directory.html"><span class="feature-icon">✨</span><h3>Discover more</h3><p>Find activities matched to your family's ages, location and interests.</p></a>
+  </section>
+</section>
+
+<div class="my-hub-message" id="hubMessage" aria-live="polite"></div>
+</main>
+
+<footer class="site-footer"><div class="site-footer-grid"><div class="site-footer-brand"><a href="index.html" class="site-footer-logo" aria-label="Bubba Hub home"><img src="/wp-content/uploads/logo/logoheader.png" alt="Bubba Hub"></a><div class="site-footer-brand-copy"><a href="index.html" class="site-footer-title">Bubba Hub</a><p>Find, plan &amp; book family activities across Devon &amp; Cornwall.</p></div></div><div class="site-footer-column"><h2>Main menu</h2><nav class="site-footer-links" aria-label="Footer main menu"><a href="directory.html">Find activities</a><a href="my-hub.html">My Hub</a><a href="help-support.html">Support &amp; Guidance</a><a href="leader.html">Class Leaders</a><a href="account.html">Account</a></nav></div><div class="site-footer-column"><h2>Explore &amp; tools</h2><nav class="site-footer-links" aria-label="Footer explore and tools"><a href="events.html">Events</a><a href="venues.html">Venues</a><a href="planner.html">Planner</a><a href="calendar.html">Calendar</a></nav></div><div class="site-footer-column"><h2>Legal &amp; contact</h2><nav class="site-footer-links" aria-label="Footer legal and contact"><a href="privacy.html">Privacy</a><a href="terms.html">Terms &amp; Conditions</a><a href="mailto:contact@bubbahub.co.uk">Contact Bubba Hub</a></nav></div></div><div class="site-footer-bottom"><span>&copy; 2026 Bubba Hub</span><span>Devon &amp; Cornwall</span></div></footer>
+
+<script src="/assets/js/app.js"></script>
+<script src="/assets/js/inspire-me.js" defer></script>
+<script src="/assets/js/my-hub.js"></script>
+<script src="/assets/js/hub-messages.js" defer></script>
+<script>(async()=>{try{const r=await fetch("api/subscription.php",{credentials:"same-origin",cache:"no-store"}),d=await r.json();if(d.pro){const e=document.getElementById("hubProStatus");if(e)e.hidden=false}else{const p=document.getElementById("hubProPitch");if(p)p.hidden=false}}catch(e){}})();</script>
+</body>
+</html>

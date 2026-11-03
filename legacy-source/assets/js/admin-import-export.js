@@ -1,0 +1,43 @@
+document.addEventListener("DOMContentLoaded",()=>{const form=document.querySelector("#importActivityCsv");if(!form)return;form.addEventListener("click",async()=>{const input=document.querySelector("#activityCsvUrl"),status=document.querySelector("#activityImportStatus"),button=form;const url=input?.value.trim();if(!url){status.textContent="Paste the published Google Sheets CSV link first.";status.classList.add("is-error");return;}try{const u=new URL(url);if(u.protocol!=="https:"||u.hostname!=="docs.google.com"||!/^\/spreadsheets\/d\/e\/[A-Za-z0-9_-]+\/pub$/.test(u.pathname)||(u.searchParams.get("output")||"").toLowerCase()!=="csv")throw new Error("Please use the published Google Sheets CSV link from File → Share → Publish to web → CSV.");}catch(e){status.textContent=e.message;status.classList.add("is-error");return;}button.disabled=true;status.classList.remove("is-error");status.textContent="Fetching published Google Sheet…";try{const fd=new FormData();fd.append("csv_url",url);fd.append("mode",document.querySelector("#activityCsvMode")?.value||"update");let offset=0,created=0,updated=0,skipped=0,failed=0,total=0;const errors=[];do{const chunk=new FormData();chunk.append("csv_url",url);chunk.append("mode",document.querySelector("#activityCsvMode")?.value||"update");chunk.append("offset",String(offset));chunk.append("limit","25");chunk.append("update_fields",Array.from(document.querySelectorAll("#activityCsvFieldChoices input:checked")).map(el=>el.value).join(","));chunk.append("dry_run",document.getElementById("activityCsvDryRun")?.checked?"1":"0");const r=await fetch("/api/admin-import-export.php",{method:"POST",credentials:"same-origin",body:chunk});const raw=await r.text();let d;try{d=JSON.parse(raw)}catch{throw new Error("Invalid CSV response (HTTP "+r.status+") at row "+(offset+1));}if(!r.ok||!d.ok)throw new Error(d.error||"Import failed at row "+(offset+1));created+=Number(d.created)||0;updated+=Number(d.updated)||0;skipped+=Number(d.skipped)||0;failed+=Number(d.failed)||0;total=Number(d.total_rows)||0;if(Array.isArray(d.errors))errors.push(...d.errors);const next=Number(d.next_offset);if(!Number.isFinite(next)||next<=offset)throw new Error("Import made no progress");offset=next;status.textContent="Importing "+Math.min(offset,total)+" of "+total+" rows…";if(!d.has_more)break;}while(true);status.textContent=(document.getElementById("activityCsvDryRun")?.checked?"Preview complete (no changes saved). ":"✓ Import complete. ")+Math.min(offset,total)+" of "+total+" rows processed. "+created+" created, "+updated+" updated, "+skipped+" skipped, "+failed+" failed."+(errors.length?" "+errors.slice(0,8).join(" "):"");}catch(e){status.textContent=e.message||"Google Sheets import failed.";status.classList.add("is-error");}finally{button.disabled=false;}});});
+document.addEventListener("DOMContentLoaded",()=>{
+  const button=document.getElementById("uploadActivityCsv");
+  const input=document.getElementById("activityCsvFile");
+  const status=document.getElementById("activityImportStatus");
+  if(!button||!input||!status)return;
+  button.addEventListener("click",async()=>{
+    const file=input.files?.[0];
+    status.classList.remove("is-error");
+    if(!file){status.textContent="Choose a CSV file first.";status.classList.add("is-error");return;}
+    if(file.size>10*1024*1024){status.textContent="CSV file must be 10 MB or smaller.";status.classList.add("is-error");return;}
+    button.disabled=true;
+    status.textContent="Uploading and importing CSV…";
+    try{
+      const data=new FormData();data.append("csv",file);data.append("mode",document.getElementById("activityCsvMode")?.value||"update");
+      let offset=0,created=0,updated=0,skipped=0,failed=0,total=0;
+      const errors=[];
+      do{
+        const chunk=new FormData();
+        chunk.append("csv",file);
+        chunk.append("mode",document.getElementById("activityCsvMode")?.value||"update");
+        chunk.append("offset",String(offset));
+        chunk.append("limit","25");chunk.append("update_fields",Array.from(document.querySelectorAll("#activityCsvFieldChoices input:checked")).map(el=>el.value).join(","));
+        const response=await fetch("/api/admin-import-export.php",{method:"POST",credentials:"same-origin",cache:"no-store",headers:{Accept:"application/json"},body:chunk});
+        const raw=await response.text();
+        let result;
+        try{result=JSON.parse(raw)}catch{throw new Error("CSV server returned an invalid or empty response (HTTP "+response.status+") at row "+(offset+1)+".")}
+        if(!response.ok||!result.ok)throw new Error(result.error||"CSV import failed at row "+(offset+1)+".");
+        total=Number(result.total_rows)||0;
+        created+=Number(result.created)||0;updated+=Number(result.updated)||0;skipped+=Number(result.skipped)||0;failed+=Number(result.failed)||0;
+        if(Array.isArray(result.errors))errors.push(...result.errors.slice(0,5));
+        const next=Number(result.next_offset);
+        if(!Number.isFinite(next)||next<=offset)throw new Error("CSV import stopped without making progress at row "+(offset+1)+".");
+        offset=next;
+        status.textContent="Importing "+Math.min(offset,total)+" of "+total+" activities… "+created+" created, "+updated+" updated, "+failed+" failed.";
+        if(!result.has_more)break;
+      }while(true);
+      status.textContent=(document.getElementById("activityCsvDryRun")?.checked?"Preview complete (no changes saved): ":"Import complete: ")+created+" created, "+updated+" updated, "+skipped+" skipped, "+failed+" failed."+(errors.length?" "+errors.slice(0,8).join(" "):"");
+      if(failed)status.classList.add("is-error");
+    }catch(error){status.textContent=error.message||"CSV import failed.";status.classList.add("is-error");}
+    finally{button.disabled=false;}
+  });
+});

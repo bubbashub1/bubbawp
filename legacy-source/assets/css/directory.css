@@ -1,0 +1,1148 @@
+/* Bubba Hub Directory — consolidated styles
+   Single source of truth for directory layout, search, listings, map and mobile controls. */
+
+.bh-directory{
+  background:#f7fbf8;
+  color:var(--bh-site-dark,#0d3b32);
+}
+.bh-directory .app-shell{
+  width:min(1400px,calc(100% - 24px));
+  max-width:1400px;
+  margin:0 auto;
+  min-width:0;
+}
+
+/* Search panel */
+.bh-directory .directory-hero-fullwidth{
+  width:100%;
+  max-width:none;
+  margin:0 0 22px;
+  box-sizing:border-box;
+}
+.bh-directory .directory-hero-search{
+  position:static;
+  width:100%;
+  max-width:none;
+  min-height:0;
+  margin:0;
+  padding:18px 20px 16px;
+  box-sizing:border-box;
+  overflow:visible;
+  border:1px solid rgba(65,102,81,.10);
+  border-radius:20px;
+  background:#e7f1ea;
+  box-shadow:0 6px 18px rgba(20,68,0,.055);
+}
+.bh-directory .directory-hero-search::before,
+.bh-directory .directory-hero-search::after{display:none}
+.bh-directory .directory-hero-search h2{
+  margin:0 0 11px;
+  color:#144400;
+  font-family:inherit;
+  font-size:clamp(22px,2.4vw,30px);
+  line-height:1.15;
+  font-weight:900;
+}
+.bh-directory .directory-hero-search-fields{
+  display:grid;
+  grid-template-columns:minmax(180px,1.6fr) repeat(4,minmax(105px,1fr)) minmax(96px,108px);
+  gap:8px;
+  align-items:center;
+  width:100%;
+}
+.bh-directory .directory-hero-search-fields label{
+  display:flex;
+  align-items:center;
+  width:auto;
+  min-width:0;
+  min-height:46px;
+  height:46px;
+  padding:0 10px;
+  box-sizing:border-box;
+  border:1px solid rgba(20,68,0,.08);
+  border-radius:13px;
+  background:rgba(255,255,255,.94);
+  box-shadow:0 2px 8px rgba(18,63,49,.04);
+}
+.bh-directory .directory-hero-search-fields label>span{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:20px;
+  flex:0 0 20px;
+  margin-right:6px;
+  color:var(--bh-site-teal,#3c8e96);
+  font-size:15px;
+  font-weight:900;
+}
+.bh-directory .directory-hero-search input,
+.bh-directory .directory-hero-search select{
+  width:100%;
+  min-width:0;
+  min-height:42px;
+  padding:8px 2px;
+  border:0;
+  outline:0;
+  background:transparent;
+  box-shadow:none;
+  font-size:13px;
+}
+.bh-directory .directory-hero-search .button{
+  width:100%;
+  min-width:0;
+  min-height:46px;
+  height:46px;
+  padding:0 12px;
+  border-radius:13px;
+  font-weight:900;
+}
+.bh-directory .directory-hero-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:8px;
+  flex-wrap:nowrap;
+  margin-top:9px;
+  min-height:0;
+  overflow-x:auto;
+  overflow-y:hidden;
+  padding-bottom:2px;
+}
+.bh-directory .directory-search-advanced-link{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:42px;
+  margin:0;
+  padding:0 15px;
+  border:1px solid rgba(20,68,0,.12);
+  border-radius:14px;
+  background:#416651;
+  color:#fff;
+  font-size:13px;
+  font-weight:900;
+  line-height:1;
+  text-decoration:none;
+  white-space:nowrap;
+  box-shadow:0 6px 16px rgba(20,68,0,.10);
+}
+.bh-directory .directory-search-advanced-link:hover{
+  background:#f6c84a;
+  border-color:#f6c84a;
+  color:#144400;
+}
+.bh-directory .directory-calendar-hero-button,
+.bh-directory .directory-map-action-button,
+.bh-directory .directory-map-hero-button,
+.bh-directory .directory-planner-action-button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:42px;
+  padding:0 15px;
+  border:1px solid rgba(20,68,0,.12);
+  border-radius:14px;
+  background:#416651;
+  color:#fff;
+  font-size:13px;
+  font-weight:900;
+  line-height:1;
+  white-space:nowrap;
+  text-decoration:none;
+  box-shadow:0 6px 16px rgba(20,68,0,.10);
+}
+.bh-directory .directory-calendar-hero-button:hover,
+.bh-directory .directory-map-action-button:hover,
+.bh-directory .directory-map-hero-button:hover,
+.bh-directory .directory-planner-action-button:hover{
+  background:#f6c84a;
+  border-color:#f6c84a;
+  color:#144400;
+}
+.bh-directory .directory-popular{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  flex-wrap:wrap;
+  margin-top:9px;
+  padding-top:9px;
+  border-top:1px solid rgba(20,68,0,.09);
+}
+.bh-directory .directory-popular-label{
+  margin-right:2px;
+  color:#144400;
+  font-size:12px;
+  font-weight:900;
+}
+.bh-directory .directory-popular-chip{
+  padding:7px 11px;
+  border:1px solid rgba(20,68,0,.08);
+  border-radius:999px;
+  background:rgba(255,255,255,.78);
+  color:#144400;
+  font:800 12px "Quicksand",sans-serif;
+  cursor:pointer;
+  box-shadow:0 2px 8px rgba(20,68,0,.04);
+}
+.bh-directory .directory-popular-chip:hover{
+  background:#fff;
+  border-color:var(--bh-site-teal,#3c8e96);
+  transform:translateY(-1px);
+}
+.bh-directory .directory-popular-chip.active{
+  background:var(--bh-site-teal,#3c8e96);
+  border-color:var(--bh-site-teal,#3c8e96);
+  color:#fff;
+}
+
+/* Desktop: true 50/50 listings + map — explicit grid areas prevent overlap */
+/* The advanced filters are a modal/drawer, so they must not reserve a
+   desktop grid column when closed. The visible directory content owns the
+   full page width. */
+.bh-directory .directory-layout{
+  display:block;
+  width:100%;
+  max-width:none;
+  min-width:0;
+  margin:0;
+}
+.bh-directory .directory-results-column{
+
+  display:grid;
+  width:100%;
+  max-width:none;
+  min-width:0;
+  box-sizing:border-box;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  grid-template-areas:
+    "heading map"
+    "results map"
+    "all map";
+  column-gap:24px;
+  row-gap:0;
+  align-items:start;
+  min-width:0;
+}
+.bh-directory .directory-results-column > .directory-results-heading{
+  grid-area:heading;
+  width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+.bh-directory .directory-results-column > #results{
+  grid-area:results;
+  width:100%;
+  min-width:0;
+  max-width:none;
+  box-sizing:border-box;
+}
+.bh-directory .directory-results-column > .directory-all-link-wrap{
+  grid-area:all;
+  width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+.bh-directory .directory-results-column > #mapView{
+  grid-area:map;
+  align-self:start;
+  width:100%;
+  max-width:none;
+  min-width:0;
+  box-sizing:border-box;
+  z-index:0;
+}
+.bh-directory .directory-results-column > #results,
+.bh-directory .directory-results-column > .directory-all-link-wrap{
+  position:relative;
+  z-index:1;
+}
+/* Heading placement is controlled by grid-template-areas above */
+.bh-directory .directory-results-heading{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:16px;
+  margin:0 0 14px;
+  padding:0;
+  min-width:0;
+}
+.bh-directory .directory-results-heading .eyebrow{
+  display:block;
+  margin-bottom:4px;
+  color:var(--bh-site-teal,#3c8e96);
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.bh-directory .directory-results-heading h1{
+  margin:0;
+  color:var(--bh-site-dark,#0d3b32);
+  font-size:clamp(30px,3.4vw,42px);
+}
+.bh-directory .directory-results-heading #count{
+  margin:4px 0 0;
+  color:var(--bh-site-muted,#617261);
+}
+/* Keep the bottom action under the listings, never in the map column */
+ .bh-directory .directory-all-link-wrap{
+  width:100%;
+  min-width:0;
+  margin-top:2px;
+}
+
+.bh-directory .directory-all-link{
+  white-space:nowrap;
+  border-radius:14px;
+  font-weight:900;
+}
+
+/* Listings — stacked card grid */
+.bh-directory #results{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;width:100%;min-width:0}
+.bh-directory #results .activity-card{display:flex;flex-direction:column;width:100%;min-height:0}
+.bh-directory .activity-card{background:#fff;border:1px solid rgba(65,102,81,.12);border-radius:22px;overflow:hidden;box-shadow:0 8px 24px rgba(20,68,0,.07);min-width:0;transition:transform .18s ease,box-shadow .18s ease}
+.bh-directory .activity-card:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(20,68,0,.11)}
+.bh-directory .activity-image{height:190px;min-height:190px;background:linear-gradient(135deg,#dceee1,#d6e8ea);display:grid;place-items:center;overflow:hidden;color:var(--bh-site-dark,#0d3b32);font-weight:850}
+.bh-directory .activity-image img{width:100%;height:100%;object-fit:cover}
+.bh-directory .activity-body{display:flex;flex-direction:column;min-width:0;padding:17px 18px 18px}
+.bh-directory .activity-meta{color:var(--bh-site-teal,#3c8e96);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.07em}
+.bh-directory .activity-card h3{margin:6px 0 7px;color:var(--bh-site-dark,#0d3b32);font-size:20px;line-height:1.14}
+.bh-directory .activity-card p{margin:0 0 14px;color:var(--bh-site-muted,#617261);line-height:1.45}
+.bh-directory .activity-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:auto}
+.bh-directory .activity-footer .button{min-height:38px;padding:8px 14px;font-size:12px}
+.bh-directory .directory-load-more,.bh-directory .directory-end-message{width:100%;box-sizing:border-box;padding:14px 10px 8px;color:var(--bh-site-muted,#617261);font-size:12px;font-weight:800;text-align:center}
+.bh-directory .directory-load-more{min-height:34px}
+.bh-directory .activity-card[data-activity-id]{cursor:pointer}
+.bh-directory .activity-card[data-activity-id]:focus-visible{outline:3px solid currentColor;outline-offset:3px}
+
+/* Map */
+ .bh-directory #mapView{
+  position:relative;
+  top:auto;
+  align-self:start;
+  width:100%;
+  height:min(72vh,720px);
+  min-height:520px;
+  margin:0;
+  border:1px solid rgba(65,102,81,.12);
+  border-radius:22px;
+  overflow:hidden;
+  box-shadow:0 10px 28px rgba(20,68,0,.08);
+}
+.bh-directory .directory-map-expand{
+  position:absolute;
+  top:14px;
+  right:14px;
+  z-index:1000;
+  padding:9px 13px;
+  border:1px solid rgba(20,68,0,.12);
+  border-radius:12px;
+  background:#fff;
+  color:var(--bh-site-dark,#0d3b32);
+  font-weight:900;
+  box-shadow:0 5px 14px rgba(20,68,0,.12);
+}
+.bh-directory .directory-map-expand:hover{background:#e7f1ea}
+.bh-directory .directory-calendar{
+  grid-column:1 / -1;
+  min-height:300px;
+}
+
+/* Advanced filters */
+/* Shared Advanced Filters — one modal/drawer across Directory, Calendar and Map.
+   This intentionally overrides older theme sidebar styling. */
+.directory-filters-panel{
+  position:fixed;
+  z-index:10001;
+  top:20px;
+  left:50%;
+  bottom:auto;
+  width:min(420px,calc(100vw - 32px));
+  max-height:calc(100vh - 40px);
+  overflow:auto;
+  padding:22px;
+  box-sizing:border-box;
+  transform:translate(-50%,-16px);
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  background:#fff;
+  border:1px solid var(--bh-site-border,#d8e6db);
+  border-radius:24px;
+  box-shadow:0 24px 70px rgba(13,59,50,.22);
+  transition:opacity .18s ease,transform .18s ease,visibility .18s ease;
+}
+.directory-filters-panel.is-open{
+  transform:translate(-50%,0);
+  opacity:1;
+  visibility:visible;
+  pointer-events:auto;
+}
+@media(max-width:700px){
+  .directory-filters-panel{
+    top:12px;
+    width:calc(100vw - 24px);
+    max-height:calc(100vh - 24px);
+    padding:18px;
+    border-radius:20px;
+  }
+}
+
+.bh-directory .directory-mobile-actions{display:none}
+.bh-directory .directory-filters-panel{
+  position:fixed;
+  z-index:10001;
+  top:20px;
+  left:50%;
+  width:min(420px,calc(100vw - 32px));
+  max-height:calc(100vh - 40px);
+  overflow:auto;
+  padding:22px;
+  box-sizing:border-box;
+  transform:translate(-50%,-16px);
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  background:#fff;
+  border:1px solid var(--bh-site-border);
+  border-radius:24px;
+  box-shadow:0 24px 70px rgba(13,59,50,.22);
+  transition:opacity .18s ease,transform .18s ease,visibility .18s ease;
+}
+.bh-directory .directory-filters-panel.is-open{
+  transform:translate(-50%,0);
+  opacity:1;
+  visibility:visible;
+  pointer-events:auto;
+}
+.bh-directory .directory-filters-header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  margin:-2px 0 18px;
+  padding-bottom:14px;
+  border-bottom:1px solid var(--bh-site-border);
+}
+.bh-directory .directory-filters-header .eyebrow{
+  display:block;
+  margin-bottom:3px;
+  color:var(--bh-site-teal);
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.bh-directory .directory-filters-header h2{
+  margin:0;
+  color:var(--bh-site-dark);
+  font-size:22px;
+  line-height:1.1;
+}
+.bh-directory .directory-filters-close{
+  display:grid;
+  place-items:center;
+  flex:0 0 38px;
+  width:38px;
+  height:38px;
+  margin:-2px -2px 0 0;
+  border:1px solid var(--bh-site-border);
+  border-radius:50%;
+  background:#f7fbf8;
+  color:var(--bh-site-dark);
+  font-size:27px;
+  font-weight:500;
+  line-height:1;
+}
+.bh-directory .directory-filter-fields,
+.bh-directory .directory-advanced-fields{display:grid;gap:13px}
+.bh-directory .directory-advanced-fields{padding-top:8px}
+.bh-directory .directory-advanced-fields[hidden]{display:none}
+.bh-directory .directory-filter-label{
+  display:block;
+  margin-bottom:6px;
+  color:var(--bh-site-muted);
+  font-size:12px;
+  font-weight:850;
+}
+.bh-directory .directory-filters-panel select{
+  width:100%;
+  min-height:44px;
+  padding:9px 11px;
+}
+.bh-directory .filter-check{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:10px 0;
+  color:var(--bh-site-dark);
+  font-size:13px;
+  font-weight:800;
+}
+.bh-directory .filter-check input,
+.bh-directory .filter-free input{
+  width:18px;
+  height:18px;
+  accent-color:var(--bh-site-teal);
+}
+.bh-directory .directory-advanced-section{
+  margin-top:2px;
+  padding-top:11px;
+  border-top:1px solid var(--bh-site-border);
+}
+.bh-directory .directory-advanced-toggle{
+  width:100%;
+  padding:8px 0;
+  border:0;
+  background:transparent;
+  color:var(--bh-site-dark);
+  text-align:left;
+  font-weight:850;
+}
+.bh-directory .directory-nearby-button,
+.bh-directory .directory-clear{width:100%}
+.bh-directory .directory-clear{margin-top:6px}
+.bh-directory .directory-nearby-status{
+  display:block;
+  margin-top:5px;
+  color:var(--bh-site-muted);
+  font-size:11px;
+}
+.bh-directory .directory-accessibility-fieldset{
+  border:0;
+  margin:0;
+  padding:0;
+  min-width:0;
+}
+.bh-directory .directory-accessibility-expand{
+  overflow:hidden;
+  border:1px solid var(--bh-site-border);
+  border-radius:14px;
+  background:#f7fbf8;
+}
+.bh-directory .directory-accessibility-expand summary{
+  padding:11px 13px;
+  color:var(--bh-site-dark);
+  font-size:13px;
+  font-weight:850;
+  cursor:pointer;
+  list-style:none;
+}
+.bh-directory .directory-accessibility-expand summary::-webkit-details-marker{display:none}
+.bh-directory .directory-accessibility-expand summary:after{content:"＋";float:right;font-size:17px;line-height:1}
+.bh-directory .directory-accessibility-expand[open] summary:after{content:"−"}
+.bh-directory .directory-accessibility-options{
+  padding:4px 13px 9px;
+  border-top:1px solid var(--bh-site-border);
+  background:#fff;
+}
+.bh-directory .directory-accessibility-options .filter-check{padding:8px 0}
+.bh-directory.directory-filter-open::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:10000;
+  background:rgba(13,59,50,.35);
+  backdrop-filter:blur(2px);
+}
+
+/* Mobile map link — Listings | Map toggle removed */
+.bh-directory .directory-mobile-view-toggle{display:none!important}
+.bh-directory .directory-mobile-map-link{display:inline-flex;align-items:center;justify-content:center;min-height:48px;margin:0;border-radius:14px;background:var(--bh-site-secondary,#3c8e96);color:#fff;font-weight:900;text-decoration:none}
+.bh-directory .directory-mobile-map-link:hover{background:var(--bh-site-dark,#416651);color:#fff}
+
+/* Map modal helpers */
+.bh-directory .directory-map-modal{
+  position:fixed;
+  inset:0;
+  z-index:11000;
+  display:none;
+  padding:28px;
+  background:rgba(13,59,50,.48);
+  backdrop-filter:blur(3px);
+}
+.bh-directory .directory-map-modal.is-open{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.bh-directory .directory-map-modal-inner{
+  position:relative;
+  width:min(1200px,96vw);
+  height:min(820px,90vh);
+  background:#fff;
+  border-radius:24px;
+  overflow:hidden;
+  box-shadow:0 30px 90px rgba(13,59,50,.28);
+}
+.bh-directory .directory-map-modal .directory-map-modal-map{width:100%;height:100%}
+.bh-directory .directory-map-modal-close,
+.bh-directory #mapView .directory-map-modal-close{
+  position:absolute;
+  top:14px;
+  right:14px;
+  z-index:1001;
+  display:grid;
+  place-items:center;
+  width:42px;
+  height:42px;
+  border:1px solid rgba(20,68,0,.12);
+  border-radius:50%;
+  background:#fff;
+  color:var(--bh-site-dark);
+  font-size:25px;
+  line-height:1;
+  cursor:pointer;
+  box-shadow:0 5px 14px rgba(20,68,0,.12);
+}
+.bh-directory #mapView .directory-map-modal-close{display:none}
+.bh-directory.directory-map-modal-open{overflow:hidden}
+.bh-directory #mapView.is-map-modal{
+  position:fixed!important;
+  z-index:12000!important;
+  inset:5vh 5vw!important;
+  width:90vw!important;
+  height:90vh!important;
+  min-height:0!important;
+  margin:0!important;
+  border-radius:24px!important;
+  box-shadow:0 30px 90px rgba(13,59,50,.32)!important;
+}
+.bh-directory #mapView.is-map-modal .directory-map-expand{display:none}
+.bh-directory #mapView.is-map-modal .directory-map-modal-close{display:grid}
+
+/* Desktop navigation is full browser width on the directory */
+@media(min-width:621px){
+  body.bh-directory .site-header{
+    width:100%!important;
+    max-width:none!important;
+    margin-top:0!important;
+    border-radius:0!important;
+    padding-left:max(16px,var(--bh-page-gutter,24px))!important;
+    padding-right:max(16px,var(--bh-page-gutter,24px))!important;
+  }
+  body.bh-directory .site-header .main-nav{flex:1 1 auto}
+}
+
+/* Tablet */
+@media(max-width:1100px) and (min-width:701px){
+  .bh-directory .directory-hero-search-fields{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .bh-directory .directory-hero-search .button{width:100%}
+}
+
+/* Mobile */
+@media(max-width:900px){
+  .bh-directory .directory-results-column{display:block}
+  .bh-directory #mapView{display:none!important}
+  .bh-directory #results{display:grid;grid-template-columns:1fr;gap:14px}
+  .bh-directory #results .activity-card{display:flex;flex-direction:column;width:100%;min-height:0}
+  .bh-directory #results .activity-image{width:100%;height:190px;min-height:190px}
+  .bh-directory .directory-results-heading{display:flex;align-items:flex-start;flex-direction:column;gap:0;width:100%;margin-bottom:14px}
+  .bh-directory .directory-mobile-view-toggle{display:none!important}
+  .bh-directory .directory-mobile-map-link{display:flex!important}
+  .bh-directory .directory-hero-actions{flex-wrap:wrap;overflow:visible}
+  .bh-directory .directory-calendar-hero-button,
+  .bh-directory .directory-map-action-button,
+  .bh-directory .directory-map-hero-button,
+  .bh-directory .directory-planner-action-button{flex:1 1 180px}
+  .bh-directory .directory-all-link{width:100%;text-align:center}
+  .bh-directory .directory-hero-search{padding:19px 15px 15px;border-radius:18px}
+  .bh-directory .directory-hero-search-fields{grid-template-columns:1fr}
+  .bh-directory .directory-hero-search h2{font-size:26px;margin-bottom:12px}
+  .bh-directory .directory-hero-fullwidth{margin-bottom:20px}
+  .bh-directory .directory-popular{gap:6px}
+  .bh-directory .directory-popular-chip{padding:7px 10px;font-size:11px}
+  .bh-directory .directory-map-modal{padding:10px}
+  .bh-directory .directory-map-modal-inner{width:100%;height:92vh;border-radius:18px}
+}
+
+/* Small mobile */
+@media(max-width:420px){
+  .bh-directory .app-shell{width:calc(100% - 24px)}
+  .bh-directory .directory-hero-search{padding:18px 13px 14px}
+  .bh-directory .directory-hero-search h2{font-size:25px}
+}
+
+
+
+/* Directory content breathing room */
+.bh-directory main.app-shell{
+  padding-top:24px !important;
+}
+@media(max-width:650px){
+  .bh-directory main.app-shell{
+    padding-top:16px !important;
+  }
+}
+
+/* FINAL PAGE FRAME — DIRECTORY */
+.bh-directory main.app-shell{
+  width:100% !important;
+  max-width:none !important;
+  margin-left:0 !important;
+  margin-right:0 !important;
+  padding-left:15px !important;
+  padding-right:15px !important;
+  box-sizing:border-box !important;
+}
+.bh-directory .directory-layout{
+  width:100% !important;
+  max-width:none !important;
+  margin-left:0 !important;
+  margin-right:0 !important;
+}
+@media(max-width:650px){
+  .bh-directory main.app-shell{padding-left:12px !important;padding-right:12px !important}
+}
+
+
+/* FINAL MOBILE DIRECTORY CARD RESET
+   Keeps listings stacked on phones even if legacy activity-card/list rules
+   are present earlier in the shared stylesheet. */
+@media (max-width: 900px){
+  body.bh-directory .directory-results-column{
+    display:block !important;
+    width:100% !important;
+    max-width:none !important;
+    min-width:0 !important;
+  }
+
+  body.bh-directory #results.activity-grid{
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) !important;
+    gap:14px !important;
+    width:100% !important;
+    max-width:none !important;
+    min-width:0 !important;
+    margin:0 !important;
+  }
+
+  body.bh-directory #results.activity-grid .activity-card{
+    display:flex !important;
+    flex-direction:column !important;
+    width:100% !important;
+    max-width:none !important;
+    min-width:0 !important;
+    min-height:0 !important;
+    margin:0 !important;
+    box-sizing:border-box !important;
+    grid-template-columns:none !important;
+  }
+
+  body.bh-directory #results.activity-grid .activity-image{
+    display:block !important;
+    width:100% !important;
+    height:190px !important;
+    min-height:190px !important;
+    max-height:190px !important;
+    flex:0 0 190px !important;
+    box-sizing:border-box !important;
+  }
+
+  body.bh-directory #results.activity-grid .activity-image img{
+    display:block !important;
+    width:100% !important;
+    height:100% !important;
+    max-width:none !important;
+    object-fit:cover !important;
+  }
+
+  body.bh-directory #results.activity-grid .activity-body{
+    display:flex !important;
+    flex-direction:column !important;
+    width:100% !important;
+    min-width:0 !important;
+    box-sizing:border-box !important;
+    padding:17px 18px 18px !important;
+  }
+
+  body.bh-directory #results.activity-grid .activity-card h3,
+  body.bh-directory #results.activity-grid .activity-card p,
+  body.bh-directory #results.activity-grid .activity-meta{
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    overflow-wrap:anywhere !important;
+    word-break:normal !important;
+  }
+
+  body.bh-directory #results.activity-grid .activity-footer{
+    width:100% !important;
+    min-width:0 !important;
+  }
+}
+
+@media (max-width:420px){
+  body.bh-directory #results.activity-grid .activity-image{
+    height:180px !important;
+    min-height:180px !important;
+    max-height:180px !important;
+    flex-basis:180px !important;
+  }
+
+  body.bh-directory #results.activity-grid .activity-body{
+    padding:15px !important;
+  }
+}
+
+
+/* Final mobile hero visibility safeguard */
+@media (max-width:900px) {
+  body.bh-directory .directory-hero-fullwidth[data-bh-directory-hero] {
+    display:block !important;
+    visibility:visible !important;
+    opacity:1 !important;
+  }
+  body.bh-directory .directory-hero-search {
+    display:block !important;
+    visibility:visible !important;
+  }
+}
+
+
+/* Directory/map view switch */
+.bh-directory .directory-map-hero-button{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-height:46px;padding:0 20px;border:1px solid rgba(20,68,0,.12);
+  border-radius:14px;background:#3c8e96;color:#fff;font-size:13px;font-weight:900;
+  line-height:1;white-space:nowrap;text-decoration:none;
+  box-shadow:0 6px 16px rgba(20,68,0,.10);
+  transition:background .18s ease,transform .18s ease,box-shadow .18s ease;
+}
+.bh-directory .directory-map-hero-button:hover,
+.bh-directory .directory-map-hero-button:focus-visible{
+  background:#f6c84a;color:#144400;border-color:#f6c84a;
+  transform:translateY(-1px);box-shadow:0 8px 18px rgba(20,68,0,.12);
+}
+.bh-directory .directory-map-hero-button:focus-visible{outline:3px solid rgba(60,142,150,.28);outline-offset:2px}
+@media(max-width:900px){.bh-directory .directory-map-hero-button{flex:1 1 180px;min-height:46px}}
+
+@media (max-width:1180px) and (min-width:901px){
+  .bh-directory .directory-hero-search-fields{
+    grid-template-columns:minmax(180px,1.7fr) repeat(2,minmax(130px,1fr));
+  }
+}
+@media (max-width:900px){
+  .bh-directory .directory-hero-fullwidth{margin-bottom:18px}
+  .bh-directory .directory-hero-search{padding:16px 14px 14px;border-radius:18px}
+  .bh-directory .directory-hero-search h2{font-size:25px;margin-bottom:10px}
+  .bh-directory .directory-hero-search-fields{grid-template-columns:1fr;gap:7px}
+  .bh-directory .directory-hero-search-fields label,
+  .bh-directory .directory-hero-search .button{min-height:46px;height:46px}
+  .bh-directory .directory-hero-actions{gap:7px}
+  .bh-directory .directory-search-advanced-link,
+  .bh-directory .directory-calendar-hero-button,
+  .bh-directory .directory-map-action-button,
+  .bh-directory .directory-map-hero-button,
+  .bh-directory .directory-planner-action-button{flex:1 1 170px;min-height:42px;padding-inline:12px}
+}
+@media (max-width:520px){
+  .bh-directory .app-shell{width:calc(100% - 20px)}
+  .bh-directory .directory-hero-search{padding:15px 12px 13px;border-radius:16px}
+  .bh-directory .directory-hero-search h2{font-size:23px}
+  .bh-directory .directory-popular{gap:6px;margin-top:8px;padding-top:8px}
+  .bh-directory .directory-popular-chip{padding:6px 9px;font-size:11px}
+}
+
+
+/* INLINE ADVANCED SEARCH — no modal, no backdrop, no blurred overlay */
+.bh-directory .directory-more-filters{
+  width:100%;
+  margin:14px 0 20px;
+}
+.bh-directory .directory-more-filters .bh-advanced-filters{
+  width:100%;
+}
+.bh-directory .directory-more-search-toggle{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  width:100%;
+  min-height:52px;
+  padding:0 18px;
+  border:1px solid rgba(65,102,81,.14);
+  border-radius:16px;
+  background:#fff;
+  color:var(--bh-site-dark,#144400);
+  font:800 14px/1 "Quicksand",sans-serif;
+  cursor:pointer;
+  box-shadow:0 4px 14px rgba(20,68,0,.05);
+  transition:background .18s ease,border-color .18s ease;
+}
+.bh-directory .directory-more-search-toggle:hover,
+.bh-directory .directory-more-search-toggle[aria-expanded="true"]{
+  background:#e7f1ea;
+  border-color:rgba(60,142,150,.25);
+}
+.bh-directory .directory-more-search-panel{
+  margin-top:10px;
+  padding:18px;
+  border:1px solid rgba(65,102,81,.12);
+  border-radius:18px;
+  background:#f7fbf8;
+}
+.bh-directory .directory-more-search-panel[hidden]{display:none}
+.bh-directory .directory-more-search-panel .directory-filter-fields{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:13px;
+}
+.bh-directory .directory-more-search-panel .directory-advanced-section{
+  grid-column:1/-1;
+  margin-top:0;
+  padding-top:0;
+  border-top:0;
+}
+.bh-directory .directory-more-search-panel .directory-advanced-fields{
+  display:contents;
+}
+.bh-directory .directory-more-search-panel .directory-filter-actions{
+  display:flex;
+  gap:10px;
+  margin-top:16px;
+  padding-top:14px;
+  border-top:1px solid var(--bh-site-border,#dbe5dd);
+}
+.bh-directory .directory-more-search-panel .directory-filter-actions .button{
+  min-height:44px;
+}
+.bh-directory .directory-more-search-panel .directory-advanced-toggle{display:none}
+.bh-directory .directory-filters-panel,
+.bh-directory.directory-filter-open::before{
+  display:none!important;
+}
+.bh-directory .directory-load-more{
+  grid-column:1/-1;
+  padding:14px;
+  text-align:center;
+  color:var(--bh-site-muted,#617261);
+  font-size:12px;
+  font-weight:800;
+}
+.bh-directory .directory-end-message{
+  grid-column:1/-1;
+  padding:12px;
+  text-align:center;
+  color:var(--bh-site-muted,#617261);
+  font-size:12px;
+}
+@media(max-width:900px){
+  .bh-directory .directory-more-search-panel .directory-filter-fields{
+    grid-template-columns:1fr;
+  }
+  .bh-directory .directory-more-search-panel{padding:14px}
+  .bh-directory .directory-more-search-panel .directory-filter-actions{
+    flex-direction:column;
+  }
+  .bh-directory .directory-more-search-panel .directory-filter-actions .button{
+    width:100%;
+  }
+}
+
+
+/* =========================================================
+   BUBBA HUB FAMILY-FRIENDLY POLISH
+   Visual refresh only — core directory structure/layout unchanged.
+   ========================================================= */
+.bh-directory{
+  background:#f8fbf8;
+}
+.bh-directory .directory-hero-search{
+  padding:22px 22px 18px;
+  border:2px solid #d8e6db;
+  border-radius:24px;
+  background:linear-gradient(135deg,#eaf5ed 0%,#e4f1ef 100%);
+  box-shadow:0 10px 28px rgba(20,68,0,.07);
+}
+.bh-directory .directory-hero-search h2{
+  color:#144400;
+  font-size:clamp(24px,2.7vw,34px);
+  letter-spacing:-.02em;
+}
+.bh-directory .directory-hero-search-fields{
+  gap:10px;
+}
+.bh-directory .directory-hero-search-fields label{
+  min-height:50px;
+  height:50px;
+  padding:0 13px;
+  border:2px solid #dce8df;
+  border-radius:15px;
+  background:#fff;
+  box-shadow:0 3px 10px rgba(20,68,0,.045);
+  transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease;
+}
+.bh-directory .directory-hero-search-fields label:focus-within{
+  border-color:#3c8e96;
+  box-shadow:0 0 0 3px rgba(60,142,150,.12);
+}
+.bh-directory .directory-hero-search input,
+.bh-directory .directory-hero-search select{
+  font-size:14px;
+  font-weight:700;
+  color:#144400;
+}
+.bh-directory .directory-hero-search .button{
+  min-height:50px;
+  height:50px;
+  border-radius:15px;
+  font-size:14px;
+  box-shadow:0 7px 16px rgba(20,68,0,.14);
+}
+.bh-directory .directory-hero-actions{
+  gap:9px;
+  margin-top:12px;
+}
+.bh-directory .directory-search-advanced-link,
+.bh-directory .directory-calendar-hero-button,
+.bh-directory .directory-map-action-button,
+.bh-directory .directory-map-hero-button,
+.bh-directory .directory-planner-action-button{
+  min-height:44px;
+  padding-inline:17px;
+  border:0;
+  border-radius:14px;
+  font-size:13px;
+  box-shadow:0 6px 14px rgba(20,68,0,.10);
+  transition:transform .18s ease,box-shadow .18s ease,background .18s ease;
+}
+.bh-directory .directory-search-advanced-link{
+  background:#f6c84a;
+  color:#144400;
+}
+.bh-directory .directory-calendar-hero-button,
+.bh-directory .directory-map-action-button,
+.bh-directory .directory-map-hero-button,
+.bh-directory .directory-planner-action-button{
+  background:#416651;
+  color:#fff;
+}
+.bh-directory .directory-search-advanced-link:hover,
+.bh-directory .directory-calendar-hero-button:hover,
+.bh-directory .directory-map-action-button:hover,
+.bh-directory .directory-map-hero-button:hover,
+.bh-directory .directory-planner-action-button:hover{
+  transform:translateY(-2px);
+  box-shadow:0 9px 20px rgba(20,68,0,.15);
+}
+.bh-directory .directory-search-advanced-link:hover{background:#ffe078;color:#144400}
+.bh-directory .directory-calendar-hero-button:hover,
+.bh-directory .directory-map-action-button:hover,
+.bh-directory .directory-map-hero-button:hover,
+.bh-directory .directory-planner-action-button:hover{background:#3c8e96;color:#fff}
+.bh-directory .directory-popular{
+  margin-top:12px;
+  padding-top:11px;
+  border-top:2px solid rgba(65,102,81,.10);
+}
+.bh-directory .directory-popular-chip{
+  padding:8px 12px;
+  border:2px solid #dce8df;
+  background:#fff;
+  color:#416651;
+  font-size:12px;
+  font-weight:900;
+  box-shadow:none;
+  transition:transform .16s ease,background .16s ease,border-color .16s ease;
+}
+.bh-directory .directory-popular-chip:hover{transform:translateY(-2px)}
+.bh-directory .directory-popular-chip.active{background:#3c8e96;border-color:#3c8e96;color:#fff}
+.bh-directory .directory-results-heading{
+  margin-bottom:17px;
+}
+.bh-directory .directory-results-heading h1{
+  font-size:clamp(32px,3.8vw,46px);
+  font-weight:900;
+  letter-spacing:-.035em;
+}
+.bh-directory .directory-results-heading #count{
+  font-size:14px;
+  font-weight:700;
+}
+.bh-directory #results{
+  gap:18px;
+}
+.bh-directory .activity-card{
+  border:2px solid #e0e9e2;
+  border-radius:24px;
+  box-shadow:0 8px 22px rgba(20,68,0,.065);
+  transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease;
+}
+.bh-directory .activity-card:hover{
+  transform:translateY(-4px);
+  border-color:#c7ddd0;
+  box-shadow:0 16px 32px rgba(20,68,0,.12);
+}
+.bh-directory .activity-image{
+  height:200px;
+  min-height:200px;
+  background:linear-gradient(135deg,#d8e6db,#d8eceb);
+}
+.bh-directory .activity-body{
+  padding:18px 19px 19px;
+}
+.bh-directory .activity-meta{
+  color:#3c8e96;
+  font-size:11px;
+  letter-spacing:.08em;
+}
+.bh-directory .activity-card h3{
+  margin:7px 0 8px;
+  font-size:21px;
+  font-weight:900;
+  letter-spacing:-.015em;
+}
+.bh-directory .activity-card p{
+  font-size:13px;
+  font-weight:600;
+}
+.bh-directory .activity-footer .button{
+  min-height:40px;
+  padding:9px 15px;
+  border-radius:12px;
+  font-weight:900;
+}
+.bh-directory #mapView{
+  border:2px solid #dce8df;
+  border-radius:24px;
+  box-shadow:0 12px 28px rgba(20,68,0,.08);
+}
+.bh-directory .directory-map-expand{
+  border:2px solid #dce8df;
+  border-radius:13px;
+  font-weight:900;
+}
+.bh-directory .directory-more-search-toggle{
+  min-height:54px;
+  padding-inline:19px;
+  border:2px solid #dce8df;
+  border-radius:17px;
+  font-size:14px;
+  font-weight:900;
+  box-shadow:0 5px 14px rgba(20,68,0,.045);
+}
+.bh-directory .directory-more-search-toggle:hover,
+.bh-directory .directory-more-search-toggle[aria-expanded="true"]{
+  background:#eaf5ed;
+  border-color:#9fb7a5;
+}
+.bh-directory .directory-more-search-panel{
+  padding:20px;
+  border:2px solid #dce8df;
+  border-radius:20px;
+  background:#f7fbf8;
+}
+@media(max-width:900px){
+  .bh-directory .directory-hero-search{padding:18px 14px 15px}
+  .bh-directory .directory-hero-search-fields label,
+  .bh-directory .directory-hero-search .button{min-height:48px;height:48px}
+  .bh-directory .activity-image{height:190px;min-height:190px}
+  .bh-directory .activity-card{border-radius:20px}
+  .bh-directory .directory-results-heading h1{font-size:34px}
+}
+@media(max-width:520px){
+  .bh-directory .directory-hero-search{border-radius:20px}
+  .bh-directory .directory-hero-search h2{font-size:24px}
+  .bh-directory .directory-results-heading h1{font-size:31px}
+  .bh-directory .activity-card h3{font-size:20px}
+}

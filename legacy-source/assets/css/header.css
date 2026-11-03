@@ -1,0 +1,446 @@
+/* =========================================================
+   BUBBA HUB — MASTER HEADER
+   ========================================================= */
+
+/* Logo + menu + search + sign in */
+.bh-header-top-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  /* Switch from space-between to flex-start so they group together */
+  justify-content: flex-start; 
+  gap: 40px; /* Adjust this gap to control how close/far they sit */
+}
+
+.bh-header-actions {
+  /* Remove margin-left: auto so it doesn't force a gap */
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+  flex: 1; /* Allows the action area to share space nicely */
+}
+
+.bh-site-header {
+  width: 100%;
+  background: #d8e6db;
+  color: #144400;
+  position: relative;
+  z-index: 1000;
+  padding-bottom: 18px;
+}
+
+.bh-header-inner {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 12px 24px;
+  box-sizing: border-box;
+}
+
+/* Logo + menu + search + sign in */
+.bh-header-top-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  /* Switch from space-between to flex-start so they group together */
+  justify-content: flex-start; 
+  gap: 40px; /* Adjust this gap to control how close/far they sit */
+}
+
+.bh-header-actions {
+  /* Remove margin-left: auto so it doesn't force a gap */
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+  flex: 1; /* Allows the action area to share space nicely */
+}
+
+.bh-main-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bh-main-nav a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 10px;
+  color: #144400;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 700;
+  transition: background .2s ease, color .2s ease;
+}
+
+.bh-main-nav a:hover,
+.bh-main-nav a:focus-visible {
+  background: rgba(255, 255, 255, .55);
+  color: #144400;
+}
+
+/* Search icon sits directly beside the menu */
+.bh-header-search-toggle {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(20, 68, 0, .18);
+  border-radius: 50%;
+  background: #fff;
+  color: #144400;
+  font-size: 23px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(20, 68, 0, .08);
+  transition: transform .2s ease, background .2s ease;
+}
+
+.bh-header-search-toggle:hover,
+.bh-header-search-toggle:focus-visible {
+  background: #f8fbf9;
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.bh-sign-in-btn {
+  background: #219ebc;
+  color: #fff !important;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 13px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: opacity .2s ease;
+}
+
+.bh-sign-in-btn:hover {
+  opacity: .9;
+}
+
+/* Search expands UNDER the menu, not beside it */
+.bh-header-search-bar {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  margin: 0;
+  padding: 0;
+  transition: max-height .28s ease, opacity .2s ease, padding-top .28s ease;
+}
+
+.bh-header-search-bar.is-open {
+  max-height: 90px;
+  opacity: 1;
+  padding-top: 10px;
+}
+
+.bh-header-search-fields {
+  width: min(900px, 100%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.bh-header-search-fields input,
+.bh-header-search-fields select {
+  flex: 1 1 130px;
+  min-width: 100px;
+  height: 42px;
+  box-sizing: border-box;
+  background: #fff;
+  color: #2b2d42;
+  border: 1px solid #ced7c7;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  outline: none;
+}
+
+.bh-header-search-fields input {
+  flex: 2 1 190px;
+}
+
+.bh-header-search-fields input:focus,
+.bh-header-search-fields select:focus {
+  border-color: #416651;
+  box-shadow: 0 0 0 2px rgba(65, 102, 81, .12);
+}
+
+.bh-header-search-submit {
+  height: 42px;
+  flex: 0 0 auto;
+  background: #f6c84a;
+  color: #144400;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 18px;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.bh-header-search-submit:hover {
+  background: #416651;
+  color: #fff;
+}
+
+/* Keep existing page-title styling/pale-green treatment untouched. */
+
+/* Tablet */
+@media (max-width: 1100px) {
+  .bh-header-inner {
+    padding: 10px 15px;
+  }
+
+  .bh-header-actions {
+    gap: 5px;
+  }
+
+  .bh-main-nav {
+    gap: 2px;
+  }
+
+  .bh-main-nav a {
+    padding: 0 7px;
+    font-size: 12px;
+  }
+
+  .bh-header-logo img {
+    width: 144px;
+    height: 72px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 700px) {
+  .bh-header-top-row {
+    gap: 8px;
+  }
+
+  .bh-header-logo img {
+    width: 185px;
+    height: 95px;
+  }
+
+  .bh-main-nav a:nth-child(n + 3) {
+    display: none;
+  }
+
+  .bh-header-search-toggle {
+    width: 38px;
+    height: 38px;
+    flex-basis: 38px;
+  }
+
+  .bh-sign-in-btn {
+    padding: 7px 11px;
+    font-size: 12px;
+  }
+
+  .bh-header-search-bar.is-open {
+    max-height: 180px;
+  }
+
+  .bh-header-search-fields {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+  }
+
+  .bh-header-search-fields input,
+  .bh-header-search-fields select,
+  .bh-header-search-submit {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .bh-header-search-fields input {
+    grid-column: 1 / -1;
+  }
+
+  .bh-header-search-submit {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 460px) {
+  .bh-header-logo img {
+    width: 155px;
+    height: 82px;
+  }
+
+  .bh-main-nav a:nth-child(n + 2) {
+    display: none;
+  }
+}
+
+
+/* Mobile header: keep the complete shared header visible and give the
+   navigation its own compact menu instead of hiding navigation links. */
+@media (max-width: 700px) {
+  .bh-site-header { padding-bottom: 10px; }
+  .bh-header-inner { padding: 8px 12px; }
+  .bh-header-top-row { align-items:center; gap:8px; }
+  .bh-header-actions { gap:6px; }
+  .bh-header-logo { flex:0 1 auto; min-width:0; }
+  .bh-header-logo img { width:155px; height:82px; max-width:42vw; object-fit:contain; }
+  .bh-main-nav {
+    display:none;
+    position:absolute;
+    top:calc(100% - 2px);
+    left:12px;
+    right:12px;
+    width:auto;
+    max-height:calc(100dvh - 90px);
+    padding:8px;
+    flex-direction:column;
+    align-items:stretch;
+    gap:4px;
+    overflow-y:auto;
+    background:#d8e6db;
+    border:1px solid rgba(20,68,0,.12);
+    border-radius:14px;
+    box-shadow:0 18px 40px rgba(20,68,0,.18);
+    z-index:2001;
+  }
+  .bh-main-nav.is-open { display:flex; }
+  .bh-main-nav a,
+  .bh-main-nav a:nth-child(n + 2) {
+    display:flex;
+    width:100%;
+    min-height:46px;
+    box-sizing:border-box;
+    justify-content:flex-start;
+    padding:11px 13px;
+    border-radius:10px;
+    background:#eef6f0;
+    font-size:14px;
+    white-space:normal;
+  }
+  .bh-mobile-menu {
+    display:inline-flex;
+    flex:0 0 40px;
+    width:40px;
+    height:40px;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    gap:5px;
+    margin:0;
+    padding:0;
+    border:1px solid rgba(20,68,0,.16);
+    border-radius:10px;
+    background:#fff;
+    color:#144400;
+    cursor:pointer;
+    order:0;
+  }
+  .bh-mobile-menu span {
+    width:19px;
+    height:2px;
+    border-radius:99px;
+    background:currentColor;
+    transition:transform .2s ease, opacity .2s ease;
+  }
+  .bh-mobile-menu[aria-expanded="true"] span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+  .bh-mobile-menu[aria-expanded="true"] span:nth-child(2){opacity:0}
+  .bh-mobile-menu[aria-expanded="true"] span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+  .bh-sign-in-btn { padding:7px 10px; font-size:12px; }
+}
+@media (min-width:701px) {
+  .bh-mobile-menu { display:none; }
+}
+@media (max-width:460px) {
+  .bh-header-logo img { width:132px; height:70px; max-width:39vw; }
+  .bh-sign-in-btn { display:none; }
+  .bh-header-search-toggle { width:36px; height:36px; flex-basis:36px; }
+}
+
+/* Directory hero mobile guard: the component is full-width and never hidden. */
+@media (max-width:900px) {
+  body.bh-directory .directory-hero-fullwidth {
+    display:block !important;
+    visibility:visible !important;
+    width:100vw !important;
+    max-width:none !important;
+    margin-left:calc(50% - 50vw) !important;
+    margin-right:calc(50% - 50vw) !important;
+    box-sizing:border-box !important;
+  }
+  body.bh-directory .directory-hero-search {
+    display:block !important;
+    width:100% !important;
+    max-width:none !important;
+    box-sizing:border-box !important;
+  }
+}
+
+
+/* Mobile header/search final layout safeguards */
+@media (max-width:700px){
+  .bh-site-header{overflow:visible;}
+  .bh-header-inner{padding:8px 12px;}
+  .bh-header-top-row{min-width:0;gap:6px;}
+  .bh-header-logo{min-width:0;overflow:hidden;}
+  .bh-header-logo img{display:block;max-width:100%;height:auto;object-fit:contain;}
+  .bh-header-actions{min-width:0;gap:6px;}
+  .bh-main-nav{top:100%;left:8px;right:8px;max-height:calc(100dvh - 80px);overflow-y:auto;}
+  .bh-header-search-bar{
+    width:100%;
+    box-sizing:border-box;
+    padding-left:0;
+    padding-right:0;
+  }
+  .bh-header-search-bar.is-open{
+    max-height:280px;
+    padding-top:10px;
+    padding-bottom:4px;
+    overflow:visible;
+  }
+  .bh-header-search-fields{
+    width:100%;
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    gap:7px;
+    margin:0;
+  }
+  .bh-header-search-fields input,
+  .bh-header-search-fields select,
+  .bh-header-search-submit{
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    box-sizing:border-box;
+  }
+  .bh-header-search-fields input{
+    grid-column:1/-1;
+    min-width:0;
+  }
+  .bh-header-search-submit{
+    grid-column:1/-1;
+  }
+}
+@media (max-width:360px){
+  .bh-header-inner{padding-left:8px;padding-right:8px;}
+  .bh-header-logo img{width:120px;height:64px;max-width:38vw;}
+  .bh-mobile-menu{width:36px;height:36px;flex-basis:36px;}
+  .bh-header-search-toggle{width:36px;height:36px;flex-basis:36px;}
+  .bh-header-search-fields{grid-template-columns:1fr;}
+  .bh-header-search-fields input,
+  .bh-header-search-fields select,
+  .bh-header-search-submit{grid-column:1/-1;}
+}

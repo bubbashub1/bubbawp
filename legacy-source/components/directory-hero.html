@@ -1,0 +1,32 @@
+<section class="directory-hero-fullwidth" data-bh-directory-hero>
+  <div id="bhLocationPrompt" class="bh-location-prompt" hidden role="region" aria-label="Nearby activities"><div><strong>Find activities near you?</strong><p>Allow location access to see local classes and groups. Your location is not saved.</p></div><div class="bh-location-prompt-actions"><button type="button" class="button button-primary" id="bhLocationPromptAllow">Use my location</button><button type="button" class="button button-soft" id="bhLocationPromptDismiss">Not now</button></div></div>
+  <form class="home-search directory-hero-search" data-bh-hero-form method="get">
+    <h2>Find family activities</h2>
+    <div class="home-search-fields directory-hero-search-fields">
+      <label><span>⌕</span><input data-bh-hero-field="keyword" name="keyword" type="search" placeholder="Keyword" aria-label="Keyword"></label>
+      <label><span>⌖</span><select data-bh-hero-field="region" name="region"><option value="">Region</option></select></label>
+      <label><span>⌖</span><select data-bh-hero-field="town" name="town"><option value="">Town</option></select></label>
+      <label><span>♟</span><select data-bh-hero-field="category" name="category"><option value="">Category</option></select></label>
+      <label><span>◷</span><select data-bh-hero-field="day" name="day"><option value="">Day</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option></select></label>
+      <div class="bh-search-location-fields">
+        <label class="bh-search-postcode"><span aria-hidden="true">⌖</span><input id="bhPostcodeInput" name="postcode" autocomplete="postal-code" placeholder="Enter postcode" aria-label="UK postcode" inputmode="text"></label>
+        <label class="bh-search-radius"><span aria-hidden="true">↔</span><select id="bhPostcodeRadius" name="radius" aria-label="Search within distance"><option value="5">5 miles</option><option value="10" selected>10 miles</option><option value="25">25 miles</option><option value="50">50 miles</option><option value="100">100 miles</option></select></label>
+      </div>
+      <button class="button button-primary bh-search-submit" type="submit">Search activities</button>
+      <div class="bh-search-location-actions">
+        <button type="button" class="button button-soft" id="bhUseMyLocation">⌖ Use my location</button>
+        <button type="button" class="button button-soft" id="bhPostcodeClear">Clear location</button>
+      </div>
+      <span id="bhPostcodeStatus" class="bh-search-location-status" role="status" aria-live="polite"></span>
+    </div>
+    <div class="directory-hero-actions">
+      <button type="button" class="home-advanced-link directory-search-advanced-link" data-bh-hero-filters>More search options →</button>
+    </div>
+    <section class="directory-more-filters directory-hero-expanded-filters" id="directoryFilters" aria-label="More search filters"><div data-bh-advanced-filters-placeholder></div></section>
+    <div class="directory-popular" aria-label="Popular categories" data-bh-popular-categories>
+      <span class="directory-popular-label">Popular:</span>
+      <span class="directory-popular-loading" aria-live="polite">Loading…</span>
+    </div>
+  </form>
+
+</section>

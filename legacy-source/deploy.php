@@ -1,0 +1,116 @@
+<?php
+declare(strict_types=1);
+// Match the dedicated admin login cookie; the default PHP session is separate.
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    ini_set('session.use_strict_mode', '1');
+    ini_set('session.use_only_cookies', '1');
+    session_name('BUBBAHUB_ADMINSESSID');
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'secure' => !empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off',
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+    session_start();
+}
+
+header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store');
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['ok' => false, 'error' => 'POST required']);
+    exit;
+}
+
+// Reject deployment requests sent by a different website.
+$origin = (string)($_SERVER['HTTP_ORIGIN'] ?? '');
+if ($origin !== '') {
+    $originHost = parse_url($origin, PHP_URL_HOST);
+    $requestHost = explode(':', (string)($_SERVER['HTTP_HOST'] ?? ''))[0];
+    $originScheme = parse_url($origin, PHP_URL_SCHEME);
+    $expectedScheme = (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off') ? 'https' : 'http';
+    if (!$originHost || strcasecmp($originHost, $requestHost) !== 0 || $originScheme !== $expectedScheme) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'error' => 'Invalid deployment request origin']);
+        exit;
+    }
+}
+
+if (empty($_SESSION['bh_admin_authenticated'])) {
+    http_response_code(401);
+    echo json_encode(['ok' => false, 'error' => 'Admin login required']);
+    exit;
+}
+
+$configCandidates = array_filter([
+    dirname($_SERVER['DOCUMENT_ROOT'] ?? '') . '/github-deploy-config.php',
+    ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/github-deploy-config.php',
+    '/github-deploy-config.php'
+]);
+$configFile = '';
+foreach ($configCandidates as $candidate) {
+    if (is_file($candidate)) {
+        $configFile = $candidate;
+        break;
+    }
+}
+
+if (!is_file($configFile)) {
+    http_response_code(503);
+    echo json_encode(['ok' => false, 'error' => 'Server configuration file not found']);
+    exit;
+}
+
+$config = require $configFile;
+
+if (!is_array($config)) {
+    http_response_code(503);
+    echo json_encode(['ok' => false, 'error' => 'Invalid server configuration']);
+    exit;
+}
+
+$githubToken = (string)($config['github_token'] ?? '');
+
+if ($githubToken === '') {
+    http_response_code(503);
+    echo json_encode(['ok' => false, 'error' => 'GitHub deployment token is missing']);
+    exit;
+}
+
+$ch = curl_init(
+    'https://api.github.com/repos/bubbashub1/bubbaplugin/actions/workflows/deploy.yml/dispatches'
+);
+
+curl_setopt_array($ch, [
+    CURLOPT_POST => true,
+    CURLOPT_POSTFIELDS => json_encode(['ref' => 'main']),
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_HTTPHEADER => [
+        'Accept: application/vnd.github+json',
+        'Authorization: Bearer ' . $githubToken,
+        'Content-Type: application/json',
+        'User-Agent: BubbaHub-Admin-Deploy',
+        'X-GitHub-Api-Version: 2022-11-28'
+    ],
+    CURLOPT_TIMEOUT => 20
+]);
+
+$response = curl_exec($ch);
+$status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$error = curl_error($ch);
+curl_close($ch);
+
+if ($response === false || $status < 200 || $status >= 300) {
+    http_response_code(502);
+    echo json_encode([
+        'ok' => false,
+        'error' => 'GitHub deployment request failed',
+        'details' => $error !== '' ? $error : 'HTTP ' . $status
+    ]);
+    exit;
+}
+
+echo json_encode(['ok' => true, 'message' => 'Deployment started']);
+?>

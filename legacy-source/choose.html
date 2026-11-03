@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>What Should We Do? · Bubba Hub</title>
+<meta name="description" content="Get personalised family activity ideas from Bubba Hub.">
+<link rel="canonical" href="/choose">
+<link rel="stylesheet" href="assets/css/styles.css"><link rel="stylesheet" href="/assets/css/subpages-v2.css"></head>
+<body class="bh-subpage-v2">
+<header class="site-header"><a class="brand" href="index.html" aria-label="Bubba Hub home"><img class="brand-logo" src="images/logos/gemini_generated_image_t65ztnt65ztnt65z-20260930-185704-7e0755.jpeg" alt="Bubba Hub"></a><nav class="main-nav" aria-label="Main navigation"><a href="directory.html">Find activities</a><a href="events.html">Events</a><a href="venues.html">Venues</a><a href="planner.html">My planner</a><a href="/calendar.html">Calendar</a><a href="my-hub.html">My Hub</a><a href="leader.html">For class leaders</a><a href="admin.html">Admin</a></nav><a class="button button-soft" href="account.html">My account</a></header>
+
+<main class="app-shell personal-page">
+<section class="personal-hero">
+<div>
+<span class="eyebrow">Your Bubba Hub shortcut</span>
+<h1>What should we do?</h1>
+<p>Tell us a little about today and we’ll bring the most relevant activities to the top.</p>
+</div>
+<div class="choose-hero-actions"><a class="button button-soft" href="my-hub.html">Back to My Hub</a><span class="choose-hero-note">4 quick choices · personalised results</span></div>
+</section>
+
+<section class="personal-layout" id="personalApp">
+<aside class="personal-steps" aria-label="Personalised search">
+<div class="personal-step is-active" data-step="1"><b>1</b><span>Who</span><small>Family</small></div>
+<div class="personal-step" data-step="2"><b>2</b><span>When</span><small>Day</small></div>
+<div class="personal-step" data-step="3"><b>3</b><span>Where</span><small>Area</small></div>
+<div class="personal-step" data-step="4"><b>4</b><span>What</span><small>Mood</small></div>
+</aside>
+
+<div class="personal-main">
+<section class="personal-panel" data-panel="1">
+<span class="eyebrow">Who is coming?</span>
+<h2>Choose the children you want to match activities to.</h2>
+<p class="personal-help">We’ll use their ages to prioritise suitable activities. Nothing is shared with organisers by this search.</p>
+<div id="familyChoices" class="personal-choice-grid"></div>
+<div id="manualAgeWrap" class="personal-manual-age" hidden>
+<label>Age range
+<select id="manualAge">
+<option value="">Any age</option><option value="0-1">Baby · 0–1</option><option value="1-2">Toddler · 1–2</option><option value="2-3">2–3 years</option><option value="3-5">3–5 years</option><option value="5-7">5–7 years</option><option value="7-9">7–9 years</option>
+</select>
+</label>
+</div>
+<div class="personal-actions"><button class="button button-primary" type="button" data-next>Next: choose a day</button></div>
+</section>
+
+<section class="personal-panel" data-panel="2" hidden>
+<span class="eyebrow">When?</span>
+<h2>When would you like to go?</h2>
+<p class="personal-help">Choose a day or a specific date. We’ll favour sessions that actually run then.</p>
+<div id="whenChoices" class="personal-when-grid">
+  <button type="button" class="personal-when-card" data-when="today"><b>Today</b><small id="todayLabel"></small></button>
+  <button type="button" class="personal-when-card" data-when="tomorrow"><b>Tomorrow</b><small id="tomorrowLabel"></small></button>
+  <button type="button" class="personal-when-card" data-when="weekend"><b>This weekend</b><small>Saturday or Sunday</small></button>
+  <button type="button" class="personal-when-card" data-when="any"><b>Any day</b><small>Show all sessions</small></button>
+</div>
+<div class="personal-date-row">
+  <label>Or pick a date<input id="personalDate" type="date"></label>
+  <span id="selectedWhen" class="status">Any day</span>
+</div>
+<div class="personal-actions"><button class="button button-soft" type="button" data-back>Back</button><button class="button button-primary" type="button" data-next>Next: choose an area</button></div>
+</section>
+
+<section class="personal-panel" data-panel="3" hidden>
+<span class="eyebrow">Where?</span>
+<h2>Where do you normally look?</h2>
+<p class="personal-help">Use a region or town to keep the results local. You can change this any time.</p>
+<div class="personal-two-col">
+<label>Region<select id="personalRegion"><option value="">Any region</option></select></label>
+<label>Town<select id="personalTown" disabled><option value="">Any town</option></select></label>
+</div>
+<div class="personal-budget">
+<span class="personal-label">Budget</span>
+<div id="budgetChoices" class="personal-chip-grid compact"></div>
+</div>
+<div class="personal-actions"><button class="button button-soft" type="button" data-back>Back</button><button class="button button-primary" type="button" data-next>Next: choose a mood</button></div>
+</section>
+
+<section class="personal-panel" data-panel="4" hidden>
+<span class="eyebrow">What are you in the mood for?</span>
+<h2>Pick a category, or let Bubba Hub surprise you.</h2>
+<p class="personal-help">Your choice nudges the results; it never hides everything else.</p>
+<div id="categoryChoices" class="personal-chip-grid"></div>
+<div class="personal-actions"><button class="button button-soft" type="button" data-back>Back</button><button class="button button-primary" type="button" id="findIdeas">Show my ideas</button></div>
+</section>
+
+<section class="personal-results" id="personalResults" hidden>
+<div class="personal-results-head">
+<div><span class="eyebrow">Your ideas</span><h2 id="resultsTitle">Ideas for your family</h2><p id="resultsSummary"></p></div>
+<button class="button button-soft" type="button" id="changePlan">Change choices</button>
+</div>
+<div id="personalResultList" class="personal-result-grid"></div>
+</section>
+</div>
+</section>
+<div class="personal-message" id="personalMessage" aria-live="polite"></div>
+</main>
+
+<footer class="site-footer"><div class="site-footer-grid"><div class="site-footer-brand"><a href="index.html" class="site-footer-logo" aria-label="Bubba Hub home"><img src="images/logos/gemini_generated_image_t65ztnt65ztnt65z-20260930-185704-7e0755.jpeg" alt="Bubba Hub"></a><div class="site-footer-brand-copy"><a href="index.html" class="site-footer-title">Bubba Hub</a><p>Find, plan &amp; book family activities across Devon &amp; Cornwall.</p></div></div><div class="site-footer-column"><h2>Main menu</h2><nav class="site-footer-links" aria-label="Footer main menu"><a href="directory.html">Find activities</a><a href="my-hub.html">My Hub</a><a href="help-support.html">Support &amp; Guidance</a><a href="leader.html">Class Leaders</a><a href="account.html">Account</a></nav></div><div class="site-footer-column"><h2>Explore &amp; tools</h2><nav class="site-footer-links" aria-label="Footer explore and tools"><a href="events.html">Events</a><a href="venues.html">Venues</a><a href="planner.html">Planner</a><a href="/calendar.html">Calendar</a></nav></div><div class="site-footer-column"><h2>Legal &amp; contact</h2><nav class="site-footer-links" aria-label="Footer legal and contact"><a href="privacy.html">Privacy</a><a href="terms.html">Terms &amp; Conditions</a><a href="mailto:contact@bubbahub.co.uk">Contact Bubba Hub</a></nav></div></div><div class="site-footer-bottom"><span>&copy; 2026 Bubba Hub</span><span>Devon &amp; Cornwall</span></div></footer>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/personalise.js"></script>
+</body>
+</html>

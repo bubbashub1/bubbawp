@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Organiser · Bubba Hub</title>
+  <link rel="stylesheet" href="/assets/css/styles.css">  <link rel="stylesheet" href="/assets/css/sitewide-home.css">
+  <link rel="stylesheet" href="/assets/css/organiser.css">
+  <link rel="stylesheet" href="/assets/css/organiser-v2.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="/assets/css/sitewide-unified-polish.css?v=20261029"></head>
+<body class="bh-organiser-v2">
+  <div id="siteHeaderMount"></div>
+
+  <main class="app-shell organiser-storefront-page">
+    <div id="organiserState" class="organiser-loading">
+      <p>Loading organiser…</p>
+    </div>
+  </main>
+
+  <script src="/assets/js/app.js"></script>
+  <script src="/assets/js/leader-demo.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+  (() => {
+    let organiserGroups = [];
+
+    const cleanSlug = value => String(value || "")
+      .toLowerCase()
+      .trim()
+      .replace(/&/g, "and")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+
+    const getRequestedSlug = () => {
+      const params = new URLSearchParams(location.search);
+      const parts = location.pathname.replace(/\/+$/, "").split("/").filter(Boolean);
+      const last = parts[parts.length - 1] || "";
+      return String(params.get("slug") || (/organiser\.html$/i.test(last) ? "" : last))
+        .toLowerCase()
+        .trim();
+    };
+
+    const resolveImage = value => {
+      const raw = String(value || "").trim();
+      if (!raw) return "";
+      if (/^https?:\/\//i.test(raw) || raw.startsWith("/")) return raw;
+      if (raw.startsWith("images/") || raw.startsWith("assets/")) return raw;
+      if (raw === "gemini_generated_image_20260930-190428-b9e652.png") {
+        return "/wp-content/uploads/logo/logoheader.png";
+      }
+      return "images/logos/" + raw;
+    };
+
+    const safeExternalUrl = value => {
+      const raw = String(value || "").trim();
+      if (!raw) return "";
+      try {
+        const url = new URL(raw, location.href);
+        return ["http:", "https:", "mailto:", "tel:"].includes(url.protocol) ? url.href : "";
+      } catch (_) {
+        return "";
+      }
+    };
+
+    const getDemoOrganiserActivities = async slug => {
+      if(!window.BH_DEMO_MODE || typeof window.bhLoadDemoLeader!=="function") return [];
+      const d=await window.bhLoadDemoLeader(), org=d.organisation||{};
+      const wanted=cleanSlug(slug), orgSlug=cleanSlug(org.slug||org.organisation_name||org.name||"little-explorers-torbay");
+      return (d.classes||[]).filter(a=>wanted===orgSlug || cleanSlug(a.organiser_slug||orgSlug)===wanted).map(a=>({
+        ...a,id:String(a.id||""),organiser_name:org.organisation_name||org.name||"Local organiser",organiser_slug:orgSlug,
+        organiser_website:org.website||"",organiser_email:org.email||"",organiser_phone:org.phone||"",
+        venues:(a.venues||[]).map(v=>({name:v.venue_name||v.name,address:v.address,town:v.town,region:v.region,postcode:v.postcode,latitude:v.latitude,longitude:v.longitude})),
+        age_range:a.age_range?[String(a.age_range)]:[],price:a.price_from!==null&&a.price_from!==undefined?"£"+Number(a.price_from).toFixed(2):"",
+        short_description:a.description||"",image_url:a.image_path||""
+      }));
+    };
+
+    const getOrganiserActivities = async slug => {
+      const url = new URL("/api/activities.php", document.baseURI);
+      url.searchParams.set("organiser_slug", slug);
+      url.searchParams.set("page", "1");
+      url.searchParams.set("per_page", "100");
+
+      const response = await fetch(url.toString(), {
+        cache: "no-store",
+        headers: {Accept: "application/json"}
+      });
+      if (!response.ok) throw new Error("Organiser API request failed");
+
+      const payload = await response.json();
+      if (!payload.ok) throw new Error(payload.error || "Organiser API request failed");
+
+      return (Array.isArray(payload.data) ? payload.data : []).map(activity => ({
+        ...activity,
+        id: String(activity.id || ""),
+        organiser_name: activity.organiser?.name || "",
+        organiser_slug: activity.organiser?.slug || "",
+        organiser_website: activity.organiser?.website || "",
+        organiser_email: activity.organiser?.email || "",
+        organiser_phone: activity.organiser?.phone || "",
+        venues: Array.isArray(activity.venues) ? activity.venues : [],
+        age_range: activity.age_range ? [String(activity.age_range)] : [],
+        price: activity.price_from !== null && activity.price_from !== undefined
+          ? "£" + Number(activity.price_from).toFixed(2)
+          : "",
+        short_description: activity.description || "",
+        image_url: activity.image_path || ""
+      }));
+    };
+
+    const getPublicContent = async slug => {
+      try {
+        const url = new URL("/api/organiser-terms.php", document.baseURI);
+        url.searchParams.set("slug", slug);
+        const response = await fetch(url.toString(), {cache: "no-store"});
+        if (!response.ok) return {};
+        return await response.json();
+      } catch (_) {
+        return {};
+      }
+    };
+
+    const buildVenueKey = venue =>
+      [venue.name, venue.address, venue.town, venue.postcode]
+        .filter(Boolean)
+        .join("|");
+
+    const getUniqueVenues = groups => {
+      const venues = new Map();
+      groups.forEach(activity => {
+        (activity.venues || []).forEach(venue => {
+          const key = buildVenueKey(venue);
+          if (key && !venues.has(key)) venues.set(key, venue);
+        });
+      });
+      return [...venues.values()];
+    };
+
+    const isTruthy = value => value === true || value === 1 || value === "1" || String(value || "").toLowerCase() === "true" || String(value || "").toLowerCase() === "yes";
+    const isNewActivity = activity => {
+      const raw = activity.created_at || activity.createdAt || activity.published_at || activity.date_created;
+      if (!raw) return false;
+      const date = new Date(raw);
+      if (Number.isNaN(date.getTime())) return false;
+      return (Date.now() - date.getTime()) <= 30 * 24 * 60 * 60 * 1000;
+    };
+    const getBadges = (activity, organiser = {}) => {
+      const badges = [];
+      if (isTruthy(activity.verified ?? activity.is_verified ?? activity.organiser_verified ?? organiser.verified ?? organiser.is_verified)) badges.push({key:"verified", icon:"✓", label:"Verified"});
+      if (isTruthy(activity.featured ?? activity.is_featured ?? organiser.featured ?? organiser.is_featured)) badges.push({key:"featured", icon:"★", label:"Featured"});
+      if (isTruthy(activity.popular ?? activity.is_popular ?? organiser.popular ?? organiser.is_popular)) badges.push({key:"popular", icon:"♥", label:"Popular"});
+      if (isNewActivity(activity) || isTruthy(activity.is_new)) badges.push({key:"new", icon:"✦", label:"New"});
+      return badges;
+    };
+
+    const getOrganiserDetailBadges = (groups, organiser = {}) => {
+      const badges = getBadges(groups[0] || {}, organiser);
+      const add = (key, icon, label) => {
+        if (!badges.some(b => b.key === key)) badges.push({key, icon, label});
+      };
+      const text = groups.map(a => [
+        a.title, a.category, a.description, a.accessibility,
+        a.activity_type, a.format, a.delivery_mode
+      ].flat().filter(Boolean).join(" ").toLowerCase()).join(" ");
+      const accessibility = groups.map(a => Array.isArray(a.accessibility) ? a.accessibility : [a.accessibility])
+        .flat().filter(Boolean).join(" ").toLowerCase();
+
+      const hasAccess = key => groups.some(a => {
+        const values = Array.isArray(a.accessibility) ? a.accessibility : [a.accessibility];
+        return values.map(v => String(v || "").toLowerCase()).includes(key);
+      });
+
+      if (groups.some(a => Array.isArray(a.age_range) && a.age_range.some(v => /0[-–]3|baby|0[-–]12/i.test(String(v))))) add("baby", "🍼", "Baby Friendly");
+      if (groups.some(a => Array.isArray(a.age_range) && a.age_range.some(v => /1[-–]3|2[-–]4|3[-–]5|toddler/i.test(String(v))))) add("toddler", "🧸", "Toddler Friendly");
+      const ageLabels = new Map([["0-3","0–3 years"],["0-4","0–4 years"],["1-3","1–3 years"],["2-4","2–4 years"],["3-5","3–5 years"],["3-6","3–6 years"],["5-plus","5+ years"],["0-5","0–5 years"],["all","All ages"]]);
+      const ageKeys = [...new Set(groups.flatMap(a => Array.isArray(a.age_range) ? a.age_range : [a.age_range]).map(v => String(v || "").trim()).filter(Boolean))];
+      ageKeys.slice(0, 4).forEach(key => add("age-" + key.replace(/[^a-z0-9]+/gi, "-").toLowerCase(), "👶", ageLabels.get(key) || key.replace(/\s*years?\s*$/i, "") + " years"));
+      if (hasAccess("step_free") || hasAccess("accessible_toilet") || hasAccess("send_support") || /wheelchair|accessible|step[- ]?free/i.test(accessibility)) add("accessible", "♿", "Accessible");
+      if (hasAccess("pram_access") || /pram|pushchair|buggy/i.test(accessibility)) add("pram", "🛞", "Pram Friendly");
+      if (hasAccess("toilets") || hasAccess("accessible_toilet") || /toilet|wc/i.test(accessibility)) add("toilet", "🚻", "Toilet Available");
+      if (hasAccess("baby_changing") || /changing|baby change/i.test(accessibility)) add("changing", "🧷", "Changing Facilities");
+      if (hasAccess("parking") || /parking|car park/i.test(accessibility)) add("parking", "🅿️", "Parking Available");
+      if (hasAccess("quiet_space") || hasAccess("sensory_friendly")) add("sensory", "◌", "Sensory Friendly");
+      if (hasAccess("hearing_loop")) add("hearing", "◉", "Hearing Support");
+      if (hasAccess("visual_supports")) add("visual", "◈", "Visual Supports");
+      if (groups.some(a => Number(a.price_value) === 0)) add("free", "£0", "Free");
+      if (/online|zoom|virtual/i.test(text)) add("online", "💻", "Online");
+      if (/outdoor|forest|park|nature/i.test(text)) add("outdoor", "🌿", "Outdoor");
+      if (/drop[- ]?in|drop in/i.test(text)) add("dropin", "👋", "Drop-in");
+      if (/one[- ]?off|one off|event/i.test(text)) add("oneoff", "✦", "One-off");
+      return badges;
+    };
+    const renderBadges = (badges, extraClass = "") => badges.length
+      ? '<div class="bh-badges ' + extraClass + '" aria-label="Badges">' + badges.map(b => '<span class="bh-badge bh-badge-' + b.key + '" title="' + b.label + '"><span class="bh-badge-icon" aria-hidden="true">' + b.icon + '</span>' + b.label + '</span>').join("") + '</div>'
+      : "";
+
+    const activityUrl = activity => {
+      if (typeof bhActivityUrl === "function") return bhActivityUrl(activity);
+      const slug = activity.slug || activity.id || "";
+      return "activity.html?slug=" + encodeURIComponent(slug) + "&id=" + encodeURIComponent(activity.id || "");
+    };
+
+    const renderActivity = activity => {
+      const venue = activity.venues?.[0];
+      const age = Array.isArray(activity.age_range) ? activity.age_range.join(" · ") : "";
+      const location = activity.town || venue?.town || activity.region || venue?.region || "";
+      const venueCount = (activity.venues || []).length;
+      const href = activityUrl(activity);
+      const image = resolveImage(activity.image_url);
+      const badges = getBadges(activity, activity.organiser || {});
+
+      return `
+        <article class="storefront-card">
+          <a class="storefront-card-image" href="${bhEscape(href)}" aria-label="View ${bhEscape(activity.title || "activity")}">
+            ${renderBadges(badges, "bh-badges-overlay")}
+            ${image
+              ? '<img src="' + bhEscape(image) + '" alt="' + bhEscape(activity.title || "Activity") + '" loading="lazy">'
+              : '<span class="storefront-placeholder">Bubba Hub</span>'}
+          </a>
+          <div class="storefront-card-body">
+            ${renderBadges(badges, "bh-badges-mobile")}
+            <span class="eyebrow">${bhEscape(activity.category || "Family activity")}</span>
+            <h3><a href="${bhEscape(href)}">${bhEscape(activity.title || "Activity")}</a></h3>
+            ${activity.short_description
+              ? '<p class="storefront-description">' + bhEscape(activity.short_description).slice(0, 170) + (activity.short_description.length > 170 ? "…" : "") + "</p>"
+              : ""}
+            <div class="storefront-card-meta">
+              ${location ? '<span>📍 ' + bhEscape(location) + "</span>" : ""}
+              ${age ? '<span>👶 ' + bhEscape(age) + "</span>" : ""}
+              ${activity.price ? "<span>💷 " + bhEscape(activity.price) + "</span>" : ""}
+              ${venueCount > 1 ? "<span>📍 " + venueCount + " locations</span>" : ""}
+              ${venue?.name ? "<span>🏠 " + bhEscape(venue.name) + "</span>" : ""}
+            </div>
+            <a class="button button-soft button-full" href="${bhEscape(href)}">View activity</a>
+          </div>
+        </article>`;
+    };
+
+    const renderMap = async venues => {
+      const mapEl = document.getElementById("organiserMap");
+      if (!mapEl || !venues.length || typeof L === "undefined") return;
+
+      const geocode = async venue => {
+        const lat = Number(venue.latitude ?? venue.lat);
+        const lon = Number(venue.longitude ?? venue.long);
+
+        if (Number.isFinite(lat) && Number.isFinite(lon)) {
+          return {...venue, lat, long: lon};
+        }
+
+        const query = [venue.address, venue.town, venue.postcode].filter(Boolean).join(", ");
+        if (!query) return null;
+
+        try {
+          const key = "bh_org_geo_" + query.toLowerCase().replace(/\s+/g, " ").trim();
+          const cached = JSON.parse(localStorage.getItem(key) || "null");
+          if (cached && Number.isFinite(Number(cached.lat)) && Number.isFinite(Number(cached.lon))) {
+            return {...venue, lat: Number(cached.lat), long: Number(cached.lon)};
+          }
+
+          const response = await fetch(
+            "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=gb&q=" + encodeURIComponent(query),
+            {headers: {Accept: "application/json"}}
+          );
+          if (!response.ok) return null;
+
+          const data = await response.json();
+          if (!data?.[0]) return null;
+
+          const point = {lat: Number(data[0].lat), lon: Number(data[0].lon)};
+          localStorage.setItem(key, JSON.stringify(point));
+          return {...venue, lat: point.lat, long: point.lon};
+        } catch (_) {
+          return null;
+        }
+      };
+
+      const points = (await Promise.all(venues.map(geocode)))
+        .filter(venue => Number.isFinite(Number(venue?.lat)) && Number.isFinite(Number(venue?.long)));
+
+      if (!points.length) {
+        mapEl.innerHTML = '<div class="organiser-map-empty">Map location unavailable</div>';
+        return;
+      }
+
+      const map = L.map(mapEl, {scrollWheelZoom: false});
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap contributors"
+      }).addTo(map);
+
+      const markers = points.map(venue => {
+        const activities = organiserGroups.filter(activity => (activity.venues || []).some(v => {
+          const postcode = String(v.postcode || "").trim().toLowerCase();
+          const targetPostcode = String(venue.postcode || "").trim().toLowerCase();
+          const name = String(v.name || v.venue_name || "").trim().toLowerCase();
+          const targetName = String(venue.name || "").trim().toLowerCase();
+          return (postcode && targetPostcode && postcode === targetPostcode) ||
+            (name && targetName && name === targetName && String(v.town || "").toLowerCase() === String(venue.town || "").toLowerCase());
+        }));
+        const cards = activities.map(activity => {
+          const image = resolveImage(activity.image_url);
+          const age = Array.isArray(activity.age_range) ? activity.age_range.join(", ") : "";
+          return '<a class="organiser-map-activity" href="' + bhEscape(activityUrl(activity)) + '">' +
+            (image ? '<img src="' + bhEscape(image) + '" alt="" loading="lazy">' : '') +
+            '<span><strong>' + bhEscape(activity.title || "Activity") + '</strong>' +
+            '<small>' + bhEscape([activity.category, age, activity.price].filter(Boolean).join(" · ")) + '</small></span></a>';
+        }).join("");
+        return L.marker([Number(venue.lat), Number(venue.long)]).addTo(map).bindPopup(
+          '<div class="organiser-map-popup"><strong>' + bhEscape(venue.name || "Venue") + '</strong>' +
+          '<p>' + bhEscape(venue.address || venue.town || "") + '</p>' +
+          '<div class="organiser-map-activities">' + (cards || '<p>No linked activities at this venue.</p>') + '</div></div>',
+          {maxWidth:340, minWidth:230}
+        );
+      });
+
+      if (markers.length === 1) {
+        map.setView([Number(points[0].lat), Number(points[0].long)], 13);
+      } else {
+        map.fitBounds(L.featureGroup(markers).getBounds().pad(0.18));
+      }
+
+      setTimeout(() => map.invalidateSize(), 150);
+    };
+
+    const render = async () => {
+      const state = document.getElementById("organiserState");
+      let requested = getRequestedSlug();
+      // A bare /organiser.html link from the leader portal should resolve to
+      // the signed-in leader's storefront, rather than showing a missing slug.
+      if (!requested) {
+        try {
+          const response = await fetch("/api/leader-portal.php", {credentials:"same-origin",cache:"no-store"});
+          if (response.ok) {
+            const data = await response.json();
+            const org = data.organisation || {};
+            requested = cleanSlug(org.slug || org.organisation_name || org.name || org.display_name || "");
+            if (requested) history.replaceState(null,"","/organiser.html?slug="+encodeURIComponent(requested));
+          }
+        } catch (_) {}
+      }
+
+      if (!requested) {
+        state.innerHTML = `
+          <section class="organiser-empty">
+            <div class="organiser-empty-icon">!</div>
+            <span class="eyebrow">Organiser storefront</span>
+            <h1>Organiser not found</h1>
+            <p>No organiser was specified in this link.</p>
+            <a class="button button-primary" href="directory.html">Find activities</a>
+          </section>`;
+        return;
+      }
+
+      try {
+        let items=[];
+        try { items=await getOrganiserActivities(requested); } catch (_) {}
+        if(!items.length) items=await getDemoOrganiserActivities(requested);
+        const publicContent=await getPublicContent(cleanSlug(requested));
+
+        organiserGroups = items.filter(activity =>
+          cleanSlug(activity.organiser_slug || activity.organiser_name || activity.organiser || "") === cleanSlug(requested)
+        );
+
+        if (!organiserGroups.length) {
+          state.innerHTML = `
+            <section class="organiser-empty">
+              <div class="organiser-empty-icon">!</div>
+              <span class="eyebrow">Organiser storefront</span>
+              <h1>Organiser not found</h1>
+              <p>We couldn’t find this organiser on Bubba Hub.</p>
+              <a class="button button-primary" href="directory.html">Find activities</a>
+            </section>`;
+          return;
+        }
+
+        const first = organiserGroups[0];
+        const name = first.organiser_name || first.organiser || "Local organiser";
+        const organiserSlug = cleanSlug(first.organiser_slug || name);
+        const venues = getUniqueVenues(organiserGroups);
+        const categories = [...new Set(organiserGroups.map(a => a.category).filter(Boolean))];
+        const location = [...new Set(
+          organiserGroups.flatMap(a => (a.venues || []).map(v => v.town || v.region).filter(Boolean))
+        )].slice(0, 3).join(" · ") || "Devon & Cornwall";
+        const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(x => x[0]).join("").toUpperCase();
+        const organiserBadges = getOrganiserDetailBadges(organiserGroups, first.organiser || publicContent || {});
+
+        const about = String(publicContent.about_content || "");
+        const logo = resolveImage(publicContent.logo_url || "");
+        const facebook = safeExternalUrl(publicContent.facebook_url || "");
+        const instagram = safeExternalUrl(publicContent.instagram_url || "");
+        const tiktok = safeExternalUrl(publicContent.tiktok_url || "");
+        const website = safeExternalUrl(first.organiser_website);
+        const email = String(first.organiser_email || "").trim();
+        const phone = String(first.organiser_phone || "").replace(/[^+\d]/g, "");
+        const faqs = Array.isArray(publicContent.faqs) ? publicContent.faqs : [];
+        const termsUrl = "organiser/" + encodeURIComponent(organiserSlug) + "/terms.html";
+
+        document.title = name + " · Bubba Hub";
+
+        state.innerHTML = `
+          <section class="organiser-hero">
+            <div class="organiser-brand-mark">
+              ${logo
+                ? '<img src="' + bhEscape(logo) + '" alt="' + bhEscape(name) + ' logo">'
+                : bhEscape(initials || "BH")}
+            </div>
+            <div class="organiser-hero-copy">
+              <h1>${bhEscape(name)}</h1>
+              <p class="organiser-intro">Discover family activities from ${bhEscape(name)} and see what’s available through Bubba Hub — including locations, age ranges and booking information.</p>
+              <div class="organiser-meta">
+                <span>📍 ${bhEscape(location)}</span>
+                <span>✓ Listed on Bubba Hub</span>
+              </div>
+              <div class="organiser-actions">
+                ${website ? '<a class="button button-primary" href="' + bhEscape(website) + '" target="_blank" rel="noopener">Visit website</a>' : ""}
+                ${email ? '<button type="button" class="button button-soft" data-contact-organiser>Contact organiser</button>' : ""}
+                ${phone ? '<a class="button button-soft" href="tel:' + bhEscape(phone) + '">Call organiser</a>' : ""}
+              </div>
+            </div>
+          </section>
+
+          <div class="bh-modal" id="organiserContactModal" hidden role="dialog" aria-modal="true" aria-labelledby="organiserContactTitle">
+            <div class="bh-modal-card">
+              <button type="button" class="bh-modal-close" data-contact-close aria-label="Close contact form">×</button>
+              <span class="eyebrow">Contact organiser</span>
+              <h2 id="organiserContactTitle">Message ${bhEscape(name)}</h2>
+              <p class="bh-modal-intro">Send an enquiry directly to the organiser. Send a private enquiry through Bubba Hub. Sign in to send a message directly.</p>
+              <form id="organiserContactForm" class="bh-contact-form">
+                <label><span>Your name</span><input name="name" type="text" autocomplete="name" required></label>
+                <label><span>Email address</span><input name="email" type="email" autocomplete="email" required></label>
+                <label><span>Phone (optional)</span><input name="phone" type="tel" autocomplete="tel"></label>
+                <label><span>Message</span><textarea name="message" rows="5" required placeholder="What would you like to ask?"></textarea></label>
+                <div class="bh-contact-form-actions">
+                  <button type="button" class="button button-soft" data-contact-close>Cancel</button>
+                  <button type="submit" class="button button-primary">Send message</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <section class="organiser-summary" aria-label="Organiser summary">\n            <div class="organiser-summary-stat"><strong>${organiserGroups.length}</strong><span>Activities</span></div>\n            <div class="organiser-summary-stat"><strong>${categories.length}</strong><span>Categories</span></div>\n            <div class="organiser-summary-stat"><strong>${venues.length}</strong><span>Venues</span></div>\n            ${renderBadges(organiserBadges, "bh-organiser-badges")}\n          </section>
+
+          <section class="organiser-venues">
+            <div class="organiser-venues-copy">
+              <div class="storefront-heading">
+                <span class="eyebrow">My classes &amp; groups</span>
+                <h2>My Classes &amp; Groups</h2>
+                <p>Explore the classes and groups this organiser runs and see where they are available.</p>
+              </div>
+              <section id="activities" class="storefront-section" aria-label="Organiser activities">
+                <div class="storefront-grid">
+                  ${organiserGroups.slice(0,12).map(renderActivity).join("")}
+                </div>
+                <p id="organiserActivityCount" class="organiser-list-progress" aria-live="polite"></p>
+                <div id="organiserScrollSentinel" class="organiser-scroll-sentinel" aria-hidden="true"></div>
+              </section>
+            </div>
+
+            <div class="organiser-map-panel">
+              <div id="organiserMap" class="organiser-map" aria-label="Organiser venue map"></div>
+              <p class="organiser-map-note">Map data © OpenStreetMap contributors</p>
+            </div>
+          </section>
+
+          <section class="organiser-info-grid">
+            <div class="organiser-info-card">
+              <span class="eyebrow">About the organiser</span>
+              <h2>${bhEscape(name)}</h2>
+              <p>${about
+                ? bhEscape(about).replace(/\r?\n/g, "<br>")
+                : "Learn more about this organiser and the activities they offer on Bubba Hub."}</p>
+              <div class="organiser-socials">
+                ${facebook ? '<a class="button button-soft" href="' + bhEscape(facebook) + '" target="_blank" rel="noopener">Facebook</a>' : ""}
+                ${instagram ? '<a class="button button-soft" href="' + bhEscape(instagram) + '" target="_blank" rel="noopener">Instagram</a>' : ""}
+                ${tiktok ? '<a class="button button-soft" href="' + bhEscape(tiktok) + '" target="_blank" rel="noopener">TikTok</a>' : ""}
+              </div>
+              <a class="button button-soft" href="#activities">View their activities</a>
+            </div>
+
+            <div class="organiser-info-card">
+              <span class="eyebrow">Good to know</span>
+              <h2>Before you book</h2>
+              <ul>
+                <li>Check the activity page for current session times and availability.</li>
+                <li>Booking and cancellation arrangements may vary by organiser.</li>
+                <li>Accessibility and venue information are shown on each activity where available.</li>
+                <li>Read <a href="${bhEscape(termsUrl)}">leader's Terms &amp; Conditions</a>.</li>
+              </ul>
+            </div>
+
+            <div class="organiser-info-card organiser-support-card">
+              <span class="eyebrow">Support</span>
+              <h2>Need a little help?</h2>
+              <p>Questions about an activity, booking or what to expect? Contact the organiser directly, or contact Bubba Hub if you need help finding the right information.</p>
+              <div class="organiser-actions">
+                <a class="button button-soft" href="help-support.html">Bubba Hub support</a>
+              </div>
+            </div>
+          </section>
+
+          <section class="organiser-faq" id="faqs">
+            <div class="storefront-heading">
+              <span class="eyebrow">Organisation FAQ</span>
+              <h2>Frequently asked questions</h2>
+              <p>Helpful answers for families before they book.</p>
+            </div>
+            <div class="organiser-faq-list">
+              ${faqs.length
+                ? faqs.map(f => '<details><summary>' + bhEscape(f.question || "Question") + '</summary><p>' + bhEscape(f.answer || "") + "</p></details>").join("")
+                : "<p>No FAQs have been published yet.</p>"}
+            </div>
+          </section>
+
+          <div class="organiser-back">
+            <a class="button button-soft" href="directory.html">← Back to activities</a>
+          </div>
+        `;
+
+        const contactButton = state.querySelector("[data-contact-organiser]");
+        const contactModal = state.querySelector("#organiserContactModal");
+        const contactClose = contactModal?.querySelector("[data-contact-close]");
+        const contactForm = contactModal?.querySelector("#organiserContactForm");
+
+        const closeContactModal = () => {
+          if (!contactModal) return;
+          contactModal.hidden = true;
+          document.body.classList.remove("bh-modal-open");
+        };
+
+        const openContactModal = () => {
+          if (!contactModal) return;
+          contactModal.hidden = false;
+          document.body.classList.add("bh-modal-open");
+          contactModal.querySelector("input[name='name']")?.focus();
+        };
+
+        contactButton?.addEventListener("click", openContactModal);
+        contactClose?.addEventListener("click", closeContactModal);
+        contactModal?.addEventListener("click", event => {
+          if (event.target === contactModal) closeContactModal();
+        });
+        document.addEventListener("keydown", event => {
+          if (event.key === "Escape" && contactModal && !contactModal.hidden) closeContactModal();
+        });
+
+        contactForm?.addEventListener("submit", async event => {
+          event.preventDefault();
+          const formData = new FormData(contactForm);
+          const subject = "Bubba Hub enquiry for " + name;
+          const message = String(formData.get("message") || "").trim() + "\n\nName: " + String(formData.get("name") || "").trim() + "\nEmail: " + String(formData.get("email") || "").trim() + "\nPhone: " + String(formData.get("phone") || "").trim();
+          const button = contactForm.querySelector('[type="submit"]');
+          button.disabled = true;
+          let feedback = contactForm.querySelector('[role="status"]');
+          if (!feedback) { feedback = document.createElement("p"); feedback.setAttribute("role","status"); contactForm.append(feedback); }
+          feedback.textContent = "Sending your enquiry…";
+          try {
+            const response = await fetch("/api/leader-messages.php", {method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"send",organiser_slug:organiserSlug,subject,message,category:"help"})});
+            const result = await response.json();
+            if (!response.ok || !result.ok) throw Error(result.message || "Could not send your enquiry.");
+            feedback.textContent = "Your message has been sent to the organiser.";
+            contactForm.reset();
+          } catch (error) {
+            feedback.textContent = error.message + (error.message.includes("sign in") ? " Please sign in and try again." : "");
+          } finally { button.disabled = false; }
+        });
+
+        const grid = state.querySelector(".storefront-grid");
+        const sentinel = document.getElementById("organiserScrollSentinel");
+        const count = document.getElementById("organiserActivityCount");
+        let visible = Math.min(12, organiserGroups.length);
+        const updateCount = () => {
+          if (count) count.textContent = "Showing " + visible + " of " + organiserGroups.length + " activities";
+          if (sentinel) sentinel.hidden = visible >= organiserGroups.length;
+        };
+        updateCount();
+        if (grid && sentinel && visible < organiserGroups.length) {
+          const showMore = () => {
+            const next = Math.min(visible + 12, organiserGroups.length);
+            grid.insertAdjacentHTML("beforeend", organiserGroups.slice(visible,next).map(renderActivity).join(""));
+            visible = next; updateCount();
+            if (visible >= organiserGroups.length) observer.disconnect();
+          };
+          const observer = new IntersectionObserver(entries => {
+            if (entries.some(entry => entry.isIntersecting)) showMore();
+          }, {rootMargin:"450px 0px"});
+          observer.observe(sentinel);
+        }
+        await renderMap(venues);
+      } catch (error) {
+        console.error("Organiser storefront load failed:", error);
+        state.innerHTML = `
+          <section class="organiser-empty">
+            <h1>Organiser unavailable</h1>
+            <p>We couldn’t load this organiser right now.</p>
+            <a class="button button-primary" href="directory.html">Back to activities</a>
+          </section>`;
+      }
+    };
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", render, {once: true});
+    } else {
+      render();
+    }
+  })();
+  </script>
+</body>
+</html>

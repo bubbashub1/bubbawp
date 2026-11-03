@@ -1,0 +1,732 @@
+/* Bubba Hub — Organiser Storefront
+   Visual baseline follows activity.css without changing shared site styles.
+*/
+
+/* 0. TOKENS & PAGE FRAME ------------------------------------------------ */
+.organiser-storefront-page{
+  --os-ink:#144400;
+  --os-forest:#1B4D3E;
+  --os-teal:#3c8e96;
+  --os-mint:#e7f1ea;
+  --os-pale:#d9eadf;
+  --os-line:#d8e6db;
+  --os-line-soft:#e3ebe5;
+  --os-font:"Quicksand",sans-serif;
+  width:100%!important;
+  max-width:none!important;
+  margin:0!important;
+  padding:0 15px 48px!important;
+  color:var(--os-ink);
+  overflow:visible;
+}
+.organiser-storefront-page *{box-sizing:border-box}
+.organiser-storefront-page a{color:var(--os-teal)}
+.organiser-storefront-page .eyebrow{
+  display:inline-flex;
+  align-items:center;
+  width:max-content;
+  max-width:100%;
+  margin:0;
+  padding:6px 11px;
+  background:var(--os-pale);
+  border:1px solid var(--os-line);
+  border-radius:999px;
+  color:var(--os-forest);
+  font-size:11px;
+  font-weight:800;
+  line-height:1.1;
+}
+
+/* 1. HERO --------------------------------------------------------------- */
+.organiser-hero{
+  display:grid;
+  grid-template-columns:150px minmax(0,1fr);
+  gap:32px;
+  align-items:center;
+  width:100%;
+  margin:0 0 22px;
+  padding:34px 38px;
+  background:var(--os-forest);
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+  color:#fff;
+}
+.organiser-brand-mark{
+  display:grid;
+  place-items:center;
+  width:150px;
+  height:150px;
+  border-radius:24px;
+  background:var(--os-pale);
+  color:var(--os-ink);
+  font-size:46px;
+  font-weight:800;
+  letter-spacing:-2px;
+  box-shadow:none;
+}
+.organiser-hero-copy{min-width:0}
+.organiser-hero-copy h1{
+  margin:10px 0 9px;
+  color:#fff;
+  font-family:var(--os-font);
+  font-size:clamp(32px,4vw,52px);
+  font-weight:800;
+  line-height:1.04;
+  letter-spacing:-.02em;
+  overflow-wrap:anywhere;
+}
+.organiser-intro{
+  max-width:760px;
+  margin:0;
+  color:rgba(255,255,255,.9);
+  font-size:15px;
+  line-height:1.55;
+}
+.organiser-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 18px;
+  margin:16px 0 18px;
+  color:var(--os-pale);
+  font-size:12px;
+  font-weight:700;
+}
+.organiser-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.organiser-actions .button{
+  min-height:40px;
+  padding:8px 15px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:800;
+}
+.organiser-actions .button-primary{
+  background:#f6c84a;
+  border-color:#f6c84a;
+  color:var(--os-ink);
+}
+.organiser-actions .button-soft{
+  background:#f3f8f4;
+  border:1px solid var(--os-pale);
+  color:var(--os-forest);
+}
+.organiser-actions .button:hover{
+  transform:translateY(-1px);
+}
+
+/* 2. SUMMARY ------------------------------------------------------------ */
+.organiser-summary{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+  width:100%;
+  margin:0 0 34px;
+}
+.organiser-summary-stat{
+  display:flex;
+  align-items:baseline;
+  gap:8px;
+  min-width:0;
+  min-height:64px;
+  padding:15px 17px;
+  background:#fff;
+  border:1px solid var(--os-line);
+  border-radius:14px;
+  box-shadow:none;
+}
+.organiser-summary-stat strong{
+  color:var(--os-ink);
+  font-size:24px;
+  font-weight:800;
+  line-height:1;
+}
+.organiser-summary-stat span{
+  color:#617261;
+  font-size:12px;
+  font-weight:700;
+}
+
+
+/* 3. VENUES + MAP ------------------------------------------------------ */
+.organiser-venues{
+  display:grid;
+  grid-template-columns:minmax(0,.85fr) minmax(420px,1.15fr);
+  gap:20px;
+  width:100%;
+  margin:0 0 34px;
+  align-items:stretch;
+}
+.organiser-venues-copy{
+  min-width:0;
+  padding:24px;
+  background:#fff;
+  border:1px solid var(--os-line);
+  border-radius:16px;
+}
+.organiser-venue-list{display:grid;gap:10px}
+.organiser-venue-card{
+  display:grid;
+  gap:3px;
+  padding:14px 15px;
+  background:#f7faf7;
+  border:1px solid var(--os-line-soft);
+  border-radius:12px;
+}
+.organiser-venue-card strong{color:var(--os-ink);font-size:14px;font-weight:800}
+.organiser-venue-card span{color:#617261;font-size:11px;line-height:1.45}
+.organiser-map-panel{
+  min-width:0;
+  overflow:hidden;
+  background:#fff;
+  border:1px solid var(--os-line);
+  border-radius:16px;
+}
+.organiser-map{width:100%;height:100%;min-height:360px;background:var(--os-mint)}
+.organiser-map .leaflet-control-attribution{font-size:9px}
+.organiser-map-note{margin:0;padding:7px 10px;color:#718076;font-size:9px;text-align:right;background:#fff}
+.organiser-map-empty{display:grid;place-items:center;height:100%;min-height:360px;color:#617261;font-size:13px}
+
+
+/* 4. ORGANISER INFO + FAQ --------------------------------------------- */
+.organiser-info-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;width:100%;margin:0 0 34px}
+.organiser-info-card{min-width:0;padding:22px;background:#fff;border:1px solid var(--os-line);border-radius:16px}
+.organiser-info-card h2,.organiser-faq h2{margin:8px 0 7px;color:var(--os-ink);font-family:var(--os-font);font-size:23px;font-weight:800;line-height:1.15}
+.organiser-info-card p{margin:0 0 14px;color:#617261;font-size:12px;line-height:1.55}
+.organiser-info-card ul{margin:0;padding-left:18px;color:#617261;font-size:12px;line-height:1.65}
+.organiser-info-card li+li{margin-top:5px}
+.organiser-faq{width:100%;margin:0 0 28px;padding:24px;background:var(--os-mint);border:1px solid var(--os-line);border-radius:16px}
+.organiser-faq .storefront-heading{margin-bottom:14px}
+.organiser-faq-list{display:grid;gap:8px}
+.organiser-faq details{background:#fff;border:1px solid var(--os-line);border-radius:12px;overflow:hidden}
+.organiser-faq summary{cursor:pointer;padding:14px 16px;color:var(--os-ink);font-size:13px;font-weight:800;list-style:none}
+.organiser-faq summary::-webkit-details-marker{display:none}
+.organiser-faq summary:after{content:"+";float:right;color:var(--os-teal);font-size:18px;line-height:1}
+.organiser-faq details[open] summary:after{content:"−"}
+.organiser-faq details p{margin:0;padding:0 16px 15px;color:#617261;font-size:12px;line-height:1.55}
+@media(max-width:900px){.organiser-info-grid{grid-template-columns:1fr 1fr}.organiser-support-card{grid-column:1/-1}}
+@media(max-width:700px){.organiser-info-grid{grid-template-columns:1fr}.organiser-support-card{grid-column:auto}.organiser-info-card,.organiser-faq{padding:18px}}
+/* 5. ACTIVITY HEADING --------------------------------------------------- */
+.storefront-heading{
+  margin:0 0 17px;
+}
+.storefront-heading h2{
+  margin:7px 0 4px;
+  color:var(--os-ink);
+  font-family:var(--os-font);
+  font-size:28px;
+  font-weight:800;
+  line-height:1.15;
+}
+.storefront-heading p{
+  margin:0;
+  color:#617261;
+  font-size:13px;
+  line-height:1.5;
+}
+
+/* 6. ACTIVITY GRID ------------------------------------------------------ */
+.storefront-grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:18px;
+  width:100%;
+}
+.storefront-card{
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  overflow:hidden;
+  background:#fff;
+  border:1px solid var(--os-line);
+  border-radius:16px;
+  box-shadow:0 5px 18px rgba(18,63,49,.05);
+}
+.storefront-card-image{
+  display:block;
+  width:100%;
+  aspect-ratio:16/9;
+  background:var(--os-mint);
+  overflow:hidden;
+}
+.storefront-card-image img{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.storefront-placeholder{
+  display:grid;
+  place-items:center;
+  width:100%;
+  height:100%;
+  background:var(--os-mint);
+  color:var(--os-forest);
+  font-size:22px;
+  font-weight:800;
+}
+.storefront-card-body{
+  display:flex;
+  flex:1;
+  flex-direction:column;
+  min-width:0;
+  padding:18px;
+}
+.storefront-card-body h3{
+  margin:6px 0 8px;
+  color:var(--os-ink);
+  font-family:var(--os-font);
+  font-size:19px;
+  font-weight:800;
+  line-height:1.2;
+}
+.storefront-card-body h3 a{
+  color:var(--os-ink);
+  text-decoration:none;
+}
+.storefront-card-body h3 a:hover{text-decoration:underline}
+.storefront-description{
+  display:-webkit-box;
+  margin:0 0 13px;
+  color:#617261;
+  font-size:12px;
+  line-height:1.55;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:3;
+  overflow:hidden;
+}
+.storefront-card-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin:0 0 16px;
+}
+.storefront-card-meta span{
+  display:inline-flex;
+  align-items:center;
+  min-height:27px;
+  padding:5px 9px;
+  background:#f0f6f1;
+  border:1px solid var(--os-line);
+  border-radius:999px;
+  color:var(--os-forest);
+  font-size:10px;
+  font-weight:800;
+}
+.button-full{
+  display:flex!important;
+  align-items:center;
+  justify-content:center;
+  width:100%!important;
+  min-height:40px;
+  margin-top:auto;
+  padding:8px 12px;
+  border-radius:999px;
+  background:var(--os-teal);
+  border:1px solid var(--os-teal);
+  color:#fff!important;
+  font-size:11px;
+  font-weight:800;
+}
+
+/* Compact activity cards ------------------------------------------------ */
+.storefront-card{
+  display:grid;
+  grid-template-columns:150px minmax(0,1fr);
+  flex-direction:initial;
+}
+.storefront-card-image{
+  width:150px;
+  height:150px;
+  aspect-ratio:1;
+}
+.storefront-card-body{
+  min-width:0;
+  padding:16px 18px;
+}
+.storefront-card-body h3{
+  margin-top:4px;
+}
+@media(max-width:700px){
+  .storefront-card{
+    grid-template-columns:110px minmax(0,1fr);
+  }
+  .storefront-card-image{
+    width:110px;
+    height:110px;
+  }
+  .storefront-card-body{
+    padding:13px 14px;
+  }
+  .storefront-card-body h3{
+    font-size:16px;
+    margin:4px 0 6px;
+  }
+  .storefront-description{
+    -webkit-line-clamp:2;
+    margin-bottom:9px;
+  }
+  .storefront-card-meta{
+    margin-bottom:10px;
+  }
+  .storefront-card-body .button-full{
+    min-height:34px;
+    padding:6px 9px;
+  }
+}
+@media(max-width:430px){
+  .storefront-card{
+    grid-template-columns:88px minmax(0,1fr);
+  }
+  .storefront-card-image{
+    width:88px;
+    height:88px;
+  }
+  .storefront-card-body{
+    padding:11px 12px;
+  }
+  .storefront-card-body h3{
+    font-size:15px;
+  }
+  .storefront-card-meta span{
+    min-height:23px;
+    padding:4px 7px;
+    font-size:9px;
+  }
+}
+ 
+/* 7. BACK / EMPTY / LOADING ------------------------------------------- */
+.organiser-back{
+  margin-top:24px;
+}
+.organiser-back .button{
+  min-height:38px;
+  border-radius:999px;
+}
+.organiser-loading{
+  display:grid;
+  place-items:center;
+  min-height:360px;
+  color:#617261;
+  font-size:14px;
+}
+.organiser-empty{
+  display:grid;
+  align-content:center;
+  justify-items:center;
+  min-height:420px;
+  padding:48px 30px;
+  text-align:center;
+  background:var(--os-mint);
+  border:1px solid var(--os-line);
+  border-radius:22px;
+}
+.organiser-empty-icon{
+  display:grid;
+  place-items:center;
+  width:52px;
+  height:52px;
+  margin-bottom:5px;
+  background:var(--os-pale);
+  border-radius:50%;
+  color:var(--os-ink);
+  font-size:22px;
+  font-weight:800;
+}
+.organiser-empty h1{
+  margin:7px 0 5px;
+  color:var(--os-ink);
+  font-family:var(--os-font);
+  font-size:30px;
+}
+.organiser-empty p{
+  margin:0 0 13px;
+  color:#617261;
+}
+
+/* 8. RESPONSIVE -------------------------------------------------------- */
+@media(max-width:1050px){
+  .organiser-storefront-page{padding-left:12px!important;padding-right:12px!important}
+  .storefront-grid{grid-template-columns:1fr}
+  .organiser-hero{
+    grid-template-columns:110px minmax(0,1fr);
+    gap:24px;
+    padding:28px 30px;
+  }
+  .organiser-brand-mark{width:110px;height:110px;font-size:36px}
+}
+@media(max-width:900px){
+  .organiser-venues{grid-template-columns:1fr}
+  .organiser-map-panel{min-height:340px}
+  .organiser-map{min-height:340px}
+}
+@media(max-width:700px){
+  .organiser-storefront-page{padding:0 12px 36px!important}
+  .organiser-hero{
+    grid-template-columns:1fr;
+    gap:16px;
+    margin-bottom:16px;
+    padding:24px 18px;
+    border-radius:0;
+    text-align:center;
+  }
+  .organiser-brand-mark{
+    width:88px;
+    height:88px;
+    margin:0 auto;
+    border-radius:20px;
+    font-size:30px;
+  }
+  .organiser-hero-copy h1{font-size:30px}
+  .organiser-meta,
+  .organiser-actions{justify-content:center}
+  .organiser-summary{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+    margin-bottom:28px;
+  }
+  .organiser-summary-stat{
+    min-height:58px;
+    padding:13px;
+  }
+  .organiser-summary .bh-organiser-badges{padding:2px 0 0;}
+  .organiser-summary-stat:nth-child(3){grid-column:1/-1}
+  .organiser-venues-copy{padding:18px}
+  .organiser-venue-card{padding:12px}
+  .organiser-map{min-height:300px}
+  .organiser-map-empty{min-height:300px}
+  .organiser-info-card .organiser-actions .button,
+  .organiser-info-card > .button{width:100%;justify-content:center}
+  .storefront-heading h2{font-size:24px}
+  .storefront-grid{grid-template-columns:1fr;gap:14px}
+  .storefront-card{border-radius:15px}
+}
+@media(max-width:390px){
+  .organiser-storefront-page{padding-left:10px!important;padding-right:10px!important}
+  .organiser-hero{padding:20px 14px}
+  .organiser-hero-copy h1{font-size:27px}
+  .organiser-intro{font-size:14px}
+  .organiser-actions .button{width:100%;justify-content:center}
+  .organiser-summary-stat strong{font-size:21px}
+  .storefront-card-body{padding:16px}
+}
+
+/* 9. FOOTER ------------------------------------------------------------- */
+.organiser-storefront-page + .site-footer{
+  width:100%!important;
+  max-width:none!important;
+  margin-top:40px!important;
+  border-radius:0!important;
+}
+
+/* 10. CUSTOM ORGANISER TERMS ----------------------------------------- */
+.organiser-terms-content{
+  padding:24px;
+  background:#fff;
+  border:1px solid var(--os-line);
+  border-radius:14px;
+  color:#46564b;
+  font-size:13px;
+  line-height:1.7;
+  overflow-wrap:anywhere;
+}
+.organiser-terms-content br+br{display:block;content:"";margin-top:8px}
+
+.organiser-brand-mark img{width:100%;height:100%;object-fit:contain;border-radius:inherit;display:block}.organiser-socials{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.organiser-socials .button{margin:0}
+
+/* 11. BADGES ------------------------------------------------------------ */
+.bh-badges{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.bh-badge{display:inline-flex;align-items:center;gap:5px;min-height:27px;padding:5px 9px;border-radius:999px;border:1px solid var(--os-line);font-size:10px;font-weight:800;line-height:1;white-space:nowrap;background:#fff;color:var(--os-forest)}
+.bh-badge-icon{display:inline-grid;place-items:center;width:15px;height:15px;font-size:10px;font-weight:900}
+.bh-badge-verified{background:#eaf5ed;border-color:#b9d5c0;color:#315b3d}
+.bh-badge-featured{background:#fff5d8;border-color:#ead58d;color:#7b6110}
+.bh-badge-popular{background:#f7e9e8;border-color:#e2c2bf;color:#7b403b}
+.bh-badge-new{background:#e8f3f4;border-color:#bdd9dc;color:#2f686d}
+.bh-badges-overlay{position:absolute;top:10px;left:10px;z-index:2}
+.storefront-card-image{position:relative}
+.bh-badges-mobile{margin:0 0 6px}
+.bh-organiser-badges{margin:0 0 10px}
+.bh-badges-mobile{display:none}
+@media(max-width:650px){
+  .bh-badges-overlay{top:8px;left:8px}
+  .bh-badges-overlay .bh-badge{min-height:25px;padding:5px 8px}
+  .bh-badges-mobile{display:none}
+}
+
+/* Organiser hero: breakout full-width and light-green title --------------------- */
+.organiser-storefront-page .organiser-hero {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  margin-left: calc(50% - 50vw) !important;
+  margin-right: calc(50% - 50vw) !important;
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  box-sizing: border-box !important;
+}
+
+.organiser-storefront-page .organiser-hero-copy h1 {
+  color: #d8e6db !important;
+}
+
+.bh-badge-baby{background:#f6eef8;border-color:#dec9e4;color:#684574}
+.bh-badge-toddler{background:#fff0e4;border-color:#ead0b9;color:#7a4f2b}
+.bh-badge-accessible{background:#e9f0fb;border-color:#bfd0e7;color:#31547a}
+.bh-badge-pram{background:#edf5ef;border-color:#c5dbc9;color:#356044}
+.bh-badge-toilet{background:#eef4f7;border-color:#c6d9df;color:#3b5d68}
+.bh-badge-changing{background:#f7f0e8;border-color:#e1cfb8;color:#725633}
+.bh-badge-parking{background:#f0f1f5;border-color:#d0d3dd;color:#555b6d}
+.bh-badge-free{background:#eaf5ed;border-color:#b9d5c0;color:#315b3d}
+.bh-badge-online{background:#e8f3f4;border-color:#bdd9dc;color:#2f686d}
+.bh-badge-outdoor{background:#edf5e7;border-color:#c9dcb8;color:#45643a}
+.bh-badge-dropin{background:#fff5d8;border-color:#ead58d;color:#7b6110}
+.bh-badge-oneoff{background:#f7e9e8;border-color:#e2c2bf;color:#7b403b}
+
+
+/* Age-range badges ----------------------------------------------------- */
+.bh-badge[class*="bh-badge-age-"]{
+  background:#f1eef8;
+  border-color:#d7cde8;
+  color:#5d4d78;
+}
+.bh-badge[class*="bh-badge-age-"] .bh-badge-icon{
+  font-size:12px;
+}
+
+
+/* Organiser badges sit together beneath the summary stats */
+.organiser-summary .bh-organiser-badges{
+  grid-column:1 / -1;
+  justify-content:center;
+  margin-top:2px;
+}
+
+
+/* 12. CONTACT MODAL ----------------------------------------------------- */
+body.bh-modal-open{overflow:hidden}
+.bh-modal[hidden]{display:none!important}
+.bh-modal{
+  position:fixed;
+  inset:0;
+  z-index:5000;
+  display:grid;
+  place-items:center;
+  padding:20px;
+  background:rgba(20,68,0,.48);
+}
+.bh-modal-card{
+  position:relative;
+  width:min(100%,560px);
+  max-height:min(90vh,760px);
+  overflow:auto;
+  padding:28px;
+  background:#fff;
+  border:1px solid var(--os-line);
+  border-radius:20px;
+  box-shadow:0 24px 70px rgba(20,68,0,.24);
+}
+.bh-modal-card h2{
+  margin:9px 38px 7px 0;
+  color:var(--os-ink);
+  font-family:var(--os-font);
+  font-size:26px;
+  line-height:1.15;
+}
+.bh-modal-intro{
+  margin:0 0 18px;
+  color:#617261;
+  font-size:12px;
+  line-height:1.55;
+}
+.bh-modal-close{
+  position:absolute;
+  top:14px;
+  right:14px;
+  display:grid;
+  place-items:center;
+  width:38px;
+  height:38px;
+  padding:0;
+  border:1px solid var(--os-line);
+  border-radius:50%;
+  background:#f3f8f4;
+  color:var(--os-ink);
+  font-size:24px;
+  line-height:1;
+  cursor:pointer;
+}
+.bh-contact-form{
+  display:grid;
+  gap:13px;
+}
+.bh-contact-form label{
+  display:grid;
+  gap:6px;
+  color:var(--os-forest);
+  font-size:12px;
+  font-weight:800;
+}
+.bh-contact-form input,
+.bh-contact-form textarea{
+  width:100%;
+  padding:11px 12px;
+  border:1px solid var(--os-line);
+  border-radius:10px;
+  background:#fbfdfb;
+  color:var(--os-ink);
+  font:inherit;
+  font-size:13px;
+}
+.bh-contact-form textarea{
+  min-height:120px;
+  resize:vertical;
+}
+.bh-contact-form input:focus,
+.bh-contact-form textarea:focus{
+  outline:2px solid rgba(60,142,150,.25);
+  outline-offset:1px;
+  border-color:var(--os-teal);
+}
+.bh-contact-form-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:4px;
+}
+.bh-contact-form-actions .button{
+  min-height:40px;
+  border-radius:999px;
+  padding:9px 16px;
+}
+@media(max-width:600px){
+  .bh-modal{padding:12px}
+  .bh-modal-card{
+    width:100%;
+    max-height:94vh;
+    padding:22px 18px;
+    border-radius:16px;
+  }
+  .bh-modal-card h2{font-size:23px}
+  .bh-contact-form-actions{flex-direction:column-reverse}
+  .bh-contact-form-actions .button{width:100%;justify-content:center}
+}
+
+
+/* BUBBA HUB — FRIENDLY BOLD ALIGNMENT
+   Shared visual language; page-specific layout remains unchanged. */
+
+
+
+
+
+
+.organiser-empty,.organiser-info-card,.storefront-card,.bh-modal-card{border:2px solid rgba(18,63,49,.07);border-radius:var(--bh-radius-md,20px);box-shadow:var(--bh-shadow-soft,0 8px 24px rgba(18,63,49,.08))}
+.storefront-card-body h3,.organiser-empty h1,.bh-modal-card h2{font-weight:800;letter-spacing:-.025em}
+.storefront-card-meta span,.bh-badge{border:0;border-radius:999px}
+.storefront-card-body .button-full{min-height:46px;border:0;border-radius:999px;background:var(--bh-green-dark,#144400);color:var(--bh-green-soft,#d8e6db)!important;font-weight:900}
+.storefront-card-body .button-full:hover{background:var(--bh-coral,#f39a3f);color:#fff!important}
+.bh-modal-close{border:0;border-radius:14px;background:var(--bh-green-soft,#d8e6db)}
+
