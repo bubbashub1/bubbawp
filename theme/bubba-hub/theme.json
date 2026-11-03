@@ -182,5 +182,14 @@
       "title": "Footer",
       "area": "footer"
     }
+  ],
+  "customTemplates": [
+    {
+      "name": "activity-preview",
+      "title": "Activity Design Preview (Demo Only)",
+      "postTypes": [
+        "page"
+      ]
+    }
   ]
 }
