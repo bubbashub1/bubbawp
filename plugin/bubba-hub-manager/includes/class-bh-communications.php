@@ -24,6 +24,7 @@ final class BH_Communications_3 {
         add_action( 'bh3_cleanup_email_logs', array( __CLASS__, 'cleanup_email_logs' ) );
         add_action( 'init', array( __CLASS__, 'handle_public_tokens' ), 1 );
         add_action( 'admin_menu', array( __CLASS__, 'register_admin_page' ) );
+        add_action( 'admin_post_bh3_preview_template', array( __CLASS__, 'preview_template' ) );
         add_action( 'admin_post_bh3_save_campaign', array( __CLASS__, 'save_campaign' ) );
         add_action( 'admin_post_bh3_send_campaign', array( __CLASS__, 'send_campaign' ) );
         add_action( 'admin_post_bh3_toggle_communications', array( __CLASS__, 'toggle_communications' ) );
@@ -125,6 +126,13 @@ final class BH_Communications_3 {
         echo '<button class="button button-secondary" type="submit">' . ( $enabled ? 'Disable staging email sending' : 'Enable staging email sending' ) . '</button></form>';
         echo '<p class="description">Sending is disabled by default and cannot be enabled on the live domain in this version.</p></div>';
 
+        echo '<div class="bh3-panel"><h2>Email templates from Bubba Hub</h2><p>These branded templates are adapted from the original <code>bubbaplugin</code> email designs. Preview uses sample data only and does not send an email.</p>';
+        echo '<table class="bh3-table"><thead><tr><th>Template</th><th>Original source</th><th>Preview</th></tr></thead><tbody>';
+        foreach ( BH_Email_Templates_3::definitions() as $key => $definition ) {
+            $preview = wp_nonce_url( add_query_arg( array( 'action' => 'bh3_preview_template', 'template' => $key ), admin_url( 'admin-post.php' ) ), 'bh3_preview_template_' . $key );
+            echo '<tr><td>' . esc_html( $definition['name'] ) . '</td><td><code>' . esc_html( $definition['source'] ) . '</code></td><td><a class="button" target="_blank" rel="noopener" href="' . esc_url( $preview ) . '">Preview</a></td></tr>';
+        }
+        echo '</tbody></table></div>';
         echo '<div class="bh3-panel"><h2>Create newsletter</h2>';
         echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
         echo '<input type="hidden" name="action" value="bh3_save_campaign">';
@@ -207,6 +215,27 @@ final class BH_Communications_3 {
         return (int) $query->found_posts;
     }
 
+    public static function preview_template() {
+        self::require_admin();
+        $key = isset( $_GET['template'] ) ? sanitize_key( wp_unslash( $_GET['template'] ) ) : '';
+        check_admin_referer( 'bh3_preview_template_' . $key );
+        if ( ! isset( BH_Email_Templates_3::definitions()[ $key ] ) ) {
+            wp_die( esc_html__( 'Unknown email template.', 'bubba-hub-manager' ), '', array( 'response' => 404 ) );
+        }
+        nocache_headers();
+        header( 'Content-Type: text/html; charset=UTF-8' );
+        echo BH_Email_Templates_3::render( $key, array(
+            'first_name' => 'Sample parent',
+            'activity_title' => 'Example family activity',
+            'action_url' => home_url( '/leader/classes.html' ),
+            'content' => '<p>Sample: explore the latest family classes, local events and activities.</p>',
+            'date_time' => 'Tuesday at 10:00',
+            'venue' => 'Sample community centre',
+            'unsubscribe_url' => home_url( '/' ),
+        ) );
+        exit;
+    }
+
     public static function toggle_communications() {
         self::require_admin();
         check_admin_referer( 'bh3_toggle_communications' );
@@ -276,7 +305,7 @@ final class BH_Communications_3 {
             $email = sanitize_email( get_post_meta( $subscriber_id, '_bh3_email', true ) );
                 $token = wp_hash( 'bh3-unsubscribe:' . absint( $subscriber_id ) );
             $unsubscribe = add_query_arg( array( 'bh3_unsubscribe' => $subscriber_id, 'token' => rawurlencode( $token ) ), home_url( '/' ) );
-            $html = '<!doctype html><html><body style="font-family:Arial,sans-serif;color:#26352d"><div style="max-width:640px;margin:auto;padding:24px"><h1>' . esc_html( get_bloginfo( 'name' ) ) . '</h1>' . wp_kses_post( $campaign->post_content ) . '<hr><p style="font-size:12px;color:#66736b">You are receiving this because you subscribed to Bubba Hub updates. <a href="' . esc_url( $unsubscribe ) . '">Unsubscribe</a></p></div></body></html>';
+            $html = BH_Email_Templates_3::render( 'newsletter', array( 'content' => $campaign->post_content, 'unsubscribe_url' => $unsubscribe ) );
             $sent = self::send_transactional( $email, $campaign->post_title, $html, 'Newsletter' );
             if ( $sent ) {
                 update_post_meta( $campaign_id, '_bh3_sent', absint( get_post_meta( $campaign_id, '_bh3_sent', true ) ) + 1 );
@@ -330,7 +359,7 @@ final class BH_Communications_3 {
         update_post_meta( $subscriber_id, '_bh3_confirm_hash', wp_hash_password( $token ) );
         $url = add_query_arg( array( 'bh3_confirm_sub' => $subscriber_id, 'token' => rawurlencode( $token ) ), home_url( '/' ) );
         $body = '<p>Thanks for asking to receive Bubba Hub updates.</p><p><a href="' . esc_url( $url ) . '">Confirm my subscription</a></p><p>If you did not request this, you can ignore this email.</p>';
-        self::send_transactional( $email, 'Please confirm your Bubba Hub newsletter subscription', $body, 'Newsletter confirmation' );
+        self::send_transactional( $email, 'Please confirm your Bubba Hub newsletter subscription', BH_Email_Templates_3::render( 'newsletter', array( 'content' => $body ) ), 'Newsletter confirmation' );
         wp_safe_redirect( add_query_arg( 'bh3_subscribed', '1', wp_get_referer() ?: home_url( '/' ) ) );
         exit;
     }
@@ -344,6 +373,7 @@ final class BH_Communications_3 {
                 update_post_meta( $id, '_bh3_status', 'active' );
                 delete_post_meta( $id, '_bh3_confirm_hash' );
                 update_post_meta( $id, '_bh3_confirmed_at', current_time( 'mysql', true ) );
+                self::send_transactional( (string) get_post_meta( $id, '_bh3_email', true ), 'Welcome to Bubba Hub 💚', BH_Email_Templates_3::render( 'welcome', array( 'unsubscribe_url' => add_query_arg( array( 'bh3_unsubscribe' => $id, 'token' => rawurlencode( wp_hash( 'bh3-unsubscribe:' . $id ) ) ), home_url( '/' ) ) ) ), 'Newsletter welcome' );
                 wp_die( esc_html__( 'Your Bubba Hub newsletter subscription is confirmed. Thank you!', 'bubba-hub-manager' ), esc_html__( 'Subscription confirmed', 'bubba-hub-manager' ), array( 'response' => 200 ) );
             }
             wp_die( esc_html__( 'This confirmation link is invalid or has expired.', 'bubba-hub-manager' ), esc_html__( 'Unable to confirm', 'bubba-hub-manager' ), array( 'response' => 400 ) );
