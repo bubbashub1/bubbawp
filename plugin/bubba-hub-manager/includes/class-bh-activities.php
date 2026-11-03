@@ -123,6 +123,22 @@ final class BH_Activities_3 {
         }
         echo '<p><strong>Timetable editing remains disabled.</strong> Verify recurrence, date, venue, cancellation and term-time fields before enabling it.</p>';
     }
+    /** Visual timetable editor prototype; deliberately no form submission or persistence. */
+    private static function timetable_layout_preview() {
+        echo '<h4>Session editor layout preview</h4>';
+        echo '<p>This shows the planned fields only. It does not display or change real session records.</p>';
+        echo '<div style="overflow-x:auto"><table class="widefat striped" style="min-width:760px">';
+        echo '<thead><tr><th scope="col">Day</th><th scope="col">Start</th><th scope="col">End</th><th scope="col">Venue</th><th scope="col">Session status</th><th scope="col">Term time</th></tr></thead><tbody><tr>';
+        echo '<td><select disabled aria-label="Session day"><option>Select day</option></select></td>';
+        echo '<td><input type="time" disabled aria-label="Session start time"></td>';
+        echo '<td><input type="time" disabled aria-label="Session end time"></td>';
+        echo '<td><input type="text" disabled placeholder="Choose existing venue" aria-label="Session venue"></td>';
+        echo '<td><select disabled aria-label="Session status"><option>Scheduled</option><option>Cancelled</option></select></td>';
+        echo '<td><label><input type="checkbox" disabled> Term time only</label></td>';
+        echo '</tr></tbody></table></div>';
+        echo '<p><button type="button" class="button" disabled>+ Add session</button> ';
+        echo '<button type="button" class="button" disabled>Remove session</button></p>';
+    }
     private static function detail( $table, $columns, $id ) {
         global $wpdb;
         $allowed = array(
@@ -183,8 +199,11 @@ final class BH_Activities_3 {
         self::related_search( 'venue' );
         self::related_search( 'organiser' );
         echo '<h3>Images</h3><p>Image library and upload controls will be connected after media field mapping.</p>';
-        echo '<h3>Session timetable readiness</h3>';
+        echo '<h3>Session timetable</h3>';
+        self::timetable_layout_preview();
+        echo '<details><summary>Database mapping readiness</summary>';
         self::timetable_readiness();
+        echo '</details>';
         echo '<p><button type="button" class="button button-primary" disabled>Save changes (not available yet)</button></p></div>';
     }
     public static function render() {
