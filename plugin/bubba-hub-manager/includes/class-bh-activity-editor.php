@@ -57,7 +57,7 @@ final class BH_Activity_Editor_3 {
         if ( ! in_array( $status, array( 'draft', 'pending', 'published' ), true ) ) {
             wp_die( 'Invalid publishing status.', '', array( 'response' => 400 ) );
         }
-        if ( '' !== $price_raw && ( ! is_numeric( $price_raw ) || (float) $price_raw < 0 || (float) $price_raw > 99999999.99 ) ) {
+        if ( '' !== $price_raw && ( ! preg_match( '/^\\d{1,8}(?:\\.\\d{1,2})?$/D', $price_raw ) || (float) $price_raw > 99999999.99 ) ) {
             wp_die( 'Invalid price.', '', array( 'response' => 400 ) );
         }
         $price = '' === $price_raw ? null : number_format( (float) $price_raw, 2, '.', '' );
@@ -65,8 +65,9 @@ final class BH_Activity_Editor_3 {
             wp_die( 'Title and category are required and must fit the legacy schema.', '', array( 'response' => 400 ) );
         }
         global $wpdb;
-        $existing = $wpdb->get_var( $wpdb->prepare( 'SELECT id FROM bh_activities WHERE id = %d', $id ) );
-        if ( (int) $existing !== $id ) { wp_die( 'Activity not found.', '', array( 'response' => 404 ) ); }
+        $existing = $wpdb->get_row( $wpdb->prepare( 'SELECT id, status FROM bh_activities WHERE id = %d', $id ), ARRAY_A );
+        if ( ! $existing ) { wp_die( 'Activity not found.', '', array( 'response' => 404 ) ); }
+        if ( 'archived' === $existing['status'] ) { wp_die( 'Archived activities cannot be edited here.', '', array( 'response' => 403 ) ); }
         $updated = $wpdb->update(
             'bh_activities',
             array( 'title' => $title, 'category' => $category, 'description' => $description, 'price_from' => $price, 'status' => $status ),
