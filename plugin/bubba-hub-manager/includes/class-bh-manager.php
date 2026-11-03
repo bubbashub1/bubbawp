@@ -24,6 +24,7 @@ final class BH_Manager_3 {
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-directory-preview.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-modules.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activities.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-schema.php';
         BH_Directory_Preview_3::register();
         add_action( 'admin_menu', array( __CLASS__, 'register_admin_page' ) );
         add_action( 'admin_menu', array( 'BH_Settings_3', 'register' ) );
@@ -52,12 +53,17 @@ final class BH_Manager_3 {
         echo '<div class="wrap"><h1>' . esc_html__( 'Bubba Hub Manager 3.0', 'bubba-hub-manager' ) . '</h1>';
         echo '<p>' . esc_html__( 'Foundation installed. All business modules remain disabled pending like-for-like audit and staging tests.', 'bubba-hub-manager' ) . '</p>';
         echo '<p><strong>' . esc_html__( 'Version:', 'bubba-hub-manager' ) . '</strong> ' . esc_html( BUBBA_HUB_MANAGER_VERSION ) . '</p>';
+        echo '<h2>Fresh BH3 database schema (preview only)</h2>';
+        echo '<p>The new tables use the WordPress database prefix followed by bh3_. No tables are created automatically and existing legacy tables are untouched.</p>';
+        echo '<ul>';
+        foreach ( BH_Schema_3::table_names() as $table ) { echo '<li><code>' . esc_html( $table ) . '</code></li>'; }
+        echo '</ul><p>Installation will be enabled only after staging schema review and an explicit administrator confirmation.</p>';
         echo '<h2>' . esc_html__( 'Feature readiness', 'bubba-hub-manager' ) . '</h2>';
         echo '<ul>';
         foreach ( array( 'Directory' => self::FEATURE_DIRECTORY, 'Leader portal' => self::FEATURE_LEADER, 'My Hub' => self::FEATURE_FAMILY, 'Bookings' => self::FEATURE_BOOKINGS ) as $label => $enabled ) {
             echo '<li>' . esc_html( $label ) . ': ' . esc_html( $enabled ? __( 'Enabled', 'bubba-hub-manager' ) : __( 'Disabled — awaiting parity tests', 'bubba-hub-manager' ) ) . '</li>';
         }
         echo '</ul>';
-        echo '<p>' . esc_html__( 'No database tables, user roles, rewrite rules, REST endpoints or scheduled tasks are created by this version.', 'bubba-hub-manager' ) . '</p></div>';
+        echo '<p>' . esc_html__( 'No database tables, user roles, rewrite rules, REST endpoints or scheduled tasks are created automatically by this version.', 'bubba-hub-manager' ) . '</p></div>';
     }
 }
