@@ -123,7 +123,7 @@ This is a **target layout**, not a claim that these files have been built.
 - `bubba-hub-manager-<version>.zip` — standalone plugin.
 - Matching release notes, tested WordPress/PHP compatibility, checksum, staging QA record and rollback instructions.
 
-**Current milestone:** Architecture decision recorded; theme/plugin implementation, CI, packaging and staging QA are **not yet completed**.
+**Current milestone:** Initial theme scaffold committed (theme.json, templates, parts and patterns); visual review, theme ZIP, activation, CI and staging QA are **not yet completed**.
 
 ## 8. Checklist links
 
@@ -132,4 +132,4 @@ This is a **target layout**, not a claim that these files have been built.
 - Directory blocks: **D-07**
 - Release: **Z-01–Z-07**
 
-Next development task remains **G-02** (repository conventions and workflow); the theme foundation begins at **T-01** after Stage 0 gates.
+**Approved revised sequence (ADR-016):** Theme-first Stage T0 (design baseline) → Stage 0 governance/legacy audit → plugin foundation → feature modules. The initial theme scaffold is in progress; next action is visual review and technical validation, not a live deployment.
