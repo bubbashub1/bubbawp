@@ -1,0 +1,38 @@
+-- Bubba Hub 3.0 legacy activity field parity reference.
+-- Actual legacy bh_activities columns supplied via INFORMATION_SCHEMA on
+-- SCWORDPRESS-35303433c4eb: 44 columns.
+-- DO NOT execute this file as ALTER SQL. Use the guarded, idempotent PHP
+-- migration on the staging-only BH3 status page after a staging backup.
+-- The migration uses $wpdb->prefix and never connects to the live database.
+--
+-- Existing BH3 columns retained:
+-- id, organiser_id, title, slug, description, status, category,
+-- age_min_months, age_max_months, price_from, is_free, booking_url,
+-- image_id, created_at, updated_at.
+--
+-- 30 missing legacy-compatible columns added by
+-- includes/class-bh-activity-parity.php:
+-- leader_id, booking_required, price, image_path, price_type, currency,
+-- session_length_minutes, term_time_only, contact_email, contact_phone,
+-- website, facebook_url, instagram_url, featured, created_by, published_at,
+-- age_range, accessibility, tags, weekly_schedule, price_per_family,
+-- price_per_session, drop_in_welcome, trial_available, holiday_sessions,
+-- siblings_welcome, what_to_bring, good_to_know, gallery_images,
+-- block_length_weeks.
+--
+-- IMPORTANT design decisions:
+-- * price_per_family and price_per_session are boolean flags, not amounts.
+-- * price_type is varchar(40), preserving all legacy enum strings even though
+--   phpMyAdmin truncated the full enum output.
+-- * status remains the existing BH3 varchar(30), allowing legacy values
+--   without narrowing or converting existing rows.
+-- * weekly_schedule is retained for import/backward compatibility; BH3
+--   structured wp_sessions is the canonical timetable going forward.
+-- * gallery_images is retained as longtext; BH3 image_id remains the featured
+--   WordPress media attachment reference.
+-- * organiser and venue contact/address data are not duplicated into these
+--   tables; legacy activity-level contact fields are preserved separately.
+-- * no legacy records are copied or modified by this schema-only migration.
+--
+-- To inspect exact enum values if needed, use SUBSTRING(COLUMN_TYPE,1,500)
+-- from INFORMATION_SCHEMA.COLUMNS. The migration deliberately avoids enums.
