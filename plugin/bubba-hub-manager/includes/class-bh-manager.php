@@ -27,6 +27,7 @@ final class BH_Manager_3 {
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-modules.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activities.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-schema.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activity-parity.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activity-create.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activity-edit.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-venues.php';
@@ -42,6 +43,7 @@ final class BH_Manager_3 {
         BH_Directory_3::register();
         BH_Activity_Detail_3::register();
         add_action( 'admin_menu', array( __CLASS__, 'register_admin_page' ) );
+        BH_Activity_Parity_3::register();
         add_action( 'admin_menu', array( 'BH_Settings_3', 'register' ) );
         add_action( 'admin_menu', array( 'BH_Directory_Audit_3', 'register' ) );
         add_action( 'admin_menu', array( 'BH_Modules_3', 'register' ) );
@@ -118,6 +120,7 @@ final class BH_Manager_3 {
         echo '<div class="wrap"><h1>' . esc_html__( 'Bubba Hub Manager 3.0', 'bubba-hub-manager' ) . '</h1>';
         echo '<p>' . esc_html__( 'Foundation installed. All business modules remain disabled pending like-for-like audit and staging tests.', 'bubba-hub-manager' ) . '</p>';
         echo '<p><strong>' . esc_html__( 'Version:', 'bubba-hub-manager' ) . '</strong> ' . esc_html( BUBBA_HUB_MANAGER_VERSION ) . '</p>';
+        BH_Activity_Parity_3::render_control();
         echo '<h2>Fresh WordPress database schema</h2>';
         echo '<p>The new tables use the configured WordPress database prefix (normally wp_). No tables are created automatically and existing legacy tables are untouched.</p>';
         echo '<ul>';
