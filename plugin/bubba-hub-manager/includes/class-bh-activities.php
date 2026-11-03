@@ -143,6 +143,51 @@ final class BH_Activities_3 {
      * Only read actual timetable rows when a single unambiguous mapping exists.
      * Never interprets alternate relationship columns as activity IDs.
      */
+    /** Legacy fallback: only venues explicitly owned by this activity. */
+    private static function legacy_venue_sessions( $activity_id ) {
+        global $wpdb;
+        $tables = array();
+        foreach ( array( 'bh_sessions', 'bh_venues' ) as $base ) {
+            foreach ( array_unique( array( $base, $wpdb->prefix . $base ) ) as $candidate ) {
+                if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $candidate ) ) ) === $candidate ) {
+                    $tables[$base] = '`' . str_replace( '`', '``', $candidate ) . '`';
+                    break;
+                }
+            }
+        }
+        if ( count( $tables ) !== 2 ) {
+            echo '<p>Legacy sessions unavailable: venue or session table not found.</p>';
+            return;
+        }
+        $venue_columns = $wpdb->get_col( 'SHOW COLUMNS FROM ' . $tables['bh_venues'], 0 );
+        $session_columns = $wpdb->get_col( 'SHOW COLUMNS FROM ' . $tables['bh_sessions'], 0 );
+        if ( ! is_array( $venue_columns ) || ! is_array( $session_columns ) ||
+            array_diff( array( 'id', 'activity_id' ), $venue_columns ) ||
+            array_diff( array( 'venue_id', 'day_of_week', 'start_time', 'end_time' ), $session_columns ) ) {
+            echo '<p>Legacy session relationship not verified. Venue ownership and timetable columns must be checked.</p>';
+            return;
+        }
+        $fields = array_merge( array( 'venue_id', 'day_of_week', 'start_time', 'end_time' ),
+            array_values( array_intersect( array( 'class_name', 'term_time_only', 'frequency', 'start_date', 'end_date', 'duration_minutes', 'price' ), $session_columns ) ) );
+        $select = implode( ', ', array_map( static function( $field ) { return 's.`' . $field . '`'; }, $fields ) );
+        $rows = $wpdb->get_results( $wpdb->prepare(
+            'SELECT ' . $select . ' FROM ' . $tables['bh_sessions'] . ' s INNER JOIN ' . $tables['bh_venues'] .
+            ' v ON v.`id` = s.`venue_id` WHERE v.`activity_id` = %d LIMIT 100',
+            absint( $activity_id )
+        ), ARRAY_A );
+        echo '<h4>Legacy venue-owned sessions (read-only, maximum 100)</h4>';
+        if ( ! $rows ) { echo '<p>No legacy sessions found for venues explicitly assigned to this activity.</p>'; return; }
+        echo '<p>Fallback data is shown only because no direct activity schedules were found. Shared venues without explicit activity ownership are excluded.</p>';
+        echo '<div style="overflow-x:auto"><table class="widefat striped"><thead><tr>';
+        foreach ( $fields as $field ) { echo '<th scope="col">' . esc_html( str_replace( '_', ' ', ucfirst( $field ) ) ) . '</th>'; }
+        echo '</tr></thead><tbody>';
+        foreach ( $rows as $row ) {
+            echo '<tr>';
+            foreach ( $fields as $field ) { echo '<td>' . esc_html( isset( $row[$field] ) ? (string) $row[$field] : '' ) . '</td>'; }
+            echo '</tr>';
+        }
+        echo '</tbody></table></div>';
+    }
     private static function verified_session_rows( $activity_id ) {
         global $wpdb;
         $matches = array();
@@ -167,7 +212,7 @@ final class BH_Activities_3 {
         $quoted_fields = implode( ', ', array_map( static function ( $field ) { return '`' . $field . '`'; }, $select ) );
         $rows = $wpdb->get_results( $wpdb->prepare( 'SELECT ' . $quoted_fields . ' FROM ' . $table . ' WHERE `activity_id` = %d LIMIT 100', absint( $activity_id ) ), ARRAY_A );
         echo '<h4>Existing sessions (read-only, maximum 100)</h4>';
-        if ( ! $rows ) { echo '<p>No matching sessions found in the candidate table.</p>'; return; }
+        if ( ! $rows ) { self::legacy_venue_sessions( $activity_id ); return; }
         echo '<div style="overflow-x:auto"><table class="widefat striped"><thead><tr>';
         foreach ( $select as $field ) { echo '<th scope="col">' . esc_html( str_replace( '_', ' ', ucfirst( $field ) ) ) . '</th>'; }
         echo '</tr></thead><tbody>';
