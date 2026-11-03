@@ -208,7 +208,8 @@
 | ADR-013 | **Approach A:** fully custom native WordPress **block theme**, no Astra/Elementor dependency; separate theme ZIP and plugin ZIP | Agreed 2026-11-03 |
 | ADR-014 | WordPress Site Editor, `theme.json`, templates, parts and patterns for visual editing; plugin owns business logic and dynamic blocks | Agreed 2026-11-03 |
 | ADR-015 | Legacy Astra/Elementor content must be inventoried and transitioned on staging; no live theme switch until approved | Agreed 2026-11-03 |
-| ADR-016 | **Theme-first sequencing:** establish and approve design system before implementing directory, leader and family features | Agreed 2026-11-03 |\n| ADR-017 | Communications module may be developed as an isolated, staging-only feature branch in parallel; no live deployment or sending before QA/approval | Approved 2026-11-03 |
+| ADR-016 | **Theme-first sequencing:** establish and approve design system before implementing directory, leader and family features | Agreed 2026-11-03 |
+| ADR-017 | Communications module may be developed as an isolated, staging-only feature branch in parallel; no live deployment or sending before QA/approval | Approved 2026-11-03 |
 
 ## Work item template
 
@@ -260,4 +261,5 @@ Copy for each substantial issue/PR:
 | 2026-11-03 | Added GitHub Actions static checks and theme ZIP packaging, plus staging/browser QA checklist; initial run failed, subsequent run passed | `.github/workflows/theme-checks.yml`, `docs/THEME_QA.md` |
 | 2026-11-03 | Verified successful GitHub Actions theme ZIP artifact (run 41639189965); drafted visual design brief; staging/browser QA still outstanding | `docs/THEME_DESIGN_BRIEF.md` |
 | 2026-11-03 | Added category grid, featured placeholder, event promo and directory shell patterns; homepage updated; browser review still pending | `theme/bubba-hub/patterns/` |
-| 2026-11-03 | Confirmed theme build passed run 41642060861; expanded static validation for pattern and template-part references, CI result pending | `scripts/validate-theme.php` |\n| 2026-11-03 | Started isolated communications/newsletter module branch by request; WP-native private records, double opt-in, batched campaigns, unsubscribe, transactional mail adapter and 90-day email logs; CI/staging QA pending | `docs/COMMUNICATIONS_MODULE.md`, ADR-017 |
+| 2026-11-03 | Confirmed theme build passed run 41642060861; expanded static validation for pattern and template-part references, CI result pending | `scripts/validate-theme.php` |
+| 2026-11-03 | Started isolated communications/newsletter module branch by request; WP-native private records, double opt-in, batched campaigns, unsubscribe, transactional mail adapter and 90-day email logs; CI/staging QA pending | `docs/COMMUNICATIONS_MODULE.md`, ADR-017 |
