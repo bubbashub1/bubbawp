@@ -29,6 +29,16 @@ final class BH_Activity_Create_3 {
         }
         global $wpdb;
         $organisers = $wpdb->get_results( "SELECT id,name FROM `{$wpdb->prefix}organisers` ORDER BY name ASC LIMIT 1000", ARRAY_A );
+        $venues_table = $wpdb->prefix . 'venues';
+        $venues = array();
+        if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $venues_table ) ) ) === $venues_table ) {
+            $venue_columns = $wpdb->get_col( 'SHOW COLUMNS FROM `' . esc_sql( $venues_table ) . '`', 0 );
+            if ( is_array( $venue_columns ) && in_array( 'id', $venue_columns, true ) && in_array( 'name', $venue_columns, true ) ) {
+                $town_column = in_array( 'town', $venue_columns, true ) ? 'town' : ( in_array( 'city', $venue_columns, true ) ? 'city' : null );
+                $venue_select = 'id, name' . ( $town_column ? ', `' . $town_column . '` AS town' : ', NULL AS town' );
+                $venues = $wpdb->get_results( 'SELECT ' . $venue_select . ' FROM `' . esc_sql( $venues_table ) . '` ORDER BY name ASC LIMIT 2000', ARRAY_A );
+            }
+        }
         echo '<p>Seven steps, using the same activity fields as the existing Bubba Hub listing wizard. Save creates a draft; venues and weekly sessions are managed in their dedicated tabs.</p>';
         echo '<style>
         .bh3-wizard{max-width:1100px}.bh3-wizard-layout{display:grid;grid-template-columns:210px minmax(0,1fr);gap:22px;margin-top:20px}
@@ -37,6 +47,7 @@ final class BH_Activity_Create_3 {
         .bh3-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.bh3-field{display:flex;flex-direction:column;gap:6px;min-width:0;font-weight:600}.bh3-field input,.bh3-field textarea,.bh3-field select{width:100%;max-width:100%;box-sizing:border-box}
         .bh3-wide{grid-column:1/-1}.bh3-actions{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;margin-top:22px}.bh3-actions .button{min-height:36px}.bh3-actions [hidden]{display:none!important}
         .bh3-review{background:#f6f9f6;padding:14px;border-radius:9px;line-height:1.8}
+        .bh3-location-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}.bh3-venue-results{max-height:280px;overflow:auto;border:1px solid #dcdcde;border-radius:8px;padding:8px;margin-top:10px}.bh3-venue-option{display:flex;gap:8px;align-items:flex-start;padding:8px;border-bottom:1px solid #eee}.bh3-venue-option:last-child{border:0}.bh3-session-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:8px;align-items:end;padding:12px;border:1px solid #dcdcde;border-radius:8px;margin:0 0 10px}.bh3-session-row label{display:flex;flex-direction:column;gap:5px;font-weight:600}.bh3-session-row input,.bh3-session-row select{max-width:100%;width:100%}.bh3-session-row .bh3-session-term{display:flex;align-items:center;gap:6px;white-space:nowrap}.bh3-session-row .bh3-session-term input{width:auto}@media(max-width:782px){.bh3-location-grid{grid-template-columns:1fr}.bh3-session-row{grid-template-columns:1fr 1fr}.bh3-session-row .bh3-session-remove{grid-column:1/-1}}
         @media(max-width:782px){.bh3-wizard-layout{grid-template-columns:1fr}.bh3-steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.bh3-fields{grid-template-columns:1fr}.bh3-wide{grid-column:auto}.bh3-panel{padding:14px}}
         </style>';
         echo '<div class="bh3-wizard-layout"><nav class="bh3-steps" aria-label="Listing steps">';
@@ -91,13 +102,26 @@ final class BH_Activity_Create_3 {
         self::field( 'image_path', 'Main listing image URL', 'url', '', 'maxlength="1000"' );
         self::field( 'gallery_images', 'Additional image URLs (one per line, up to 10)', 'textarea', '', 'class="bh3-wide"' );
         echo '<p class="description bh3-wide">The main image URL is retained for compatibility. The WordPress media attachment field remains available separately in BH3.</p></div></section>';
-        echo '<section class="bh3-panel" data-panel="5" hidden><h2>Locations & timetable</h2><p>Venue records and weekly sessions are stored in their own BH3 tables, not duplicated inside the activity record.</p><p>After saving the draft, use <strong>My Venues</strong> and <strong>My Timetable</strong> to add existing venues and weekly sessions. Those screens will be connected to this activity.</p></section>';
+        echo '<section class="bh3-panel" data-panel="5" hidden><h2>Locations & timetable</h2><p>Choose one or more existing venues, then add the weekly sessions for this activity. You can leave the timetable empty and add it later.</p>';
+        echo '<div class="bh3-location-grid"><div><h3>Find existing venues</h3><input type="search" id="bh3-venue-search" class="regular-text" placeholder="Search venue name or town"><div id="bh3-venue-results" class="bh3-venue-results">';
+        foreach ( $venues as $venue ) {
+            $town = (string) ( $venue['town'] ?? '' );
+            $search_text = strtolower( $venue['name'] . ' ' . $town );
+            echo '<label class="bh3-venue-option" data-search="' . esc_attr( $search_text ) . '"><input type="checkbox" name="venue_ids[]" value="' . esc_attr( (string) $venue['id'] ) . '"> <span><strong>' . esc_html( $venue['name'] ) . '</strong>' . ( $town ? ' <small>— ' . esc_html( $town ) . '</small>' : '' ) . '</span></label>';
+        }
+        if ( ! $venues ) { echo '<p>No existing venues were found. You can save the draft and add venues from My Venues afterwards.</p>'; }
+        echo '</div><p class="description">Only existing venues are selectable here. New venue creation remains in Venues Manager.</p></div>';
+        echo '<div><h3>Weekly sessions</h3><div id="bh3-session-rows"></div><button type="button" class="button" id="bh3-add-session">+ Add weekly session</button><p class="description">Each session repeats weekly. Add separate rows for different days or times.</p></div></div></section>';
         echo '<section class="bh3-panel" data-panel="6" hidden><h2>Review your listing</h2><div class="bh3-review" id="bh3-review-summary">Review the fields above before saving.</div><p>This creates a draft only. Publishing remains administrator-controlled.</p></section>';
         echo '<div class="bh3-actions"><div><button type="button" class="button" id="bh3-prev" disabled>← Back</button> <button type="button" class="button button-primary" id="bh3-next">Continue →</button></div><button type="submit" class="button button-primary" id="bh3-submit" hidden>Save draft activity</button></div></form></div>';
         echo '<script>
         (function(){const form=document.getElementById("bh3-listing-wizard");if(!form)return;let step=0;const panels=[...form.querySelectorAll("[data-panel]")],nav=[...document.querySelectorAll(".bh3-steps [data-step]")],prev=document.getElementById("bh3-prev"),next=document.getElementById("bh3-next"),save=document.getElementById("bh3-submit"),summary=document.getElementById("bh3-review-summary");
-        const show=n=>{step=Math.max(0,Math.min(6,n));panels.forEach((p,i)=>p.hidden=i!==step);nav.forEach((b,i)=>b.setAttribute("aria-current",i===step?"step":"false"));prev.disabled=step===0;next.hidden=step===6;save.hidden=step!==6;if(step===6){const fields=[["Activity", "title"],["Category","category"],["Organiser","organiser_id"],["Age range","age_range"],["Price from","price_from"],["Contact email","contact_email"],["Website","website"]];summary.innerHTML=fields.map(([label,name])=>{const el=form.elements.namedItem(name);return "<p><strong>"+label+":</strong> "+String(el?.selectedOptions?.[0]?.textContent||el?.value||"—").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]))+"</p>"}).join("");}};
+        const show=n=>{n=Math.max(0,Math.min(6,n));if(step===5&&n>5){for(const row of sessionRows.querySelectorAll('.bh3-session-row')){const day=row.querySelector('select'),times=row.querySelectorAll('input[type=time]'),start=times[0],end=times[1];if(!day.value||!start.value||!end.value||end.value<=start.value){alert('Complete each weekly session and make sure its end time is later than its start.');(!day.value?day:!start.value?start:end).focus();return;}}}step=n;panels.forEach((p,i)=>p.hidden=i!==step);nav.forEach((b,i)=>b.setAttribute("aria-current",i===step?"step":"false"));prev.disabled=step===0;next.hidden=step===6;save.hidden=step!==6;if(step===6){const fields=[["Activity", "title"],["Category","category"],["Organiser","organiser_id"],["Age range","age_range"],["Price from","price_from"],["Contact email","contact_email"],["Website","website"]];summary.innerHTML=fields.map(([label,name])=>{const el=form.elements.namedItem(name);return "<p><strong>"+label+":</strong> "+String(el?.selectedOptions?.[0]?.textContent||el?.value||"—").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]))+"</p>"}).join("");}};
         prev.addEventListener("click",()=>show(step-1));next.addEventListener("click",()=>{if(step===0&&!form.elements.namedItem("title").value.trim()){form.elements.namedItem("title").focus();return;}show(step+1)});nav.forEach(b=>b.addEventListener("click",()=>show(Number(b.dataset.step))));form.addEventListener("submit",e=>{if(!form.elements.namedItem("title").value.trim()){e.preventDefault();show(0);form.elements.namedItem("title").focus();}});
+        const venueSearch=document.getElementById("bh3-venue-search"),venueOptions=[...document.querySelectorAll(".bh3-venue-option")],sessionRows=document.getElementById("bh3-session-rows"),addSession=document.getElementById("bh3-add-session");
+        venueSearch?.addEventListener("input",()=>{const q=venueSearch.value.trim().toLowerCase();venueOptions.forEach(row=>{row.hidden=q!==""&&!row.dataset.search.includes(q);});});
+        let sessionIndex=0;const addSessionRow=()=>{const i=sessionIndex++,row=document.createElement("div");row.className="bh3-session-row";row.innerHTML='<label>Day<select name="sessions['+i+'][day]"><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option><option value="7">Sunday</option></select></label><label>Start<input type="time" name="sessions['+i+'][start]"></label><label>End<input type="time" name="sessions['+i+'][end]"></label><label>Venue<select name="sessions['+i+'][venue_id]"><option value="0">No specific venue</option>'+venueOptions.map(v=>{const cb=v.querySelector("input");return '<option value="'+cb.value+'">'+v.querySelector("strong").textContent.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))+'</option>';}).join("")+'</select></label><button type="button" class="button bh3-session-remove">Remove</button><label class="bh3-session-term"><input type="checkbox" name="sessions['+i+'][term_time_only]" value="1"> Term time only</label>';sessionRows.appendChild(row);};
+        addSession?.addEventListener("click",addSessionRow);sessionRows?.addEventListener("click",e=>{if(e.target.classList.contains("bh3-session-remove"))e.target.closest(".bh3-session-row").remove();});
         show(0);})();
         </script></div>';
     }
@@ -154,6 +178,36 @@ final class BH_Activity_Create_3 {
         foreach ( $gallery as $image_url ) {
             if ( ! filter_var( $image_url, FILTER_VALIDATE_URL ) || ! in_array( strtolower( (string) wp_parse_url( $image_url, PHP_URL_SCHEME ) ), array( 'http', 'https' ), true ) ) { wp_die( 'One of the gallery image URLs is invalid.', '', array( 'response' => 400 ) ); }
         }
+        $venue_ids = array_values( array_unique( array_filter( array_map( 'absint', (array) ( $_POST['venue_ids'] ?? array() ) ) ) ) );
+        $sessions_input = isset( $_POST['sessions'] ) && is_array( $_POST['sessions'] ) ? wp_unslash( $_POST['sessions'] ) : array();
+        $valid_sessions = array();
+        foreach ( $sessions_input as $session ) {
+            if ( ! is_array( $session ) ) { continue; }
+            $day = filter_var( $session['day'] ?? null, FILTER_VALIDATE_INT );
+            $start = sanitize_text_field( $session['start'] ?? '' );
+            $end = sanitize_text_field( $session['end'] ?? '' );
+            if ( $day === false || $day < 1 || $day > 7 || ! preg_match( '/^([01][0-9]|2[0-3]):[0-5][0-9]$/', $start ) || ! preg_match( '/^([01][0-9]|2[0-3]):[0-5][0-9]$/', $end ) || $end <= $start ) {
+                wp_die( 'Each weekly session needs a valid day, start time and end time (later than its start).', '', array( 'response' => 400 ) );
+            }
+            $venue_id = absint( $session['venue_id'] ?? 0 );
+            if ( $venue_id && ! in_array( $venue_id, $venue_ids, true ) ) { wp_die( 'A session venue must also be selected in the venue list.', '', array( 'response' => 400 ) ); }
+            $valid_sessions[] = array( 'day' => $day, 'start' => $start, 'end' => $end, 'venue_id' => $venue_id, 'term_time_only' => empty( $session['term_time_only'] ) ? 0 : 1 );
+        }
+        if ( $venue_ids || $valid_sessions ) {
+            $venues_table = $wpdb->prefix . 'venues';
+            $links_table = $wpdb->prefix . 'activity_venues';
+            $sessions_table = $wpdb->prefix . 'sessions';
+            foreach ( array( $venues_table, $links_table, $sessions_table ) as $required_table ) {
+                if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $required_table ) ) ) !== $required_table ) {
+                    wp_die( 'Venue or timetable tables are not ready. Save the activity without locations, then add them from My Venues and My Timetable.', '', array( 'response' => 409 ) );
+                }
+            }
+            if ( $venue_ids ) {
+                $placeholders = implode( ',', array_fill( 0, count( $venue_ids ), '%d' ) );
+                $found_ids = $wpdb->get_col( $wpdb->prepare( "SELECT id FROM `{$venues_table}` WHERE id IN ($placeholders)", $venue_ids ) );
+                if ( count( array_map( 'intval', $found_ids ) ) !== count( $venue_ids ) ) { wp_die( 'One or more selected venues no longer exist. Refresh and try again.', '', array( 'response' => 409 ) ); }
+            }
+        }
         $now = current_time( 'mysql', true );
         $data = array(
             'organiser_id' => $organiser_id ?: null, 'title' => $title, 'slug' => $slug,
@@ -175,8 +229,28 @@ final class BH_Activity_Create_3 {
             'block_length_weeks' => self::number_value( 'block_length_weeks', 1, 104 ),
             'accessibility' => $accessibility, 'created_by' => get_current_user_id(), 'created_at' => $now, 'updated_at' => $now,
         );
-        if ( $wpdb->insert( $table, $data ) === false ) { wp_die( 'Unable to save activity: ' . esc_html( $wpdb->last_error ), '', array( 'response' => 500 ) ); }
-        wp_safe_redirect( add_query_arg( array( 'page' => 'bh3-add-activity', 'created' => $wpdb->insert_id ), admin_url( 'admin.php' ) ) );
+        $wpdb->query( 'START TRANSACTION' );
+        if ( $wpdb->insert( $table, $data ) === false ) { $wpdb->query( 'ROLLBACK' ); wp_die( 'Unable to save activity: ' . esc_html( $wpdb->last_error ), '', array( 'response' => 500 ) ); }
+        $activity_id = (int) $wpdb->insert_id;
+        foreach ( $venue_ids as $venue_id ) {
+            if ( false === $wpdb->insert( $wpdb->prefix . 'activity_venues', array( 'activity_id' => $activity_id, 'venue_id' => $venue_id ), array( '%d', '%d' ) ) ) {
+                $wpdb->query( 'ROLLBACK' ); wp_die( 'Unable to save venue assignments: ' . esc_html( $wpdb->last_error ), '', array( 'response' => 500 ) );
+            }
+        }
+        foreach ( $valid_sessions as $session ) {
+            $session_data = array(
+                'activity_id' => $activity_id, 'venue_id' => $session['venue_id'] ?: null,
+                'day_of_week' => $session['day'], 'start_time' => $session['start'] . ':00',
+                'end_time' => $session['end'] . ':00', 'frequency' => 'weekly',
+                'term_time_only' => $session['term_time_only'], 'status' => 'scheduled',
+                'created_at' => $now, 'updated_at' => $now,
+            );
+            if ( false === $wpdb->insert( $wpdb->prefix . 'sessions', $session_data ) ) {
+                $wpdb->query( 'ROLLBACK' ); wp_die( 'Unable to save weekly sessions: ' . esc_html( $wpdb->last_error ), '', array( 'response' => 500 ) );
+            }
+        }
+        if ( false === $wpdb->query( 'COMMIT' ) ) { $wpdb->query( 'ROLLBACK' ); wp_die( 'Unable to complete activity save.', '', array( 'response' => 500 ) ); }
+        wp_safe_redirect( add_query_arg( array( 'page' => 'bh3-add-activity', 'created' => $activity_id ), admin_url( 'admin.php' ) ) );
         exit;
     }
 }
