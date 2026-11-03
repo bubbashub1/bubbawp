@@ -4,6 +4,9 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 final class BH_Activity_Create_3 {
     public static function register() {
         add_submenu_page( 'bubba-hub-3-status', 'Add Activity', 'Add Activity', 'manage_options', 'bh3-add-activity', array( __CLASS__, 'render' ) );
+
+    }
+    public static function register_save() {
         add_action( 'admin_post_bh3_create_activity', array( __CLASS__, 'save' ) );
     }
     private static function allowed() {
@@ -41,7 +44,7 @@ final class BH_Activity_Create_3 {
             wp_die( 'Activities table is missing.', '', array( 'response' => 409 ) );
         }
         $title = sanitize_text_field( wp_unslash( $_POST['title'] ?? '' ) );
-        if ( $title === '' || mb_strlen( $title ) > 255 ) { wp_die( 'Enter a valid activity title.', '', array( 'response' => 400 ) ); }
+        if ( $title === '' || strlen( $title ) > 255 ) { wp_die( 'Enter a valid activity title.', '', array( 'response' => 400 ) ); }
         $min = isset( $_POST['age_min_months'] ) && $_POST['age_min_months'] !== '' ? filter_var( wp_unslash( $_POST['age_min_months'] ), FILTER_VALIDATE_INT ) : null;
         $max = isset( $_POST['age_max_months'] ) && $_POST['age_max_months'] !== '' ? filter_var( wp_unslash( $_POST['age_max_months'] ), FILTER_VALIDATE_INT ) : null;
         foreach ( array( $min, $max ) as $age ) {
