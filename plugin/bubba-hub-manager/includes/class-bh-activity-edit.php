@@ -59,7 +59,15 @@ final class BH_Activity_Edit_3 {
         $url = esc_url_raw( wp_unslash( $_POST['booking_url'] ?? '' ) );
         if ( strlen( $url ) > 2048 || ( $url && ! in_array( strtolower( (string) wp_parse_url( $url, PHP_URL_SCHEME ) ), array( 'http', 'https' ), true ) ) ) { wp_die( 'Invalid URL.', '', array( 'response' => 400 ) ); }
         global $wpdb;
+        $org_id = absint( $_POST['organiser_id'] ?? 0 );
+        if ( $org_id ) {
+            $org_table = $wpdb->prefix . 'organisers';
+            if ( ! $wpdb->get_var( $wpdb->prepare( "SELECT id FROM `{$org_table}` WHERE id = %d", $org_id ) ) ) {
+                wp_die( 'Selected organiser does not exist.', '', array( 'response' => 400 ) );
+            }
+        }
         $data = array(
+            'organiser_id' => $org_id ?: null,
             'title' => $title, 'description' => wp_kses_post( wp_unslash( $_POST['description'] ?? '' ) ),
             'category' => $category, 'age_min_months' => $ages['age_min_months'],
             'age_max_months' => $ages['age_max_months'], 'price_from' => $free ? 0 : ( $raw_price === '' ? null : round( (float) $raw_price, 2 ) ),
