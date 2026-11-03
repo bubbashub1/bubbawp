@@ -26,6 +26,7 @@ final class BH_Leader_Edit_3 {
         $row = self::owned_draft( $id );
         if ( ! $row ) { wp_die( 'You cannot edit this activity.', '', array( 'response' => 403 ) ); }
         echo '<div class="wrap" style="max-width:900px"><h1>Edit ' . esc_html( $row['title'] ) . '</h1><p><a href="' . esc_url( admin_url( 'admin.php?page=bh3-my-listings' ) ) . '">← My Listings</a></p>';
+        if ( isset( $_GET['created'] ) ) { echo '<div class="notice notice-success"><p>Draft created. Next: assign a venue and add your weekly timetable.</p></div>'; }
         if ( isset( $_GET['updated'] ) ) { echo '<div class="notice notice-success"><p>Draft saved.</p></div>'; }
         echo '<p><a class="button" href="' . esc_url( add_query_arg( array( 'page' => 'bh3-leader-sessions', 'activity_id' => $id ), admin_url( 'admin.php' ) ) ) . '">Manage timetable</a> <a class="button" href="' . esc_url( add_query_arg( array( 'page' => 'bh3-leader-venues', 'activity_id' => $id ), admin_url( 'admin.php' ) ) ) . '">Manage venues</a></p>';
         echo '<p>You can update your draft details. Organiser assignment, publishing and deletion remain administrator-controlled.</p>';
