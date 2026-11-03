@@ -247,6 +247,11 @@ final class BH_Activity_Create_3 {
             }
         });
         sessionRows.addEventListener("change",e=>{
+            if(e.target.matches('select[name$="[venue_id]"]')){
+                const venueId=Number(e.target.value);
+                if(venueId){const assigned=form.querySelector('input[name="venue_ids[]"][value="'+venueId+'"]');if(assigned)assigned.checked=true;}
+                return;
+            }
             if(!e.target.matches(".bh3-day-toggle"))return;
             const card=e.target.closest(".bh3-day-card");
             if(e.target.checked&&!card.querySelector(".bh3-session-row"))addSessionRow(Number(card.dataset.day));
