@@ -41,6 +41,7 @@ final class BH_Activities_Admin_3 {
             echo '<div class="notice notice-error"><p>' . esc_html( $rows->get_error_message() ) . '</p></div></div>';
             return;
         }
+        echo '<p><strong>' . esc_html__( 'Showing published listings only. Existing records are not modified.', 'bubba-hub-manager' ) . '</strong></p>';
         echo '<table class="widefat striped"><thead><tr><th scope="col">ID</th><th scope="col">' . esc_html__( 'Activity', 'bubba-hub-manager' ) . '</th><th scope="col">' . esc_html__( 'Slug', 'bubba-hub-manager' ) . '</th></tr></thead><tbody>';
         foreach ( $rows as $row ) {
             echo '<tr><td>' . esc_html( (string) $row['id'] ) . '</td><td>' . esc_html( $row['title'] ) . '</td><td><code>' . esc_html( $row['slug'] ) . '</code></td></tr>';
