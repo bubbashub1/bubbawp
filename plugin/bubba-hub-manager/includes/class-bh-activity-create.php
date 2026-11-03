@@ -1,85 +1,182 @@
 <?php
-/** Staging-only create activity form for the fresh WordPress schema. */
+/** Bubba Hub's existing seven-step listing workflow, adapted to the BH3 WordPress schema. */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 final class BH_Activity_Create_3 {
+    private static function allowed() {
+        return current_user_can( 'manage_options' ) && strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) === 'staging.bubbahub.co.uk';
+    }
     public static function register() {
         add_submenu_page( 'bubba-hub-3-status', 'Add Activity', 'Add Activity', 'manage_options', 'bh3-add-activity', array( __CLASS__, 'render' ) );
-
     }
     public static function register_save() {
         add_action( 'admin_post_bh3_create_activity', array( __CLASS__, 'save' ) );
     }
-    private static function allowed() {
-        return current_user_can( 'manage_options' ) && strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) === 'staging.bubbahub.co.uk';
+    private static function field( $name, $label, $type = 'text', $value = '', $extra = '' ) {
+        echo '<label class="bh3-field"><span>' . esc_html( $label ) . '</span>';
+        if ( $type === 'textarea' ) {
+            echo '<textarea name="' . esc_attr( $name ) . '" rows="4">' . esc_textarea( (string) $value ) . '</textarea>';
+        } else {
+            echo '<input type="' . esc_attr( $type ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( (string) $value ) . '" ' . $extra . '>';
+        }
+        echo '</label>';
     }
     public static function render() {
         if ( ! current_user_can( 'manage_options' ) ) { wp_die( 'Permission denied.' ); }
-        echo '<div class="wrap"><h1>Add Activity</h1>';
+        echo '<div class="wrap bh3-wizard"><h1>Add activity</h1>';
         if ( ! self::allowed() ) { echo '<p>Activity creation is restricted to staging administrators.</p></div>'; return; }
         if ( isset( $_GET['created'] ) ) {
-            echo '<div class="notice notice-success"><p>Activity created as a draft. ID: ' . esc_html( (string) absint( $_GET['created'] ) ) . '</p></div>';
+            echo '<div class="notice notice-success"><p>Draft created successfully. ID: ' . esc_html( (string) absint( $_GET['created'] ) ) . '</p></div>';
         }
-        echo '<p>Creates a draft only. Publishing, images, organisers, venues and timetables will be added in later stages.</p>';
-        echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
-        echo '<input type="hidden" name="action" value="bh3_create_activity">';
+        global $wpdb;
+        $organisers = $wpdb->get_results( "SELECT id,name FROM `{$wpdb->prefix}organisers` ORDER BY name ASC LIMIT 1000", ARRAY_A );
+        echo '<p>Seven steps, using the same activity fields as the existing Bubba Hub listing wizard. Save creates a draft; venues and weekly sessions are managed in their dedicated tabs.</p>';
+        echo '<style>
+        .bh3-wizard{max-width:1100px}.bh3-wizard-layout{display:grid;grid-template-columns:210px minmax(0,1fr);gap:22px;margin-top:20px}
+        .bh3-steps{display:flex;flex-direction:column;gap:6px}.bh3-steps button{text-align:left;padding:12px;border:1px solid #d5e3d9;border-radius:9px;background:#fff;cursor:pointer}.bh3-steps button[aria-current=step]{background:#eaf3ed;border-color:#397253;font-weight:700}
+        .bh3-panel{background:#fff;border:1px solid #dce5de;border-radius:12px;padding:22px;min-width:0}.bh3-panel[hidden]{display:none}
+        .bh3-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.bh3-field{display:flex;flex-direction:column;gap:6px;min-width:0;font-weight:600}.bh3-field input,.bh3-field textarea,.bh3-field select{width:100%;max-width:100%;box-sizing:border-box}
+        .bh3-wide{grid-column:1/-1}.bh3-actions{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;margin-top:22px}.bh3-actions .button{min-height:36px}
+        .bh3-review{background:#f6f9f6;padding:14px;border-radius:9px;line-height:1.8}
+        @media(max-width:782px){.bh3-wizard-layout{grid-template-columns:1fr}.bh3-steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.bh3-fields{grid-template-columns:1fr}.bh3-wide{grid-column:auto}.bh3-panel{padding:14px}}
+        </style>';
+        echo '<div class="bh3-wizard-layout"><nav class="bh3-steps" aria-label="Listing steps">';
+        $steps = array( 'Basics', 'About & categories', 'Age & pricing', 'Contact & booking', 'Images & accessibility', 'Locations & timetable', 'Review' );
+        foreach ( $steps as $i => $label ) { echo '<button type="button" data-step="' . esc_attr( (string) $i ) . '" aria-current="' . ( $i === 0 ? 'step' : 'false' ) . '">' . esc_html( ( $i + 1 ) . '. ' . $label ) . '</button>'; }
+        echo '</nav><form id="bh3-listing-wizard" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="bh3_create_activity">';
         wp_nonce_field( 'bh3_create_activity' );
-        echo '<table class="form-table" role="presentation">';
-        echo '<tr><th><label for="bh3_title">Activity title</label></th><td><input required maxlength="255" class="regular-text" id="bh3_title" name="title"></td></tr>';
-        echo '<tr><th><label for="bh3_description">Description</label></th><td><textarea class="large-text" rows="7" id="bh3_description" name="description"></textarea></td></tr>';
-        echo '<tr><th><label for="bh3_category">Primary category</label></th><td><input maxlength="150" class="regular-text" id="bh3_category" name="category"></td></tr>';
-        echo '<tr><th><label for="bh3_age_min">Minimum age (months)</label></th><td><input type="number" min="0" max="216" id="bh3_age_min" name="age_min_months"></td></tr>';
-        echo '<tr><th><label for="bh3_age_max">Maximum age (months)</label></th><td><input type="number" min="0" max="216" id="bh3_age_max" name="age_max_months"></td></tr>';
-        echo '<tr><th><label for="bh3_price">Price from (£)</label></th><td><input type="number" step="0.01" min="0" max="99999999" id="bh3_price" name="price_from"> <label><input type="checkbox" name="is_free" value="1"> Free activity</label></td></tr>';
-        echo '<tr><th><label for="bh3_booking">Booking URL</label></th><td><input type="url" class="large-text" id="bh3_booking" name="booking_url"></td></tr>';
-        echo '</table>';
-        submit_button( 'Save draft activity' );
-        echo '</form></div>';
+        echo '<section class="bh3-panel" data-panel="0"><h2>Basics</h2><div class="bh3-fields">';
+        self::field( 'title', 'Activity title', 'text', '', 'required maxlength="255"' );
+        echo '<label class="bh3-field"><span>Organiser</span><select name="organiser_id"><option value="0">Select organiser (optional)</option>';
+        foreach ( $organisers as $org ) { echo '<option value="' . esc_attr( (string) $org['id'] ) . '">' . esc_html( $org['name'] ) . '</option>'; }
+        echo '</select></label>';
+        self::field( 'slug', 'URL slug (leave blank to generate)', 'text', '', 'maxlength="255"' );
+        echo '</div></section>';
+        echo '<section class="bh3-panel" data-panel="1" hidden><h2>About & categories</h2><div class="bh3-fields">';
+        self::field( 'category', 'Primary category', 'text', '', 'maxlength="255"' );
+        self::field( 'tags', 'Tags and search terms (comma separated)', 'textarea' );
+        self::field( 'description', 'Description', 'textarea', '', 'class="bh3-wide"' );
+        self::field( 'accessibility', 'Accessibility information', 'textarea', '', 'class="bh3-wide"' );
+        self::field( 'what_to_bring', 'What to bring', 'text', '', 'maxlength="250"' );
+        self::field( 'good_to_know', 'Good to know', 'text', '', 'maxlength="250"' );
+        echo '</div></section>';
+        echo '<section class="bh3-panel" data-panel="2" hidden><h2>Age & pricing</h2><div class="bh3-fields">';
+        self::field( 'age_range', 'Display age range', 'text', '', 'maxlength="255" placeholder="e.g. 0–12 months"' );
+        self::field( 'age_min_months', 'Minimum age (months)', 'number', '', 'min="0" max="216"' );
+        self::field( 'age_max_months', 'Maximum age (months)', 'number', '', 'min="0" max="216"' );
+        self::field( 'price', 'Price (£)', 'number', '', 'min="0" step="0.01"' );
+        self::field( 'price_from', 'Price from (£)', 'number', '', 'min="0" step="0.01"' );
+        echo '<label class="bh3-field"><span>Pricing type</span><select name="price_type"><option value="per_session">Per session</option><option value="per_family">Per family</option><option value="per_child">Per child</option><option value="free">Free</option><option value="per_block">Per block</option></select></label>';
+        self::field( 'block_length_weeks', 'Block length (weeks)', 'number', '', 'min="1" max="104"' );
+        echo '<label class="bh3-field"><span>Currency</span><select name="currency"><option value="GBP">GBP (£)</option></select></label>';
+        echo '<label class="bh3-field"><span><input type="checkbox" name="is_free" value="1"> Free activity</span></label>';
+        echo '<label class="bh3-field"><span><input type="checkbox" name="price_per_family" value="1"> Price per family</span></label>';
+        echo '<label class="bh3-field"><span><input type="checkbox" name="price_per_session" value="1" checked> Price per session</span></label>';
+        echo '<label class="bh3-field"><span><input type="checkbox" name="term_time_only" value="1"> Term-time only</span></label>';
+        echo '<label class="bh3-field"><span><input type="checkbox" name="drop_in_welcome" value="1"> Drop-ins welcome</span></label>';
+        echo '<label class="bh3-field"><span><input type="checkbox" name="trial_available" value="1"> Trial session available</span></label>';
+        echo '<label class="bh3-field"><span><input type="checkbox" name="holiday_sessions" value="1"> Holiday sessions</span></label>';
+        echo '<label class="bh3-field"><span><input type="checkbox" name="siblings_welcome" value="1"> Siblings welcome</span></label>';
+        self::field( 'session_length_minutes', 'Session length (minutes)', 'number', '', 'min="1" max="1440"' );
+        echo '</div></section>';
+        echo '<section class="bh3-panel" data-panel="3" hidden><h2>Contact & booking</h2><div class="bh3-fields">';
+        self::field( 'contact_email', 'Contact email', 'email', '', 'maxlength="255"' );
+        self::field( 'contact_phone', 'Contact phone', 'tel', '', 'maxlength="100"' );
+        self::field( 'website', 'Website', 'url', '', 'maxlength="1000"' );
+        self::field( 'facebook_url', 'Facebook URL', 'url', '', 'maxlength="500"' );
+        self::field( 'instagram_url', 'Instagram URL', 'url', '', 'maxlength="500"' );
+        self::field( 'booking_url', 'Booking URL', 'url', '', 'maxlength="2048"' );
+        echo '<label class="bh3-field"><span><input type="checkbox" name="booking_required" value="1"> Booking required</span></label>';
+        echo '</div></section>';
+        echo '<section class="bh3-panel" data-panel="4" hidden><h2>Images & accessibility</h2><div class="bh3-fields">';
+        self::field( 'image_path', 'Main listing image URL', 'url', '', 'maxlength="1000"' );
+        self::field( 'gallery_images', 'Additional image URLs (one per line, up to 10)', 'textarea', '', 'class="bh3-wide"' );
+        echo '<p class="description bh3-wide">The main image URL is retained for compatibility. The WordPress media attachment field remains available separately in BH3.</p></div></section>';
+        echo '<section class="bh3-panel" data-panel="5" hidden><h2>Locations & timetable</h2><p>Venue records and weekly sessions are stored in their own BH3 tables, not duplicated inside the activity record.</p><p>After saving the draft, use <strong>My Venues</strong> and <strong>My Timetable</strong> to add existing venues and weekly sessions. Those screens will be connected to this activity.</p></section>';
+        echo '<section class="bh3-panel" data-panel="6" hidden><h2>Review your listing</h2><div class="bh3-review" id="bh3-review-summary">Review the fields above before saving.</div><p>This creates a draft only. Publishing remains administrator-controlled.</p></section>';
+        echo '<div class="bh3-actions"><div><button type="button" class="button" id="bh3-prev" disabled>← Back</button> <button type="button" class="button button-primary" id="bh3-next">Continue →</button></div><button type="submit" class="button button-primary" id="bh3-submit" hidden>Save draft activity</button></div></form></div>';
+        echo '<script>
+        (function(){const form=document.getElementById("bh3-listing-wizard");if(!form)return;let step=0;const panels=[...form.querySelectorAll("[data-panel]")],nav=[...document.querySelectorAll(".bh3-steps [data-step]")],prev=document.getElementById("bh3-prev"),next=document.getElementById("bh3-next"),save=document.getElementById("bh3-submit"),summary=document.getElementById("bh3-review-summary");
+        const show=n=>{step=Math.max(0,Math.min(6,n));panels.forEach((p,i)=>p.hidden=i!==step);nav.forEach((b,i)=>b.setAttribute("aria-current",i===step?"step":"false"));prev.disabled=step===0;next.hidden=step===6;save.hidden=step!==6;if(step===6){const fields=[["Activity", "title"],["Category","category"],["Organiser","organiser_id"],["Age range","age_range"],["Price from","price_from"],["Contact email","contact_email"],["Website","website"]];summary.innerHTML=fields.map(([label,name])=>{const el=form.elements.namedItem(name);return "<p><strong>"+label+":</strong> "+String(el?.selectedOptions?.[0]?.textContent||el?.value||"—").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]))+"</p>"}).join("");}};
+        prev.addEventListener("click",()=>show(step-1));next.addEventListener("click",()=>{if(step===0&&!form.elements.namedItem("title").value.trim()){form.elements.namedItem("title").focus();return;}show(step+1)});nav.forEach(b=>b.addEventListener("click",()=>show(Number(b.dataset.step))));form.addEventListener("submit",e=>{if(!form.elements.namedItem("title").value.trim()){e.preventDefault();show(0);form.elements.namedItem("title").focus();}});
+        show(0);})();
+        </script></div>';
+    }
+    private static function checkbox( $key ) { return ! empty( $_POST[$key] ) ? 1 : 0; }
+    private static function text_value( $key, $max = 0 ) {
+        $value = sanitize_text_field( wp_unslash( $_POST[$key] ?? '' ) );
+        return $max ? mb_substr( $value, 0, $max ) : $value;
+    }
+    private static function url_value( $key, $max ) {
+        $raw = trim( (string) wp_unslash( $_POST[$key] ?? '' ) );
+        if ( $raw === '' ) { return null; }
+        $url = esc_url_raw( $raw, array( 'http', 'https' ) );
+        if ( ! $url || strlen( $raw ) > $max ) { wp_die( 'Invalid URL in ' . esc_html( $key ) . '.', '', array( 'response' => 400 ) ); }
+        return $url;
+    }
+    private static function number_value( $key, $min, $max, $decimals = false ) {
+        $raw = trim( (string) wp_unslash( $_POST[$key] ?? '' ) );
+        if ( $raw === '' ) { return null; }
+        if ( ! is_numeric( $raw ) || (float) $raw < $min || (float) $raw > $max || ( ! $decimals && (float) (int) $raw !== (float) $raw ) ) {
+            wp_die( 'Invalid value for ' . esc_html( $key ) . '.', '', array( 'response' => 400 ) );
+        }
+        return $decimals ? round( (float) $raw, 2 ) : (int) $raw;
     }
     public static function save() {
         if ( ! self::allowed() ) { wp_die( 'Staging administrator permission required.', '', array( 'response' => 403 ) ); }
         check_admin_referer( 'bh3_create_activity' );
         global $wpdb;
         $table = $wpdb->prefix . 'activities';
-        if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ) !== $table ) {
-            wp_die( 'Activities table is missing.', '', array( 'response' => 409 ) );
+        if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ) !== $table ) { wp_die( 'Activities table is missing.', '', array( 'response' => 409 ) ); }
+        $title = self::text_value( 'title', 255 );
+        if ( $title === '' ) { wp_die( 'Enter an activity title.', '', array( 'response' => 400 ) ); }
+        $organiser_id = absint( $_POST['organiser_id'] ?? 0 );
+        if ( $organiser_id ) {
+            $org_table = $wpdb->prefix . 'organisers';
+            if ( ! $wpdb->get_var( $wpdb->prepare( "SELECT id FROM `{$org_table}` WHERE id=%d", $organiser_id ) ) ) { wp_die( 'Selected organiser does not exist.', '', array( 'response' => 400 ) ); }
         }
-        $title = sanitize_text_field( wp_unslash( $_POST['title'] ?? '' ) );
-        if ( $title === '' || strlen( $title ) > 255 ) { wp_die( 'Enter a valid activity title.', '', array( 'response' => 400 ) ); }
-        $min = isset( $_POST['age_min_months'] ) && $_POST['age_min_months'] !== '' ? filter_var( wp_unslash( $_POST['age_min_months'] ), FILTER_VALIDATE_INT ) : null;
-        $max = isset( $_POST['age_max_months'] ) && $_POST['age_max_months'] !== '' ? filter_var( wp_unslash( $_POST['age_max_months'] ), FILTER_VALIDATE_INT ) : null;
-        foreach ( array( $min, $max ) as $age ) {
-            if ( $age !== null && ( $age === false || $age < 0 || $age > 216 ) ) { wp_die( 'Invalid age range.', '', array( 'response' => 400 ) ); }
-        }
+        $min = self::number_value( 'age_min_months', 0, 216 );
+        $max = self::number_value( 'age_max_months', 0, 216 );
         if ( $min !== null && $max !== null && $min > $max ) { wp_die( 'Minimum age cannot exceed maximum age.', '', array( 'response' => 400 ) ); }
-        $free = ! empty( $_POST['is_free'] ) ? 1 : 0;
-        $raw_price = trim( (string) wp_unslash( $_POST['price_from'] ?? '' ) );
-        if ( ! $free && $raw_price !== '' && ( ! is_numeric( $raw_price ) || (float) $raw_price < 0 || (float) $raw_price > 99999999 ) ) {
-            wp_die( 'Invalid price.', '', array( 'response' => 400 ) );
-        }
-        $booking_url = esc_url_raw( wp_unslash( $_POST['booking_url'] ?? '' ) );
-        if ( strlen( $booking_url ) > 2048 || ( $booking_url && ! in_array( strtolower( (string) wp_parse_url( $booking_url, PHP_URL_SCHEME ) ), array( 'http', 'https' ), true ) ) ) {
-            wp_die( 'Invalid booking URL.', '', array( 'response' => 400 ) );
-        }
-        $slug = sanitize_title( $title );
-        $base = substr( $slug ?: 'activity', 0, 175 );
-        $slug = $base;
-        for ( $suffix = 2; $wpdb->get_var( $wpdb->prepare( "SELECT id FROM `{$table}` WHERE slug = %s LIMIT 1", $slug ) ); ++$suffix ) {
-            $slug = $base . '-' . $suffix;
+        $price = self::number_value( 'price', 0, 99999999.99, true );
+        $price_from = self::number_value( 'price_from', 0, 99999999.99, true );
+        $price_type = self::text_value( 'price_type', 40 );
+        if ( ! in_array( $price_type, array( 'per_session', 'per_family', 'per_child', 'free', 'per_block' ), true ) ) { $price_type = 'per_session'; }
+        $free = self::checkbox( 'is_free' ) || $price_type === 'free';
+        $slug = sanitize_title( wp_unslash( $_POST['slug'] ?? '' ) );
+        if ( $slug === '' ) { $slug = sanitize_title( $title ); }
+        $base = substr( $slug ?: 'activity', 0, 220 ); $slug = $base;
+        for ( $suffix = 2; $wpdb->get_var( $wpdb->prepare( "SELECT id FROM `{$table}` WHERE slug=%s LIMIT 1", $slug ) ); ++$suffix ) {
+            $slug = substr( $base, 0, 220 ) . '-' . $suffix;
             if ( $suffix > 10000 ) { wp_die( 'Unable to allocate a unique slug.', '', array( 'response' => 409 ) ); }
+        }
+        $accessibility = trim( (string) wp_unslash( $_POST['accessibility'] ?? '' ) );
+        $gallery = array_slice( array_values( array_filter( array_map( 'trim', preg_split( '/\r\n|\r|\n/', (string) wp_unslash( $_POST['gallery_images'] ?? '' ) ) ) ) ), 0, 10 );
+        foreach ( $gallery as $image_url ) {
+            if ( ! filter_var( $image_url, FILTER_VALIDATE_URL ) || ! in_array( strtolower( (string) wp_parse_url( $image_url, PHP_URL_SCHEME ) ), array( 'http', 'https' ), true ) ) { wp_die( 'One of the gallery image URLs is invalid.', '', array( 'response' => 400 ) ); }
         }
         $now = current_time( 'mysql', true );
         $data = array(
-            'title' => $title, 'slug' => $slug,
-            'description' => wp_kses_post( wp_unslash( $_POST['description'] ?? '' ) ),
-            'status' => 'draft',
-            'category' => sanitize_text_field( wp_unslash( $_POST['category'] ?? '' ) ),
-            'age_min_months' => $min, 'age_max_months' => $max,
-            'price_from' => $free ? 0 : ( $raw_price === '' ? null : round( (float) $raw_price, 2 ) ),
-            'is_free' => $free, 'booking_url' => $booking_url,
-            'created_at' => $now, 'updated_at' => $now
+            'organiser_id' => $organiser_id ?: null, 'title' => $title, 'slug' => $slug,
+            'description' => wp_kses_post( wp_unslash( $_POST['description'] ?? '' ) ), 'status' => 'draft',
+            'category' => self::text_value( 'category', 255 ), 'tags' => sanitize_textarea_field( wp_unslash( $_POST['tags'] ?? '' ) ),
+            'age_min_months' => $min, 'age_max_months' => $max, 'age_range' => self::text_value( 'age_range', 255 ),
+            'price' => $price, 'price_from' => $free ? 0 : $price_from, 'price_type' => $free ? 'free' : $price_type,
+            'currency' => 'GBP', 'is_free' => $free ? 1 : 0, 'booking_required' => self::checkbox( 'booking_required' ),
+            'booking_url' => self::url_value( 'booking_url', 2048 ), 'image_path' => self::url_value( 'image_path', 1000 ),
+            'contact_email' => sanitize_email( wp_unslash( $_POST['contact_email'] ?? '' ) ),
+            'contact_phone' => self::text_value( 'contact_phone', 100 ), 'website' => self::url_value( 'website', 1000 ),
+            'facebook_url' => self::url_value( 'facebook_url', 500 ), 'instagram_url' => self::url_value( 'instagram_url', 500 ),
+            'session_length_minutes' => self::number_value( 'session_length_minutes', 1, 1440 ),
+            'term_time_only' => self::checkbox( 'term_time_only' ), 'price_per_family' => self::checkbox( 'price_per_family' ),
+            'price_per_session' => self::checkbox( 'price_per_session' ), 'drop_in_welcome' => self::checkbox( 'drop_in_welcome' ),
+            'trial_available' => self::checkbox( 'trial_available' ), 'holiday_sessions' => self::checkbox( 'holiday_sessions' ),
+            'siblings_welcome' => self::checkbox( 'siblings_welcome' ), 'what_to_bring' => self::text_value( 'what_to_bring', 250 ),
+            'good_to_know' => self::text_value( 'good_to_know', 250 ), 'gallery_images' => wp_json_encode( $gallery ),
+            'block_length_weeks' => self::number_value( 'block_length_weeks', 1, 104 ),
+            'accessibility' => $accessibility, 'created_by' => get_current_user_id(), 'created_at' => $now, 'updated_at' => $now,
         );
-        if ( false === $wpdb->insert( $table, $data ) ) { wp_die( 'Unable to save activity. Check database logs.', '', array( 'response' => 500 ) ); }
-        wp_safe_redirect( add_query_arg( 'created', $wpdb->insert_id, admin_url( 'admin.php?page=bh3-add-activity' ) ) );
+        if ( $wpdb->insert( $table, $data ) === false ) { wp_die( 'Unable to save activity: ' . esc_html( $wpdb->last_error ), '', array( 'response' => 500 ) ); }
+        wp_safe_redirect( add_query_arg( array( 'page' => 'bh3-add-activity', 'created' => $wpdb->insert_id ), admin_url( 'admin.php' ) ) );
         exit;
     }
 }
