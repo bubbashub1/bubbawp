@@ -33,6 +33,22 @@ final class BH_Activity_Edit_3 {
         }
         echo '<tr><th>Description</th><td><textarea class="large-text" rows="7" name="description">' . esc_textarea( (string) $row['description'] ) . '</textarea></td></tr>';
         echo '<tr><th>Free activity</th><td><label><input type="checkbox" name="is_free" value="1"' . checked( (int) $row['is_free'], 1, false ) . '> Free</label></td></tr>';
+        global $wpdb;
+        $org_table = $wpdb->prefix . 'organisers';
+        $orgs = $wpdb->get_results( "SELECT id, name FROM `{$org_table}` ORDER BY name ASC LIMIT 500", ARRAY_A );
+        echo '<tr><th><label for="edit_organiser">Organiser</label></th><td><select id="edit_organiser" name="organiser_id"><option value="0">Not assigned</option>';
+        $current = absint( $row['organiser_id'] ?? 0 );
+        $found_current = ! $current;
+        foreach ( $orgs as $org ) {
+            $selected = (int) $org['id'] === $current;
+            if ( $selected ) { $found_current = true; }
+            echo '<option value="' . esc_attr( (string) $org['id'] ) . '"' . selected( $selected, true, false ) . '>' . esc_html( $org['name'] ) . '</option>';
+        }
+        if ( ! $found_current ) {
+            $name = $wpdb->get_var( $wpdb->prepare( "SELECT name FROM `{$org_table}` WHERE id = %d", $current ) );
+            if ( $name ) { echo '<option selected value="' . esc_attr( (string) $current ) . '">' . esc_html( $name ) . '</option>'; }
+        }
+        echo '</select> <a href="' . esc_url( admin_url( 'admin.php?page=bh3-organisers' ) ) . '">Manage organisers</a></td></tr>';
         echo '</tbody></table>';
         submit_button( 'Update draft' );
         echo '</form></div>';
