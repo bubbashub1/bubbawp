@@ -39,6 +39,7 @@ final class BH_Manager_3 {
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-sessions.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-venues.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-ui.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-email-templates.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-communications.php';
         BH_Directory_Preview_3::register();
         BH_Directory_3::register();
