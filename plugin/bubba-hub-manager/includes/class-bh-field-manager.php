@@ -90,7 +90,9 @@ final class BH_Field_Manager_3 {
         $targets = self::targets( wp_unslash( $_POST['targets'] ?? array() ) );
         if ( ! $name || ! $key || strlen( $name ) > 190 || strlen( $key ) > 100 || ! $targets ) { wp_die( 'Group name, key and at least one assignment are required.', '', array( 'response' => 400 ) ); }
         global $wpdb; $t = self::tables();
-        $ok = $wpdb->insert( $t['groups'], array( 'name' => $name, 'group_key' => $key, 'targets' => $targets, 'created_at' => current_time( 'mysql', true ) ) );
+        $id = absint( $_POST['group_id'] ?? 0 );
+        $payload = array( 'name' => $name, 'group_key' => $key, 'targets' => $targets );
+        $ok = $id ? $wpdb->update( $t['groups'], $payload, array( 'id' => $id ) ) : $wpdb->insert( $t['groups'], $payload + array( 'created_at' => current_time( 'mysql', true ) ) );
         if ( $ok === false ) { wp_die( 'Could not save group. Its key may already exist.', '', array( 'response' => 409 ) ); }
         self::redirect( 'group_saved' );
     }
@@ -109,10 +111,12 @@ final class BH_Field_Manager_3 {
         if ( count( $options ) > 100 || array_filter( $options, function( $v ) { return strlen( $v ) > 190; } ) ) { wp_die( 'Too many or overly long options.', '', array( 'response' => 400 ) ); }
         if ( ! in_array( $type, array( 'select', 'multiselect' ), true ) ) { $options = array(); }
         if ( in_array( $type, array( 'select', 'multiselect' ), true ) && ! $options ) { wp_die( 'Selection fields require options.', '', array( 'response' => 400 ) ); }
-        $ok = $wpdb->insert( $t['fields'], array(
+        $id = absint( $_POST['field_id'] ?? 0 );
+        $payload = array(
             'group_id' => $group_id, 'field_key' => $key, 'label' => $label, 'field_type' => $type,
             'options_json' => wp_json_encode( $options ), 'is_required' => empty( $_POST['is_required'] ) ? 0 : 1
-        ) );
+        );
+        $ok = $id ? $wpdb->update( $t['fields'], $payload, array( 'id' => $id ) ) : $wpdb->insert( $t['fields'], $payload );
         if ( $ok === false ) { wp_die( 'Could not save field. Its key may already exist in this group.', '', array( 'response' => 409 ) ); }
         self::redirect( 'field_saved' );
     }
@@ -144,37 +148,45 @@ final class BH_Field_Manager_3 {
         global $wpdb; $t = self::tables();
         $groups = $wpdb->get_results( "SELECT * FROM `{$t['groups']}` ORDER BY sort_order,id", ARRAY_A );
         $fields = $wpdb->get_results( "SELECT * FROM `{$t['fields']}` ORDER BY group_id,sort_order,id", ARRAY_A );
+        $edit_group_id = absint( $_GET['edit_group'] ?? 0 );
+        $edit_field_id = absint( $_GET['edit_field'] ?? 0 );
+        $edit_group = null; $edit_field = null;
+        foreach ( $groups as $g ) { if ( (int) $g['id'] === $edit_group_id ) { $edit_group = $g; break; } }
+        foreach ( $fields as $f ) { if ( (int) $f['id'] === $edit_field_id ) { $edit_field = $f; break; } }
+
         echo '<h2>Field groups</h2><table class="widefat striped"><thead><tr><th>Group</th><th>Key</th><th>Assigned to</th><th>Fields</th></tr></thead><tbody>';
         foreach ( $groups as $group ) {
             $count = count( array_filter( $fields, function( $f ) use ( $group ) { return (int) $f['group_id'] === (int) $group['id']; } ) );
-            echo '<tr><td>' . esc_html( $group['name'] ) . '</td><td><code>' . esc_html( $group['group_key'] ) . '</code></td><td>' . esc_html( str_replace( ',', ', ', $group['targets'] ) ) . '</td><td>' . esc_html( (string) $count ) . '</td></tr>';
+            echo '<tr><td>' . esc_html( $group['name'] ) . ' <a href="' . esc_url( add_query_arg( array( 'page' => 'bh3-field-manager', 'edit_group' => absint( $group['id'] ) ), admin_url( 'admin.php' ) ) ) . '">Edit</a></td><td><code>' . esc_html( $group['group_key'] ) . '</code></td><td>' . esc_html( str_replace( ',', ', ', $group['targets'] ) ) . '</td><td>' . esc_html( (string) $count ) . '</td></tr>';
         }
         if ( ! $groups ) { echo '<tr><td colspan="4">No groups yet.</td></tr>'; }
-        echo '</tbody></table><h2>Add field group</h2><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="bh3_field_group_save">';
+        echo '</tbody></table><h2>' . ( $edit_group ? 'Edit field group' : 'Add field group' ) . '</h2><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="bh3_field_group_save">';
         wp_nonce_field( 'bh3_field_group_save' );
+        echo '<input type="hidden" name="group_id" value="' . esc_attr( (string) ( $edit_group['id'] ?? 0 ) ) . '">';
         echo '<p><label>Group name <input name="name" required maxlength="190"></label> <label>Unique key <input name="group_key" required maxlength="100" pattern="[a-z0-9_\-]+"></label></p><p>Assign to: ';
         foreach ( array( 'activity' => 'Activities', 'venue' => 'Venues', 'session' => 'Sessions' ) as $key => $label ) {
-            echo '<label style="margin-right:14px"><input type="checkbox" name="targets[]" value="' . esc_attr( $key ) . '"> ' . esc_html( $label ) . '</label>';
+            echo '<label style="margin-right:14px"><input type="checkbox" name="targets[]" value="' . esc_attr( $key ) . '" ' . checked( in_array( $key, explode( ',', $edit_group['targets'] ?? '' ), true ), true, false ) . '> ' . esc_html( $label ) . '</label>';
         }
         echo '</p><button class="button button-primary">Create group</button></form>';
         echo '<h2>Field definitions</h2><table class="widefat striped"><thead><tr><th>Group</th><th>Field</th><th>Key</th><th>Type</th><th>Required</th></tr></thead><tbody>';
         foreach ( $fields as $field ) {
             $group_name = '';
             foreach ( $groups as $g ) { if ( (int) $g['id'] === (int) $field['group_id'] ) { $group_name = $g['name']; break; } }
-            echo '<tr><td>' . esc_html( $group_name ) . '</td><td>' . esc_html( $field['label'] ) . '</td><td><code>' . esc_html( $field['field_key'] ) . '</code></td><td>' . esc_html( $field['field_type'] ) . '</td><td>' . ( $field['is_required'] ? 'Yes' : 'No' ) . '</td></tr>';
+            echo '<tr><td>' . esc_html( $group_name ) . '</td><td>' . esc_html( $field['label'] ) . ' <a href="' . esc_url( add_query_arg( array( 'page' => 'bh3-field-manager', 'edit_field' => absint( $field['id'] ) ), admin_url( 'admin.php' ) ) ) . '">Edit</a>' . '</td><td><code>' . esc_html( $field['field_key'] ) . '</code></td><td>' . esc_html( $field['field_type'] ) . '</td><td>' . ( $field['is_required'] ? 'Yes' : 'No' ) . '</td></tr>';
         }
         if ( ! $fields ) { echo '<tr><td colspan="5">No custom fields yet.</td></tr>'; }
-        echo '</tbody></table><h2>Add field to group</h2>';
+        echo '</tbody></table><h2>' . ( $edit_field ? 'Edit field' : 'Add field to group' ) . '</h2>'; 
         if ( $groups ) {
             echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="bh3_field_definition_save">';
             wp_nonce_field( 'bh3_field_definition_save' );
+            echo '<input type="hidden" name="field_id" value="' . esc_attr( (string) ( $edit_field['id'] ?? 0 ) ) . '">';
             echo '<p><label>Group <select name="group_id">';
-            foreach ( $groups as $group ) { echo '<option value="' . esc_attr( (string) $group['id'] ) . '">' . esc_html( $group['name'] ) . '</option>'; }
+            foreach ( $groups as $group ) { echo '<option value="' . esc_attr( (string) $group['id'] ) . '" ' . selected( (int) ( $edit_field['group_id'] ?? 0 ), (int) $group['id'], false ) . '>' . esc_html( $group['name'] ) . '</option>'; }
             echo '</select></label> <label>Label <input name="label" maxlength="190" required></label> <label>Unique field key <input name="field_key" maxlength="100" required pattern="[a-z0-9_\-]+"></label></p>';
             echo '<p><label>Field type <select name="field_type">';
-            foreach ( array( 'text', 'textarea', 'number', 'checkbox', 'select', 'multiselect', 'date', 'time', 'url', 'email' ) as $type ) { echo '<option value="' . esc_attr( $type ) . '">' . esc_html( ucfirst( $type ) ) . '</option>'; }
-            echo '</select></label> <label><input type="checkbox" name="is_required" value="1"> Required</label></p>';
-            echo '<p><label>Options (for select/multiselect, one per line)<br><textarea name="options" rows="5" cols="55"></textarea></label></p>';
+            foreach ( array( 'text', 'textarea', 'number', 'checkbox', 'select', 'multiselect', 'date', 'time', 'url', 'email' ) as $type ) { echo '<option value="' . esc_attr( $type ) . '" ' . selected( $edit_field['field_type'] ?? '', $type, false ) . '>' . esc_html( ucfirst( $type ) ) . '</option>'; }
+            echo '</select></label> <label><input type="checkbox" name="is_required" value="1" ' . checked( (int) ( $edit_field['is_required'] ?? 0 ), 1, false ) . '> Required</label></p>';
+            echo '<p><label>Options (for select/multiselect, one per line)<br><textarea name="options" rows="5" cols="55">' . esc_textarea( implode( "\n", json_decode( $edit_field['options_json'] ?? '[]', true ) ?: array() ) ) . '</textarea></label></p>';
             echo '<button class="button button-primary">Create field</button></form>';
         }
         echo '</div>';
