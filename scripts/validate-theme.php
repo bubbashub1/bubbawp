@@ -11,10 +11,11 @@ $required = [
     'style.css', 'theme.json', 'functions.php', 'assets/css/site.css',
     'templates/index.html', 'templates/front-page.html', 'templates/page.html',
     'templates/single.html', 'templates/archive.html', 'templates/search.html',
-    'templates/404.html', 'parts/header.html', 'parts/footer.html',
+    'templates/404.html', 'templates/activity-preview.html', 'parts/header.html', 'parts/footer.html',
     'patterns/hero.php', 'patterns/discover.php', 'patterns/join.php',
     'patterns/category-grid.php', 'patterns/featured-placeholder.php',
     'patterns/event-promo.php', 'patterns/directory-shell.php',
+    'patterns/activity-design-preview.php',
 ];
 foreach ($required as $file) {
     if (!is_file($root . '/' . $file) || filesize($root . '/' . $file) === 0) {
@@ -39,6 +40,9 @@ if (!is_array($json) || json_last_error() !== JSON_ERROR_NONE) {
 } else {
     if (($json['version'] ?? null) !== 2 || !isset($json['settings'], $json['styles'])) {
         $errors[] = 'theme.json must contain supported version 2, settings and styles';
+    }
+    if (!in_array('activity-preview', array_column($json['customTemplates'] ?? [], 'name'), true)) {
+        $errors[] = 'Activity preview template missing theme.json registration';
     }
     foreach (['header', 'footer'] as $part) {
         if (!in_array($part, array_column($json['templateParts'] ?? [], 'name'), true)) {
