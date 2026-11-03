@@ -26,6 +26,7 @@ final class BH_My_Listings_3 {
         if ( ! $name ) { echo '<p>Linked organiser was not found. Contact an administrator.</p></div>'; return; }
         echo '<p>Organiser: <strong>' . esc_html( $name ) . '</strong></p>';
         echo '<p>Edit your own draft listings. Publishing and deletion remain administrator-controlled.</p>';
+        echo '<p><a class="button button-primary" href="' . esc_url( admin_url( 'admin.php?page=bh3-leader-create' ) ) . '">+ Add new class</a></p>';
         $rows = $wpdb->get_results( $wpdb->prepare(
             "SELECT id, title, status, category FROM `{$activities}` WHERE organiser_id = %d ORDER BY id DESC LIMIT 100", $organiser_id
         ), ARRAY_A );
