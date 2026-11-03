@@ -360,7 +360,7 @@ final class BH_Field_Manager_3 {
             || ! self::ready() || ! self::object_exists( $target, $object_id ) ) { return array(); }
         global $wpdb; $t = self::tables();
         $rows = $wpdb->get_results( $wpdb->prepare(
-            "SELECT field_id,value_json FROM \`{$t['values']}\` WHERE object_type=%s AND object_id=%d",
+            "SELECT field_id,value_json FROM `{$t['values']}` WHERE object_type=%s AND object_id=%d",
             $target, $object_id
         ), ARRAY_A );
         $values = array();
@@ -410,7 +410,7 @@ final class BH_Field_Manager_3 {
         foreach ( $groups as $g ) { if ( (int) $g['id'] === $edit_group_id ) { $edit_group = $g; break; } }
         foreach ( $fields as $f ) { if ( (int) $f['id'] === $edit_field_id ) { $edit_field = $f; break; } }
 
-        echo '<section class="bh3-fm-card"><h2>Field groups</h2><table class="widefat striped"><thead><tr><th>Group</th><th>Key</th><th>Assigned to</th><th>Fields</th></tr></thead><tbody>';
+        echo '<section class="bh3-fm-card"><h2>Field groups</h2><table class="widefat striped"><thead><tr><th>Group</th><th>Key</th><th>Assigned to</th><th>Fields</th><th>Actions</th></tr></thead><tbody>';
         foreach ( $groups as $group ) {
             $count = count( array_filter( $fields, function( $f ) use ( $group ) { return (int) $f['group_id'] === (int) $group['id']; } ) );
             echo '<tr><td>' . esc_html( $group['name'] ) . ' <a href="' . esc_url( add_query_arg( array( 'page' => 'bh3-field-manager', 'edit_group' => absint( $group['id'] ) ), admin_url( 'admin.php' ) ) ) . '">Edit</a></td><td><code>' . esc_html( $group['group_key'] ) . '</code></td><td>' . esc_html( str_replace( ',', ', ', $group['targets'] ) ) . '</td><td>' . esc_html( (string) $count ) . '</td><td>' . self::action_form( 'bh3_field_toggle', 'bh3_field_toggle', array( 'kind' => 'group', 'id' => $group['id'] ), $group['is_active'] ? 'Disable' : 'Enable' ) . '</td></tr>';
@@ -424,7 +424,7 @@ final class BH_Field_Manager_3 {
             echo '<label style="margin-right:14px"><input type="checkbox" name="targets[]" value="' . esc_attr( $key ) . '" ' . checked( in_array( $key, explode( ',', $edit_group['targets'] ?? '' ), true ), true, false ) . '> ' . esc_html( $label ) . '</label>';
         }
         echo '</p><button class="button button-primary">' . ( $edit_group ? 'Save group' : 'Create group' ) . '</button></form></section>';
-        echo '<section class="bh3-fm-card"><h2>Field definitions</h2><table class="widefat striped"><thead><tr><th>Group</th><th>Field</th><th>Key</th><th>Type</th><th>Required</th></tr></thead><tbody>';
+        echo '<section class="bh3-fm-card"><h2>Field definitions</h2><table class="widefat striped"><thead><tr><th>Group</th><th>Field</th><th>Key</th><th>Type</th><th>Required</th><th>Actions</th></tr></thead><tbody>';
         foreach ( $fields as $field ) {
             $group_name = '';
             foreach ( $groups as $g ) { if ( (int) $g['id'] === (int) $field['group_id'] ) { $group_name = $g['name']; break; } }
