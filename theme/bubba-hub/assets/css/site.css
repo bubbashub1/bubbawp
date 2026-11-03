@@ -143,3 +143,29 @@ button:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .bh-category-grid .bh-card { transition: none; }
 }
+
+/* Optional Site Editor activity-layout preview; visual labels are not interactive controls. */
+.bh-activity-preview { padding-block: clamp(1.5rem, 4vw, 3rem); }
+.bh-preview-label { color: #174f46; background: #e7f2ec; border-radius: 10px; padding: .7rem 1rem; }
+.bh-activity-layout { align-items: flex-start; gap: clamp(1rem, 3vw, 2rem); }
+.bh-activity-layout > .wp-block-column > * + * { margin-block-start: 1.25rem; }
+.bh-activity-gallery { min-height: 240px; display: grid; place-items: center; border: 2px dashed rgb(23 79 70 / 20%); }
+.bh-activity-facts .wp-block-columns { margin: 0; }
+.bh-activity-facts .wp-block-column p { margin-block: .25rem; }
+.bh-activity-actions { position: relative; }
+.bh-cta-demo {
+  border: 1px solid rgb(23 79 70 / 12%);
+  border-radius: 12px;
+  padding: .8rem 1rem;
+  margin-block: .55rem;
+  background: #e7f2ec;
+  color: #174f46;
+  text-align: center;
+  font-weight: 750;
+}
+.bh-cta-demo-primary { background: #174f46; color: #fff; }
+@media (max-width: 781px) {
+  .bh-activity-layout { flex-direction: column; }
+  .bh-activity-layout > .wp-block-column { flex-basis: auto !important; width: 100%; }
+  .bh-activity-gallery { min-height: 190px; }
+}
