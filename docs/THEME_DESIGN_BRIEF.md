@@ -4,6 +4,15 @@
 **Work items:** T0-02, T0-03, T0-04, T0-06  
 **Scope:** Design and block-theme presentation only. No live changes.
 
+## Approved continuity rules (3 November 2026)
+
+- Retain Bubba Hub's recognisable existing colour identity and actual logo. The token hex values below remain **provisional** until compared against the current website; do not present them as verified brand colours.
+- Keep the current activity page's useful structure: photo slider (up to ten images), key facts (price, age, location, sessions, term time, length), map then timetable, directions below, organiser/contact links, and claim/report/suggest near the bottom.
+- Keep existing Save, Add to Planner, Visited, Compare and Book actions. **Book Now** is prominent only when a valid booking destination or future native booking capability exists; never display a dead booking button.
+- On mobile, prioritise a readable activity title and primary action, with secondary actions clearly labelled and comfortably tappable. Do not obscure content with a fixed action bar without browser testing.
+- Preserve directory search, postcode/Near Me, map/list/calendar and family/leader journeys. The theme styles these experiences; the Manager plugin owns their behaviour and data.
+- Static design patterns must be labelled previews and must not impersonate working buttons or real sessions.
+
 ## Design direction
 
 **Friendly, polished, local and app-like** rather than a generic directory template. Prioritise quick discovery for parents and easy access for class leaders. Mobile first, with a consistent system across all screens.
