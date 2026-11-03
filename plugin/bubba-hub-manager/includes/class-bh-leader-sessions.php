@@ -6,7 +6,7 @@ final class BH_Leader_Sessions_3 {
         return is_user_logged_in() && current_user_can( 'read' ) && strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) === 'staging.bubbahub.co.uk';
     }
     public static function register() {
-        add_submenu_page( 'bh3-my-listings', 'My Timetable', 'My Timetable', 'read', 'bh3-leader-sessions', array( __CLASS__, 'render' ) );
+        add_submenu_page( null, 'My Timetable', 'My Timetable', 'read', 'bh3-leader-sessions', array( __CLASS__, 'render' ) );
         add_action( 'admin_post_bh3_leader_save_session', array( __CLASS__, 'save' ) );
         add_action( 'admin_post_bh3_leader_delete_session', array( __CLASS__, 'remove' ) );
     }
@@ -33,6 +33,7 @@ final class BH_Leader_Sessions_3 {
         $links = $wpdb->prefix . 'activity_venues';
         $rows = $wpdb->get_results( $wpdb->prepare( "SELECT s.*, v.name AS venue_name FROM `{$sessions}` s LEFT JOIN `{$venues}` v ON v.id=s.venue_id WHERE s.activity_id=%d ORDER BY s.day_of_week, s.start_time, s.id LIMIT 200", $id ), ARRAY_A );
         echo '<div class="wrap"><h1>Sessions: ' . esc_html( $activity['title'] ) . '</h1>';
+        echo '<p><a href="' . esc_url( add_query_arg( array( 'page' => 'bh3-leader-edit', 'activity_id' => $id ), admin_url( 'admin.php' ) ) ) . '">← Back to activity</a> · <a href="' . esc_url( add_query_arg( array( 'page' => 'bh3-leader-venues', 'activity_id' => $id ), admin_url( 'admin.php' ) ) ) . '">Manage venues</a></p>';
         if ( isset( $_GET['notice'] ) ) { echo '<div class="notice notice-info"><p>' . esc_html( sanitize_text_field( wp_unslash( $_GET['notice'] ) ) ) . '</p></div>'; }
         echo '<p>Weekly sessions use day and time. Date range is optional. No bookings are created.</p>';
         echo '<table class="widefat striped"><thead><tr><th>Day</th><th>Time</th><th>Venue</th><th>Dates</th><th>Term time</th><th>Action</th></tr></thead><tbody>';
