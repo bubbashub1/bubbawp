@@ -384,7 +384,7 @@ final class BH_Field_Manager_3 {
         }
         global $wpdb; $t = self::tables();
         $actual = array_map( 'intval', $wpdb->get_col( $wpdb->prepare(
-            "SELECT id FROM \`{$t['fields']}\` WHERE group_id=%d", $group_id
+            "SELECT id FROM `{$t['fields']}` WHERE group_id=%d", $group_id
         ) ) );
         $sorted_ids = $ids; $sorted_actual = $actual;
         sort( $sorted_ids, SORT_NUMERIC ); sort( $sorted_actual, SORT_NUMERIC );
