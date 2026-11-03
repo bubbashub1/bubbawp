@@ -115,6 +115,7 @@ final class BH_Activity_Create_3 {
         @media(max-width:1150px){.bh3-location-grid{grid-template-columns:1fr}.bh3-session-row{grid-template-columns:repeat(2,minmax(0,1fr))}.bh3-session-row .bh3-session-remove{grid-column:2}.bh3-session-row .bh3-session-term{grid-column:1}}
         @media(max-width:560px){.bh3-session-row{grid-template-columns:1fr}.bh3-session-row .bh3-session-remove,.bh3-session-row .bh3-session-term{grid-column:1}.bh3-steps{grid-template-columns:1fr 1fr}}
         @media(max-width:782px){.bh3-wizard-layout{grid-template-columns:1fr}.bh3-steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.bh3-fields{grid-template-columns:1fr}.bh3-wide{grid-column:auto}.bh3-panel{padding:14px}}
+        .bh3-day-grid{display:flex;flex-direction:column;gap:10px}.bh3-day-card{border:1px solid #d7e4dc;border-radius:10px;background:#fff;padding:12px}.bh3-day-header{display:flex;align-items:center;justify-content:space-between;gap:12px}.bh3-day-header label{display:flex;align-items:center;gap:12px;font-weight:650}.bh3-day-header input[type=checkbox]{width:18px;height:18px;margin:0;accent-color:#397253}.bh3-day-slots{display:flex;flex-direction:column;gap:10px;margin-top:12px}.bh3-day-card:not(.is-on) .bh3-day-slots{display:none}.bh3-day-card .bh3-session-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:10px;margin:0;background:#f7faf8}.bh3-day-card .bh3-session-row>label{min-width:0}.bh3-day-card .bh3-session-row .bh3-session-term{grid-column:1;grid-row:auto;display:flex;flex-direction:row;align-items:center;white-space:normal}.bh3-session-row-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:end}.bh3-day-card .bh3-session-row .bh3-session-remove{grid-column:auto;justify-self:auto}.bh3-day-card input[type=time],.bh3-day-card select{max-width:100%;width:100%;box-sizing:border-box}@media(max-width:720px){.bh3-day-card .bh3-session-row{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:480px){.bh3-day-card .bh3-session-row{grid-template-columns:1fr}.bh3-day-header{align-items:flex-start}.bh3-day-header label{padding-top:5px}.bh3-day-header button{white-space:nowrap}}
         </style>';
         echo '<div class="bh3-wizard-layout"><nav class="bh3-steps" aria-label="Listing steps">';
         $steps = array( 'Basics', 'About & categories', 'Age & pricing', 'Contact & booking', 'Images & accessibility', 'Locations & timetable', 'Review' );
@@ -184,7 +185,7 @@ final class BH_Activity_Create_3 {
         }
         if ( ! $venues ) { echo '<p>No existing venues were found. You can save the draft and add venues from My Venues afterwards.</p>'; }
         echo '</div><p class="description">Only existing venues are selectable here. New venue creation remains in Venues Manager.</p></div>';
-        echo '<div><h3>Weekly sessions</h3><div id="bh3-session-rows"></div><button type="button" class="button" id="bh3-add-session">+ Add weekly session</button><p class="description">Each session repeats weekly. Add separate rows for different days or times.</p></div></div>';
+        echo '<div><h3>Weekly sessions</h3><p class="description">Switch on a day to add its session times. Add more than one time, or copy a session to another day.</p><div id="bh3-session-rows" class="bh3-day-grid"></div></div></div>';
         self::custom_fields_for_step( 'locations', $bh3_custom_definitions, $bh3_custom_values );
         echo '</section>';
         echo '<section class="bh3-panel" data-panel="6" hidden><h2>Review your listing</h2><div class="bh3-review" id="bh3-review-summary">Review the fields above before saving.</div><p>This creates a draft only. Publishing remains administrator-controlled.</p></section>';
@@ -193,13 +194,70 @@ final class BH_Activity_Create_3 {
         echo <<<'BH3_WIZARD_SCRIPT'
 (function(){const form=document.getElementById("bh3-listing-wizard");if(!form)return;let step=0;const panels=[...form.querySelectorAll("[data-panel]")],nav=[...document.querySelectorAll(".bh3-steps [data-step]")],prev=document.getElementById("bh3-prev"),next=document.getElementById("bh3-next"),save=document.getElementById("bh3-submit"),summary=document.getElementById("bh3-review-summary");
         const missingCustom=n=>{for(const label of panels[n].querySelectorAll('label[data-bh3-required="1"]')){const el=label.querySelector("input,textarea,select");if(!el)continue;const filled=el.type==="checkbox"?el.checked:el.multiple?el.selectedOptions.length>0:String(el.value||"").trim()!=="";if(!filled)return el;}return null;};
-        const show=n=>{n=Math.max(0,Math.min(6,n));let missing=null;if(n>step){for(let i=step;i<n;i++){missing=missingCustom(i);if(missing){n=i;break;}}}if(step===5&&n>5){for(const row of sessionRows.querySelectorAll('.bh3-session-row')){const day=row.querySelector('select'),times=row.querySelectorAll('input[type=time]'),start=times[0],end=times[1];if(!day.value||!start.value||!end.value||end.value<=start.value){alert('Complete each weekly session and make sure its end time is later than its start.');(!day.value?day:!start.value?start:end).focus();return;}}}step=n;panels.forEach((p,i)=>p.hidden=i!==step);nav.forEach((b,i)=>b.setAttribute("aria-current",i===step?"step":"false"));prev.disabled=step===0;if(missing){alert('Please complete the required custom field before continuing.');missing.focus();}next.hidden=step===6;save.hidden=step!==6;if(step===6){const fields=[["Activity", "title"],["Category","category"],["Organiser","organiser_id"],["Age range","age_range"],["Price from","price_from"],["Contact email","contact_email"],["Website","website"]];summary.innerHTML=fields.map(([label,name])=>{const el=form.elements.namedItem(name);return "<p><strong>"+label+":</strong> "+String(el?.selectedOptions?.[0]?.textContent||el?.value||"—").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]))+"</p>"}).join("");}};
+        const show=n=>{n=Math.max(0,Math.min(6,n));let missing=null;if(n>step){for(let i=step;i<n;i++){missing=missingCustom(i);if(missing){n=i;break;}}}if(step===5&&n>5){for(const row of sessionRows.querySelectorAll('.bh3-session-row')){if(row.closest('.bh3-day-card:not(.is-on)'))continue;const day=row.querySelector('input[name$="[day]"]'),times=row.querySelectorAll('input[type=time]'),start=times[0],end=times[1];if(!day.value||!start.value||!end.value||end.value<=start.value){alert('Complete each weekly session and make sure its end time is later than its start.');(!day.value?day:!start.value?start:end).focus();return;}}}step=n;panels.forEach((p,i)=>p.hidden=i!==step);nav.forEach((b,i)=>b.setAttribute("aria-current",i===step?"step":"false"));prev.disabled=step===0;if(missing){alert('Please complete the required custom field before continuing.');missing.focus();}next.hidden=step===6;save.hidden=step!==6;if(step===6){const fields=[["Activity", "title"],["Category","category"],["Organiser","organiser_id"],["Age range","age_range"],["Price from","price_from"],["Contact email","contact_email"],["Website","website"]];summary.innerHTML=fields.map(([label,name])=>{const el=form.elements.namedItem(name);return "<p><strong>"+label+":</strong> "+String(el?.selectedOptions?.[0]?.textContent||el?.value||"—").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]))+"</p>"}).join("");}};
         prev.addEventListener("click",()=>show(step-1));next.addEventListener("click",()=>{if(step===0&&!form.elements.namedItem("title").value.trim()){form.elements.namedItem("title").focus();return;}show(step+1)});nav.forEach(b=>b.addEventListener("click",()=>show(Number(b.dataset.step))));form.addEventListener("submit",e=>{if(!form.elements.namedItem("title").value.trim()){e.preventDefault();show(0);form.elements.namedItem("title").focus();}});
-        const venueSearch=document.getElementById("bh3-venue-search"),venueOptions=[...document.querySelectorAll(".bh3-venue-option")],sessionRows=document.getElementById("bh3-session-rows"),addSession=document.getElementById("bh3-add-session");
+        const venueSearch=document.getElementById("bh3-venue-search"),venueOptions=[...document.querySelectorAll(".bh3-venue-option")],sessionRows=document.getElementById("bh3-session-rows");
         venueSearch?.addEventListener("input",()=>{const q=venueSearch.value.trim().toLowerCase();venueOptions.forEach(row=>{row.hidden=q!==""&&!row.dataset.search.includes(q);});});
-        let sessionIndex=0;const addSessionRow=()=>{const i=sessionIndex++,row=document.createElement("div");row.className="bh3-session-row";row.innerHTML='<label>Day<select name="sessions['+i+'][day]"><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option><option value="7">Sunday</option></select></label><label>Start<input type="time" name="sessions['+i+'][start]"></label><label>End<input type="time" name="sessions['+i+'][end]"></label><label>Venue<select name="sessions['+i+'][venue_id]"><option value="0">No specific venue</option>'+venueOptions.map(v=>{const cb=v.querySelector("input");return '<option value="'+cb.value+'">'+v.querySelector("strong").textContent.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))+'</option>';}).join("")+'</select></label><button type="button" class="button bh3-session-remove">Remove</button><label class="bh3-session-term"><input type="checkbox" name="sessions['+i+'][term_time_only]" value="1"> Term time only</label>';sessionRows.appendChild(row);};
-        addSession?.addEventListener("click",addSessionRow);sessionRows?.addEventListener("click",e=>{if(e.target.classList.contains("bh3-session-remove"))e.target.closest(".bh3-session-row").remove();});
-        if(bh3SavedListing&&bh3SavedListing.id){for(const [name,value] of Object.entries(bh3SavedListing)){const el=form.elements.namedItem(name);if(!el)continue;if(el instanceof RadioNodeList)continue;if(el.type==="checkbox")el.checked=Number(value)===1;else if(name==="gallery_images"){try{el.value=JSON.parse(value||"[]").join("\\n");}catch(e){el.value=value||"";}}else if(value!==null)el.value=String(value);}for(const id of bh3SavedVenues){const el=form.querySelector('input[name="venue_ids[]"][value="'+Number(id)+'"]');if(el)el.checked=true;}for(const s of bh3SavedSessions){addSessionRow();const row=sessionRows.lastElementChild;row.querySelector('select[name$="[day]"]').value=String(s.day);row.querySelector('input[name$="[start]"]').value=s.start;row.querySelector('input[name$="[end]"]').value=s.end;row.querySelector('select[name$="[venue_id]"]').value=String(s.venue_id||0);row.querySelector('input[type=checkbox]').checked=Number(s.term_time_only)===1;}}
+        const dayNames=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+        sessionRows.innerHTML=dayNames.map((name,i)=>'<div class="bh3-day-card" data-day="'+(i+1)+'"><div class="bh3-day-header"><label><input type="checkbox" class="bh3-day-toggle" aria-label="Enable '+name+' sessions"> <strong>'+name+'</strong></label><button type="button" class="button button-small bh3-add-day-time">+ Add time</button></div><div class="bh3-day-slots"></div></div>').join("");
+        const dayCard=day=>sessionRows.querySelector('.bh3-day-card[data-day="'+day+'"]');
+        const escapeOption=text=>String(text).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+        const venueListHtml='<option value="0">No specific venue</option>'+venueOptions.map(v=>{const cb=v.querySelector("input");return '<option value="'+cb.value+'">'+escapeOption(v.querySelector("strong").textContent)+'</option>';}).join("");
+        const syncDay=card=>{const on=card.querySelector(".bh3-day-toggle").checked;card.classList.toggle("is-on",on);card.querySelectorAll(".bh3-day-slots input,.bh3-day-slots select").forEach(el=>el.disabled=!on);};
+        let sessionIndex=0;
+        const addSessionRow=(day=1,data={})=>{
+            day=Math.min(7,Math.max(1,Number(day)||1));
+            const card=dayCard(day);if(!card)return null;
+            card.querySelector(".bh3-day-toggle").checked=true;
+            const i=sessionIndex++,row=document.createElement("div");row.className="bh3-session-row";
+            row.innerHTML='<input type="hidden" name="sessions['+i+'][day]" value="'+day+'">'+
+                '<label>Start<input type="time" name="sessions['+i+'][start]" aria-label="'+dayNames[day-1]+' session start"></label>'+
+                '<label>End<input type="time" name="sessions['+i+'][end]" aria-label="'+dayNames[day-1]+' session end"></label>'+
+                '<label>Venue<select name="sessions['+i+'][venue_id]">'+venueListHtml+'</select></label>'+
+                '<label class="bh3-session-term"><input type="checkbox" name="sessions['+i+'][term_time_only]" value="1"> Term time only</label>'+
+                '<label>Copy to<select class="bh3-copy-target" aria-label="Copy session to weekday">'+dayNames.map((name,index)=>'<option value="'+(index+1)+'">'+name+'</option>').join("")+'</select></label>'+
+                '<div class="bh3-session-row-actions"><button type="button" class="button button-small bh3-session-copy">Copy</button> <button type="button" class="button button-small bh3-session-remove">Remove</button></div>';
+            card.querySelector(".bh3-day-slots").appendChild(row);
+            row.querySelector('input[name$="[start]"]').value=data.start||"";
+            row.querySelector('input[name$="[end]"]').value=data.end||"";
+            row.querySelector('select[name$="[venue_id]"]').value=String(data.venue_id||0);
+            row.querySelector('input[name$="[term_time_only]"]').checked=Number(data.term_time_only)===1;
+            row.querySelector(".bh3-copy-target").value=String(day);
+            syncDay(card);
+            return row;
+        };
+        sessionRows.addEventListener("click",e=>{
+            const card=e.target.closest(".bh3-day-card");if(!card)return;
+            const day=Number(card.dataset.day);
+            if(e.target.closest(".bh3-add-day-time")){addSessionRow(day);return;}
+            const row=e.target.closest(".bh3-session-row");
+            if(!row)return;
+            if(e.target.closest(".bh3-session-remove")){
+                row.remove();
+                if(!card.querySelector(".bh3-session-row")){card.querySelector(".bh3-day-toggle").checked=false;syncDay(card);}
+            }
+            if(e.target.closest(".bh3-session-copy")){
+                const target=Number(row.querySelector(".bh3-copy-target").value);
+                addSessionRow(target,{
+                    start:row.querySelector('input[name$="[start]"]').value,
+                    end:row.querySelector('input[name$="[end]"]').value,
+                    venue_id:row.querySelector('select[name$="[venue_id]"]').value,
+                    term_time_only:row.querySelector('input[name$="[term_time_only]"]').checked?1:0
+                });
+            }
+        });
+        sessionRows.addEventListener("change",e=>{
+            if(e.target.matches('select[name$="[venue_id]"]')){
+                const venueId=Number(e.target.value);
+                if(venueId){const assigned=form.querySelector('input[name="venue_ids[]"][value="'+venueId+'"]');if(assigned)assigned.checked=true;}
+                return;
+            }
+            if(!e.target.matches(".bh3-day-toggle"))return;
+            const card=e.target.closest(".bh3-day-card");
+            if(e.target.checked&&!card.querySelector(".bh3-session-row"))addSessionRow(Number(card.dataset.day));
+            syncDay(card);
+        });
+        if(bh3SavedListing&&bh3SavedListing.id){for(const [name,value] of Object.entries(bh3SavedListing)){const el=form.elements.namedItem(name);if(!el)continue;if(el instanceof RadioNodeList)continue;if(el.type==="checkbox")el.checked=Number(value)===1;else if(name==="gallery_images"){try{el.value=JSON.parse(value||"[]").join("\\n");}catch(e){el.value=value||"";}}else if(value!==null)el.value=String(value);}for(const id of bh3SavedVenues){const el=form.querySelector('input[name="venue_ids[]"][value="'+Number(id)+'"]');if(el)el.checked=true;}for(const s of bh3SavedSessions){addSessionRow(Number(s.day)||1,s);}}
         show(0);})();
         </script></div>
 BH3_WIZARD_SCRIPT;
