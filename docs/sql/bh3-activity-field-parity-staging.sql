@@ -10,7 +10,7 @@
 -- age_min_months, age_max_months, price_from, is_free, booking_url,
 -- image_id, created_at, updated_at.
 --
--- 29 missing legacy-compatible columns added by
+-- 30 missing legacy-compatible columns added by
 -- includes/class-bh-activity-parity.php:
 -- leader_id, booking_required, price, image_path, price_type, currency,
 -- session_length_minutes, term_time_only, contact_email, contact_phone,
