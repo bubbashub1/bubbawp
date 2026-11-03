@@ -54,7 +54,7 @@ final class BH_Manager_3 {
         echo '<p>' . esc_html__( 'Foundation installed. All business modules remain disabled pending like-for-like audit and staging tests.', 'bubba-hub-manager' ) . '</p>';
         echo '<p><strong>' . esc_html__( 'Version:', 'bubba-hub-manager' ) . '</strong> ' . esc_html( BUBBA_HUB_MANAGER_VERSION ) . '</p>';
         echo '<h2>Fresh BH3 database schema (preview only)</h2>';
-        echo '<p>The new tables use the WordPress database prefix followed by bh3_. No tables are created automatically and existing legacy tables are untouched.</p>';
+        echo '<p>The new tables use the configured WordPress database prefix (normally wp_). No tables are created automatically and existing legacy tables are untouched.</p>';
         echo '<ul>';
         foreach ( BH_Schema_3::table_names() as $table ) { echo '<li><code>' . esc_html( $table ) . '</code></li>'; }
         echo '</ul><p>Installation will be enabled only after staging schema review and an explicit administrator confirmation.</p>';
