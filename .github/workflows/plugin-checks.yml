@@ -4,6 +4,7 @@ on:
     paths:
       - 'plugin/bubba-hub-manager/**'
       - 'scripts/validate-plugin.php'
+      - 'scripts/validate-communications.php'
       - '.github/workflows/plugin-checks.yml'
   pull_request:
     paths:
@@ -22,7 +23,9 @@ jobs:
         run: |
           find plugin/bubba-hub-manager -type f -name '*.php' -print0 | xargs -0 -n1 php -l
           php -l scripts/validate-plugin.php
+          php -l scripts/validate-communications.php
           php scripts/validate-plugin.php
+          php scripts/validate-communications.php
           php plugin/bubba-hub-manager/tests/activity-repository-contract.php
       - name: Package plugin
         run: |
