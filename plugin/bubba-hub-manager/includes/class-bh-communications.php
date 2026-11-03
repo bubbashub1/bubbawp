@@ -262,6 +262,26 @@ final class BH_Communications_3 {
         exit;
     }
 
+    /**
+     * Integration adapter for a verified claim approval event.
+     * Caller must enforce claim ownership and duplicate notification policy.
+     */
+    public static function notify_claim_approved( $recipient, $activity_title, $first_name = '' ) {
+        if ( ! is_email( $recipient ) || '' === trim( (string) $activity_title ) ) {
+            return new WP_Error( 'bh3_invalid_claim_notification', 'Recipient and activity title required.' );
+        }
+        return self::send_transactional(
+            $recipient,
+            'Your Bubba Hub listing has been approved',
+            BH_Email_Templates_3::render( 'claim_approved', array(
+                'first_name' => $first_name,
+                'activity_title' => $activity_title,
+                'action_url' => home_url( '/leader/classes.html' ),
+            ) ),
+            'Claim approved'
+        );
+    }
+
     public static function preview_template() {
         self::require_admin();
         $key = isset( $_GET['template'] ) ? sanitize_key( wp_unslash( $_GET['template'] ) ) : '';
