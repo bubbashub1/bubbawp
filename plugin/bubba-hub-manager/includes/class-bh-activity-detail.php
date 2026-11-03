@@ -41,6 +41,30 @@ final class BH_Activity_Detail_3 {
         if ( self::has_table( $wpdb, 'bh_venues' ) ) {
             $venues = $wpdb->get_results( $wpdb->prepare( 'SELECT id, venue_name, town, region, postcode FROM bh_venues WHERE activity_id = %d ORDER BY id', $id ), ARRAY_A );
             self::table( 'Linked venues', $venues ?: array(), array( 'id' => 'ID', 'venue_name' => 'Venue', 'town' => 'Town', 'region' => 'Region', 'postcode' => 'Postcode' ) );
+            if ( self::has_table( $wpdb, 'bh_sessions' ) ) {
+                $sessions = $wpdb->get_results(
+                    $wpdb->prepare(
+                        'SELECT s.id, v.venue_name, s.day_of_week, s.start_time, s.end_time, s.price, s.term_time_only FROM bh_sessions s INNER JOIN bh_venues v ON v.id = s.venue_id WHERE v.activity_id = %d ORDER BY s.day_of_week, s.start_time, s.id LIMIT 500',
+                        $id
+                    ),
+                    ARRAY_A
+                );
+                if ( ! $wpdb->last_error ) {
+                    $days = array( 1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday', 7 => 'Sunday' );
+                    foreach ( $sessions ?: array() as &$session ) {
+                        $session['day_of_week'] = $days[ (int) $session['day_of_week'] ] ?? 'Unknown';
+                        $session['term_time_only'] = ! empty( $session['term_time_only'] ) ? 'Yes' : 'No';
+                    }
+                    unset( $session );
+                    self::table( 'Weekly sessions (read-only)', $sessions ?: array(), array(
+                        'id' => 'ID', 'venue_name' => 'Venue', 'day_of_week' => 'Day',
+                        'start_time' => 'Start', 'end_time' => 'End', 'price' => 'Price',
+                        'term_time_only' => 'Term time only',
+                    ) );
+                } else {
+                    echo '<p>Session details could not be loaded. Check the legacy schema.</p>';
+                }
+            }
         }
         BH_Activity_Editor_3::form( $activity );
         echo '<p><a class="button" href="' . esc_url( admin_url( 'tools.php?page=bh3-activities' ) ) . '">Back to Activities</a></p></div>';
