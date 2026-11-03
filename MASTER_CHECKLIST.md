@@ -19,7 +19,7 @@
 - **Active stage:** Theme-first foundation (Stage T0; design before feature modules)
 - **Current task:** T0-01 — Build and preview initial native block theme
 - **Next task:** T0-02 — Review visual design and mobile layouts, then iterate
-- **Last verified milestone:** Initial native block theme scaffold committed (not yet installed or QA-tested)
+- **Last verified milestone:** Theme scaffold expanded to seven templates, header/footer, three patterns and responsive CSS (not yet installed or QA-tested)
 - **Staging QA:** Not started
 - **Production changes:** None authorised
 
@@ -41,7 +41,7 @@
 **Approved sequence:** Theme first → governance/legacy audit → plugin foundation → feature modules. Theme work may use placeholder blocks and sample content, but must not touch live or connect to existing production data. The theme design must be approved before feature-specific layouts are built.
 
 - [x] **T0-00** Approve theme-first development order.
-- [ ] **T0-01** Create an installable native WordPress block theme with theme.json, global tokens, header/footer, homepage and core templates. **In progress:** initial files committed; installability not yet verified.
+- [ ] **T0-01** Create an installable native WordPress block theme with theme.json, global tokens, header/footer, homepage and core templates. **In progress:** theme files and templates committed; installability not yet verified.
 - [ ] **T0-02** Review desktop/mobile look, brand colours, typography, navigation, card system and page widths; refine to approval.
 - [ ] **T0-03** Build reusable Site Editor patterns for hero, discovery placeholder, categories, featured cards, family and leader CTAs.
 - [ ] **T0-04** Verify editor customisation, responsive behaviour, accessibility and graceful placeholder behaviour without plugin.
@@ -256,3 +256,4 @@ Copy for each substantial issue/PR:
 | 2026-11-03 | Approved custom block theme approach A; added G-11/G-12 and T-01–T-07, revised F-06/D-07 and decisions | `docs/ARCHITECTURE.md` |
 | 2026-11-03 | Reordered roadmap to theme-first Stage T0; design approval precedes feature modules | ADR-016 |
 | 2026-11-03 | Committed first native theme scaffold: style.css, theme.json, header/footer, index/front-page/page and three patterns; not yet tested | `theme/bubba-hub/` |
+| 2026-11-03 | Added single/archive/search/404 templates, theme bootstrap, responsive/focus CSS and test notes; no staging QA yet | `theme/bubba-hub/README.md` |
