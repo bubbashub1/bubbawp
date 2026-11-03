@@ -3,7 +3,8 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 final class BH_My_Listings_3 {
     public static function register() {
-        add_submenu_page( 'bubba-hub-3-status', 'My Listings', 'My Listings', 'read', 'bh3-my-listings', array( __CLASS__, 'render' ) );
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) { return; }
+        add_menu_page( 'My Listings', 'My Listings', 'read', 'bh3-my-listings', array( __CLASS__, 'render' ), 'dashicons-list-view', 27 );
     }
     public static function render() {
         if ( ! is_user_logged_in() || ! current_user_can( 'read' ) ||
