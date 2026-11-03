@@ -19,6 +19,7 @@ final class BH_Field_Manager_3 {
         add_action( 'admin_post_bh3_field_toggle', array( __CLASS__, 'toggle' ) );
         add_action( 'admin_post_bh3_field_move', array( __CLASS__, 'move' ) );
         add_action( 'admin_post_bh3_field_values_save', array( __CLASS__, 'save_values' ) );
+        add_action( 'admin_post_bh3_field_placement_save', array( __CLASS__, 'save_placement' ) );
     }
     private static function guard( $nonce ) {
         if ( ! self::enabled() || ! current_user_can( 'manage_options' ) ) { wp_die( 'Staging administrator access required.', '', array( 'response' => 403 ) ); }
@@ -187,7 +188,9 @@ final class BH_Field_Manager_3 {
         switch ( $type ) {
             case 'number':
                 if ( $value !== '' && ! is_numeric( $value ) ) { return new WP_Error( 'invalid_number', 'Invalid number.' ); }
-                return $value === '' ? '' : (float) $value;
+                if ( $value === '' ) { return ''; }
+                $number = (float) $value;
+                return is_finite( $number ) ? $number : new WP_Error( 'invalid_number', 'Number is out of range.' );
             case 'select':
                 if ( $value !== '' && ! in_array( $value, $options, true ) ) { return new WP_Error( 'invalid_option', 'Invalid selection.' ); }
                 return $value;
@@ -214,24 +217,23 @@ final class BH_Field_Manager_3 {
         $type = sanitize_key( $_POST['object_type'] ?? '' );
         $id = absint( $_POST['object_id'] ?? 0 );
         if ( ! self::object_exists( $type, $id ) ) { wp_die( 'Record not found.', '', array( 'response' => 404 ) ); }
-        $submitted = isset( $_POST['custom_fields'] ) && is_array( $_POST['custom_fields'] ) ? wp_unslash( $_POST['custom_fields'] ) : array();
-        $definitions = self::definitions_for( $type );
-        $updates = array();
-        foreach ( $definitions as $field ) {
-            $field_id = (int) $field['field_id'];
-            $raw = $submitted[ $field_id ] ?? ( $field['field_type'] === 'multiselect' ? array() : '' );
-            $value = self::normalized_value( $field, $raw );
-            if ( is_wp_error( $value ) ) { wp_die( esc_html( $field['label'] . ': ' . $value->get_error_message() ), '', array( 'response' => 400 ) ); }
-            if ( $field['is_required'] && ( $value === '' || $value === array() ) ) { wp_die( esc_html( $field['label'] . ' is required.' ), '', array( 'response' => 400 ) ); }
-            $updates[ $field_id ] = wp_json_encode( $value );
+        $submitted = $_POST['custom_fields'] ?? array();
+        $updates = self::validate_submitted_values( $type, is_array( $submitted ) ? wp_unslash( $submitted ) : $submitted );
+        if ( is_wp_error( $updates ) ) {
+            wp_die( esc_html( $updates->get_error_message() ), '', array( 'response' => 400 ) );
         }
-        global $wpdb; $t = self::tables();
-        $wpdb->query( 'START TRANSACTION' );
-        foreach ( $updates as $field_id => $json ) {
-            $ok = $wpdb->replace( $t['values'], array( 'object_type' => $type, 'object_id' => $id, 'field_id' => $field_id, 'value_json' => $json, 'updated_at' => current_time( 'mysql', true ) ) );
-            if ( $ok === false ) { $wpdb->query( 'ROLLBACK' ); wp_die( 'Could not save field values.', '', array( 'response' => 500 ) ); }
+        global $wpdb;
+        if ( false === $wpdb->query( 'START TRANSACTION' ) ) {
+            wp_die( 'Could not begin the custom field save.', '', array( 'response' => 500 ) );
         }
-        $wpdb->query( 'COMMIT' );
+        if ( ! self::persist_validated_values( $type, $id, $updates ) ) {
+            $wpdb->query( 'ROLLBACK' );
+            wp_die( 'Could not save field values.', '', array( 'response' => 500 ) );
+        }
+        if ( false === $wpdb->query( 'COMMIT' ) ) {
+            $wpdb->query( 'ROLLBACK' );
+            wp_die( 'Could not complete custom field save.', '', array( 'response' => 500 ) );
+        }
         wp_safe_redirect( add_query_arg( array( 'page' => 'bh3-field-manager', 'object_type' => $type, 'object_id' => $id, 'notice' => 'values_saved' ), admin_url( 'admin.php' ) ) );
         exit;
     }
@@ -279,6 +281,93 @@ final class BH_Field_Manager_3 {
         } elseif ( $id ) { echo '<p>Record not found.</p>'; }
         echo '</section>';
     }
+    /** Placement metadata is independent of the existing custom field schema. */
+    public static function placements() {
+        $saved = get_option( 'bh3_field_placements', array() );
+        return is_array( $saved ) ? $saved : array();
+    }
+    public static function save_placement() {
+        self::guard( 'bh3_field_placement_save' );
+        if ( ! self::ready() ) { wp_die( 'Field Manager not installed.', '', array( 'response' => 409 ) ); }
+        $id = absint( $_POST['field_id'] ?? 0 );
+        $step = sanitize_key( wp_unslash( $_POST['wizard_step'] ?? '' ) );
+        $allowed = array( 'basics', 'about', 'pricing', 'contact', 'images', 'locations' );
+        if ( ! $id || ! in_array( $step, $allowed, true ) ) { wp_die( 'Invalid field placement.', '', array( 'response' => 400 ) ); }
+        global $wpdb; $t = self::tables();
+        if ( ! $wpdb->get_var( $wpdb->prepare( "SELECT id FROM `{$t['fields']}` WHERE id=%d", $id ) ) ) { wp_die( 'Field not found.', '', array( 'response' => 404 ) ); }
+        $placements = self::placements();
+        $placements[ $id ] = array(
+            'wizard_step' => $step,
+            'show_on_detail' => ! empty( $_POST['show_on_detail'] ),
+            'show_in_search' => ! empty( $_POST['show_in_search'] ),
+        );
+        update_option( 'bh3_field_placements', $placements, false );
+        self::redirect( 'placement_saved' );
+    }
+    public static function definitions_with_placement( $target ) {
+        $definitions = self::definitions_for( $target );
+        $placements = self::placements();
+        foreach ( $definitions as &$field ) {
+            $field['placement'] = $placements[ (int) $field['field_id'] ] ?? array( 'wizard_step' => 'about', 'show_on_detail' => false, 'show_in_search' => false );
+        }
+        unset( $field );
+        return $definitions;
+    }
+    /** Shared validation for the admin record editor and the BH3 listing wizard. */
+    public static function validate_submitted_values( $target, $submitted ) {
+        if ( ! self::enabled() || ! current_user_can( 'manage_options' ) || ! self::ready() ) {
+            return new WP_Error( 'unavailable', 'Custom fields are unavailable.' );
+        }
+        if ( ! is_array( $submitted ) ) {
+            return new WP_Error( 'invalid_input', 'Invalid custom field values.' );
+        }
+        $result = array();
+        foreach ( self::definitions_for( $target ) as $field ) {
+            $id = (int) $field['field_id'];
+            $raw = $submitted[ $id ] ?? ( $field['field_type'] === 'multiselect' ? array() : '' );
+            $value = self::normalized_value( $field, $raw );
+            if ( is_wp_error( $value ) ) {
+                return new WP_Error( $value->get_error_code(), $field['label'] . ': ' . $value->get_error_message() );
+            }
+            if ( $field['is_required'] && ( $value === '' || $value === array() || $value === false ) ) {
+                return new WP_Error( 'required_field', $field['label'] . ' is required.' );
+            }
+            $result[ $id ] = wp_json_encode( $value );
+        }
+        return $result;
+    }
+    /** Call inside an existing transaction when saving a draft activity. */
+    public static function persist_validated_values( $target, $object_id, $values ) {
+        if ( ! self::enabled() || ! current_user_can( 'manage_options' ) || ! self::ready()
+            || ! self::object_exists( $target, $object_id ) || ! is_array( $values ) ) {
+            return false;
+        }
+        global $wpdb; $t = self::tables();
+        foreach ( $values as $field_id => $json ) {
+            if ( ! is_int( $field_id ) || ! is_string( $json ) ) { return false; }
+            $ok = $wpdb->replace( $t['values'], array(
+                'object_type' => $target,
+                'object_id' => $object_id,
+                'field_id' => $field_id,
+                'value_json' => $json,
+                'updated_at' => current_time( 'mysql', true ),
+            ) );
+            if ( false === $ok ) { return false; }
+        }
+        return true;
+    }
+    public static function values_for( $target, $object_id ) {
+        if ( ! self::enabled() || ! current_user_can( 'manage_options' )
+            || ! self::ready() || ! self::object_exists( $target, $object_id ) ) { return array(); }
+        global $wpdb; $t = self::tables();
+        $rows = $wpdb->get_results( $wpdb->prepare(
+            "SELECT field_id,value_json FROM `{$t['values']}` WHERE object_type=%s AND object_id=%d",
+            $target, $object_id
+        ), ARRAY_A );
+        $values = array();
+        foreach ( $rows as $row ) { $values[ (int) $row['field_id'] ] = json_decode( $row['value_json'], true ); }
+        return $values;
+    }
     private static function action_form( $action, $nonce, $values, $label ) {
         $html = '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
         $html .= '<input type="hidden" name="action" value="' . esc_attr( $action ) . '">';
@@ -322,7 +411,7 @@ final class BH_Field_Manager_3 {
         foreach ( $groups as $g ) { if ( (int) $g['id'] === $edit_group_id ) { $edit_group = $g; break; } }
         foreach ( $fields as $f ) { if ( (int) $f['id'] === $edit_field_id ) { $edit_field = $f; break; } }
 
-        echo '<section class="bh3-fm-card"><h2>Field groups</h2><table class="widefat striped"><thead><tr><th>Group</th><th>Key</th><th>Assigned to</th><th>Fields</th></tr></thead><tbody>';
+        echo '<section class="bh3-fm-card"><h2>Field groups</h2><table class="widefat striped"><thead><tr><th>Group</th><th>Key</th><th>Assigned to</th><th>Fields</th><th>Actions</th></tr></thead><tbody>';
         foreach ( $groups as $group ) {
             $count = count( array_filter( $fields, function( $f ) use ( $group ) { return (int) $f['group_id'] === (int) $group['id']; } ) );
             echo '<tr><td>' . esc_html( $group['name'] ) . ' <a href="' . esc_url( add_query_arg( array( 'page' => 'bh3-field-manager', 'edit_group' => absint( $group['id'] ) ), admin_url( 'admin.php' ) ) ) . '">Edit</a></td><td><code>' . esc_html( $group['group_key'] ) . '</code></td><td>' . esc_html( str_replace( ',', ', ', $group['targets'] ) ) . '</td><td>' . esc_html( (string) $count ) . '</td><td>' . self::action_form( 'bh3_field_toggle', 'bh3_field_toggle', array( 'kind' => 'group', 'id' => $group['id'] ), $group['is_active'] ? 'Disable' : 'Enable' ) . '</td></tr>';
@@ -335,8 +424,8 @@ final class BH_Field_Manager_3 {
         foreach ( array( 'activity' => 'Activities', 'venue' => 'Venues', 'session' => 'Sessions' ) as $key => $label ) {
             echo '<label style="margin-right:14px"><input type="checkbox" name="targets[]" value="' . esc_attr( $key ) . '" ' . checked( in_array( $key, explode( ',', $edit_group['targets'] ?? '' ), true ), true, false ) . '> ' . esc_html( $label ) . '</label>';
         }
-        echo '</div><button class="button button-primary">' . ( $edit_group ? 'Save group' : 'Create group' ) . '</button></form></section>';
-        echo '<section class="bh3-fm-card"><h2>Field definitions</h2><table class="widefat striped"><thead><tr><th>Group</th><th>Field</th><th>Key</th><th>Type</th><th>Required</th></tr></thead><tbody>';
+        echo '</p><button class="button button-primary">' . ( $edit_group ? 'Save group' : 'Create group' ) . '</button></form></section>';
+        echo '<section class="bh3-fm-card"><h2>Field definitions</h2><table class="widefat striped"><thead><tr><th>Group</th><th>Field</th><th>Key</th><th>Type</th><th>Required</th><th>Actions</th></tr></thead><tbody>';
         foreach ( $fields as $field ) {
             $group_name = '';
             foreach ( $groups as $g ) { if ( (int) $g['id'] === (int) $field['group_id'] ) { $group_name = $g['name']; break; } }
@@ -356,6 +445,16 @@ final class BH_Field_Manager_3 {
             echo '</select></label> <label><input type="checkbox" name="is_required" value="1" ' . checked( (int) ( $edit_field['is_required'] ?? 0 ), 1, false ) . '> Required</label></p>';
             echo '<p><label>Options (for select/multiselect, one per line)<br><textarea name="options" rows="5" cols="55">' . esc_textarea( implode( "\n", json_decode( $edit_field['options_json'] ?? '[]', true ) ?: array() ) ) . '</textarea></label></p>';
             echo '<button class="button button-primary">' . ( $edit_field ? 'Save field' : 'Create field' ) . '</button></form>';
+        }
+        if ( $edit_field ) {
+            $placement = self::placements()[ (int) $edit_field['id'] ] ?? array();
+            echo '<div class="bh3-fm-card"><h2>Field placement</h2><p>Choose where this field belongs in the listing wizard. Display and search flags are stored for future layout integrations; they do not yet expose fields publicly.</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="bh3_field_placement_save"><input type="hidden" name="field_id" value="' . esc_attr( (string) $edit_field['id'] ) . '">';
+            wp_nonce_field( 'bh3_field_placement_save' );
+            echo '<p><label>Wizard section <select name="wizard_step">';
+            foreach ( array( 'basics' => '1. Basics', 'about' => '2. About & categories', 'pricing' => '3. Age & pricing', 'contact' => '4. Contact & booking', 'images' => '5. Images & accessibility', 'locations' => '6. Locations & timetable' ) as $key => $label ) {
+                echo '<option value="' . esc_attr( $key ) . '" ' . selected( $placement['wizard_step'] ?? 'about', $key, false ) . '>' . esc_html( $label ) . '</option>';
+            }
+            echo '</select></label></p><p><label><input type="checkbox" name="show_on_detail" value="1" ' . checked( ! empty( $placement['show_on_detail'] ), true, false ) . '> Include on detail page (future integration)</label></p><p><label><input type="checkbox" name="show_in_search" value="1" ' . checked( ! empty( $placement['show_in_search'] ), true, false ) . '> Available as search filter (future integration)</label></p><button class="button button-primary">Save placement</button></form></div>';
         }
         echo '<script>(function(){function keyify(v){return v.toLowerCase().trim().replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"").slice(0,100)}for(const pair of [["bh3-group-name","bh3-group-key"],["bh3-field-label","bh3-field-key"]]){const source=document.getElementById(pair[0]),key=document.getElementById(pair[1]);if(source&&key){let manual=!!key.value;key.addEventListener("input",()=>{manual=!!key.value});source.addEventListener("input",()=>{if(!manual)key.value=keyify(source.value)})}}})();</script></section></div>';
     }

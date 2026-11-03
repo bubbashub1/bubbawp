@@ -20,6 +20,42 @@ final class BH_Activity_Create_3 {
         }
         echo '</label>';
     }
+    /** Renders configurable custom fields within the designated wizard step. */
+    private static function custom_fields_for_step( $step, $definitions, $values ) {
+        $open = false; $last_group = '';
+        foreach ( $definitions as $field ) {
+            if ( ( $field['placement']['wizard_step'] ?? 'about' ) !== $step ) { continue; }
+            if ( ! $open ) { echo '<div class="bh3-custom-fields bh3-wide"><h3>Additional fields</h3><div class="bh3-fields">'; $open = true; }
+            if ( $last_group !== $field['group_name'] ) {
+                echo '<h4 class="bh3-wide">' . esc_html( $field['group_name'] ) . '</h4>';
+                $last_group = $field['group_name'];
+            }
+            $id = (int) $field['field_id']; $kind = $field['field_type'];
+            $value = $values[ $id ] ?? ''; $name = 'bh3_custom_fields[' . $id . ']';
+            $options = json_decode( $field['options_json'] ?: '[]', true );
+            if ( ! is_array( $options ) ) { $options = array(); }
+            echo '<label class="bh3-field" data-bh3-required="' . ( $field['is_required'] ? '1' : '0' ) . '"><span>' . esc_html( $field['label'] ) . ( $field['is_required'] ? ' *' : '' ) . '</span>';
+            if ( $kind === 'textarea' ) {
+                echo '<textarea name="' . esc_attr( $name ) . '" rows="3">' . esc_textarea( (string) $value ) . '</textarea>';
+            } elseif ( $kind === 'checkbox' ) {
+                echo '<input type="checkbox" name="' . esc_attr( $name ) . '" value="1" ' . checked( (bool) $value, true, false ) . '>';
+            } elseif ( in_array( $kind, array( 'select', 'multiselect' ), true ) ) {
+                $multiple = $kind === 'multiselect';
+                echo '<select name="' . esc_attr( $name . ( $multiple ? '[]' : '' ) ) . '"' . ( $multiple ? ' multiple size="4"' : '' ) . '>';
+                if ( ! $multiple ) { echo '<option value="">Choose an option</option>'; }
+                foreach ( $options as $option ) {
+                    $is_selected = $multiple ? in_array( $option, (array) $value, true ) : $option === $value;
+                    echo '<option value="' . esc_attr( $option ) . '" ' . selected( $is_selected, true, false ) . '>' . esc_html( $option ) . '</option>';
+                }
+                echo '</select>';
+            } else {
+                $input_type = in_array( $kind, array( 'number', 'email', 'url', 'date', 'time' ), true ) ? $kind : 'text';
+                echo '<input type="' . esc_attr( $input_type ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( (string) $value ) . '">';
+            }
+            echo '</label>';
+        }
+        if ( $open ) { echo '</div></div>'; }
+    }
     public static function render() {
         if ( ! current_user_can( 'manage_options' ) ) { wp_die( 'Permission denied.' ); }
         echo '<div class="wrap bh3-wizard"><h1>' . ( absint( $_GET['activity_id'] ?? 0 ) ? 'Edit draft activity' : 'Add activity' ) . '</h1>';
@@ -49,14 +85,18 @@ final class BH_Activity_Create_3 {
                 $venues = $wpdb->get_results( 'SELECT ' . $venue_select . ' FROM `' . esc_sql( $venues_table ) . '` ORDER BY name ASC LIMIT 2000', ARRAY_A );
             }
         }
-        echo '<p>Seven steps, using the same activity fields as the existing Bubba Hub listing wizard. Save creates a draft; venues and weekly sessions are managed in their dedicated tabs.</p>';
+        $bh3_custom_definitions = class_exists( 'BH_Field_Manager_3' ) && BH_Field_Manager_3::ready()
+            ? BH_Field_Manager_3::definitions_with_placement( 'activity' ) : array();
+        $bh3_custom_values = $edit_id && $bh3_custom_definitions
+            ? BH_Field_Manager_3::values_for( 'activity', $edit_id ) : array();
+        echo '<p>Seven steps with configurable custom fields from Field Manager. Save creates a draft; existing venues and weekly sessions can be added in step six.</p>';
         echo '<style>
         .bh3-wizard{max-width:1100px}.bh3-wizard-layout{display:grid;grid-template-columns:210px minmax(0,1fr);gap:22px;margin-top:20px}
         .bh3-steps{display:flex;flex-direction:column;gap:6px}.bh3-steps button{text-align:left;padding:12px;border:1px solid #d5e3d9;border-radius:9px;background:#fff;cursor:pointer}.bh3-steps button[aria-current=step]{background:#eaf3ed;border-color:#397253;font-weight:700}
         .bh3-panel{background:#fff;border:1px solid #dce5de;border-radius:12px;padding:22px;min-width:0}.bh3-panel[hidden]{display:none}
         .bh3-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.bh3-field{display:flex;flex-direction:column;gap:6px;min-width:0;font-weight:600}.bh3-field input,.bh3-field textarea,.bh3-field select{width:100%;max-width:100%;box-sizing:border-box}
         .bh3-wide{grid-column:1/-1}.bh3-actions{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;margin-top:22px}.bh3-actions .button{min-height:36px}.bh3-actions [hidden]{display:none!important}
-        .bh3-review{background:#f6f9f6;padding:14px;border-radius:9px;line-height:1.8}
+        .bh3-review{background:#f6f9f6;padding:14px;border-radius:9px;line-height:1.8}.bh3-custom-fields{margin-top:20px;padding:18px;border:1px solid #dce5de;border-radius:10px;background:#f9fbfa}.bh3-custom-fields>h3{margin:0 0 14px}.bh3-custom-fields h4{margin:4px 0 0;color:#34684a}
         .bh3-location-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}.bh3-venue-results{max-height:280px;overflow:auto;border:1px solid #dcdcde;border-radius:8px;padding:8px;margin-top:10px}.bh3-venue-option{display:flex;gap:8px;align-items:flex-start;padding:8px;border-bottom:1px solid #eee}.bh3-venue-option:last-child{border:0}.bh3-session-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:8px;align-items:end;padding:12px;border:1px solid #dcdcde;border-radius:8px;margin:0 0 10px}.bh3-session-row label{display:flex;flex-direction:column;gap:5px;font-weight:600}.bh3-session-row input,.bh3-session-row select{max-width:100%;width:100%}.bh3-session-row .bh3-session-term{display:flex;align-items:center;gap:6px;white-space:nowrap}.bh3-session-row .bh3-session-term input{width:auto}@media(max-width:782px){.bh3-location-grid{grid-template-columns:1fr}.bh3-session-row{grid-template-columns:1fr 1fr}.bh3-session-row .bh3-session-remove{grid-column:1/-1}}
         /* Wizard controls: prevent WP admin styles from stretching checkboxes and timetable inputs. */
         .bh3-wizard{max-width:1320px}
@@ -88,6 +128,7 @@ final class BH_Activity_Create_3 {
         foreach ( $organisers as $org ) { echo '<option value="' . esc_attr( (string) $org['id'] ) . '">' . esc_html( $org['name'] ) . '</option>'; }
         echo '</select></label>';
         self::field( 'slug', 'URL slug (leave blank to generate)', 'text', '', 'maxlength="255"' );
+        self::custom_fields_for_step( 'basics', $bh3_custom_definitions, $bh3_custom_values );
         echo '</div></section>';
         echo '<section class="bh3-panel" data-panel="1" hidden><h2>About & categories</h2><div class="bh3-fields">';
         self::field( 'category', 'Primary category', 'text', '', 'maxlength="255"' );
@@ -96,6 +137,7 @@ final class BH_Activity_Create_3 {
         self::field( 'accessibility', 'Accessibility information', 'textarea', '', 'class="bh3-wide"' );
         self::field( 'what_to_bring', 'What to bring', 'text', '', 'maxlength="250"' );
         self::field( 'good_to_know', 'Good to know', 'text', '', 'maxlength="250"' );
+        self::custom_fields_for_step( 'about', $bh3_custom_definitions, $bh3_custom_values );
         echo '</div></section>';
         echo '<section class="bh3-panel" data-panel="2" hidden><h2>Age & pricing</h2><div class="bh3-fields">';
         self::field( 'age_range', 'Display age range', 'text', '', 'maxlength="255" placeholder="e.g. 0–12 months"' );
@@ -115,6 +157,7 @@ final class BH_Activity_Create_3 {
         echo '<label class="bh3-field"><span><input type="checkbox" name="holiday_sessions" value="1"> Holiday sessions</span></label>';
         echo '<label class="bh3-field"><span><input type="checkbox" name="siblings_welcome" value="1"> Siblings welcome</span></label>';
         self::field( 'session_length_minutes', 'Session length (minutes)', 'number', '', 'min="1" max="1440"' );
+        self::custom_fields_for_step( 'pricing', $bh3_custom_definitions, $bh3_custom_values );
         echo '</div></section>';
         echo '<section class="bh3-panel" data-panel="3" hidden><h2>Contact & booking</h2><div class="bh3-fields">';
         self::field( 'contact_email', 'Contact email', 'email', '', 'maxlength="255"' );
@@ -124,11 +167,14 @@ final class BH_Activity_Create_3 {
         self::field( 'instagram_url', 'Instagram URL', 'url', '', 'maxlength="500"' );
         self::field( 'booking_url', 'Booking URL', 'url', '', 'maxlength="2048"' );
         echo '<label class="bh3-field"><span><input type="checkbox" name="booking_required" value="1"> Booking required</span></label>';
+        self::custom_fields_for_step( 'contact', $bh3_custom_definitions, $bh3_custom_values );
         echo '</div></section>';
         echo '<section class="bh3-panel" data-panel="4" hidden><h2>Images & accessibility</h2><div class="bh3-fields">';
         self::field( 'image_path', 'Main listing image URL', 'url', '', 'maxlength="1000"' );
         self::field( 'gallery_images', 'Additional image URLs (one per line, up to 10)', 'textarea', '', 'class="bh3-wide"' );
-        echo '<p class="description bh3-wide">The main image URL is retained for compatibility. The WordPress media attachment field remains available separately in BH3.</p></div></section>';
+        echo '<p class="description bh3-wide">The main image URL is retained for compatibility. The WordPress media attachment field remains available separately in BH3.</p>';
+        self::custom_fields_for_step( 'images', $bh3_custom_definitions, $bh3_custom_values );
+        echo '</div></section>';
         echo '<section class="bh3-panel" data-panel="5" hidden><h2>Locations & timetable</h2><p>Choose one or more existing venues, then add the weekly sessions for this activity. You can leave the timetable empty and add it later.</p>';
         echo '<div class="bh3-location-grid"><div><h3>Find existing venues</h3><input type="search" id="bh3-venue-search" class="regular-text" placeholder="Search venue name or town"><div id="bh3-venue-results" class="bh3-venue-results">';
         foreach ( $venues as $venue ) {
@@ -138,13 +184,16 @@ final class BH_Activity_Create_3 {
         }
         if ( ! $venues ) { echo '<p>No existing venues were found. You can save the draft and add venues from My Venues afterwards.</p>'; }
         echo '</div><p class="description">Only existing venues are selectable here. New venue creation remains in Venues Manager.</p></div>';
-        echo '<div><h3>Weekly sessions</h3><div id="bh3-session-rows"></div><button type="button" class="button" id="bh3-add-session">+ Add weekly session</button><p class="description">Each session repeats weekly. Add separate rows for different days or times.</p></div></div></section>';
+        echo '<div><h3>Weekly sessions</h3><div id="bh3-session-rows"></div><button type="button" class="button" id="bh3-add-session">+ Add weekly session</button><p class="description">Each session repeats weekly. Add separate rows for different days or times.</p></div></div>';
+        self::custom_fields_for_step( 'locations', $bh3_custom_definitions, $bh3_custom_values );
+        echo '</section>';
         echo '<section class="bh3-panel" data-panel="6" hidden><h2>Review your listing</h2><div class="bh3-review" id="bh3-review-summary">Review the fields above before saving.</div><p>This creates a draft only. Publishing remains administrator-controlled.</p></section>';
         echo '<div class="bh3-actions"><div><button type="button" class="button" id="bh3-prev" disabled>← Back</button> <button type="button" class="button button-primary" id="bh3-next">Continue →</button></div><button type="submit" class="button button-primary" id="bh3-submit" hidden>Save draft activity</button></div></form></div>';
         echo '<script>const bh3SavedListing=' . wp_json_encode( $existing ?: array() ) . ';const bh3SavedVenues=' . wp_json_encode( $existing_venue_ids ) . ';const bh3SavedSessions=' . wp_json_encode( $existing_sessions ) . ';';
         echo <<<'BH3_WIZARD_SCRIPT'
 (function(){const form=document.getElementById("bh3-listing-wizard");if(!form)return;let step=0;const panels=[...form.querySelectorAll("[data-panel]")],nav=[...document.querySelectorAll(".bh3-steps [data-step]")],prev=document.getElementById("bh3-prev"),next=document.getElementById("bh3-next"),save=document.getElementById("bh3-submit"),summary=document.getElementById("bh3-review-summary");
-        const show=n=>{n=Math.max(0,Math.min(6,n));if(step===5&&n>5){for(const row of sessionRows.querySelectorAll('.bh3-session-row')){const day=row.querySelector('select'),times=row.querySelectorAll('input[type=time]'),start=times[0],end=times[1];if(!day.value||!start.value||!end.value||end.value<=start.value){alert('Complete each weekly session and make sure its end time is later than its start.');(!day.value?day:!start.value?start:end).focus();return;}}}step=n;panels.forEach((p,i)=>p.hidden=i!==step);nav.forEach((b,i)=>b.setAttribute("aria-current",i===step?"step":"false"));prev.disabled=step===0;next.hidden=step===6;save.hidden=step!==6;if(step===6){const fields=[["Activity", "title"],["Category","category"],["Organiser","organiser_id"],["Age range","age_range"],["Price from","price_from"],["Contact email","contact_email"],["Website","website"]];summary.innerHTML=fields.map(([label,name])=>{const el=form.elements.namedItem(name);return "<p><strong>"+label+":</strong> "+String(el?.selectedOptions?.[0]?.textContent||el?.value||"—").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]))+"</p>"}).join("");}};
+        const missingCustom=n=>{for(const label of panels[n].querySelectorAll('label[data-bh3-required="1"]')){const el=label.querySelector("input,textarea,select");if(!el)continue;const filled=el.type==="checkbox"?el.checked:el.multiple?el.selectedOptions.length>0:String(el.value||"").trim()!=="";if(!filled)return el;}return null;};
+        const show=n=>{n=Math.max(0,Math.min(6,n));let missing=null;if(n>step){for(let i=step;i<n;i++){missing=missingCustom(i);if(missing){n=i;break;}}}if(step===5&&n>5){for(const row of sessionRows.querySelectorAll('.bh3-session-row')){const day=row.querySelector('select'),times=row.querySelectorAll('input[type=time]'),start=times[0],end=times[1];if(!day.value||!start.value||!end.value||end.value<=start.value){alert('Complete each weekly session and make sure its end time is later than its start.');(!day.value?day:!start.value?start:end).focus();return;}}}step=n;panels.forEach((p,i)=>p.hidden=i!==step);nav.forEach((b,i)=>b.setAttribute("aria-current",i===step?"step":"false"));prev.disabled=step===0;if(missing){alert('Please complete the required custom field before continuing.');missing.focus();}next.hidden=step===6;save.hidden=step!==6;if(step===6){const fields=[["Activity", "title"],["Category","category"],["Organiser","organiser_id"],["Age range","age_range"],["Price from","price_from"],["Contact email","contact_email"],["Website","website"]];summary.innerHTML=fields.map(([label,name])=>{const el=form.elements.namedItem(name);return "<p><strong>"+label+":</strong> "+String(el?.selectedOptions?.[0]?.textContent||el?.value||"—").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]))+"</p>"}).join("");}};
         prev.addEventListener("click",()=>show(step-1));next.addEventListener("click",()=>{if(step===0&&!form.elements.namedItem("title").value.trim()){form.elements.namedItem("title").focus();return;}show(step+1)});nav.forEach(b=>b.addEventListener("click",()=>show(Number(b.dataset.step))));form.addEventListener("submit",e=>{if(!form.elements.namedItem("title").value.trim()){e.preventDefault();show(0);form.elements.namedItem("title").focus();}});
         const venueSearch=document.getElementById("bh3-venue-search"),venueOptions=[...document.querySelectorAll(".bh3-venue-option")],sessionRows=document.getElementById("bh3-session-rows"),addSession=document.getElementById("bh3-add-session");
         venueSearch?.addEventListener("input",()=>{const q=venueSearch.value.trim().toLowerCase();venueOptions.forEach(row=>{row.hidden=q!==""&&!row.dataset.search.includes(q);});});
@@ -243,6 +292,16 @@ BH3_WIZARD_SCRIPT;
                 if ( count( array_map( 'intval', $found_ids ) ) !== count( $venue_ids ) ) { wp_die( 'One or more selected venues no longer exist. Refresh and try again.', '', array( 'response' => 409 ) ); }
             }
         }
+        $bh3_custom_values = array();
+        if ( class_exists( 'BH_Field_Manager_3' ) && BH_Field_Manager_3::ready() ) {
+            $submitted = $_POST['bh3_custom_fields'] ?? array();
+            $bh3_custom_values = BH_Field_Manager_3::validate_submitted_values(
+                'activity', is_array( $submitted ) ? wp_unslash( $submitted ) : $submitted
+            );
+            if ( is_wp_error( $bh3_custom_values ) ) {
+                wp_die( esc_html( $bh3_custom_values->get_error_message() ), '', array( 'response' => 400 ) );
+            }
+        }
         $now = current_time( 'mysql', true );
         $data = array(
             'organiser_id' => $organiser_id ?: null, 'title' => $title, 'slug' => $slug,
@@ -293,6 +352,10 @@ BH3_WIZARD_SCRIPT;
             if ( false === $wpdb->insert( $wpdb->prefix . 'sessions', $session_data ) ) {
                 $wpdb->query( 'ROLLBACK' ); wp_die( 'Unable to save weekly sessions: ' . esc_html( $wpdb->last_error ), '', array( 'response' => 500 ) );
             }
+        }
+        if ( $bh3_custom_values && ! BH_Field_Manager_3::persist_validated_values( 'activity', $activity_id, $bh3_custom_values ) ) {
+            $wpdb->query( 'ROLLBACK' );
+            wp_die( 'Unable to save custom fields.', '', array( 'response' => 500 ) );
         }
         if ( false === $wpdb->query( 'COMMIT' ) ) { $wpdb->query( 'ROLLBACK' ); wp_die( 'Unable to complete activity save.', '', array( 'response' => 500 ) ); }
         wp_safe_redirect( add_query_arg( array( 'page' => 'bh3-add-activity', 'created' => $activity_id, 'edited' => $edit_id ? 1 : 0 ), admin_url( 'admin.php' ) ) );
