@@ -38,6 +38,7 @@ final class BH_Manager_3 {
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-sessions.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-venues.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-ui.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-create.php';
         BH_Directory_Preview_3::register();
         BH_Directory_3::register();
         BH_Activity_Detail_3::register();
@@ -54,6 +55,8 @@ final class BH_Manager_3 {
         add_action( 'admin_menu', array( 'BH_Sessions_3', 'register' ) );
         add_action( 'admin_menu', array( 'BH_My_Listings_3', 'register' ) );
         add_action( 'admin_menu', array( 'BH_Leader_Edit_3', 'register' ) );
+        add_action( 'admin_menu', array( 'BH_Leader_Create_3', 'register' ) );
+        add_action( 'admin_post_bh3_leader_create_activity', array( 'BH_Leader_Create_3', 'save' ) );
         add_action( 'admin_menu', array( 'BH_Leader_Sessions_3', 'register' ) );
         add_action( 'admin_menu', array( 'BH_Leader_Venues_3', 'register' ) );
         add_action( 'admin_enqueue_scripts', array( 'BH_Leader_UI_3', 'enqueue' ) );
