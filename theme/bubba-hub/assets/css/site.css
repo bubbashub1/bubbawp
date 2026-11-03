@@ -26,3 +26,23 @@ button:focus-visible {
   html { scroll-behavior: auto; }
   .wp-block-button__link { transition: none; }
 }
+
+/* Reusable presentation-only cards and explicit inactive placeholders. */
+.bh-card {
+  border-radius: var(--bh-card-radius);
+  padding: clamp(1rem, 2vw, 1.75rem);
+  box-shadow: 0 8px 28px rgb(23 79 70 / 7%);
+  border: 1px solid rgb(23 79 70 / 9%);
+}
+.bh-card > :first-child { margin-block-start: 0; }
+.bh-card > :last-child { margin-block-end: 0; }
+.bh-placeholder {
+  border: 1px dashed rgb(23 79 70 / 35%);
+  border-radius: var(--bh-card-radius);
+  padding: clamp(1.25rem, 3vw, 2rem);
+}
+.bh-category-grid .wp-block-column { min-width: 0; }
+@media (max-width: 781px) {
+  .bh-category-grid { flex-direction: column; }
+  .bh-card { padding: 1.25rem; }
+}
