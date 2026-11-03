@@ -13,7 +13,7 @@ final class BH_My_Listings_3 {
         }
         global $wpdb;
         $organiser_id = absint( get_user_meta( get_current_user_id(), 'bh3_organiser_id', true ) );
-        echo '<div class="wrap"><h1>My Listings</h1>';
+        echo '<div class="wrap bh3-my-listings"><style>.bh3-my-listings{max-width:1120px}.bh3-my-listings table{border-radius:10px;overflow:hidden;border:1px solid #dce5de;box-shadow:none}.bh3-my-listings th,.bh3-my-listings td{padding:15px 16px;vertical-align:middle}.bh3-my-listings .button{border-radius:7px}.bh3-my-listings .bh3-status{background:#edf4ef;color:#27583b;border-radius:20px;padding:5px 11px;display:inline-block;text-transform:capitalize;font-weight:600;font-size:12px}@media(max-width:600px){.bh3-my-listings{overflow-x:auto}.bh3-my-listings th,.bh3-my-listings td{padding:10px}}</style><h1>My Listings</h1>';
         if ( ! $organiser_id ) { echo '<p>Your account is not linked to an organiser. Ask an administrator to link it.</p></div>'; return; }
         $organisers = $wpdb->prefix . 'organisers';
         $activities = $wpdb->prefix . 'activities';
@@ -32,7 +32,7 @@ final class BH_My_Listings_3 {
         echo '<table class="widefat striped"><thead><tr><th>Activity</th><th>Category</th><th>Status</th><th>Action</th></tr></thead><tbody>';
         foreach ( $rows as $row ) {
             echo '<tr><td>' . esc_html( $row['title'] ) . '</td><td>' . esc_html( (string) $row['category'] ) .
-                '</td><td>' . esc_html( $row['status'] ) . '</td><td>' . ( $row['status'] === 'draft' ? '<a class="button" href="' . esc_url( add_query_arg( array( 'page' => 'bh3-leader-edit', 'activity_id' => absint( $row['id'] ) ), admin_url( 'admin.php' ) ) ) . '">Edit</a>' : 'View only' ) . '</td></tr>';
+                '</td><td><span class="bh3-status">' . esc_html( $row['status'] ) . '</span></td><td>' . ( $row['status'] === 'draft' ? '<a class="button" href="' . esc_url( add_query_arg( array( 'page' => 'bh3-leader-edit', 'activity_id' => absint( $row['id'] ) ), admin_url( 'admin.php' ) ) ) . '">Edit</a>' : 'View only' ) . '</td></tr>';
         }
         if ( ! $rows ) { echo '<tr><td colspan="4">No activities assigned to this organiser.</td></tr>'; }
         echo '</tbody></table></div>';
