@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Activity · Bubba Hub</title>
+<link rel="stylesheet" href="/assets/css/styles.css">
+<link rel="stylesheet" href="/assets/css/activity-v2.css">
+<link rel="stylesheet" href="/assets/css/activity-reference-exact.css?v=20261031schedule">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+/* Compact activity footer: keep the updated date with the footer, not floating above it. */
+.bh-activity-v2 .site-footer{margin-top:24px}
+.bh-activity-v2 .site-footer-grid{gap:24px}
+.bh-activity-v2 .site-footer-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 22px}
+.bh-activity-v2 .bh-listing-updated{font-size:13px;opacity:.86;margin-left:auto}
+@media(max-width:680px){.bh-activity-v2 .site-footer{margin-top:16px}.bh-activity-v2 .site-footer-bottom{justify-content:flex-start}.bh-activity-v2 .bh-listing-updated{margin-left:0}}
+
+/* Tighten the public activity action area and attach the footer to the content. */
+.bh-activity-v2 .app-shell{padding-bottom:0!important;margin-bottom:0!important;min-height:0!important}
+.bh-activity-v2 #activityState{padding-bottom:0!important;margin-bottom:0!important;min-height:0!important}
+.bh-activity-v2 .listing-bottom{margin:14px 0 0!important;padding:0 0 16px!important}
+.bh-activity-v2 .listing-claim-wrap{margin:12px 0!important}
+.bh-activity-v2 .site-footer{margin-top:12px!important}
+.bh-activity-v2 .site-footer-grid{padding-top:32px!important;padding-bottom:24px!important;align-items:start}
+.bh-activity-v2 .site-footer-bottom{padding-top:14px!important;padding-bottom:14px!important}
+@media(max-width:680px){.bh-activity-v2 .site-footer-grid{padding-top:24px!important;gap:20px!important}.bh-activity-v2 .site-footer{margin-top:8px!important}}
+
+/* Activity action bar: one compact panel directly below organiser details. */
+body.bh-activity-v2 .bh-activity-bottom-panel{margin:16px 0 8px;padding:18px 20px;border:1px solid #d5e6dc;border-radius:18px;background:#f8fcf9}
+body.bh-activity-v2 .bh-activity-bottom-row{display:flex;justify-content:space-between;align-items:center;gap:12px 24px;flex-wrap:wrap}
+body.bh-activity-v2 .bh-activity-bottom-left,body.bh-activity-v2 .bh-activity-bottom-right{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+body.bh-activity-v2 .bh-activity-bottom-panel .listing-claim-wrap,body.bh-activity-v2 .bh-activity-bottom-panel .listing-bottom,body.bh-activity-v2 .bh-activity-bottom-panel #bh-feedback-actions{margin:0!important;padding:0!important;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+body.bh-activity-v2 .bh-activity-bottom-panel .button{margin:0!important}
+body.bh-activity-v2 .bh-activity-updated-note{font-size:13px;color:#587467;text-align:right;margin:12px 0 0;padding-top:10px;border-top:1px solid #dce9df}
+body.bh-activity-v2 .bh-activity-updated-note[hidden]{display:none}
+@media(max-width:720px){body.bh-activity-v2 .bh-activity-bottom-panel{padding:14px}body.bh-activity-v2 .bh-activity-bottom-row{align-items:stretch}body.bh-activity-v2 .bh-activity-bottom-left,body.bh-activity-v2 .bh-activity-bottom-right{width:100%}body.bh-activity-v2 .bh-activity-updated-note{text-align:left}}
+</style>
+</head>
+<body class="bh-activity-v2">
+<div id="siteHeaderMount"></div>
+
+<main class="app-shell">
+  <div id="activityState" class="listing-loading"><p>Loading activity…</p></div>
+</main>
+
+<footer class="site-footer">
+  <div class="site-footer-grid">
+    <div class="site-footer-brand">
+      <a href="index.html" class="site-footer-logo" aria-label="Bubba Hub home"><img src="/wp-content/uploads/logo/logoheader.png" alt="Bubba Hub"></a>
+      <div class="site-footer-brand-copy"><a href="index.html" class="site-footer-title">Bubba Hub</a><p>Find, plan &amp; book family activities across Devon &amp; Cornwall.</p></div>
+    </div>
+    <div class="site-footer-column"><h2>Main menu</h2><nav class="site-footer-links" aria-label="Footer main menu"><a href="directory.html">Find activities</a><a href="my-hub.html">My Hub</a><a href="help-support.html">Support &amp; Guidance</a><a href="leader.html">Class Leaders</a><a href="account.html">Account</a></nav></div>
+    <div class="site-footer-column"><h2>Explore &amp; tools</h2><nav class="site-footer-links" aria-label="Footer explore and tools"><a href="events.html">Events</a><a href="venues.html">Venues</a><a href="planner.html">Planner</a><a href="calendar.html">Calendar</a></nav></div>
+    <div class="site-footer-column"><h2>Legal &amp; contact</h2><nav class="site-footer-links" aria-label="Footer legal and contact"><a href="privacy.html">Privacy</a><a href="terms.html">Terms &amp; Conditions</a><a href="mailto:contact@bubbahub.co.uk">Contact Bubba Hub</a></nav>
+    </div>
+  </div>
+  <div class="site-footer-bottom"><span>&copy; 2026 Bubba Hub</span><span>Devon &amp; Cornwall</span></div>
+</footer>
+
+
+
+<script src="/assets/js/listing-feedback.js" defer></script>
+<script src="/assets/js/activity-bottom-actions.js" defer></script>
+<script src="/assets/js/activity-badges.js"></script>
+<script src="/assets/js/app.js"></script>
+<script src="/assets/js/pro-demo.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded",async()=>{
+ const state=document.getElementById("activityState");
+ try{
+  const isTruthy=value=>value===true||value===1||value==="1"||String(value||"").toLowerCase()==="true"||String(value||"").toLowerCase()==="yes";
+  const isNewActivity=a=>{
+    const raw=a.created_at||a.createdAt||a.published_at||a.date_created;
+    if(!raw)return false;
+    const d=new Date(raw);
+    return !Number.isNaN(d.getTime())&&(Date.now()-d.getTime()<=30*24*60*60*1000);
+  };
+  const getBadges=window.getActivityBadges;
+  const safeRichText=html=>{const box=document.createElement("div");box.innerHTML=String(html||"");box.querySelectorAll("script,style,iframe,object,embed,form,input,textarea,button").forEach(x=>x.remove());box.querySelectorAll("*").forEach(el=>[...el.attributes].forEach(attr=>{if(attr.name.toLowerCase().startsWith("on")||["style","class"].includes(attr.name.toLowerCase())||["href","src"].includes(attr.name.toLowerCase())&&!/^(https?:|mailto:|\/)/i.test(attr.value))el.removeAttribute(attr.name)}));return box.innerHTML;};
+  const renderBadges=window.renderActivityBadges;
+  const params=new URLSearchParams(location.search);
+  const pathParts=location.pathname.split("/").filter(Boolean);
+  const pathSlug=pathParts.length && !/activity\.html$/i.test(pathParts[pathParts.length-1]) ? pathParts[pathParts.length-1] : "";
+  const slug=decodeURIComponent(params.get("slug")||pathSlug||"");
+  const id=params.get("id")||(location.pathname.match(/^\/activity\/(\d+)\//)?.[1]||"");
+  let items=[];
+  let a=null;
+
+  // Load by slug first, then by id. Homepage cards include both values;
+  // a stale slug must not make a valid activity appear missing.
+  const normalizeActivityPayload=payload=>{
+    if(!payload?.ok||!Array.isArray(payload.data)||!payload.data[0])return null;
+    const raw=payload.data[0],venues=Array.isArray(raw.venues)?raw.venues:[],sessions=Array.isArray(raw.sessions)?raw.sessions:[];
+    const sessionByVenue={};
+    sessions.forEach(s=>{
+      const venueId=String(s.venue_id);
+      if(!sessionByVenue[venueId])sessionByVenue[venueId]=[];
+      sessionByVenue[venueId].push({
+        id:s.id,class_name:s.class_name||'',day:["","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"][Number(s.day_of_week)]||String(s.day_of_week||""),
+        day_of_week:Number(s.day_of_week)||null,start:bhFormatTime(s.start_time||""),time:bhFormatTime(s.start_time||""),
+        end:bhFormatTime(s.end_time||""),end_time:bhFormatTime(s.end_time||""),
+        duration:(Number(s.duration_minutes)>0?Number(s.duration_minutes):(()=>{const start=String(s.start_time||""),end=String(s.end_time||"");if(!/^\d\d:\d\d/.test(start)||!/^\d\d:\d\d/.test(end))return 0;const [sh,sm]=start.split(":").map(Number),[eh,em]=end.split(":").map(Number);return ((eh*60+em)-(sh*60+sm)+1440)%1440})())?String(Number(s.duration_minutes)>0?Number(s.duration_minutes):(()=>{const [sh,sm]=String(s.start_time).split(":").map(Number),[eh,em]=String(s.end_time).split(":").map(Number);return ((eh*60+em)-(sh*60+sm)+1440)%1440})())+" mins":"",duration_minutes:s.duration_minutes,
+        price:s.price!==null&&s.price!==undefined?"£"+Number(s.price).toFixed(2):"",price_value:s.price,
+        term_time:s.term_time_only?"Term time":"",frequency:s.frequency||"",start_date:s.start_date||"",end_date:s.end_date||""
+      });
+    });
+    const coordinate=value=>{
+      if(value===null||value===undefined||value==="")return null;
+      const number=Number(String(value).trim().replace(",","."));
+      return Number.isFinite(number)?number:null;
+    };
+    const cleanDescription=html=>{const box=document.createElement("div");box.innerHTML=String(html||"");box.querySelectorAll("script,style,iframe,object,embed,form,input,textarea,button").forEach(x=>x.remove());box.querySelectorAll("[class*=\"citation-\"]").forEach(x=>x.replaceWith(...x.childNodes));box.querySelectorAll("*").forEach(el=>[...el.attributes].forEach(attr=>{if(attr.name.toLowerCase().startsWith("data-path-to-node")||attr.name.toLowerCase().startsWith("data-index-in-node")||attr.name.toLowerCase().startsWith("data-")||attr.name.toLowerCase().startsWith("on")||["style","class"].includes(attr.name.toLowerCase()))el.removeAttribute(attr.name)}));return box.innerHTML.trim()};
+    const simplifyAgeRange=value=>{
+      const raw=String(value||'').trim();
+      const ranges=[...raw.matchAll(/(\\d+)\\s*[-–]\\s*(\\d+)\\s*months?/gi)].map(m=>[Number(m[1]),Number(m[2])]);
+      if(!ranges.length)return raw;
+      if(ranges.length===1)return ranges[0][0]+'–'+ranges[0][1]+' months';
+      const sorted=ranges.sort((a,b)=>a[0]-b[0]),min=sorted[0][0];let max=sorted[0][1];
+      for(const [start,end] of sorted.slice(1)){if(start>max)return raw;max=Math.max(max,end);}
+      return min+'–'+max+' months';
+    };
+    const normalizedVenues=venues.map(v=>({
+      id:v.id,name:v.name||"Venue",address:v.address||"",town:v.town||"",region:v.region||"",postcode:v.postcode||"",
+      lat:coordinate(v.latitude),long:coordinate(v.longitude),latitude:coordinate(v.latitude),longitude:coordinate(v.longitude),
+      sessions:sessionByVenue[String(v.id)]||[]
+    }));
+    return {
+      ...raw,id:String(raw.id),category:raw.category||"",age_range:raw.age_range?[simplifyAgeRange(raw.age_range)]:[],
+      price:raw.price_from!==null&&raw.price_from!==undefined?"£"+Number(raw.price_from).toFixed(2):"",
+      price_value:raw.price_from,image_url:raw.image_path||"",short_description:cleanDescription(raw.description||""),
+      summary:cleanDescription(raw.description||""),content:cleanDescription(raw.description||""),region:normalizedVenues[0]?.region||"",town:normalizedVenues[0]?.town||"",
+      location:[...new Set(normalizedVenues.map(v=>v.town).filter(Boolean))].join(", ")||normalizedVenues[0]?.name||"",organiser_id:raw.organiser?.id||"",
+      organiser_name:raw.organiser?.name||"",organiser:raw.organiser?.name||"",organiser_website:raw.organiser?.website||"",
+      organiser_email:raw.organiser?.email||"",organiser_phone:raw.organiser?.phone||"",organiser_slug:raw.organiser?.slug||"",
+      venues:normalizedVenues,booking_mode:raw.booking_url?"external":"reserve",booking_slots:[],booking_url:raw.booking_url||""
+    };
+  };
+  const loadDirectActivity=async(type,value)=>{
+    if(!value)return null;
+    try{
+      const directUrl=new URL("/api/activities.php",window.location.origin);
+      directUrl.searchParams.set(type,value);directUrl.searchParams.set("per_page","1");
+      const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000);
+      try{
+        const response=await fetch(directUrl.toString(),{cache:"no-store",signal:controller.signal,headers:{Accept:"application/json"}});
+        if(response.ok)return normalizeActivityPayload(await response.json());
+      }finally{clearTimeout(timeout);}
+    }catch(error){}
+    return null;
+  };
+  try{
+    a=await loadDirectActivity(id?"slug":"pretty_slug",slug);
+    if(!a&&id)a=await loadDirectActivity("id",id);
+  }catch(error){}
+  if(!a && slug && id){
+    try{
+      const idUrl=new URL("/api/activities.php",window.location.origin);
+      idUrl.searchParams.set("id",id);
+      idUrl.searchParams.set("per_page","1");
+      const response=await fetch(idUrl.toString(),{cache:"no-store",headers:{Accept:"application/json"}});
+      if(response.ok){
+        const payload=await response.json();
+        if(payload?.ok&&Array.isArray(payload.data)&&payload.data[0]){
+          const fallbackItems=await bhActivities();
+          a=bhActivity(String(payload.data[0].id),fallbackItems)||null;
+        }
+      }
+    }catch(error){}
+  }
+
+  if(!a && window.BH_DEMO_MODE && typeof window.bhLoadDemoActivities==="function"){
+    try{ const demoItems=await window.bhLoadDemoActivities(); a=bhActivityBySlug(slug,demoItems)||bhActivity(id,demoItems)||null; }catch(error){}
+  }
+  if(!a){
+    // Fallback for older/API-failure cases.
+    items=await bhActivities();
+    a=bhActivityBySlug(slug,items)||bhActivity(id,items);
+  }
+  if(!a){state.innerHTML='<div class="admin-panel"><h2>Activity not found</h2><p>This activity may have been removed or the link is incorrect.</p><a class="button button-primary" href="directory.html">Find activities</a></div>';return}
+  // Reuse the date from the activity already loaded, avoiding a second URL lookup.\n  window.__bhActivityUpdatedAt = a.updated_at || '';\n  window.dispatchEvent(new CustomEvent('bh:activity-loaded',{detail:{updated_at:a.updated_at||''}}));\n  // Canonical, stable ID-backed permalink; old query links remain compatible.
+  try{
+    const cleanTitle=String(a.title||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/['’]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+    if(cleanTitle&&Number(a.id)>0){
+      const canonical='/activity/'+cleanTitle;
+      if(location.pathname!==canonical)history.replaceState(history.state,'',canonical);
+      let link=document.querySelector('link[rel="canonical"]');
+      if(!link){link=document.createElement('link');link.rel='canonical';document.head.append(link);}
+      link.href=location.origin+canonical;
+    }
+  }catch(_){}
+  const venues=bhVenues(a),sessions=bhSessions(a),images=Array.isArray(a.gallery)&&a.gallery.length?a.gallery:(a.image_url?[a.image_url]:[]);
+  try{
+    const key=(window.BH_KEYS&&BH_KEYS.recent)||"bhRecentlyViewed";
+    const recent=typeof bhGet==="function"?bhGet(key):[];
+    const idValue=String(a.id||"");
+    if(idValue){
+      const updated=[idValue,...recent.map(String).filter(v=>v!==idValue)].slice(0,8);
+      if(typeof bhSet==="function") bhSet(key,updated);
+      else localStorage.setItem(key,JSON.stringify(updated));
+    }
+  }catch(e){}
+  document.title=a.title+" · Bubba Hub";
+  const cats=(Array.isArray(a.category)?a.category:[a.category]).flatMap(v=>String(v||"").split(",")).map(v=>v.trim()).filter(Boolean),ages=Array.isArray(a.age_range)?a.age_range:[a.age_range].filter(Boolean);
+  const rawKeywords=Array.isArray(a.keywords)?a.keywords:(Array.isArray(a.tags)?a.tags:(typeof a.keywords==="string"?a.keywords.split(","):(typeof a.tags==="string"?a.tags.split(","):[])));
+  const keywords=[...new Set([...cats,...rawKeywords].map(v=>String(v||"").trim()).filter(Boolean))].slice(0,10);
+  const badges=getBadges(a);
+  const hasBookableOption=Boolean(a.booking_url||(Array.isArray(a.booking_slots)&&a.booking_slots.length));
+  state.className="listing-page";
+  state.innerHTML='<section class="listing-hero activity-hero"><div class="listing-gallery">'+(images.length?images.map((src,i)=>'<img src="'+bhEscape(src)+'" alt="'+bhEscape(a.title)+'"'+(i?' loading="lazy"':'')+'>').join(""):'<img src="/wp-content/uploads/logo/logoheader.png" alt="'+bhEscape(a.title||"Bubba Hub activity")+'" class="listing-gallery-fallback">')+'</div><div class="listing-summary">'+renderBadges(badges)+'<span class="eyebrow">'+bhEscape(cats.slice(0,2).join(" · ")||"Family activity")+'</span><h1>'+bhEscape(a.title)+'</h1><p class="activity-hero-intro">'+bhEscape(String(a.short_description||a.excerpt||a.description||"Find out more about this family activity, including sessions and where to go.").replace(/<[^>]*>/g," ").replace(/\s+/g," ").slice(0,205).replace(/\s+\S*$/,"").trim()+(String(a.short_description||a.excerpt||a.description||"").replace(/<[^>]*>/g," ").length>205?"…":""))+'</p><div class="hero-quick-facts" aria-label="Quick Facts"><span class="fact-price"><strong>Price</strong><b>'+(a.price?bhEscape(a.price):"Check listing")+'</b></span><span class="fact-age"><strong>Age range</strong><b>'+(ages.length?bhEscape(ages.length>1?ages[0]+" + "+(ages.length-1)+" more":ages[0]):"All ages")+'</b></span><span class="fact-location"><strong>Location</strong><b>'+bhEscape(a.town||venues.find(v=>v.town)?.town||"Town not specified")+'</b></span><span class="fact-sessions"><strong>Sessions</strong><b>'+(sessions.length?sessions.length+" available":"See schedule")+'</b></span><span><strong>Term Time</strong><b>'+(sessions.length?(sessions.some(s=>s.term_time)?"Yes":(a.term_time_only?"Yes":"Not specified")):(a.term_time_only?"Yes":"Not specified"))+'</b></span><span><strong>Session Length</strong><b>'+(sessions.find(s=>s.duration)?.duration||(Number(a.session_length_minutes)>0?String(a.session_length_minutes)+" mins":"Not specified"))+'</b></span></div><div class="listing-actions" aria-label="Activity actions"><button class="button button-soft activity-action" id="save" type="button" aria-label="Save activity"></button><button class="button button-soft activity-action" id="planner" aria-label="Add to planner" type="button"></button><button class="button button-soft activity-action" id="visited" type="button" aria-label="Mark as visited"></button><button class="button button-soft activity-action" id="compare" type="button" aria-label="Compare activity"></button>'+(hasBookableOption?'<button class="button activity-book-button" id="heroBookNow" type="button">Book Now</button>':"")+'</div></div></section><div class="listing-layout"><div class="listing-main"><section class="listing-card good-to-know-card"><span class="eyebrow">Quick Facts!</span><h2>Quick Facts!</h2><div class="good-to-know-grid">'+(a.price?'<div class="good-to-know-pill"><span class="good-to-know-pill-label">Price</span><strong>'+bhEscape(a.price)+'</strong></div>':"")+(ages.length?'<div class="good-to-know-pill"><span class="good-to-know-pill-label">Age range</span><strong>'+bhEscape(ages.join(", "))+'</strong></div>':"")+(sessions.some(s=>s.term_time)?'<div class="good-to-know-pill"><span class="good-to-know-pill-label">Term time</span><strong>'+bhEscape("Term time")+'</strong></div>':"")+(a.region?'<div class="good-to-know-pill"><span class="good-to-know-pill-label">Location</span><strong>'+bhEscape(a.region)+'</strong></div>':"")+'</div></section><section class="listing-card activity-reference-about"><div class="activity-keyword-tags" aria-label="Activity tags">'+keywords.map(k=>'<span>'+bhEscape(k)+'</span>').join("")+'</div><h2>About '+bhEscape(a.title)+'</h2><div class="listing-description">'+safeRichText(a.description||a.content||"<p>More information about this activity will appear here.</p>")+'</div><div class="activity-reference-facts">'+(cats.length?'<span>'+bhEscape(cats[0])+'</span>':"")+(ages.length?'<span>'+bhEscape(ages.join(", "))+'</span>':"")+(a.town?'<span>'+bhEscape(a.town)+'</span>':"")+(sessions.some(s=>s.term_time)?'<span>Term time</span>':"")+'</div></section><section class="activity-reference-contact"><h2 class="activity-location-heading">Location &amp; directions</h2><div id="listingMap" class="listing-map activity-reference-contact-map" aria-label="Activity venue map"></div><div class="activity-reference-organiser"><div class="activity-organiser-left"><div class="activity-organiser-icon">♧</div><div class="activity-organiser-copy"><small>Organiser</small><strong>'+bhEscape(a.organiser_name||a.organiser||"Activity organiser")+'</strong></div></div><a class="activity-organiser-link" href="/organiser/'+encodeURIComponent(a.organiser_slug||a.organiser_name||"organiser")+'/">View organiser profile ›</a></div><div id="activityOrganiserEditMount" class="activity-organiser-edit-mount"></div><div class="listing-claim-wrap"><button class="button button-soft listing-claim-button" id="claimListingButton" type="button">Are you the class leader? Claim this listing</button><p id="claimListingMessage" class="listing-claim-message" role="status" aria-live="polite"></p></div></section><section class="listing-card activity-useful-info"><span class="eyebrow">Good to know</span><h2>Before you book</h2><div class="activity-info-badges">'+(a.booking_required?'<span>Booking required</span>':"")+(a.drop_in_welcome?'<span>Drop-in welcome</span>':"")+(a.trial_available?'<span>Trial session available</span>':"")+(a.term_time_only?'<span>Term-time only</span>':"")+(a.holiday_sessions?'<span>Holiday sessions available</span>':"")+(a.siblings_welcome?'<span>Siblings welcome</span>':"")+'</div>'+(a.what_to_bring?'<p><strong>What to bring:</strong> '+bhEscape(a.what_to_bring)+'</p>':"")+(a.good_to_know?'<p><strong>Good to know:</strong> '+bhEscape(a.good_to_know)+'</p>':"")+'</section><section class="listing-card activity-reference-schedule"><span class="eyebrow">When</span><h2>Schedule &amp; hours</h2><div class="schedule-list">'+venues.map(v=>'<article class="venue-schedule"><div><h3>'+bhEscape(v.name||"Venue")+(v.town?", "+bhEscape(v.town):"")+'</h3><p>'+bhEscape(v.address||v.town||v.region||"")+'</p></div><div class="session-list"><div class="bh-session-head" style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,.85fr) minmax(0,.8fr) minmax(0,.8fr) minmax(0,.75fr) 30px;gap:6px;padding:7px 8px;font-weight:700"><span>Class name</span><span>Day</span><span>Start</span><span>End</span><span>Price</span><span></span></div>'+(v.sessions||[]).map(s=>'<div class="session-row bh-compact-session" style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,.85fr) minmax(0,.8fr) minmax(0,.8fr) minmax(0,.75fr) 30px;gap:6px;align-items:center;padding:5px 8px;min-height:34px"><strong>'+bhEscape(s.class_name||a.title||"Class")+(s.start_date||s.end_date||s.frequency?'<small style="display:block;font-size:11px;font-weight:400;line-height:1.3;opacity:.75">'+bhEscape([s.frequency==='once'?'One-off':s.frequency==='weekly'?'Weekly':s.frequency||'',s.start_date&&s.end_date&&s.start_date===s.end_date?s.start_date:[s.start_date,s.end_date].filter(Boolean).join(' – ')].filter(Boolean).join(' · '))+'</small>':'')+'</strong><span>'+bhEscape(s.day||"—")+'</span><span>'+bhEscape(bhFormatTime(s.start||s.time||""))+'</span><span>'+bhEscape(bhFormatTime(s.end||s.end_time||'')||'—')+'</span><span>'+((s.price!==undefined&&s.price!=="")?bhEscape(String(s.price).startsWith("£")?s.price:"£"+s.price):"—")+'</span><button type="button" class="button button-soft bh-session-plan" style="display:inline-flex;align-items:center;justify-content:center;padding:0;width:28px;min-width:28px;height:28px;min-height:28px;border-radius:50%;font-size:16px;line-height:1;margin:0" aria-label="Add '+bhEscape(s.class_name||a.title||"class")+' on '+bhEscape(s.day||"this day")+' to Planner" title="Add to Planner" data-session-id="'+bhEscape(s.id||'')+'">+</button></div>').join("")+'</div></article>').join("")+'</div></section></div><aside class="listing-side"><section class="listing-card organiser-card"><span class="eyebrow">Organiser</span><div class="organiser-profile"><div class="organiser-avatar">'+(a.organiser_avatar?'<img src="'+bhEscape(a.organiser_avatar)+'" alt="'+bhEscape(a.organiser_name||"Organiser")+'">':'<span>BH</span>')+'</div><div><h2>'+bhEscape(a.organiser_name||a.organiser||"Activity organiser")+'</h2></div></div><div class="organiser-links"><a class="button button-soft organiser-icon-link" href="/organiser/'+encodeURIComponent(a.organiser_slug||a.organiser_name||"organiser")+'/">🏪 <span>View organiser</span></a>'+(a.organiser_website?'<a class="organiser-icon-link" title="Business website" aria-label="Business website" target="_blank" rel="noopener" href="'+bhEscape(a.organiser_website)+'">🌐</a>':"")+(a.email?'<a class="organiser-icon-link" title="Email organiser" aria-label="Email organiser" href="mailto:'+bhEscape(a.email)+'">✉</a>':"")+'</div></section>'+(hasBookableOption?'<section class="listing-card booking-card"><span class="eyebrow">Join in</span><h2>Book or reserve</h2><div id="bookingSchedule"><p>Loading booking options…</p></div></section>':"")+'<section class="listing-card contact-card"><span class="eyebrow">Contact</span><h2>Contact organiser</h2><p>Have a question about the activity, venue or sessions?</p><button class="button button-soft button-full" id="contactOrganiser" type="button">Contact organiser</button></section></aside></div><div class="listing-bottom"><a class="button button-soft" href="directory.html">← Back to activities</a></div>';
+  // Visual 2: rebuild the content hierarchy instead of styling the legacy columns.
+  const page=state;
+  const hero=page.querySelector(".activity-hero");
+  const layout=page.querySelector(".listing-layout");
+  const main=layout?.querySelector(".listing-main");
+  const side=layout?.querySelector(".listing-side");
+  if(hero&&layout&&main){
+    page.classList.add("activity-concept-two");
+    const intro=hero.querySelector(".activity-hero-intro");
+    if(intro){
+      const text=intro.textContent||"";
+      intro.textContent=text.length>165?text.slice(0,165).replace(/\\s+\\S*$/,"").trim()+"…":text;
+    }
+    const facts=hero.querySelector(".hero-quick-facts");
+    if(facts){
+      facts.querySelectorAll("span").forEach((item)=>{
+        const label=item.querySelector("strong")?.textContent?.trim();
+        const value=item.querySelector("b")?.textContent?.trim();
+        if((label==="Term Time"||label==="Session Length")&&(value==="Not specified"||value==="No"))item.remove();
+      });
+    }
+    const about=main.querySelector(".activity-reference-about");
+    const schedule=main.querySelector(".activity-reference-schedule");
+    const location=main.querySelector(".activity-reference-contact");
+    const useful=main.querySelector(".activity-useful-info");
+    const details=document.createElement("div");
+    details.className="activity-concept-content";
+    const lead=document.createElement("div");
+    lead.className="activity-concept-lead";
+    const supporting=document.createElement("div");
+    supporting.className="activity-concept-support";
+    if(about)lead.append(about);
+    if(location)supporting.append(location);
+    // Keep the timetable alongside its map and directions, rather than beneath long descriptions.
+    if(schedule)supporting.append(schedule);
+    if(useful)supporting.append(useful);
+    if(side){side.classList.add("activity-concept-extras");supporting.append(side);}
+    details.append(lead,supporting);
+    layout.replaceChildren(details);
+    // Each venue is a keyboard-accessible accordion; first five sessions remain visible.
+    if(schedule){
+      schedule.querySelectorAll(".venue-schedule").forEach((venue,index)=>{
+        const heading=venue.querySelector("h3");
+        const rows=Array.from(venue.querySelectorAll(".session-row"));
+        const originalHeader=venue.querySelector(".bh-session-head");
+        const panel=document.createElement("div");
+        panel.className="activity-venue-panel";
+        const toggle=document.createElement("button");
+        toggle.type="button";
+        toggle.className="activity-venue-toggle";
+        toggle.setAttribute("aria-expanded",index===0?"true":"false");
+        const panelId="activity-venue-panel-"+index;
+        panel.id=panelId;
+        toggle.setAttribute("aria-controls",panelId);
+        // The map/directions already shows the full venue address. Keep only one compact label here.
+        const venueName=heading?.textContent?.trim()||"Venue";
+        const venueAddress=venue.querySelector("p");
+        if(heading)heading.remove();
+        if(venueAddress)venueAddress.remove();
+        toggle.textContent=venueName+" · "+rows.length+" session"+(rows.length===1?"":"s");
+        const venueData=(venues||[])[index];
+        if(venueData){
+          const destination=venueData.lat&&venueData.long?venueData.lat+","+venueData.long:[venueData.address,venueData.town,venueData.postcode].filter(Boolean).join(", ")||venueData.name;
+          if(destination){
+            const directions=document.createElement("a");
+            directions.className="activity-schedule-directions";
+            directions.href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(destination);
+            directions.target="_blank";directions.rel="noopener noreferrer";
+            directions.textContent="↗ Directions";directions.setAttribute("aria-label","Directions to "+venueName);
+            panel.append(directions);
+          }
+        }
+        if(originalHeader)panel.append(originalHeader);
+        rows.forEach((row,rowIndex)=>{
+          if(rowIndex>=5)row.classList.add("activity-extra-session");
+          panel.append(row);
+        });
+        const venueDirections=panel.querySelector(".activity-schedule-directions");
+        if(venueDirections)panel.append(venueDirections);
+        const list=venue.querySelector(".session-list");
+        if(list)list.replaceChildren(toggle,panel);
+        const more=rows.length>5?document.createElement("button"):null;
+        if(more){
+          more.type="button";more.className="activity-show-more";
+          more.textContent="Show all "+rows.length+" sessions";
+          panel.append(more);
+          more.addEventListener("click",()=>{
+            const expanded=venue.classList.toggle("activity-all-sessions");
+            more.textContent=expanded?"Show first 5 sessions":"Show all "+rows.length+" sessions";
+          });
+        }
+        venue.classList.toggle("activity-venue-collapsed",index!==0);
+        toggle.addEventListener("click",()=>{
+          const open=venue.classList.toggle("activity-venue-collapsed")===false;
+          toggle.setAttribute("aria-expanded",String(open));
+        });
+      });
+    }
+    const map=location?.querySelector("#listingMap");
+    if(map){
+      const observer=new MutationObserver(()=>{
+        const error=/venue map unavailable|could not locate this venue/i.test(map.textContent||"");
+        map.classList.toggle("activity-map-unavailable",error);
+      });
+      observer.observe(map,{childList:true,subtree:true,characterData:true});
+    }
+  }
+  // Approved reference: photo-overlay hero, compact fact strip, feature icons and two-column cards.
+  if(page.classList.contains("activity-concept-two")){
+    page.classList.add("activity-reference-exact");
+    const summary=hero.querySelector(".listing-summary");
+    const gallery=hero.querySelector(".listing-gallery");
+    const facts=summary?.querySelector(".hero-quick-facts");
+    const actions=summary?.querySelector(".listing-actions");
+    const intro=summary?.querySelector(".activity-hero-intro");
+    if(summary&&gallery&&facts&&actions){
+      const photo=gallery.querySelector("img");
+      if(photo&&!photo.classList.contains("listing-gallery-fallback")){
+        hero.classList.add("activity-has-photo");
+      }
+      const title=summary.querySelector("h1");
+      const category=summary.querySelector(".eyebrow");
+      const overlay=document.createElement("div");
+      overlay.className="activity-photo-overlay";
+      if(category)overlay.append(category);
+      if(title)overlay.append(title);
+      if(intro)overlay.append(intro);
+      gallery.append(overlay);
+      // Carousel uses up to ten real listing images, with no invented photos.
+      const slides=Array.from(gallery.querySelectorAll(":scope > img")).slice(0,10);
+      gallery.querySelectorAll(":scope > img").forEach((img,i)=>{if(i>=10)img.remove();});
+      if(slides.length>1){
+        gallery.classList.add("activity-gallery-slider");
+        let current=0;
+        const controls=document.createElement("div");
+        controls.className="activity-gallery-controls";
+        const previous=document.createElement("button");
+        previous.type="button";previous.className="activity-gallery-prev";
+        previous.textContent="‹";previous.setAttribute("aria-label","Previous activity photo");
+        const counter=document.createElement("span");
+        counter.className="activity-gallery-count";counter.setAttribute("aria-live","polite");
+        const next=document.createElement("button");
+        next.type="button";next.className="activity-gallery-next";
+        next.textContent="›";next.setAttribute("aria-label","Next activity photo");
+        const render=()=>{slides.forEach((img,i)=>{img.hidden=i!==current;img.classList.toggle("activity-gallery-active",i===current);});counter.textContent=(current+1)+" / "+slides.length;};
+        previous.addEventListener("click",()=>{current=(current-1+slides.length)%slides.length;render();});
+        next.addEventListener("click",()=>{current=(current+1)%slides.length;render();});
+        controls.append(previous,counter,next);gallery.append(controls);render();
+      }
+
+      // Keep all existing action buttons and their event handlers.
+      actions.classList.add("activity-hero-actions");
+      gallery.append(actions);
+      // Icon actions preserve original button IDs and click handlers.
+      // Use real SVG icons instead of font glyphs/pseudo-elements, which were blank on some browsers.
+      const iconPaths={
+        save:'<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>',
+        planner:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M12 13v5M9.5 15.5h5"/>',
+        visited:'<path d="m5 12 4.5 4.5L19 7"/>',
+        compare:'<path d="M4 7h16m-4-4 4 4-4 4M20 17H4m4-4-4 4 4 4"/>',
+        heroBookNow:'<path d="M5 12h14m-6-6 6 6-6 6"/>'
+      };
+      Array.from(actions.querySelectorAll("button")).forEach(button=>{
+        const original=button.textContent.trim();
+        button.setAttribute("aria-label",original);
+        button.setAttribute("title",original);
+        button.classList.add("activity-icon-action");
+        button.removeAttribute("data-icon");
+        button.removeAttribute("style");
+        // Paint the icon as a button background so legacy nested button styles cannot hide it.
+        const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">'+(iconPaths[button.id]||iconPaths.heroBookNow)+'</svg>';
+        button.textContent="";
+        button.style.setProperty("background-image",'url("data:image/svg+xml,'+encodeURIComponent(svg)+'")',"important");
+        button.style.setProperty("background-position","center","important");
+        button.style.setProperty("background-repeat","no-repeat","important");
+        button.style.setProperty("background-size","25px 25px","important");
+        button.style.setProperty("font-size","0","important");
+      });
+
+      const strip=document.createElement("div");
+      strip.className="activity-quick-strip";
+      Array.from(facts.children).forEach(item=>strip.append(item));
+      hero.after(strip);
+      const footer=document.createElement("aside");
+      footer.className="activity-friendly-footer activity-contact-footer";
+      const heading=document.createElement("h2");heading.textContent="Organiser";footer.append(heading);
+      const links=document.createElement("div");links.className="activity-contact-buttons";
+      const validWeb=value=>{try{const url=new URL(String(value||""));return ["https:","http:"].includes(url.protocol)?url.href:null;}catch(e){return null;}};
+      const contactOptions=[
+        ["Website",a.website||a.website_url||a.organiser_website,"web"],
+        ["Facebook",a.facebook||a.facebook_url||a.social_facebook,"web"],
+        ["Instagram",a.instagram||a.instagram_url||a.social_instagram,"web"],
+        ["Email",a.email||a.contact_email||a.organiser_email,"email"],
+        ["Phone",a.phone||a.contact_phone||a.organiser_phone,"phone"]
+      ];
+      contactOptions.forEach(([label,value,kind])=>{
+        const raw=String(value||"").trim();
+        if(!raw)return;
+        let url=null;
+        if(kind==="web")url=validWeb(raw);
+        else if(kind==="email" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw))url="mailto:"+raw;
+        else if(kind==="phone"){
+          const digits=raw.replace(/[^0-9]/g,"");
+          if(digits.length>=7 && digits.length<=15)url="tel:"+(raw.startsWith("+")?"+":"")+digits;
+        }
+        if(!url)return;
+        const link=document.createElement("a");
+        link.href=url;link.className="activity-contact-link";link.textContent=label;
+        if(kind==="web"){link.target="_blank";link.rel="noopener noreferrer";}
+        links.append(link);
+      });
+
+      footer.append(links);
+      footer.classList.toggle("activity-contacts-empty",!links.querySelector("a"));
+      const organiserCard=layout.querySelector('.activity-reference-organiser');
+      if(organiserCard){organiserCard.classList.add('activity-contact-organiser');footer.insertBefore(organiserCard,links);}
+      layout.after(footer);
+    }
+  }
+  const claimWrap=document.querySelector(".listing-claim-wrap");
+  if(claimWrap){
+    const moveClaim=()=>{
+      const feedback=document.querySelector(".listing-feedback-actions, .listing-feedback, .activity-feedback-actions");
+      const footer=document.querySelector(".activity-contact-footer");
+      if(feedback)feedback.prepend(claimWrap);
+      else if(footer)footer.after(claimWrap);
+    };
+    moveClaim();
+    window.addEventListener("load",moveClaim,{once:true});
+  }
+  const claimButton=document.getElementById("claimListingButton");
+  const claimMessage=document.getElementById("claimListingMessage");
+  if(claimButton){
+    claimButton.onclick=async()=>{
+      claimButton.disabled=true;
+      claimMessage.textContent="Checking your account…";
+      try{
+        const meResponse=await fetch("/api/auth.php?action=me",{credentials:"same-origin",cache:"no-store",headers:{Accept:"application/json"}});
+        const me=await meResponse.json();
+        if(!me.authenticated){ location.href="/auth.html?next="+encodeURIComponent(location.pathname+location.search); return; }
+        if((me.user?.role||"")!=="leader"){
+          claimMessage.textContent="You need a Class Leader account to claim a listing. Please contact Bubba Hub if you are the organiser.";
+          claimButton.disabled=false; return;
+        }
+        const response=await fetch("/api/claim-listing.php",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({activity_id:a.id,csrf:me.csrf||""})});
+        const data=await response.json();
+        if(!response.ok||!data.ok)throw new Error(data.message||"We could not submit your claim.");
+        claimMessage.textContent=data.message||"Claim request sent. Bubba Hub will review it and get back to you.";
+        claimButton.textContent="Claim request submitted";
+      }catch(error){
+        claimMessage.textContent=error.message||"We could not submit your claim. Please try again.";
+        claimButton.disabled=false;
+      }
+    };
+  }
+  const organiserEditMount=document.getElementById("activityOrganiserEditMount");
+  if(organiserEditMount) organiserEditMount.dataset.activityId=String(a.id||"");
+  const save=document.getElementById("save"),plan=document.getElementById("planner"),visited=document.getElementById("visited"),compare=document.getElementById("compare");
+  const BH_VISITED_KEY="bhVisitedActivities",BH_COMPARE_KEY="bhCompareActivities";
+  const listKey=key=>{try{const v=JSON.parse(localStorage.getItem(key)||"[]");return Array.isArray(v)?v.map(String):[]}catch{return[]}};
+  const hasKey=(key,id)=>listKey(key).includes(String(id));
+  const toggleKey=(key,id)=>{const list=listKey(key),value=String(id),i=list.indexOf(value);i>=0?list.splice(i,1):list.push(value);localStorage.setItem(key,JSON.stringify(list));return i<0};
+  function refresh(){save.textContent=bhIsSaved(a.id)?"✓ Saved":"+ Save";plan.textContent=bhIsPlanned(a.id)?"✓ In Planner":"+ Add to Planner";visited.textContent=hasKey(BH_VISITED_KEY,a.id)?"✓ Visited":"○ Visited";compare.textContent=hasKey(BH_COMPARE_KEY,a.id)?"✓ Compared":"Compare";[save,plan,visited,compare].forEach(btn=>btn.setAttribute("aria-pressed",String(btn.textContent.indexOf("✓")===0)))}
+  save.onclick=()=>{bhToggleSaved(a.id);refresh()};plan.onclick=()=>{bhTogglePlanned(a.id);refresh()};visited.onclick=()=>{toggleKey(BH_VISITED_KEY,a.id);refresh()};compare.onclick=()=>{toggleKey(BH_COMPARE_KEY,a.id);refresh()};
+  refresh();
+  // Keep schedule cells and action controls on one line, regardless of shared button styles.
+  const compactScheduleStyle=document.createElement('style');
+  compactScheduleStyle.textContent='.activity-reference-schedule .bh-compact-session{display:grid!important;grid-template-columns:minmax(0,2fr) minmax(0,.85fr) minmax(0,.8fr) minmax(0,.8fr) minmax(0,.75fr) 30px!important;gap:8px!important;align-items:center!important;padding:5px 10px!important;min-height:38px!important;max-height:none!important}.activity-reference-schedule .bh-compact-session>*{min-width:0;margin:0!important}.activity-reference-schedule .bh-compact-session .bh-session-plan{grid-column:5!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;width:28px!important;min-width:28px!important;max-width:28px!important;height:28px!important;min-height:28px!important;padding:0!important;border-radius:50%!important;font-size:16px!important;line-height:1!important;white-space:nowrap!important}@media(max-width:520px){.activity-reference-schedule .bh-compact-session,.activity-reference-schedule .bh-session-head{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr) minmax(0,.8fr) 30px!important;gap:4px!important;font-size:12px!important}}';
+  document.head.appendChild(compactScheduleStyle);
+  const sessionSelectionKey='bhPlannerSessionSelections';
+  const getSessionSelections=()=>{try{return JSON.parse(localStorage.getItem(sessionSelectionKey)||'{}')}catch{return {}}};
+  const updateSessionButtons=()=>{
+    const selected=getSessionSelections()[String(a.id)]||[];
+    document.querySelectorAll('.bh-session-plan').forEach(button=>{
+      const chosen=selected.includes(String(button.dataset.sessionId));
+      button.textContent=chosen?'✓':'+';button.title=chosen?'Remove from Planner':'Add to Planner';button.setAttribute('aria-label',(chosen?'Remove ':'Add ')+(button.dataset.className||'session')+(chosen?' from Planner':' to Planner'));
+      button.setAttribute('aria-pressed',String(chosen));
+    });
+  };
+  document.querySelectorAll('.bh-session-plan').forEach(button=>button.addEventListener('click',()=>{
+    const sid=String(button.dataset.sessionId||'');if(!sid)return;
+    const all=getSessionSelections(),id=String(a.id),chosen=new Set(all[id]||[]);
+    if(chosen.has(sid))chosen.delete(sid);else chosen.add(sid);
+    all[id]=[...chosen];localStorage.setItem(sessionSelectionKey,JSON.stringify(all));
+    if(chosen.size&&!bhIsPlanned(a.id))bhTogglePlanned(a.id);
+    updateSessionButtons();refresh();
+  }));
+  updateSessionButtons();
+  const bookingBox=document.getElementById("bookingSchedule");
+  const bookingMode=a.booking_mode||(a.booking_url?"external":"reserve");
+  const bookingUrl=a.booking_url||"";
+  const slotHtml=(Array.isArray(a.booking_slots)?a.booking_slots:[]).map((s,i)=>'<div class="booking-slot"><div><strong>'+bhEscape(s.date||"")+'</strong><span>'+bhEscape(s.time||"")+(s.price?" · "+bhEscape(s.price):"")+'</span></div>'+(bookingMode==="external"&&bookingUrl?'<a class="button button-primary" target="_blank" rel="noopener" href="'+bhEscape(bookingUrl)+'">Book now</a>':'<button class="button button-primary reserve-button" data-slot="'+i+'">Reserve a place</button>')+'</div>').join("");
+  if(bookingBox)bookingBox.innerHTML=slotHtml+(bookingMode==="external"&&bookingUrl?'<p class="booking-note">If the latest dates are not shown, please check the booking website for latest details.</p><a class="button button-primary button-full" target="_blank" rel="noopener" href="'+bhEscape(bookingUrl)+'">Book now</a>':bookingMode==="reserve"?'<button class="button button-primary button-full" id="reserveGeneral">Reserve a place</button>':'<p class="muted">Booking details coming soon.</p>');
+  function openReserve(slot){
+    if(window.BH_DEMO_MODE && String(a.id||'').startsWith('demo-')){window.location.href='booking.html?slug='+encodeURIComponent(a.slug||'');return}
+    const overlay=document.createElement("div");
+    overlay.className="booking-modal-backdrop";
+    overlay.innerHTML='<div class="booking-modal" role="dialog" aria-modal="true" aria-labelledby="reserveTitle"><button class="booking-modal-close" aria-label="Close">×</button><span class="eyebrow">Reserve a place</span><h2 id="reserveTitle">Send a reservation request</h2><p>Your request goes directly to the organiser. Bubba Hub does not take payment or confirm availability.</p><form id="reserveForm"><label>Name<input name="name" required autocomplete="name"></label><label>Email<input type="email" name="email" required autocomplete="email"></label><label>Phone<input name="phone" autocomplete="tel"></label><label>Child profile<select name="child_id" id="reservationChild"><option value="">Choose a child profile</option><option value="manual">Enter child details below</option></select></label><div id="reservationChildHelp" class="booking-note">Select a child from your My Hub profile where available. Their saved name and date of birth will be added to this reservation request.</div><label>Child name<input name="child_name" required></label><label>Child age<input name="child_age" required inputmode="numeric"></label><label>Places<input type="number" name="quantity" min="1" value="1" required></label><label>Message<textarea name="message" rows="4" placeholder="Anything the organiser should know about this reservation?"></textarea></label><section class="booking-consent-panel"><strong>Consent &amp; information sharing</strong><p>Your consent profile is <strong>required</strong> for every reservation request. Only information you have agreed can be shared will be attached to this request.</p><div id="reservationConsentStatus" class="booking-note">Checking your consent profile…</div><label class="booking-consent"><input type="checkbox" name="consent" required> I agree that the relevant information in my saved consent profile can be sent to this organiser for this reservation.</label><p class="booking-note"><a href="consent.html" target="_blank" rel="noopener">Review or update my consent profile</a></p></section><button class="button button-primary button-full" type="submit">Send reservation request</button><p class="booking-form-status" aria-live="polite"></p></form></div>';
+    document.body.appendChild(overlay);
+    const close=()=>overlay.remove();
+    overlay.querySelector(".booking-modal-close").onclick=close;
+    overlay.addEventListener("click",e=>{if(e.target===overlay)close()});
+    const form=overlay.querySelector("#reserveForm"), childSelect=overlay.querySelector("#reservationChild"), childHelp=overlay.querySelector("#reservationChildHelp"), consentStatus=overlay.querySelector("#reservationConsentStatus"), submit=form.querySelector("button[type=submit]");
+    let savedConsent=null, children=[];
+    try{savedConsent=JSON.parse(localStorage.getItem("bhConsentProfiles")||"null")}catch{}
+    const consentReady=!!(savedConsent&&savedConsent.consent_to_share_with_organiser&&savedConsent.consent_given_at&&savedConsent.consent_version);
+    if(consentReady) consentStatus.textContent="✓ Consent profile ready. It will be attached to this reservation request as a dated snapshot.";
+    else consentStatus.innerHTML='⚠️ A saved consent profile is required. <a href="consent.html" target="_blank" rel="noopener"><strong>Complete consent first</strong></a>.';
+    const applyChild=child=>{
+      if(!child)return;
+      form.elements.child_name.value=child.name||"";
+      if(child.date_of_birth){
+        const dob=new Date(child.date_of_birth+"T00:00:00"),now=new Date();
+        let age=now.getFullYear()-dob.getFullYear();
+        const before=now.getMonth()<dob.getMonth()||(now.getMonth()===dob.getMonth()&&now.getDate()<dob.getDate());
+        if(before)age--;
+        form.elements.child_age.value=age>=0?String(age):"";
+      }
+      if(savedConsent && child.name && String(savedConsent.child_name||"").trim().toLowerCase()===String(child.name).trim().toLowerCase()){
+        consentStatus.textContent="✓ Consent profile matches "+child.name+". A dated consent snapshot will be attached.";
+      }else if(savedConsent){
+        consentStatus.textContent="✓ Consent profile saved. Check that it applies to the selected child before sending.";
+      }
+    };
+    (async()=>{
+      try{
+        const res=await fetch("/api/my-hub.php?view=family",{credentials:"same-origin",headers:{Accept:"application/json"}});
+        if(res.ok){
+          const data=await res.json();
+          if(data?.ok&&Array.isArray(data.children)){
+            children=data.children;
+            children.forEach(child=>{const o=document.createElement("option");o.value=String(child.id);o.textContent=child.name+(child.date_of_birth?" · "+child.date_of_birth:"");o.dataset.child=JSON.stringify(child);childSelect.appendChild(o)});
+            if(children.length){childHelp.textContent="Choose a child from your My Hub profile. Their saved details will be added to the reservation request."}
+            const savedName=String(savedConsent?.child_name||"").trim().toLowerCase();
+            const match=children.find(x=>String(x.name||"").trim().toLowerCase()===savedName);
+            if(match){childSelect.value=String(match.id);applyChild(match)}
+          }
+        }
+      }catch{}
+    })();
+    childSelect.addEventListener("change",()=>{
+      const id=childSelect.value;
+      if(id==="manual"){form.elements.child_name.value="";form.elements.child_age.value="";childHelp.textContent="Enter the child details below. Your saved consent profile must still match the child you are reserving for.";return}
+      const child=children.find(x=>String(x.id)===String(id)); if(child)applyChild(child);
+    });
+    form.addEventListener("submit",async e=>{
+      e.preventDefault();
+      const status=form.querySelector(".booking-form-status");
+      if(!consentReady){status.textContent="Please complete and save your consent profile before sending a reservation request.";return}
+      const selectedId=childSelect.value;
+      const selected=selectedId&&selectedId!=="manual"?children.find(x=>String(x.id)===String(selectedId)):null;
+      if(selected && String(savedConsent.child_name||"").trim().toLowerCase()!==String(selected.name||"").trim().toLowerCase()){
+        status.textContent="Your saved consent profile is for a different child. Please update consent before sending this request.";return
+      }
+      status.textContent="Sending…";submit.disabled=true;
+      const fd=new FormData(form);
+      fd.append("activity_id",a.id);fd.append("activity_title",a.title);
+      if(slot){fd.append("slot_date",slot.date||"");fd.append("slot_time",slot.time||"")}
+      fd.append("consent_json",JSON.stringify({...savedConsent,selected_child_id:selected?.id||"",selected_child_name:selected?.name||form.elements.child_name.value.trim(),reservation_created_at:new Date().toISOString()}));
+      try{
+        const res=await fetch("/api/reservations.php",{method:"POST",body:fd,credentials:"same-origin",headers:{Accept:"application/json"}});
+        const data=await res.json();if(!res.ok||!data.ok)throw new Error(data.error||"Could not send request");
+        status.textContent="Reservation request sent. The organiser will contact you.";submit.textContent="Request sent"; 
+      }catch(err){status.textContent=err.message||"Could not send request. Please try again.";submit.disabled=false}
+    });
+  }
+  document.getElementById("heroBookNow")?.addEventListener("click",()=>{if(bookingMode==="external"&&a.booking_url){window.open(a.booking_url,"_blank","noopener");return}openReserve(null)});
+  bookingBox?.querySelectorAll(".reserve-button").forEach(btn=>btn.onclick=()=>openReserve((a.booking_slots||[])[Number(btn.dataset.slot)]));
+  bookingBox?.querySelector("#reserveGeneral")?.addEventListener("click",()=>openReserve(null));
+  const openContactModal=()=>{const overlay=document.createElement("div");overlay.className="contact-modal-backdrop";overlay.innerHTML='<div class="contact-modal" role="dialog" aria-modal="true" aria-labelledby="contactTitle"><button class="contact-modal-close" type="button" aria-label="Close">×</button><span class="eyebrow">CONTACT ORGANISER</span><h2 id="contactTitle">Contact '+bhEscape(a.organiser_name||"the organiser")+'</h2><p>Send a message about <strong>'+bhEscape(a.title)+'</strong>.</p><form id="contactForm"><label>Subject<select name="subject" required><option value="about">About '+bhEscape(a.title)+'</option><option value="booking">Booking enquiry</option><option value="availability">Availability enquiry</option><option value="general">General enquiry</option><option value="other">Other</option></select></label><label>Your name<input name="name" autocomplete="name" required></label><label>Email<input name="email" type="email" autocomplete="email" required></label><label>Message<textarea name="message" rows="6" required placeholder="How can the organiser help?"></textarea></label><input class="contact-honeypot" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"><button class="button button-primary button-full" type="submit">Send message</button><p class="contact-form-status" aria-live="polite"></p></form></div>';document.body.appendChild(overlay);const close=()=>overlay.remove();overlay.querySelector(".contact-modal-close").onclick=close;overlay.addEventListener("click",e=>{if(e.target===overlay)close();});const form=overlay.querySelector("#contactForm");form.querySelector("input[name=name]")?.focus();form.addEventListener("submit",async e=>{e.preventDefault();const status=form.querySelector(".contact-form-status"),button=form.querySelector("button[type=submit]");status.textContent="Sending…";button.disabled=true;const fd=new FormData(form);fd.append("activity_id",String(a.id));try{const res=await fetch("/api/contact.php",{method:"POST",body:fd,headers:{Accept:"application/json"}});const data=await res.json();if(!res.ok||!data.ok)throw new Error(data.error||"Could not send your message.");status.textContent="Message sent. The organiser will get back to you.";form.reset();button.textContent="Sent"}catch(err){status.textContent=err.message||"Could not send your message.";button.disabled=false}})};
+  // Bind the visible footer button directly: the legacy sidebar is removed by the layout rebuild.
+  document.querySelectorAll(".bh-email-enquiry-trigger, #contactOrganiser").forEach(button=>{
+    button.addEventListener("click",openContactModal);
+  });
+  if(window.L){const mapEl=document.getElementById("listingMap");const validCoordinate=(value,min,max)=>{if(value===null||value===undefined||value==="")return null;const number=Number(String(value).trim().replace(",","."));return Number.isFinite(number)&&number>=min&&number<=max?number:null};const geocodeVenue=async venue=>{const lat=validCoordinate(venue.lat,-90,90),long=validCoordinate(venue.long,-180,180);if(lat!==null&&long!==null)return {...venue,lat,long};const query=[venue.address,venue.town,venue.region,venue.postcode].filter(Boolean).join(", ");if(!query)return null;try{const key="bh_geocode_"+query.toLowerCase().replace(/\s+/g," ").trim(),cached=JSON.parse(localStorage.getItem(key)||"null");if(cached&&Number.isFinite(Number(cached.lat))&&Number.isFinite(Number(cached.lon)))return {...venue,lat:Number(cached.lat),long:Number(cached.lon)};const response=await fetch("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=gb&q="+encodeURIComponent(query),{headers:{Accept:"application/json"}});if(!response.ok)return null;const data=await response.json();if(!Array.isArray(data)||!data[0])return null;const point={lat:validCoordinate(data[0].lat,-90,90),lon:validCoordinate(data[0].lon,-180,180)};if(point.lat===null||point.lon===null)return null;localStorage.setItem(key,JSON.stringify(point));return {...venue,lat:point.lat,long:point.lon}}catch(e){return null}};
+  (async()=>{const points=(await Promise.all(venues.map(geocodeVenue))).filter(Boolean);if(points.length){const map=L.map("listingMap").setView([Number(points[0].lat),Number(points[0].long)],12);L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap contributors"}).addTo(map);const leafletMarkers=points.map(v=>L.marker([Number(v.lat),Number(v.long)]).addTo(map).bindPopup("<strong>"+bhEscape(v.name||"Venue")+"</strong><br>"+bhEscape(v.address||v.town||"")));if(leafletMarkers.length>1){const group=L.featureGroup(leafletMarkers);map.fitBounds(group.getBounds().pad(.2))}setTimeout(()=>map.invalidateSize(),100)}else if(mapEl)mapEl.innerHTML="<div class='map-empty'><strong>Venue map unavailable</strong><span>We could not locate this venue from its saved address or coordinates.</span></div>"})();
+  }
+ }catch(e){state.innerHTML='<div class="admin-panel"><h2>Activity unavailable</h2><p>We couldn’t load this activity right now.</p><a class="button button-primary" href="directory.html">Back to activities</a></div>'}
+});
+</script>
+<script id="activity-organiser-edit-script">
+(async function initActivityOrganiserEditor(){
+  const mount=document.getElementById("activityOrganiserEditMount");
+  const activityId=mount?.dataset.activityId||"";
+  if(!mount||!activityId||!window.bhAuthSession)return;
+  try{
+    const response=await fetch("/api/listing-organiser.php?activity_id="+encodeURIComponent(activityId),{cache:"no-store",credentials:"same-origin",headers:{Accept:"application/json"}});
+    const data=await response.json();
+    if(!response.ok||!data.ok||!data.permission?.can_edit)return;
+    const button=document.createElement("button");
+    button.type="button";
+    button.className="activity-organiser-edit-button";
+    button.textContent="✎ Edit organiser";
+    button.setAttribute("aria-label","Edit assigned organiser");
+    mount.className="activity-organiser-edit-wrap";
+    mount.appendChild(button);
+    button.addEventListener("click",()=>{
+      const backdrop=document.createElement("div");
+      backdrop.className="activity-organiser-edit-modal-backdrop";
+      backdrop.innerHTML='<div class="activity-organiser-edit-modal" role="dialog" aria-modal="true" aria-labelledby="activityOrganiserEditTitle"><button type="button" class="activity-organiser-edit-close" aria-label="Close">×</button><h2 id="activityOrganiserEditTitle">Edit assigned organiser</h2><p>Choose the organiser assigned to this listing.</p><form id="activityOrganiserEditForm"><label for="activityOrganiserSelect">Assigned organiser</label><select id="activityOrganiserSelect" name="organiser_id" required></select><p class="edit-note">'+(data.permission.is_admin?"Administrators can transfer this listing to any active organiser.":"You can edit this listing, but only an administrator can transfer it to another organiser.")+'</p><div class="activity-organiser-edit-actions"><button type="button" class="button button-soft" id="activityOrganiserCancel">Cancel</button><button type="submit" class="button button-primary">Save organiser</button></div><p class="activity-organiser-edit-status" aria-live="polite"></p></form></div>';
+      document.body.appendChild(backdrop);
+      const select=backdrop.querySelector("#activityOrganiserSelect");
+      const currentId=String(data.activity?.organiser_id||"");
+      (data.organisers||[]).forEach(org=>{const option=new Option(org.organisation_name||"Organiser",String(org.id),String(org.id)===currentId,String(org.id)===currentId);if(org.email)option.title=org.email;select.add(option)});
+      if(!data.permission.is_admin)select.disabled=true;
+      const close=()=>backdrop.remove();
+      backdrop.querySelector(".activity-organiser-edit-close").onclick=close;
+      backdrop.querySelector("#activityOrganiserCancel").onclick=close;
+      backdrop.addEventListener("click",event=>{if(event.target===backdrop)close()});
+      document.addEventListener("keydown",function esc(event){if(event.key==="Escape"){close();document.removeEventListener("keydown",esc)}},{once:true});
+      backdrop.querySelector("form").addEventListener("submit",async event=>{
+        event.preventDefault();
+        const status=backdrop.querySelector(".activity-organiser-edit-status");
+        const save=backdrop.querySelector('button[type="submit"]');
+        status.textContent="Saving…";save.disabled=true;
+        try{
+          const payload={activity_id:Number(activityId),organiser_id:Number(select.value),csrf:data.csrf||""};
+          const res=await fetch("/api/listing-organiser.php",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(payload)});
+          const result=await res.json();
+          if(!res.ok||!result.ok)throw new Error(result.message||result.error||"Could not update the organiser.");
+          status.textContent="Assigned organiser updated.";
+          setTimeout(()=>location.reload(),500);
+        }catch(error){status.textContent=error.message||"Could not update the organiser.";save.disabled=false}
+      });
+      select.focus();
+    });
+  }catch(error){}
+})();
+</script>
+</body>
+</html>
