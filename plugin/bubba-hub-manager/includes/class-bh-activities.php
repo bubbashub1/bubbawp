@@ -45,6 +45,41 @@ final class BH_Activities_3 {
         $label = $wpdb->get_var( $wpdb->prepare( 'SELECT `' . $label_column . '` FROM ' . $quoted . ' WHERE `id` = %d LIMIT 1', $id ) );
         return is_scalar( $label ) && (string) $label !== '' ? (string) $label . ' (ID ' . $id . ')' : 'ID ' . $id . ' — no matching record';
     }
+    /** Bounded, read-only lookup to help identify existing venues/organisers. */
+    private static function related_search( $kind ) {
+        global $wpdb;
+        $param = $kind === 'venue' ? 'bh3_venue_search' : 'bh3_organiser_search';
+        $term = isset( $_GET[$param] ) && is_string( $_GET[$param] )
+            ? sanitize_text_field( wp_unslash( $_GET[$param] ) ) : '';
+        $term = substr( $term, 0, 100 );
+        echo '<h4>' . esc_html( $kind === 'venue' ? 'Find existing venue' : 'Find existing organiser' ) . '</h4>';
+        echo '<form method="get"><input type="hidden" name="page" value="bh3-activities"><input type="hidden" name="bh3_activity_id" value="' . esc_attr( (string) absint( $_GET['bh3_activity_id'] ?? 0 ) ) . '">';
+        echo '<label><span class="screen-reader-text">Search ' . esc_html( $kind ) . '</span><input type="search" name="' . esc_attr( $param ) . '" value="' . esc_attr( $term ) . '" placeholder="Search by name"></label> ';
+        submit_button( 'Find ' . $kind, 'secondary', '', false );
+        echo '</form>';
+        if ( strlen( trim( $term ) ) < 2 ) { echo '<p>Enter at least two characters to search existing records.</p>'; return; }
+        $suffix = $kind === 'venue' ? 'bh_venues' : 'bh_organisers';
+        $table = null;
+        foreach ( array_unique( array( $suffix, $wpdb->prefix . $suffix ) ) as $candidate ) {
+            if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $candidate ) ) ) === $candidate ) { $table = $candidate; break; }
+        }
+        if ( ! $table ) { echo '<p>Related table is not available on this database connection.</p>'; return; }
+        $quoted = '`' . str_replace( '`', '``', $table ) . '`';
+        $columns = $wpdb->get_col( 'SHOW COLUMNS FROM ' . $quoted, 0 );
+        if ( ! is_array( $columns ) || ! in_array( 'id', $columns, true ) ) { echo '<p>Related table schema not mapped.</p>'; return; }
+        $name = null;
+        foreach ( $kind === 'venue' ? array( 'name', 'venue_name', 'title' ) : array( 'name', 'organiser_name', 'business_name', 'title' ) as $candidate ) {
+            if ( in_array( $candidate, $columns, true ) ) { $name = $candidate; break; }
+        }
+        if ( ! $name ) { echo '<p>Name field not mapped.</p>'; return; }
+        $rows = $wpdb->get_results( $wpdb->prepare( 'SELECT `id` AS record_id, `' . $name . '` AS record_name FROM ' . $quoted . ' WHERE `' . $name . '` LIKE %s ORDER BY `' . $name . '` ASC LIMIT 20', '%' . $wpdb->esc_like( $term ) . '%' ), ARRAY_A );
+        if ( ! $rows ) { echo '<p>No matches found.</p>'; return; }
+        echo '<table class="widefat striped"><thead><tr><th>Name</th><th>ID</th></tr></thead><tbody>';
+        foreach ( $rows as $row ) {
+            echo '<tr><td>' . esc_html( (string) $row['record_name'] ) . '</td><td>' . esc_html( (string) $row['record_id'] ) . '</td></tr>';
+        }
+        echo '</tbody></table><p>Search results are informational only. Assignment is not enabled yet.</p>';
+    }
     private static function detail( $table, $columns, $id ) {
         global $wpdb;
         $allowed = array(
@@ -93,6 +128,9 @@ final class BH_Activities_3 {
             if ( ! $shown ) { echo '<tr><td colspan="2">No mapped fields in this section yet.</td></tr>'; }
             echo '</tbody></table>';
         }
+        echo '<h3>Find existing records</h3>';
+        self::related_search( 'venue' );
+        self::related_search( 'organiser' );
         echo '<h3>Images</h3><p>Image library and upload controls will be connected after media field mapping.</p>';
         echo '<h3>Session timetable</h3><p>Session editor will be connected after schedule table and venue relationships are verified.</p>';
         echo '<p><button type="button" class="button button-primary" disabled>Save changes (not available yet)</button></p></div>';
