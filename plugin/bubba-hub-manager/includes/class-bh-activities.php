@@ -203,7 +203,12 @@ final class BH_Activities_3 {
             }
         }
         if ( count( $matches ) !== 1 ) {
-            echo '<p>Session rows are not shown: ' . esc_html( count( $matches ) ? 'multiple possible schedule tables require mapping review.' : 'no verified activity/day/start/end mapping was found.' ) . '</p>';
+            if ( ! $matches ) {
+                echo '<p>No direct activity-owned schedule mapping found; checking the explicitly owned venue fallback.</p>';
+                self::legacy_venue_sessions( $activity_id );
+            } else {
+                echo '<p>Multiple possible direct schedule tables found. No fallback is attempted until their relationships are reviewed.</p>';
+            }
             return;
         }
         list( $table, $day, $columns ) = $matches[0];
