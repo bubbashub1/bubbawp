@@ -1,0 +1,55 @@
+name: Bulk import legacy source snapshot
+
+on:
+  push:
+    branches:
+      - migration/legacy-bulk-import
+    paths:
+      - .github/workflows/bulk-import-legacy.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout migration branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Checkout original repository
+        uses: actions/checkout@v4
+        with:
+          repository: bubbashub1/bubbaplugin
+          ref: main
+          path: legacy-upstream
+          persist-credentials: false
+      - name: Copy legacy files into quarantined reference folder
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p legacy-source
+          rsync -a --delete \
+            --exclude='README.md' \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='.env' --exclude='.env.*' \
+            --exclude='*credentials*' --exclude='*secret*' \
+            --exclude='*private*' --exclude='*password*' \
+            --exclude='*token*' \
+            --exclude='config.php' --exclude='*-config.php' \
+            --exclude='*.pem' --exclude='*.key' --exclude='*.p12' \
+            --exclude='*.sql.gz' --exclude='*.zip' \
+            legacy-upstream/ legacy-source/
+          rm -rf legacy-upstream
+          git add legacy-source
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Bulk snapshot of legacy repository for plugin conversion"
+          git push origin HEAD:migration/legacy-bulk-import
