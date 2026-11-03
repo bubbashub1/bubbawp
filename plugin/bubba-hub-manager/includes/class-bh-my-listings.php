@@ -29,7 +29,7 @@ final class BH_My_Listings_3 {
         $rows = $wpdb->get_results( $wpdb->prepare(
             "SELECT id, title, status, category FROM `{$activities}` WHERE organiser_id = %d ORDER BY id DESC LIMIT 100", $organiser_id
         ), ARRAY_A );
-        echo '<table class="widefat striped"><thead><tr><th>Activity</th><th>Category</th><th>Status</th></tr></thead><tbody>';
+        echo '<table class="widefat striped"><thead><tr><th>Activity</th><th>Category</th><th>Status</th><th>Action</th></tr></thead><tbody>';
         foreach ( $rows as $row ) {
             echo '<tr><td>' . esc_html( $row['title'] ) . '</td><td>' . esc_html( (string) $row['category'] ) .
                 '</td><td>' . esc_html( $row['status'] ) . '</td><td>' . ( $row['status'] === 'draft' ? '<a class="button" href="' . esc_url( add_query_arg( array( 'page' => 'bh3-leader-edit', 'activity_id' => absint( $row['id'] ) ), admin_url( 'admin.php' ) ) ) . '">Edit</a>' : 'View only' ) . '</td></tr>';
