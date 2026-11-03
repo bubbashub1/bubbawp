@@ -23,6 +23,7 @@ jobs:
           find plugin/bubba-hub-manager -type f -name '*.php' -print0 | xargs -0 -n1 php -l
           php -l scripts/validate-plugin.php
           php scripts/validate-plugin.php
+          php plugin/bubba-hub-manager/tests/activity-repository-contract.php
       - name: Package plugin
         run: |
           mkdir -p dist
