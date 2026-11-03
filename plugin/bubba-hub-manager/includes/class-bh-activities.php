@@ -34,14 +34,36 @@ final class BH_Activities_3 {
         $row = $wpdb->get_row( $wpdb->prepare( 'SELECT ' . $select . ' FROM ' . $quoted . ' WHERE `id` = %d LIMIT 1', $id ), ARRAY_A );
         echo '<p><a href="' . esc_url( admin_url( 'admin.php?page=bh3-activities' ) ) . '">&larr; Back to activities</a></p>';
         if ( ! $row ) { echo '<div class="notice notice-warning inline"><p>Activity not found.</p></div>'; return; }
-        echo '<h2>Activity #' . esc_html( (string) $id ) . ' — read-only detail</h2>';
+        echo '<h2>Activity #' . esc_html( (string) $id ) . ' — editor layout preview</h2>';
         echo '<p>Field editing, timetable relationships and publishing actions will be enabled only after mapping and permission checks.</p>';
-        echo '<table class="widefat striped"><tbody>';
-        foreach ( $fields as $field => $label ) {
-            $value = isset( $row[$field] ) ? (string) $row[$field] : '';
-            echo '<tr><th scope="row" style="width:220px">' . esc_html( $label ) . '</th><td style="white-space:pre-wrap;overflow-wrap:anywhere">' . esc_html( $value ) . '</td></tr>';
+        $sections = array(
+            'Listing details' => array( 'title', 'activity_name', 'name', 'description', 'short_description', 'status' ),
+            'Categories & ages' => array( 'category', 'age_min_months', 'age_max_months' ),
+            'Pricing & booking' => array( 'price', 'is_free', 'website', 'booking_url' ),
+            'Venues & organiser' => array( 'venue_id', 'organiser_id' ),
+        );
+        echo '<div style="max-width:1000px">';
+        foreach ( $sections as $heading => $section_fields ) {
+            echo '<h3>' . esc_html( $heading ) . '</h3><table class="form-table" role="presentation"><tbody>';
+            $shown = 0;
+            foreach ( $section_fields as $field ) {
+                if ( ! isset( $fields[$field] ) ) { continue; }
+                $shown++;
+                $value = isset( $row[$field] ) ? (string) $row[$field] : '';
+                echo '<tr><th scope="row">' . esc_html( $fields[$field] ) . '</th><td>';
+                if ( in_array( $field, array( 'description', 'short_description' ), true ) ) {
+                    echo '<textarea class="large-text" rows="5" readonly aria-label="' . esc_attr( $fields[$field] ) . '">' . esc_textarea( $value ) . '</textarea>';
+                } else {
+                    echo '<input class="regular-text" type="text" readonly value="' . esc_attr( $value ) . '" aria-label="' . esc_attr( $fields[$field] ) . '">';
+                }
+                echo '</td></tr>';
+            }
+            if ( ! $shown ) { echo '<tr><td colspan="2">No mapped fields in this section yet.</td></tr>'; }
+            echo '</tbody></table>';
         }
-        echo '</tbody></table>';
+        echo '<h3>Images</h3><p>Image library and upload controls will be connected after media field mapping.</p>';
+        echo '<h3>Session timetable</h3><p>Session editor will be connected after schedule table and venue relationships are verified.</p>';
+        echo '<p><button type="button" class="button button-primary" disabled>Save changes (not available yet)</button></p></div>';
     }
     public static function render() {
         if ( ! current_user_can( 'manage_options' ) ) { wp_die( esc_html__( 'Permission denied.', 'bubba-hub-manager' ) ); }
