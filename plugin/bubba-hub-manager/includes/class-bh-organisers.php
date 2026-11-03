@@ -36,6 +36,11 @@ final class BH_Organisers_3 {
             echo '<tr><th><label for="org_' . esc_attr( $key ) . '">' . esc_html( $label ) . '</label></th><td><input class="regular-text" type="' . esc_attr( $type ) . '" id="org_' . esc_attr( $key ) . '" name="' . esc_attr( $key ) . '" value="' . esc_attr( (string) ( $row[$key] ?? '' ) ) . '"' . ( $key === 'name' ? ' required maxlength="255"' : '' ) . '></td></tr>';
         }
         echo '<tr><th><label for="org_description">Description</label></th><td><textarea class="large-text" rows="6" id="org_description" name="description">' . esc_textarea( (string) ( $row['description'] ?? '' ) ) . '</textarea></td></tr>';
+        $linked_users = $id ? get_users( array( 'meta_key' => 'bh3_organiser_id', 'meta_value' => (string) $id, 'number' => 2 ) ) : array();
+        $linked = $linked_users ? $linked_users[0] : null;
+        echo '<tr><th><label for="org_user">Linked WordPress user</label></th><td>';
+        echo '<input class="regular-text" id="org_user" name="linked_user" type="text" value="' . esc_attr( $linked ? $linked->user_login : '' ) . '" placeholder="Username or email" autocomplete="off">';
+        echo '<p class="description">Optional. Enter an existing WordPress username or email. Leave blank to unlink. Linking does not change user roles or grant dashboard permissions.</p></td></tr>';
         echo '</tbody></table>';
         submit_button( $id ? 'Update organiser' : 'Create organiser' );
         echo '</form>';
@@ -47,12 +52,13 @@ final class BH_Organisers_3 {
         $where = $term === '' ? '' : $wpdb->prepare( 'WHERE name LIKE %s', '%' . $wpdb->esc_like( $term ) . '%' );
         $activities = $wpdb->prefix . 'activities';
         $rows = $wpdb->get_results( "SELECT o.id, o.name, o.website_url, COUNT(a.id) AS activity_count FROM `{$table}` o LEFT JOIN `{$activities}` a ON a.organiser_id = o.id {$where} GROUP BY o.id, o.name, o.website_url ORDER BY o.name LIMIT 100", ARRAY_A );
-        echo '<table class="widefat striped"><thead><tr><th>Name</th><th>Website</th><th>Activities</th><th>Action</th></tr></thead><tbody>';
+        echo '<table class="widefat striped"><thead><tr><th>Name</th><th>Website</th><th>Linked user</th><th>Activities</th><th>Action</th></tr></thead><tbody>';
         foreach ( $rows as $organiser ) {
             $url = add_query_arg( array( 'page' => 'bh3-organisers', 'organiser_id' => absint( $organiser['id'] ) ), admin_url( 'admin.php' ) );
-            echo '<tr><td>' . esc_html( $organiser['name'] ) . '</td><td>' . esc_html( (string) $organiser['website_url'] ) . '</td><td>' . esc_html( (string) $organiser['activity_count'] ) . '</td><td><a href="' . esc_url( $url ) . '">Edit</a></td></tr>';
+            $owners = get_users( array( 'meta_key' => 'bh3_organiser_id', 'meta_value' => (string) absint( $organiser['id'] ), 'number' => 1 ) );
+            echo '<tr><td>' . esc_html( $organiser['name'] ) . '</td><td>' . esc_html( (string) $organiser['website_url'] ) . '</td><td>' . esc_html( $owners ? $owners[0]->user_login : 'Not linked' ) . '</td><td>' . esc_html( (string) $organiser['activity_count'] ) . '</td><td><a href="' . esc_url( $url ) . '">Edit</a></td></tr>';
         }
-        if ( ! $rows ) { echo '<tr><td colspan="4">No organisers found.</td></tr>'; }
+        if ( ! $rows ) { echo '<tr><td colspan="5">No organisers found.</td></tr>'; }
         echo '</tbody></table></div>';
     }
     public static function save() {
@@ -65,6 +71,15 @@ final class BH_Organisers_3 {
         if ( $name === '' || strlen( $name ) > 255 || strlen( $email ) > 254 || ( $email !== '' && ! is_email( $email ) ) ||
             strlen( $url ) > 2048 || ( $url && ! in_array( strtolower( (string) wp_parse_url( $url, PHP_URL_SCHEME ) ), array( 'http', 'https' ), true ) ) ) {
             wp_die( 'Invalid organiser details.', '', array( 'response' => 400 ) );
+        }
+        $user_input = trim( sanitize_text_field( wp_unslash( $_POST['linked_user'] ?? '' ) ) );
+        $linked_user = null;
+        if ( $user_input !== '' ) {
+            $linked_user = get_user_by( 'login', $user_input );
+            if ( ! $linked_user && is_email( $user_input ) ) { $linked_user = get_user_by( 'email', $user_input ); }
+            if ( ! $linked_user ) { wp_die( 'WordPress user not found. Enter an existing username or email.', '', array( 'response' => 400 ) ); }
+            $other = absint( get_user_meta( $linked_user->ID, 'bh3_organiser_id', true ) );
+            if ( $other && $other !== $id ) { wp_die( 'This WordPress user is already linked to another organiser.', '', array( 'response' => 409 ) ); }
         }
         global $wpdb;
         $table = self::table();
@@ -86,6 +101,14 @@ final class BH_Organisers_3 {
             $id = (int) $wpdb->insert_id;
         }
         if ( $result === false ) { wp_die( 'Unable to save organiser.', '', array( 'response' => 500 ) ); }
+        // Maintain the one-to-one association without altering the manually created schema.
+        $existing_users = get_users( array( 'meta_key' => 'bh3_organiser_id', 'meta_value' => (string) $id, 'fields' => 'ID' ) );
+        foreach ( $existing_users as $existing_user_id ) {
+            if ( ! $linked_user || (int) $existing_user_id !== (int) $linked_user->ID ) {
+                delete_user_meta( (int) $existing_user_id, 'bh3_organiser_id', (string) $id );
+            }
+        }
+        if ( $linked_user ) { update_user_meta( $linked_user->ID, 'bh3_organiser_id', (string) $id ); }
         wp_safe_redirect( add_query_arg( array( 'page' => 'bh3-organisers', 'organiser_id' => $id, 'saved' => 1 ), admin_url( 'admin.php' ) ) );
         exit;
     }
