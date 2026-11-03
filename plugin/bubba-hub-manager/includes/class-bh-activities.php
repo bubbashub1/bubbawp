@@ -15,6 +15,36 @@ final class BH_Activities_3 {
         }
         return null;
     }
+    /**
+     * Display related names only when a known table and column mapping exists.
+     * Never guesses a relationship or writes to legacy records.
+     */
+    private static function related_label( $kind, $id ) {
+        global $wpdb;
+        $id = absint( $id );
+        if ( ! $id ) { return 'Not assigned'; }
+        $suffix = $kind === 'venue' ? 'bh_venues' : 'bh_organisers';
+        $table = null;
+        foreach ( array_unique( array( $suffix, $wpdb->prefix . $suffix ) ) as $candidate ) {
+            if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $candidate ) ) ) === $candidate ) {
+                $table = $candidate;
+                break;
+            }
+        }
+        if ( ! $table ) { return 'ID ' . $id . ' — related table unavailable'; }
+        $quoted = '`' . str_replace( '`', '``', $table ) . '`';
+        $columns = $wpdb->get_col( 'SHOW COLUMNS FROM ' . $quoted, 0 );
+        if ( ! is_array( $columns ) || ! in_array( 'id', $columns, true ) ) {
+            return 'ID ' . $id . ' — schema not mapped';
+        }
+        $label_column = null;
+        foreach ( $kind === 'venue' ? array( 'name', 'venue_name', 'title' ) : array( 'name', 'organiser_name', 'business_name', 'title' ) as $candidate ) {
+            if ( in_array( $candidate, $columns, true ) ) { $label_column = $candidate; break; }
+        }
+        if ( ! $label_column ) { return 'ID ' . $id . ' — name field not mapped'; }
+        $label = $wpdb->get_var( $wpdb->prepare( 'SELECT `' . $label_column . '` FROM ' . $quoted . ' WHERE `id` = %d LIMIT 1', $id ) );
+        return is_scalar( $label ) && (string) $label !== '' ? (string) $label . ' (ID ' . $id . ')' : 'ID ' . $id . ' — no matching record';
+    }
     private static function detail( $table, $columns, $id ) {
         global $wpdb;
         $allowed = array(
@@ -50,6 +80,8 @@ final class BH_Activities_3 {
                 if ( ! isset( $fields[$field] ) ) { continue; }
                 $shown++;
                 $value = isset( $row[$field] ) ? (string) $row[$field] : '';
+                if ( $field === 'venue_id' && $value !== '' ) { $value = self::related_label( 'venue', $value ); }
+                if ( $field === 'organiser_id' && $value !== '' ) { $value = self::related_label( 'organiser', $value ); }
                 echo '<tr><th scope="row">' . esc_html( $fields[$field] ) . '</th><td>';
                 if ( in_array( $field, array( 'description', 'short_description' ), true ) ) {
                     echo '<textarea class="large-text" rows="5" readonly aria-label="' . esc_attr( $fields[$field] ) . '">' . esc_textarea( $value ) . '</textarea>';
