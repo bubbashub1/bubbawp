@@ -44,7 +44,7 @@ final class BH_Activities_Admin_3 {
         echo '<p><strong>' . esc_html__( 'Showing published listings only. Existing records are not modified.', 'bubba-hub-manager' ) . '</strong></p>';
         echo '<table class="widefat striped"><thead><tr><th scope="col">ID</th><th scope="col">' . esc_html__( 'Activity', 'bubba-hub-manager' ) . '</th><th scope="col">' . esc_html__( 'Slug', 'bubba-hub-manager' ) . '</th></tr></thead><tbody>';
         foreach ( $rows as $row ) {
-            echo '<tr><td>' . esc_html( (string) $row['id'] ) . '</td><td>' . esc_html( $row['title'] ) . '</td><td><code>' . esc_html( $row['slug'] ) . '</code></td></tr>';
+            echo '<tr><td>' . esc_html( (string) $row['id'] ) . '</td><td>' . '<a href="' . esc_url( add_query_arg( array( 'page' => 'bh3-activity-detail', 'activity_id' => $row['id'] ), admin_url( 'tools.php' ) ) ) . '">' . esc_html( $row['title'] ) . '</a></td><td><code>' . esc_html( $row['slug'] ) . '</code></td></tr>';
         }
         if ( ! $rows ) {
             echo '<tr><td colspan="3">' . esc_html__( 'No published activities found.', 'bubba-hub-manager' ) . '</td></tr>';
