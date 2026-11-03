@@ -34,6 +34,7 @@ final class BH_Activity_Detail_3 {
         }
         $activity = $wpdb->get_row( $wpdb->prepare( 'SELECT id, title, slug, description, category, age_range, price_from, status, organiser_id FROM bh_activities WHERE id = %d LIMIT 1', $id ), ARRAY_A );
         if ( $wpdb->last_error || ! $activity ) { echo '<p>Activity unavailable.</p></div>'; return; }
+        if ( isset( $_GET['bh3_session_saved'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['bh3_session_saved'] ) ) ) { echo '<div class="notice notice-success"><p>Session saved.</p></div>'; }
         if ( isset( $_GET['bh3_saved'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['bh3_saved'] ) ) ) { echo '<div class="notice notice-success"><p>Activity details saved.</p></div>'; }
         echo '<h2>' . esc_html( $activity['title'] ) . '</h2>';
         self::table( 'Listing fields', array( $activity ), array( 'id' => 'ID', 'slug' => 'Slug', 'category' => 'Category', 'age_range' => 'Age range', 'price_from' => 'Price from', 'status' => 'Status', 'organiser_id' => 'Organiser ID' ) );
@@ -51,16 +52,18 @@ final class BH_Activity_Detail_3 {
                 );
                 if ( ! $wpdb->last_error ) {
                     $days = array( 1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday', 7 => 'Sunday' );
+                    $editable_sessions = $sessions ?: array();
                     foreach ( $sessions ?: array() as &$session ) {
                         $session['day_of_week'] = $days[ (int) $session['day_of_week'] ] ?? 'Unknown';
                         $session['term_time_only'] = ! empty( $session['term_time_only'] ) ? 'Yes' : 'No';
                     }
                     unset( $session );
-                    self::table( 'Weekly sessions (read-only)', $sessions ?: array(), array(
+                    self::table( 'Weekly sessions', $sessions ?: array(), array(
                         'id' => 'ID', 'venue_name' => 'Venue', 'day_of_week' => 'Day',
                         'start_time' => 'Start', 'end_time' => 'End', 'price' => 'Price',
                         'term_time_only' => 'Term time only',
                     ) );
+                    BH_Session_Editor_3::forms( $id, $editable_sessions );
                 } else {
                     echo '<p>Session details could not be loaded. Check the legacy schema.</p>';
                 }
