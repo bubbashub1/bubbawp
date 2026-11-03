@@ -27,6 +27,7 @@ final class BH_Leader_Edit_3 {
         if ( ! $row ) { wp_die( 'You cannot edit this activity.', '', array( 'response' => 403 ) ); }
         echo '<div class="wrap" style="max-width:900px"><h1>Edit ' . esc_html( $row['title'] ) . '</h1><p><a href="' . esc_url( admin_url( 'admin.php?page=bh3-my-listings' ) ) . '">← My Listings</a></p>';
         if ( isset( $_GET['updated'] ) ) { echo '<div class="notice notice-success"><p>Draft saved.</p></div>'; }
+        echo '<p><a class="button" href="' . esc_url( add_query_arg( array( 'page' => 'bh3-leader-sessions', 'activity_id' => $id ), admin_url( 'admin.php' ) ) ) . '">Manage timetable</a></p>';
         echo '<p>You can update your draft details. Organiser assignment, publishing and deletion remain administrator-controlled.</p>';
         echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="bh3_leader_save_activity"><input type="hidden" name="activity_id" value="' . esc_attr( (string) $id ) . '">';
         wp_nonce_field( 'bh3_leader_edit_' . $id );
