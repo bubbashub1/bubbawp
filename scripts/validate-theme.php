@@ -1,51 +1,102 @@
 <?php
 /**
- * Static theme checks (no WordPress runtime needed).
- * Does not replace a staging activation and visual review.
+ * Static WordPress block theme checks.
+ * These checks do not replace WordPress activation, browser or accessibility QA.
  */
 declare(strict_types=1);
 
 $root = dirname(__DIR__) . '/theme/bubba-hub';
-$required = [
-    'style.css', 'theme.json', 'functions.php',
-    'templates/index.html', 'templates/front-page.html',
-    'templates/page.html', 'templates/single.html',
-    'templates/archive.html', 'templates/search.html',
-    'templates/404.html',
-    'parts/header.html', 'parts/footer.html',
-    'patterns/hero.php', 'patterns/discover.php', 'patterns/join.php',
-];
 $errors = [];
+$required = [
+    'style.css', 'theme.json', 'functions.php', 'assets/css/site.css',
+    'templates/index.html', 'templates/front-page.html', 'templates/page.html',
+    'templates/single.html', 'templates/archive.html', 'templates/search.html',
+    'templates/404.html', 'parts/header.html', 'parts/footer.html',
+    'patterns/hero.php', 'patterns/discover.php', 'patterns/join.php',
+    'patterns/category-grid.php', 'patterns/featured-placeholder.php',
+    'patterns/event-promo.php', 'patterns/directory-shell.php',
+];
 foreach ($required as $file) {
     if (!is_file($root . '/' . $file) || filesize($root . '/' . $file) === 0) {
-        $errors[] = 'Missing/empty: ' . $file;
-    }
-}
-$css = file_get_contents($root . '/style.css') ?: '';
-foreach (['Theme Name:', 'Version:', 'Text Domain:'] as $field) {
-    if (strpos($css, $field) === false) {
-        $errors[] = 'Missing style.css header: ' . $field;
-    }
-}
-$json = json_decode(file_get_contents($root . '/theme.json') ?: '', true);
-if (!is_array($json) || json_last_error() !== JSON_ERROR_NONE) {
-    $errors[] = 'theme.json is invalid JSON';
-} else {
-    if (!isset($json['version'], $json['settings'], $json['styles'])) {
-        $errors[] = 'theme.json missing essential settings';
-    }
-}
-foreach (glob($root . '/templates/*.html') ?: [] as $path) {
-    $markup = file_get_contents($path) ?: '';
-    if (strpos($markup, '<!-- wp:') === false) {
-        $errors[] = 'No block markup: ' . basename($path);
-    }
-    if (strpos($markup, 'template-part') === false) {
-        $errors[] = 'No template part: ' . basename($path);
+        $errors[] = 'Missing or empty: ' . $file;
     }
 }
 if ($errors) {
     fwrite(STDERR, implode(PHP_EOL, $errors) . PHP_EOL);
     exit(1);
 }
-echo "Static theme checks passed. WordPress installation and visual QA still required.\n";
+
+$css = file_get_contents($root . '/style.css') ?: '';
+foreach (['Theme Name:', 'Version:', 'Text Domain:'] as $field) {
+    if (strpos($css, $field) === false) {
+        $errors[] = 'Missing style.css header: ' . $field;
+    }
+}
+
+$json = json_decode(file_get_contents($root . '/theme.json') ?: '', true);
+if (!is_array($json) || json_last_error() !== JSON_ERROR_NONE) {
+    $errors[] = 'Invalid theme.json';
+} else {
+    if (($json['version'] ?? null) !== 2 || !isset($json['settings'], $json['styles'])) {
+        $errors[] = 'theme.json must contain supported version 2, settings and styles';
+    }
+    foreach (['header', 'footer'] as $part) {
+        if (!in_array($part, array_column($json['templateParts'] ?? [], 'name'), true)) {
+            $errors[] = 'Missing theme.json template part registration: ' . $part;
+        }
+    }
+}
+
+$patterns = [];
+foreach (glob($root . '/patterns/*.php') ?: [] as $path) {
+    $source = file_get_contents($path) ?: '';
+    if (!preg_match('~\*\s*Slug:\s*(bubba-hub/[a-z0-9-]+)~', $source, $match)) {
+        $errors[] = 'Missing/invalid pattern Slug header: ' . basename($path);
+        continue;
+    }
+    if (isset($patterns[$match[1]])) {
+        $errors[] = 'Duplicate pattern slug: ' . $match[1];
+    }
+    $patterns[$match[1]] = true;
+    if (!preg_match('~\*\s*Title:\s*\S+~', $source)) {
+        $errors[] = 'Missing pattern Title header: ' . basename($path);
+    }
+}
+
+$parts = [];
+foreach (glob($root . '/parts/*.html') ?: [] as $path) {
+    $parts[pathinfo($path, PATHINFO_FILENAME)] = true;
+}
+foreach (glob($root . '/templates/*.html') ?: [] as $path) {
+    $source = file_get_contents($path) ?: '';
+    $filename = basename($path);
+    if (strpos($source, '<!-- wp:') === false) {
+        $errors[] = 'Missing block markup: ' . $filename;
+    }
+    preg_match_all('~<!--\s+wp:template-part\s+({.*?})\s*/-->~', $source, $matches);
+    if (!$matches[1]) {
+        $errors[] = 'Missing template-part reference: ' . $filename;
+    }
+    foreach ($matches[1] as $raw) {
+        $attrs = json_decode($raw, true);
+        $slug = $attrs['slug'] ?? '';
+        if (!isset($parts[$slug])) {
+            $errors[] = 'Unknown template part ' . $slug . ' in ' . $filename;
+        }
+    }
+    preg_match_all('~<!--\s+wp:pattern\s+({.*?})\s*/-->~', $source, $matches);
+    foreach ($matches[1] as $raw) {
+        $attrs = json_decode($raw, true);
+        $slug = $attrs['slug'] ?? '';
+        if (!isset($patterns[$slug])) {
+            $errors[] = 'Unknown pattern ' . $slug . ' in ' . $filename;
+        }
+    }
+}
+if ($errors) {
+    fwrite(STDERR, implode(PHP_EOL, $errors) . PHP_EOL);
+    exit(1);
+}
+echo 'Static theme checks passed: ' . count($required) . ' required files, ' .
+    count($patterns) . ' patterns and ' . count($parts) . " template parts.\n" .
+    "WordPress activation, Site Editor and visual QA still required.\n";
