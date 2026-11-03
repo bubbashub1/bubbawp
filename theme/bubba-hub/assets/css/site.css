@@ -1,0 +1,28 @@
+/* Presentation only. All business logic belongs to the Bubba Hub Manager plugin. */
+:root {
+  --bh-card-radius: 1rem;
+  --bh-focus: #174f46;
+}
+html { scroll-behavior: smooth; }
+body { overflow-wrap: break-word; }
+.wp-site-blocks { min-height: 100vh; }
+.wp-site-blocks > footer { margin-block-start: 0; }
+.wp-block-navigation a:focus-visible,
+.wp-element-button:focus-visible,
+a:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--bh-focus);
+  outline-offset: 3px;
+}
+.wp-block-button__link { transition: filter .18s ease; }
+.wp-block-button__link:hover { filter: brightness(1.12); }
+.wp-block-post-featured-image img { border-radius: var(--bh-card-radius); }
+@media (max-width: 781px) {
+  .wp-block-group.alignwide { padding-inline: 1rem; }
+  .wp-block-columns { gap: 1rem; }
+  .wp-block-buttons { gap: .75rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .wp-block-button__link { transition: none; }
+}
