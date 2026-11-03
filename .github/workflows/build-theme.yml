@@ -1,0 +1,39 @@
+name: Build WordPress theme ZIP
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'theme/bubba-hub/**'
+      - '.github/workflows/build-theme.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate WordPress block theme
+        run: |
+          test -f theme/bubba-hub/style.css
+          test -f theme/bubba-hub/theme.json
+          test -f theme/bubba-hub/templates/index.html
+          grep -q 'Theme Name:' theme/bubba-hub/style.css
+          php -l theme/bubba-hub/functions.php
+          python3 -m json.tool theme/bubba-hub/theme.json >/dev/null
+      - name: Package theme with correct root folder
+        run: |
+          mkdir -p dist/bubba-hub
+          cp -a theme/bubba-hub/. dist/bubba-hub/
+          cd dist
+          zip -qr bubba-hub.zip bubba-hub
+          unzip -l bubba-hub.zip | grep 'bubba-hub/style.css'
+      - name: Upload installable ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: bubba-hub-wordpress-theme
+          path: dist/bubba-hub.zip
+          retention-days: 30
