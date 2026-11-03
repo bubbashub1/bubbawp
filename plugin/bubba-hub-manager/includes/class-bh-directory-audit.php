@@ -7,7 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 final class BH_Directory_Audit_3 {
     public static function register() {
-        add_submenu_page( 'tools.php', 'Directory readiness', 'Directory readiness', 'manage_options', 'bh3-directory-audit', array( __CLASS__, 'render' ) );
+        add_submenu_page( 'bubba-hub-3-status', 'Directory readiness', 'Directory readiness', 'manage_options', 'bh3-directory-audit', array( __CLASS__, 'render' ) );
     }
 
     public static function render() {
