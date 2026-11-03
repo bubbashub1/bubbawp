@@ -18,8 +18,8 @@
 
 - **Active stage:** Theme-first foundation (Stage T0; design before feature modules)
 - **Current task:** T0-01 — Build and preview initial native block theme
-- **Next task:** Verify GitHub Actions theme ZIP build, then T0-02 visual review
-- **Last verified milestone:** Theme scaffold expanded to seven templates, header/footer, three patterns and responsive CSS (not yet installed or QA-tested)
+- **Next task:** T0-03 reusable theme patterns; T0-02 visual approval when user can review
+- **Last verified milestone:** Theme ZIP produced by passing GitHub Actions run 41639189965; WordPress activation and visual QA pending
 - **Staging QA:** Not started
 - **Production changes:** None authorised
 
@@ -42,10 +42,10 @@
 
 - [x] **T0-00** Approve theme-first development order.
 - [ ] **T0-01** Create an installable native WordPress block theme with theme.json, global tokens, header/footer, homepage and core templates. **In progress:** theme files and templates committed; installability not yet verified.
-- [ ] **T0-02** Review desktop/mobile look, brand colours, typography, navigation, card system and page widths; refine to approval.
+- [ ] **T0-02** Review desktop/mobile look, brand colours, typography, navigation, card system and page widths; refine to approval. **Draft brief:** `docs/THEME_DESIGN_BRIEF.md`; awaiting visual review.
 - [ ] **T0-03** Build reusable Site Editor patterns for hero, discovery placeholder, categories, featured cards, family and leader CTAs.
 - [ ] **T0-04** Verify editor customisation, responsive behaviour, accessibility and graceful placeholder behaviour without plugin.
-- [ ] **T0-05** Produce independent theme ZIP and test activation on isolated/staging WordPress; document evidence. **In progress:** packaging workflow and QA checklist committed; CI and WordPress activation not yet verified.
+- [ ] **T0-05** Produce independent theme ZIP and test activation on isolated/staging WordPress; document evidence. **Partially verified:** GitHub Actions run 41639189965 passed and uploaded `bubba-hub-theme` artifact; WordPress activation not tested.
 - [ ] **T0-06** Approve design baseline and component contracts for Directory, Leader Portal and My Hub.
 - **Exit gate:** visual direction approved, install/activation and mobile QA evidenced; then proceed with Stage 0 inventory and plugin work.
 
@@ -257,4 +257,5 @@ Copy for each substantial issue/PR:
 | 2026-11-03 | Reordered roadmap to theme-first Stage T0; design approval precedes feature modules | ADR-016 |
 | 2026-11-03 | Committed first native theme scaffold: style.css, theme.json, header/footer, index/front-page/page and three patterns; not yet tested | `theme/bubba-hub/` |
 | 2026-11-03 | Added single/archive/search/404 templates, theme bootstrap, responsive/focus CSS and test notes; no staging QA yet | `theme/bubba-hub/README.md` |
-| 2026-11-03 | Added GitHub Actions static checks and theme ZIP packaging, plus staging/browser QA checklist; workflow running, not yet verified | `.github/workflows/theme-checks.yml`, `docs/THEME_QA.md` |
+| 2026-11-03 | Added GitHub Actions static checks and theme ZIP packaging, plus staging/browser QA checklist; initial run failed, subsequent run passed | `.github/workflows/theme-checks.yml`, `docs/THEME_QA.md` |
+| 2026-11-03 | Verified successful GitHub Actions theme ZIP artifact (run 41639189965); drafted visual design brief; staging/browser QA still outstanding | `docs/THEME_DESIGN_BRIEF.md` |
