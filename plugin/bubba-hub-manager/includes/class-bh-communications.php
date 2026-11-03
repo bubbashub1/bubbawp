@@ -229,6 +229,20 @@ final class BH_Communications_3 {
         exit;
     }
 
+    public static function test_template() {
+        self::require_admin();
+        check_admin_referer( 'bh3_test_template' );
+        if ( ! self::enabled() ) { wp_die( 'Test sending is locked on this environment.' ); }
+        $key = isset( $_POST['template'] ) ? sanitize_key( wp_unslash( $_POST['template'] ) ) : '';
+        $defs = BH_Email_Templates_3::definitions();
+        if ( ! isset( $defs[ $key ] ) ) { wp_die( 'Invalid template' ); }
+        $to = get_option( 'admin_email' );
+        $html = BH_Email_Templates_3::render( $key );
+        $sent = self::send_transactional( $to, '[TEST] ' . $defs[ $key ]['subject'], $html, 'Template test' );
+        wp_safe_redirect( admin_url( 'admin.php?page=bh3-communications&test=' . ( true === $sent ? 'accepted' : 'failed' ) ) );
+        exit;
+    }
+
     public static function preview_template() {
         self::require_admin();
         $key = isset( $_GET['template'] ) ? sanitize_key( wp_unslash( $_GET['template'] ) ) : '';
