@@ -24,6 +24,8 @@ final class BH_Communications_3 {
         add_action( 'bh3_cleanup_email_logs', array( __CLASS__, 'cleanup_email_logs' ) );
         add_action( 'init', array( __CLASS__, 'handle_public_tokens' ), 1 );
         add_action( 'admin_menu', array( __CLASS__, 'register_admin_page' ) );
+        add_action( 'admin_post_bh3_save_template', array( __CLASS__, 'save_template' ) );
+        add_action( 'admin_post_bh3_test_template', array( __CLASS__, 'test_template' ) );
         add_action( 'admin_post_bh3_preview_template', array( __CLASS__, 'preview_template' ) );
         add_action( 'admin_post_bh3_save_campaign', array( __CLASS__, 'save_campaign' ) );
         add_action( 'admin_post_bh3_send_campaign', array( __CLASS__, 'send_campaign' ) );
