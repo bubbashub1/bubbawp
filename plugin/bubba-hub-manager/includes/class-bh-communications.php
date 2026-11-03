@@ -134,7 +134,26 @@ final class BH_Communications_3 {
             $preview = wp_nonce_url( add_query_arg( array( 'action' => 'bh3_preview_template', 'template' => $key ), admin_url( 'admin-post.php' ) ), 'bh3_preview_template_' . $key );
             echo '<tr><td>' . esc_html( $definition['name'] ) . '</td><td><code>' . esc_html( $definition['source'] ) . '</code></td><td><a class="button" target="_blank" rel="noopener" href="' . esc_url( $preview ) . '">Preview</a></td></tr>';
         }
-        echo '</tbody></table></div>';
+        echo '</tbody></table><p>Customise a template below, or leave its body empty to restore the original design. Supported placeholders: <code>{{first_name}}</code>, <code>{{activity_title}}</code>, <code>{{action_url}}</code>, <code>{{date_time}}</code>, <code>{{venue}}</code>, <code>{{content}}</code>.</p>';
+        echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="bh3_save_template">';
+        wp_nonce_field( 'bh3_save_template' );
+        echo '<p><label>Template <select name="template">';
+        foreach ( BH_Email_Templates_3::definitions() as $key => $definition ) {
+            echo '<option value="' . esc_attr( $key ) . '">' . esc_html( $definition['name'] ) . '</option>';
+        }
+        echo '</select></label></p><p><label>Custom HTML body<br><textarea name="body"></textarea></label></p><button class="button" type="submit">Save custom body</button></form>';
+        foreach ( BH_Email_Templates_3::definitions() as $key => $definition ) {
+            $custom = BH_Email_Templates_3::editable_content( $key );
+            echo '<details><summary>' . esc_html( $definition['name'] ) . ( $custom ? ' — customised' : ' — original' ) . '</summary><pre style="white-space:pre-wrap">' . esc_html( $custom ?: 'Original design in use' ) . '</pre></details>';
+        }
+        echo '<h3>Test email</h3><p>Test sends go only to the configured WordPress administrator email address, and only when staging sending is enabled.</p>';
+        echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="bh3_test_template">';
+        wp_nonce_field( 'bh3_test_template' );
+        echo '<select name="template">';
+        foreach ( BH_Email_Templates_3::definitions() as $key => $definition ) {
+            echo '<option value="' . esc_attr( $key ) . '">' . esc_html( $definition['name'] ) . '</option>';
+        }
+        echo '</select> <button class="button" type="submit" ' . disabled( ! $enabled, true, false ) . '>Send test to admin</button></form></div>';
         echo '<div class="bh3-panel"><h2>Create newsletter</h2>';
         echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
         echo '<input type="hidden" name="action" value="bh3_save_campaign">';
