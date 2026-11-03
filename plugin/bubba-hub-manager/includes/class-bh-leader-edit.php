@@ -19,7 +19,7 @@ final class BH_Leader_Edit_3 {
     }
     public static function register() {
         if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) { return; }
-        add_submenu_page( 'bh3-my-listings', 'Edit My Activity', 'Edit Activity', 'read', 'bh3-leader-edit', array( __CLASS__, 'render' ) );
+        add_submenu_page( null, 'Edit My Activity', 'Edit Activity', 'read', 'bh3-leader-edit', array( __CLASS__, 'render' ) );
     }
     public static function render() {
         $id = absint( $_GET['activity_id'] ?? 0 );

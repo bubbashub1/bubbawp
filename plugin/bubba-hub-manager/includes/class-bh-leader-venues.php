@@ -6,7 +6,7 @@ final class BH_Leader_Venues_3 {
         return is_user_logged_in() && current_user_can( 'read' ) && strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) === 'staging.bubbahub.co.uk';
     }
     public static function register() {
-        add_submenu_page( 'bh3-my-listings', 'My Activity Venues', 'My Venues', 'read', 'bh3-leader-venues', array( __CLASS__, 'render' ) );
+        add_submenu_page( null, 'My Activity Venues', 'My Venues', 'read', 'bh3-leader-venues', array( __CLASS__, 'render' ) );
         add_action( 'admin_post_bh3_leader_attach_venue', array( __CLASS__, 'attach' ) );
         add_action( 'admin_post_bh3_leader_detach_venue', array( __CLASS__, 'detach' ) );
     }
@@ -42,7 +42,7 @@ final class BH_Leader_Venues_3 {
             "SELECT v.id, v.name, v.town FROM `{$venues}` v INNER JOIN `{$links}` av ON av.venue_id = v.id WHERE av.activity_id = %d ORDER BY v.name LIMIT 100", $id
         ), ARRAY_A );
         echo '<div class="wrap"><h1>Venues for ' . esc_html( $activity['title'] ) . '</h1>';
-        echo '<p><a href="' . esc_url( admin_url( 'admin.php?page=bh3-my-listings' ) ) . '">Back to activities</a></p>';
+        echo '<p><a href="' . esc_url( add_query_arg( array( 'page' => 'bh3-leader-edit', 'activity_id' => $id ), admin_url( 'admin.php' ) ) ) . '">← Back to activity</a> · <a href="' . esc_url( add_query_arg( array( 'page' => 'bh3-leader-sessions', 'activity_id' => $id ), admin_url( 'admin.php' ) ) ) . '">Manage timetable</a></p>';
         if ( isset( $_GET['message'] ) ) { echo '<div class="notice notice-info"><p>' . esc_html( sanitize_text_field( wp_unslash( $_GET['message'] ) ) ) . '</p></div>'; }
         echo '<h2>Assigned venues</h2><table class="widefat striped"><thead><tr><th>Venue</th><th>Town</th><th>Action</th></tr></thead><tbody>';
         foreach ( $rows as $row ) {
