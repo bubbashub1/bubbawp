@@ -282,6 +282,25 @@ final class BH_Communications_3 {
         );
     }
 
+    /**
+     * Invitation tokens and duplicate protection belong to the existing claim workflow.
+     * This method only renders and delivers a previously authorised invitation.
+     */
+    public static function notify_claim_invitation( $recipient, $activity_title, $claim_url ) {
+        if ( ! is_email( $recipient ) || '' === trim( (string) $activity_title ) || ! wp_http_validate_url( $claim_url ) ) {
+            return new WP_Error( 'bh3_invalid_claim_invitation', 'Invalid invitation details.' );
+        }
+        return self::send_transactional(
+            $recipient,
+            'Your activity is on Bubba Hub – claim your free listing',
+            BH_Email_Templates_3::render( 'claim_invitation', array(
+                'activity_title' => $activity_title,
+                'action_url' => $claim_url,
+            ) ),
+            'Claim invitation'
+        );
+    }
+
     public static function preview_template() {
         self::require_admin();
         $key = isset( $_GET['template'] ) ? sanitize_key( wp_unslash( $_GET['template'] ) ) : '';
