@@ -9,11 +9,8 @@ final class BH_Activities_3 {
     }
     private static function table() {
         global $wpdb;
-        foreach ( array_unique( array( 'bh_activities', $wpdb->prefix . 'bh_activities' ) ) as $candidate ) {
-            $found = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $candidate ) ) );
-            if ( $found === $candidate ) { return $candidate; }
-        }
-        return null;
+        $table = $wpdb->prefix . 'activities';
+        return $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ) === $table ? $table : null;
     }
     /**
      * Display related names only when a known table and column mapping exists.
@@ -23,9 +20,9 @@ final class BH_Activities_3 {
         global $wpdb;
         $id = absint( $id );
         if ( ! $id ) { return 'Not assigned'; }
-        $suffix = $kind === 'venue' ? 'bh_venues' : 'bh_organisers';
+        $suffix = $kind === 'venue' ? 'venues' : 'organisers';
         $table = null;
-        foreach ( array_unique( array( $suffix, $wpdb->prefix . $suffix ) ) as $candidate ) {
+        foreach ( array( $wpdb->prefix . $suffix ) as $candidate ) {
             if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $candidate ) ) ) === $candidate ) {
                 $table = $candidate;
                 break;
@@ -58,7 +55,7 @@ final class BH_Activities_3 {
         submit_button( 'Find ' . $kind, 'secondary', '', false );
         echo '</form>';
         if ( strlen( trim( $term ) ) < 2 ) { echo '<p>Enter at least two characters to search existing records.</p>'; return; }
-        $suffix = $kind === 'venue' ? 'bh_venues' : 'bh_organisers';
+        $suffix = $kind === 'venue' ? 'venues' : 'organisers';
         $table = null;
         foreach ( array_unique( array( $suffix, $wpdb->prefix . $suffix ) ) as $candidate ) {
             if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $candidate ) ) ) === $candidate ) { $table = $candidate; break; }
@@ -232,7 +229,7 @@ final class BH_Activities_3 {
             'title' => 'Title', 'activity_name' => 'Activity name', 'name' => 'Name',
             'description' => 'Description', 'short_description' => 'Short description',
             'category' => 'Category', 'age_min_months' => 'Minimum age (months)',
-            'age_max_months' => 'Maximum age (months)', 'price' => 'Price',
+            'age_max_months' => 'Maximum age (months)', 'price' => 'Price', 'price_from' => 'Price from',
             'is_free' => 'Free activity', 'status' => 'Status',
             'venue_id' => 'Venue ID', 'organiser_id' => 'Organiser ID',
             'website' => 'Website', 'booking_url' => 'Booking URL'
@@ -250,7 +247,7 @@ final class BH_Activities_3 {
         $sections = array(
             'Listing details' => array( 'title', 'activity_name', 'name', 'description', 'short_description', 'status' ),
             'Categories & ages' => array( 'category', 'age_min_months', 'age_max_months' ),
-            'Pricing & booking' => array( 'price', 'is_free', 'website', 'booking_url' ),
+            'Pricing & booking' => array( 'price', 'price_from', 'is_free', 'website', 'booking_url' ),
             'Venues & organiser' => array( 'venue_id', 'organiser_id' ),
         );
         echo '<div style="max-width:1000px">';
@@ -287,20 +284,37 @@ final class BH_Activities_3 {
         self::related_search( 'organiser' );
         echo '<h3>Images</h3><p>Image library and upload controls will be connected after media field mapping.</p>';
         echo '<h3>Session timetable</h3>';
-        self::verified_session_rows( $id );
+        $sessions_table = $wpdb->prefix . 'sessions';
+        if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $sessions_table ) ) ) === $sessions_table ) {
+            $sessions = $wpdb->get_results( $wpdb->prepare(
+                "SELECT day_of_week, start_time, end_time, venue_id, frequency, term_time_only, status FROM `{$sessions_table}` WHERE activity_id = %d ORDER BY day_of_week, start_time LIMIT 100",
+                $id
+            ), ARRAY_A );
+            echo '<h4>Sessions (read-only)</h4>';
+            if ( ! $sessions ) { echo '<p>No sessions yet.</p>'; }
+            else {
+                echo '<table class="widefat striped"><thead><tr><th>Day</th><th>Start</th><th>End</th><th>Venue ID</th><th>Frequency</th><th>Term time</th><th>Status</th></tr></thead><tbody>';
+                foreach ( $sessions as $session ) {
+                    echo '<tr>';
+                    foreach ( $session as $value ) { echo '<td>' . esc_html( (string) $value ) . '</td>'; }
+                    echo '</tr>';
+                }
+                echo '</tbody></table>';
+            }
+        } else { echo '<p>New sessions table not found.</p>'; }
         self::timetable_layout_preview();
         echo '<details><summary>Database mapping readiness</summary>';
-        self::timetable_readiness();
+        echo '<p>Fresh WordPress session mapping selected; legacy timetable queries are not used.</p>';
         echo '</details>';
         echo '<p><button type="button" class="button button-primary" disabled>Save changes (not available yet)</button></p></div>';
     }
     public static function render() {
         if ( ! current_user_can( 'manage_options' ) ) { wp_die( esc_html__( 'Permission denied.', 'bubba-hub-manager' ) ); }
         global $wpdb;
-        echo '<div class="wrap"><h1>Activities</h1><p>Read-only listing browser for the 3.0 migration. Editing, publishing and deletion are not enabled.</p>';
+        echo '<div class="wrap"><h1>Activities</h1><p>Read-only listing browser for the new WordPress activities table. Editing, publishing and deletion are not enabled.</p>';
         $table = self::table();
         if ( ! $table ) {
-            echo '<div class="notice notice-warning inline"><p>No legacy activities table found on this WordPress database connection. Check Directory readiness before connecting content.</p></div></div>';
+            echo '<div class="notice notice-warning inline"><p>New activities table not found on this WordPress database connection.</p></div></div>';
             return;
         }
         $quoted = '`' . str_replace( '`', '``', $table ) . '`';
