@@ -59,9 +59,11 @@ final class BH_Directory_3 {
         echo '<label><input type="checkbox" name="bh_free" value="1"' . checked( $free, true, false ) . '> Free only</label><button type="submit">Search</button></form>';
         echo '<div class="bh3-cards">';
         foreach ( $rows as $row ) {
-            $detail_url = add_query_arg( 'bh_activity', absint( $row['id'] ), home_url( '/activity-preview/' ) );
+            $detail_page = get_page_by_path( 'activity-preview' );
+            $detail_url = $detail_page && has_shortcode( (string) $detail_page->post_content, 'bubbahub_activity' )
+                ? add_query_arg( 'bh_activity', absint( $row['id'] ), get_permalink( $detail_page ) ) : '';
             echo '<article><div class="bh3-meta">' . esc_html( (string) $row['category'] ) . '</div><h3>' . esc_html( $row['title'] ) . '</h3>';
-            echo '<p><a href="' . esc_url( $detail_url ) . '">View activity details</a></p>';
+            if ( $detail_url ) { echo '<p><a href="' . esc_url( $detail_url ) . '">View activity details</a></p>'; }
             echo '<p>' . esc_html( wp_trim_words( wp_strip_all_tags( (string) $row['description'] ), 24 ) ) . '</p>';
             echo '<p class="bh3-meta">' . esc_html( (string) $row['town'] ) . ( $row['organiser'] ? ' · ' . esc_html( $row['organiser'] ) : '' ) . '</p>';
             echo '<strong>' . ( (int) $row['is_free'] ? 'Free' : ( $row['price_from'] !== null ? 'From £' . esc_html( number_format( (float) $row['price_from'], 2 ) ) : 'Price on enquiry' ) ) . '</strong></article>';
