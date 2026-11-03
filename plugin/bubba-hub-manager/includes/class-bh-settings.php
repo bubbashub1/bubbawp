@@ -24,7 +24,7 @@ final class BH_Settings_3 {
 
     public static function register() {
         add_submenu_page(
-            'tools.php',
+            'bubba-hub-3-status',
             __( 'Bubba Hub 3.0 Settings', 'bubba-hub-manager' ),
             __( 'Bubba Hub Settings', 'bubba-hub-manager' ),
             'manage_options',
