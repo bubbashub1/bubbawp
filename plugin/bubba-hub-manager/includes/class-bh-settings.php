@@ -31,7 +31,6 @@ final class BH_Settings_3 {
             'bh3-settings',
             array( __CLASS__, 'render' )
         );
-        add_action( 'admin_post_bh3_save_settings', array( __CLASS__, 'save' ) );
     }
 
     public static function sanitize( $input ) {
