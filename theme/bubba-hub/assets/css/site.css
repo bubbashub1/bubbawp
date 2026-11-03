@@ -46,3 +46,40 @@ button:focus-visible {
   .bh-category-grid { flex-direction: column; }
   .bh-card { padding: 1.25rem; }
 }
+
+/* Shared header/footer shell; no custom JS or dependency on plugin data. */
+.wp-site-blocks > header {
+  position: relative;
+  z-index: 10;
+  box-shadow: 0 1px 0 rgb(23 79 70 / 9%);
+}
+.wp-site-blocks > header .wp-block-site-title {
+  margin: 0;
+  font-weight: 800;
+  letter-spacing: -.025em;
+}
+.wp-site-blocks > header .wp-block-site-title a { color: var(--wp--preset--color--forest); }
+.wp-site-blocks > header .wp-block-site-logo img {
+  width: auto;
+  max-height: 3.5rem;
+  object-fit: contain;
+}
+.wp-site-blocks > header .wp-block-navigation__container { gap: clamp(.75rem, 1.8vw, 1.5rem); }
+.wp-site-blocks > header .wp-block-navigation-item__content {
+  font-size: .95rem;
+  font-weight: 650;
+  text-underline-offset: .3em;
+}
+.wp-site-blocks > header .wp-block-navigation-item__content:hover,
+.wp-site-blocks > header .wp-block-navigation-item__content:focus-visible {
+  text-decoration: underline;
+}
+.wp-site-blocks > footer { font-size: .925rem; }
+.wp-site-blocks > footer a { color: inherit; text-decoration: underline; text-underline-offset: .25em; }
+.wp-site-blocks > footer a:focus-visible { outline-color: currentColor; }
+@media (max-width: 781px) {
+  .wp-site-blocks > header .wp-block-group.alignwide { padding-inline: 1rem; }
+  .wp-site-blocks > header .wp-block-site-title { font-size: 1.05rem; }
+  .wp-site-blocks > header .wp-block-site-logo img { max-height: 2.75rem; }
+  .wp-site-blocks > footer .wp-block-group.alignwide { gap: .75rem; }
+}
