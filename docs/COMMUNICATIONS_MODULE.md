@@ -15,6 +15,12 @@
 - WordPress `wp_mail_succeeded` and `wp_mail_failed` actions feed a central log. The log records recipient, subject, type, status and error detail, but deliberately does not retain message bodies or attachments.
 - Email activity logs are automatically pruned after 90 days. Subscriber consent and suppression records are retained until an approved privacy/retention workflow is implemented.
 
+## Original Bubba Hub email designs
+
+The new `BH_Email_Templates_3` class reuses the branding and wording patterns from `bubbashub1/bubbaplugin`: `api/newsletter-welcome.php`, `api/newsletter.php` and `api/claim-invitations-cron.php`. It retains the green palette, original logo URL, email-safe table layout, friendly copy and buttons. It also supplies newly adapted claim-approved, booking-confirmation and booking-reminder designs. No legacy PDO/SMTP worker is copied.
+
+The Communications admin page now offers secure, admin-only HTML previews of all six designs. Newsletter campaigns render inside the branded Round Up design, and a welcome email is generated after confirmed opt-in. These templates are not yet wired to live claim or booking event triggers.
+
 ## Admin experience
 
 WordPress Admin → **Bubba Hub 3.0 → Communications** provides:
