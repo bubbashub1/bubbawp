@@ -22,10 +22,12 @@ final class BH_Manager_3 {
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-settings.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-directory-audit.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-directory-preview.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-modules.php';
         BH_Directory_Preview_3::register();
         add_action( 'admin_menu', array( __CLASS__, 'register_admin_page' ) );
         add_action( 'admin_menu', array( 'BH_Settings_3', 'register' ) );
         add_action( 'admin_menu', array( 'BH_Directory_Audit_3', 'register' ) );
+        add_action( 'admin_menu', array( 'BH_Modules_3', 'register' ) );
         add_action( 'admin_post_bh3_save_settings', array( 'BH_Settings_3', 'save' ) );
     }
 
