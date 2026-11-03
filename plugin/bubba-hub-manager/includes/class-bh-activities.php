@@ -74,11 +74,21 @@ final class BH_Activities_3 {
         if ( ! $name ) { echo '<p>Name field not mapped.</p>'; return; }
         $rows = $wpdb->get_results( $wpdb->prepare( 'SELECT `id` AS record_id, `' . $name . '` AS record_name FROM ' . $quoted . ' WHERE `' . $name . '` LIKE %s ORDER BY `' . $name . '` ASC LIMIT 20', '%' . $wpdb->esc_like( $term ) . '%' ), ARRAY_A );
         if ( ! $rows ) { echo '<p>No matches found.</p>'; return; }
-        echo '<table class="widefat striped"><thead><tr><th>Name</th><th>ID</th></tr></thead><tbody>';
+        $selection_param = $kind === 'venue' ? 'bh3_preview_venue' : 'bh3_preview_organiser';
+        echo '<table class="widefat striped"><thead><tr><th>Name</th><th>ID</th><th>Preview</th></tr></thead><tbody>';
         foreach ( $rows as $row ) {
-            echo '<tr><td>' . esc_html( (string) $row['record_name'] ) . '</td><td>' . esc_html( (string) $row['record_id'] ) . '</td></tr>';
+            $url = add_query_arg(
+                array(
+                    'page' => 'bh3-activities',
+                    'bh3_activity_id' => absint( $_GET['bh3_activity_id'] ?? 0 ),
+                    $param => $term,
+                    $selection_param => absint( $row['record_id'] ),
+                ),
+                admin_url( 'admin.php' )
+            );
+            echo '<tr><td>' . esc_html( (string) $row['record_name'] ) . '</td><td>' . esc_html( (string) $row['record_id'] ) . '</td><td><a href="' . esc_url( $url ) . '">Preview selection</a></td></tr>';
         }
-        echo '</tbody></table><p>Search results are informational only. Assignment is not enabled yet.</p>';
+        echo '</tbody></table><p>Preview only. This does not change the activity or its assigned records.</p>';
     }
     private static function detail( $table, $columns, $id ) {
         global $wpdb;
@@ -129,6 +139,14 @@ final class BH_Activities_3 {
             echo '</tbody></table>';
         }
         echo '<h3>Find existing records</h3>';
+        foreach ( array( 'venue' => 'bh3_preview_venue', 'organiser' => 'bh3_preview_organiser' ) as $kind => $parameter ) {
+            $preview_id = isset( $_GET[$parameter] ) ? absint( $_GET[$parameter] ) : 0;
+            if ( $preview_id ) {
+                echo '<div class="notice notice-info inline"><p><strong>' . esc_html( ucfirst( $kind ) ) . ' selection preview:</strong> ' .
+                    esc_html( self::related_label( $kind, $preview_id ) ) .
+                    '. This is not saved or assigned to the activity.</p></div>';
+            }
+        }
         self::related_search( 'venue' );
         self::related_search( 'organiser' );
         echo '<h3>Images</h3><p>Image library and upload controls will be connected after media field mapping.</p>';
