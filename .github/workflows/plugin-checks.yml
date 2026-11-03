@@ -1,0 +1,38 @@
+name: Plugin foundation checks and ZIP
+on:
+  push:
+    paths:
+      - 'plugin/bubba-hub-manager/**'
+      - 'scripts/validate-plugin.php'
+      - '.github/workflows/plugin-checks.yml'
+  pull_request:
+    paths:
+      - 'plugin/bubba-hub-manager/**'
+      - 'scripts/validate-plugin.php'
+      - '.github/workflows/plugin-checks.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  plugin-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: PHP lint and static checks
+        run: |
+          find plugin/bubba-hub-manager -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+          php -l scripts/validate-plugin.php
+          php scripts/validate-plugin.php
+      - name: Package plugin
+        run: |
+          mkdir -p dist
+          cd plugin
+          zip -qr ../dist/bubba-hub-manager.zip bubba-hub-manager
+          unzip -t ../dist/bubba-hub-manager.zip
+          unzip -Z1 ../dist/bubba-hub-manager.zip | grep -Fqx 'bubba-hub-manager/bubba-hub-manager.php'
+      - name: Upload plugin ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: bubba-hub-manager
+          path: dist/bubba-hub-manager.zip
+          if-no-files-found: error
