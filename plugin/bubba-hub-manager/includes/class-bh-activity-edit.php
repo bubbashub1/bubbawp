@@ -22,6 +22,9 @@ final class BH_Activity_Edit_3 {
         echo '<div class="wrap"><h1>Edit draft activity #' . esc_html( (string) $id ) . '</h1>';
         if ( isset( $_GET['updated'] ) ) { echo '<div class="notice notice-success"><p>Draft updated.</p></div>'; }
         echo '<p>Draft fields only. Slug and publishing status remain unchanged.</p>';
+        echo '<p><a class="button" href="' . esc_url( add_query_arg( array( 'page' => 'bh3-activity-venues', 'activity_id' => $id ), admin_url( 'admin.php' ) ) ) . '">Manage venues</a> ';
+        echo '<a class="button" href="' . esc_url( add_query_arg( array( 'page' => 'bh3-sessions', 'activity_id' => $id ), admin_url( 'admin.php' ) ) ) . '">Manage timetable</a></p>';
+
         echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
         echo '<input type="hidden" name="action" value="bh3_update_activity"><input type="hidden" name="activity_id" value="' . esc_attr( (string) $id ) . '">';
         wp_nonce_field( 'bh3_update_activity_' . $id );
