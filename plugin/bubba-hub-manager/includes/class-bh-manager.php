@@ -30,6 +30,7 @@ final class BH_Manager_3 {
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-venues.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activity-venues.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-organisers.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-sessions.php';
         BH_Directory_Preview_3::register();
         add_action( 'admin_menu', array( __CLASS__, 'register_admin_page' ) );
         add_action( 'admin_menu', array( 'BH_Settings_3', 'register' ) );
@@ -41,6 +42,7 @@ final class BH_Manager_3 {
         add_action( 'admin_menu', array( 'BH_Venues_3', 'register' ) );
         add_action( 'admin_menu', array( 'BH_Activity_Venues_3', 'register' ) );
         add_action( 'admin_menu', array( 'BH_Organisers_3', 'register' ) );
+        add_action( 'admin_menu', array( 'BH_Sessions_3', 'register' ) );
         add_action( 'admin_init', array( 'BH_Activity_Create_3', 'register_save' ) );
         add_action( 'admin_post_bh3_save_settings', array( 'BH_Settings_3', 'save' ) );
         add_action( 'admin_post_bh3_install_schema', array( __CLASS__, 'install_schema' ) );
