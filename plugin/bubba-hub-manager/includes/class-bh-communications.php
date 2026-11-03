@@ -96,7 +96,7 @@ final class BH_Communications_3 {
         $failed = self::count_logs( 'failed' );
         $enabled = self::enabled();
         echo '<div class="wrap bh3-comms"><h1>Communications centre</h1>';
-        echo '<p>Newsletters, automated email delivery and a central activity log. Delivery uses <code>wp_mail()</code>; FluentSMTP handles the SMTP connection when configured.</p>';
+        echo '<p>Newsletters, automated email delivery and a central activity log. Delivery uses <code>wp_mail()</code>; FluentSMTP handles the SMTP connection when configured. A successful hand-off is not proof of inbox delivery or an open.</p>';
         echo '<style>
         .bh3-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0}
         .bh3-stat{background:#fff;border:1px solid #dcdcde;border-radius:9px;padding:16px}
@@ -109,7 +109,7 @@ final class BH_Communications_3 {
         echo '<div class="bh3-stats">';
         self::stat_card( 'Active subscribers', $active );
         self::stat_card( 'Awaiting confirmation', $pending );
-        self::stat_card( 'Emails sent', $sent );
+        self::stat_card( 'Mail accepted', $sent );
         self::stat_card( 'Email failures', $failed );
         echo '</div>';
 
@@ -259,7 +259,6 @@ final class BH_Communications_3 {
                 $token = wp_hash( 'bh3-unsubscribe:' . absint( $subscriber_id ) );
             $unsubscribe = add_query_arg( array( 'bh3_unsubscribe' => $subscriber_id, 'token' => rawurlencode( $token ) ), home_url( '/' ) );
             $html = '<!doctype html><html><body style="font-family:Arial,sans-serif;color:#26352d"><div style="max-width:640px;margin:auto;padding:24px"><h1>' . esc_html( get_bloginfo( 'name' ) ) . '</h1>' . wp_kses_post( $campaign->post_content ) . '<hr><p style="font-size:12px;color:#66736b">You are receiving this because you subscribed to Bubba Hub updates. <a href="' . esc_url( $unsubscribe ) . '">Unsubscribe</a></p></div></body></html>';
-            $headers = array( 'Content-Type: text/html; charset=UTF-8' );
             $sent = self::send_transactional( $email, $campaign->post_title, $html, 'Newsletter' );
             if ( $sent ) {
                 update_post_meta( $campaign_id, '_bh3_sent', absint( get_post_meta( $campaign_id, '_bh3_sent', true ) ) + 1 );
