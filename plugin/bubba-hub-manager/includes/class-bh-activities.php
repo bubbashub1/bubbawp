@@ -15,6 +15,34 @@ final class BH_Activities_3 {
         }
         return null;
     }
+    private static function detail( $table, $columns, $id ) {
+        global $wpdb;
+        $allowed = array(
+            'title' => 'Title', 'activity_name' => 'Activity name', 'name' => 'Name',
+            'description' => 'Description', 'short_description' => 'Short description',
+            'category' => 'Category', 'age_min_months' => 'Minimum age (months)',
+            'age_max_months' => 'Maximum age (months)', 'price' => 'Price',
+            'is_free' => 'Free activity', 'status' => 'Status',
+            'venue_id' => 'Venue ID', 'organiser_id' => 'Organiser ID',
+            'website' => 'Website', 'booking_url' => 'Booking URL'
+        );
+        $fields = array_intersect_key( $allowed, array_fill_keys( $columns, true ) );
+        if ( ! $fields ) { echo '<p>No approved display fields were found.</p>'; return; }
+        $quoted = '`' . str_replace( '`', '``', $table ) . '`';
+        $names = array_keys( $fields );
+        $select = implode( ', ', array_map( static function( $field ) { return '`' . $field . '`'; }, $names ) );
+        $row = $wpdb->get_row( $wpdb->prepare( 'SELECT ' . $select . ' FROM ' . $quoted . ' WHERE `id` = %d LIMIT 1', $id ), ARRAY_A );
+        echo '<p><a href="' . esc_url( admin_url( 'admin.php?page=bh3-activities' ) ) . '">&larr; Back to activities</a></p>';
+        if ( ! $row ) { echo '<div class="notice notice-warning inline"><p>Activity not found.</p></div>'; return; }
+        echo '<h2>Activity #' . esc_html( (string) $id ) . ' — read-only detail</h2>';
+        echo '<p>Field editing, timetable relationships and publishing actions will be enabled only after mapping and permission checks.</p>';
+        echo '<table class="widefat striped"><tbody>';
+        foreach ( $fields as $field => $label ) {
+            $value = isset( $row[$field] ) ? (string) $row[$field] : '';
+            echo '<tr><th scope="row" style="width:220px">' . esc_html( $label ) . '</th><td style="white-space:pre-wrap;overflow-wrap:anywhere">' . esc_html( $value ) . '</td></tr>';
+        }
+        echo '</tbody></table>';
+    }
     public static function render() {
         if ( ! current_user_can( 'manage_options' ) ) { wp_die( esc_html__( 'Permission denied.', 'bubba-hub-manager' ) ); }
         global $wpdb;
@@ -34,6 +62,12 @@ final class BH_Activities_3 {
         $id = in_array( 'id', $columns, true ) ? 'id' : null;
         if ( ! $title || ! $id ) {
             echo '<div class="notice notice-warning inline"><p>Activity ID or title field not recognised. Confirm column mappings in Directory readiness.</p></div></div>';
+            return;
+        }
+        $detail_id = isset( $_GET['bh3_activity_id'] ) ? absint( $_GET['bh3_activity_id'] ) : 0;
+        if ( $detail_id > 0 ) {
+            self::detail( $table, $columns, $detail_id );
+            echo '</div>';
             return;
         }
         $search = isset( $_GET['bh3_search'] ) && is_string( $_GET['bh3_search'] ) ? sanitize_text_field( wp_unslash( $_GET['bh3_search'] ) ) : '';
@@ -58,7 +92,7 @@ final class BH_Activities_3 {
         echo '<table class="widefat striped"><thead><tr><th scope="col">ID</th><th scope="col">Activity title</th><th scope="col">Actions</th></tr></thead><tbody>';
         if ( $rows ) {
             foreach ( $rows as $row ) {
-                echo '<tr><td>' . esc_html( (string) $row['activity_id'] ) . '</td><td>' . esc_html( (string) $row['activity_title'] ) . '</td><td>View only — editing pending</td></tr>';
+                echo '<tr><td>' . esc_html( (string) $row['activity_id'] ) . '</td><td>' . esc_html( (string) $row['activity_title'] ) . '</td><td><a href="' . esc_url( add_query_arg( array( 'page' => 'bh3-activities', 'bh3_activity_id' => absint( $row['activity_id'] ) ), admin_url( 'admin.php' ) ) ) . '">View details</a></td></tr>';
             }
         } else { echo '<tr><td colspan="3">No activities found.</td></tr>'; }
         echo '</tbody></table>';
