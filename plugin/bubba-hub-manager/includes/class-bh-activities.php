@@ -139,6 +139,45 @@ final class BH_Activities_3 {
         echo '<p><button type="button" class="button" disabled>+ Add session</button> ';
         echo '<button type="button" class="button" disabled>Remove session</button></p>';
     }
+    /**
+     * Only read actual timetable rows when a single unambiguous mapping exists.
+     * Never interprets alternate relationship columns as activity IDs.
+     */
+    private static function verified_session_rows( $activity_id ) {
+        global $wpdb;
+        $matches = array();
+        foreach ( array( 'bh_activity_sessions', 'bh_sessions', 'bh_activity_schedules', 'bh_schedules', 'bh_timetables', 'bh_activity_timetable' ) as $base ) {
+            foreach ( array_unique( array( $base, $wpdb->prefix . $base ) ) as $candidate ) {
+                if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $candidate ) ) ) !== $candidate ) { continue; }
+                $quoted = '`' . str_replace( '`', '``', $candidate ) . '`';
+                $columns = $wpdb->get_col( 'SHOW COLUMNS FROM ' . $quoted, 0 );
+                if ( ! is_array( $columns ) || ! in_array( 'activity_id', $columns, true ) ) { continue; }
+                $day = in_array( 'day_of_week', $columns, true ) ? 'day_of_week' : ( in_array( 'day', $columns, true ) ? 'day' : null );
+                if ( ! $day || ! in_array( 'start_time', $columns, true ) || ! in_array( 'end_time', $columns, true ) ) { continue; }
+                $matches[] = array( $quoted, $day, $columns );
+            }
+        }
+        if ( count( $matches ) !== 1 ) {
+            echo '<p>Session rows are not shown: ' . esc_html( count( $matches ) ? 'multiple possible schedule tables require mapping review.' : 'no verified activity/day/start/end mapping was found.' ) . '</p>';
+            return;
+        }
+        list( $table, $day, $columns ) = $matches[0];
+        $extras = array_values( array_intersect( array( 'venue_id', 'status', 'term_time_only' ), $columns ) );
+        $select = array_merge( array( $day, 'start_time', 'end_time' ), $extras );
+        $quoted_fields = implode( ', ', array_map( static function ( $field ) { return '`' . $field . '`'; }, $select ) );
+        $rows = $wpdb->get_results( $wpdb->prepare( 'SELECT ' . $quoted_fields . ' FROM ' . $table . ' WHERE `activity_id` = %d LIMIT 100', absint( $activity_id ) ), ARRAY_A );
+        echo '<h4>Existing sessions (read-only, maximum 100)</h4>';
+        if ( ! $rows ) { echo '<p>No matching sessions found in the candidate table.</p>'; return; }
+        echo '<div style="overflow-x:auto"><table class="widefat striped"><thead><tr>';
+        foreach ( $select as $field ) { echo '<th scope="col">' . esc_html( str_replace( '_', ' ', ucfirst( $field ) ) ) . '</th>'; }
+        echo '</tr></thead><tbody>';
+        foreach ( $rows as $row ) {
+            echo '<tr>';
+            foreach ( $select as $field ) { echo '<td>' . esc_html( isset( $row[$field] ) ? (string) $row[$field] : '' ) . '</td>'; }
+            echo '</tr>';
+        }
+        echo '</tbody></table></div><p>These rows are displayed as stored, without assuming recurrence or cancellation semantics.</p>';
+    }
     private static function detail( $table, $columns, $id ) {
         global $wpdb;
         $allowed = array(
@@ -200,6 +239,7 @@ final class BH_Activities_3 {
         self::related_search( 'organiser' );
         echo '<h3>Images</h3><p>Image library and upload controls will be connected after media field mapping.</p>';
         echo '<h3>Session timetable</h3>';
+        self::verified_session_rows( $id );
         self::timetable_layout_preview();
         echo '<details><summary>Database mapping readiness</summary>';
         self::timetable_readiness();
