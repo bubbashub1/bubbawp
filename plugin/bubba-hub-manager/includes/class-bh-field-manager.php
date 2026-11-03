@@ -18,6 +18,7 @@ final class BH_Field_Manager_3 {
         add_action( 'admin_post_bh3_field_definition_save', array( __CLASS__, 'save_field' ) );
         add_action( 'admin_post_bh3_field_toggle', array( __CLASS__, 'toggle' ) );
         add_action( 'admin_post_bh3_field_move', array( __CLASS__, 'move' ) );
+        add_action( 'admin_post_bh3_field_values_save', array( __CLASS__, 'save_values' ) );
     }
     private static function guard( $nonce ) {
         if ( ! self::enabled() || ! current_user_can( 'manage_options' ) ) { wp_die( 'Staging administrator access required.', '', array( 'response' => 403 ) ); }
@@ -158,6 +159,125 @@ final class BH_Field_Manager_3 {
         }
         $wpdb->query( 'COMMIT' );
         self::redirect( 'order_updated' );
+    }
+    /** The value editor is admin-only until ownership rules are shared with the front-end wizard. */
+    private static function object_table( $type ) {
+        if ( ! in_array( $type, array( 'activity', 'venue', 'session' ), true ) ) { return ''; }
+        global $wpdb;
+        return $wpdb->prefix . array( 'activity' => 'activities', 'venue' => 'venues', 'session' => 'sessions' )[ $type ];
+    }
+    private static function object_exists( $type, $id ) {
+        if ( ! $id || ! ( $table = self::object_table( $type ) ) ) { return false; }
+        global $wpdb;
+        return (bool) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM `{$table}` WHERE id=%d LIMIT 1", $id ) );
+    }
+    private static function normalized_value( $field, $raw ) {
+        $type = $field['field_type'];
+        $options = json_decode( $field['options_json'] ?: '[]', true );
+        if ( ! is_array( $options ) ) { $options = array(); }
+        if ( $type === 'checkbox' ) { return empty( $raw ) ? false : true; }
+        if ( $type === 'multiselect' ) {
+            if ( ! is_array( $raw ) || count( $raw ) > 100 ) { return new WP_Error( 'invalid_value', 'Invalid multi-select value.' ); }
+            $values = array_values( array_unique( array_map( 'sanitize_text_field', $raw ) ) );
+            return count( array_diff( $values, $options ) ) ? new WP_Error( 'invalid_option', 'Invalid multi-select option.' ) : $values;
+        }
+        if ( is_array( $raw ) || is_object( $raw ) ) { return new WP_Error( 'invalid_value', 'Invalid field value.' ); }
+        $value = trim( (string) $raw );
+        if ( strlen( $value ) > 10000 ) { return new WP_Error( 'too_long', 'Field value is too long.' ); }
+        switch ( $type ) {
+            case 'number':
+                if ( $value !== '' && ! is_numeric( $value ) ) { return new WP_Error( 'invalid_number', 'Invalid number.' ); }
+                return $value === '' ? '' : (float) $value;
+            case 'select':
+                if ( $value !== '' && ! in_array( $value, $options, true ) ) { return new WP_Error( 'invalid_option', 'Invalid selection.' ); }
+                return $value;
+            case 'email':
+                if ( $value !== '' && ! is_email( $value ) ) { return new WP_Error( 'invalid_email', 'Invalid email.' ); }
+                return sanitize_email( $value );
+            case 'url':
+                if ( $value !== '' && ! wp_http_validate_url( $value ) ) { return new WP_Error( 'invalid_url', 'Invalid URL.' ); }
+                return esc_url_raw( $value );
+            case 'date':
+                $date = $value ? DateTimeImmutable::createFromFormat( '!Y-m-d', $value ) : null;
+                if ( $value && ( ! $date || $date->format( 'Y-m-d' ) !== $value ) ) { return new WP_Error( 'invalid_date', 'Invalid date.' ); }
+                return $value;
+            case 'time':
+                if ( $value !== '' && ! preg_match( '/^([01][0-9]|2[0-3]):[0-5][0-9]$/', $value ) ) { return new WP_Error( 'invalid_time', 'Invalid time.' ); }
+                return $value;
+            case 'textarea': return sanitize_textarea_field( $value );
+            default: return sanitize_text_field( $value );
+        }
+    }
+    public static function save_values() {
+        self::guard( 'bh3_field_values_save' );
+        if ( ! self::ready() ) { wp_die( 'Field Manager not installed.', '', array( 'response' => 409 ) ); }
+        $type = sanitize_key( $_POST['object_type'] ?? '' );
+        $id = absint( $_POST['object_id'] ?? 0 );
+        if ( ! self::object_exists( $type, $id ) ) { wp_die( 'Record not found.', '', array( 'response' => 404 ) ); }
+        $submitted = isset( $_POST['custom_fields'] ) && is_array( $_POST['custom_fields'] ) ? wp_unslash( $_POST['custom_fields'] ) : array();
+        $definitions = self::definitions_for( $type );
+        $updates = array();
+        foreach ( $definitions as $field ) {
+            $field_id = (int) $field['field_id'];
+            $raw = $submitted[ $field_id ] ?? ( $field['field_type'] === 'multiselect' ? array() : '' );
+            $value = self::normalized_value( $field, $raw );
+            if ( is_wp_error( $value ) ) { wp_die( esc_html( $field['label'] . ': ' . $value->get_error_message() ), '', array( 'response' => 400 ) ); }
+            if ( $field['is_required'] && ( $value === '' || $value === array() ) ) { wp_die( esc_html( $field['label'] . ' is required.' ), '', array( 'response' => 400 ) ); }
+            $updates[ $field_id ] = wp_json_encode( $value );
+        }
+        global $wpdb; $t = self::tables();
+        $wpdb->query( 'START TRANSACTION' );
+        foreach ( $updates as $field_id => $json ) {
+            $ok = $wpdb->replace( $t['values'], array( 'object_type' => $type, 'object_id' => $id, 'field_id' => $field_id, 'value_json' => $json, 'updated_at' => current_time( 'mysql', true ) ) );
+            if ( $ok === false ) { $wpdb->query( 'ROLLBACK' ); wp_die( 'Could not save field values.', '', array( 'response' => 500 ) ); }
+        }
+        $wpdb->query( 'COMMIT' );
+        wp_safe_redirect( add_query_arg( array( 'page' => 'bh3-field-manager', 'object_type' => $type, 'object_id' => $id, 'notice' => 'values_saved' ), admin_url( 'admin.php' ) ) );
+        exit;
+    }
+    private static function render_values_editor() {
+        $type = sanitize_key( $_GET['object_type'] ?? '' );
+        $id = absint( $_GET['object_id'] ?? 0 );
+        echo '<section class="bh3-fm-card"><h2>Edit record values</h2><form method="get" action="' . esc_url( admin_url( 'admin.php' ) ) . '"><input type="hidden" name="page" value="bh3-field-manager"><label>Record type <select name="object_type">';
+        foreach ( array( 'activity' => 'Activity', 'venue' => 'Venue', 'session' => 'Session' ) as $key => $label ) {
+            echo '<option value="' . esc_attr( $key ) . '" ' . selected( $type, $key, false ) . '>' . esc_html( $label ) . '</option>';
+        }
+        echo '</select></label> <label>Record ID <input type="number" name="object_id" min="1" value="' . esc_attr( $id ?: '' ) . '" required></label> <button class="button">Load fields</button></form>';
+        if ( $id && self::object_exists( $type, $id ) ) {
+            global $wpdb; $t = self::tables();
+            $definitions = self::definitions_for( $type );
+            $stored = $wpdb->get_results( $wpdb->prepare( "SELECT field_id,value_json FROM `{$t['values']}` WHERE object_type=%s AND object_id=%d", $type, $id ), ARRAY_A );
+            $values = array();
+            foreach ( $stored as $item ) { $values[ (int) $item['field_id'] ] = json_decode( $item['value_json'], true ); }
+            echo '<h3>' . esc_html( ucfirst( $type ) . ' #' . $id ) . '</h3>';
+            if ( ! $definitions ) { echo '<p>No active custom fields assigned to this record type.</p>'; }
+            else {
+                echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="bh3_field_values_save"><input type="hidden" name="object_type" value="' . esc_attr( $type ) . '"><input type="hidden" name="object_id" value="' . esc_attr( $id ) . '">';
+                wp_nonce_field( 'bh3_field_values_save' );
+                foreach ( $definitions as $field ) {
+                    $fid = (int) $field['field_id']; $kind = $field['field_type']; $value = $values[ $fid ] ?? '';
+                    $name = 'custom_fields[' . $fid . ']'; $options = json_decode( $field['options_json'] ?: '[]', true ) ?: array();
+                    echo '<p><label><strong>' . esc_html( $field['group_name'] . ' / ' . $field['label'] ) . '</strong>' . ( $field['is_required'] ? ' *' : '' ) . '<br>';
+                    if ( $kind === 'textarea' ) { echo '<textarea name="' . esc_attr( $name ) . '" rows="3" cols="55">' . esc_textarea( (string) $value ) . '</textarea>'; }
+                    elseif ( $kind === 'checkbox' ) { echo '<input type="checkbox" name="' . esc_attr( $name ) . '" value="1" ' . checked( (bool) $value, true, false ) . '>'; }
+                    elseif ( in_array( $kind, array( 'select', 'multiselect' ), true ) ) {
+                        echo '<select name="' . esc_attr( $name . ( $kind === 'multiselect' ? '[]' : '' ) ) . '" ' . ( $kind === 'multiselect' ? 'multiple size="4"' : '' ) . '>';
+                        if ( $kind === 'select' ) { echo '<option value="">Choose…</option>'; }
+                        foreach ( $options as $option ) {
+                            $selected = $kind === 'multiselect' ? in_array( $option, (array) $value, true ) : $option === $value;
+                            echo '<option value="' . esc_attr( $option ) . '" ' . selected( $selected, true, false ) . '>' . esc_html( $option ) . '</option>';
+                        }
+                        echo '</select>';
+                    } else {
+                        $input_type = in_array( $kind, array( 'number', 'date', 'time', 'url', 'email' ), true ) ? $kind : 'text';
+                        echo '<input type="' . esc_attr( $input_type ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( (string) $value ) . '">';
+                    }
+                    echo '</label></p>';
+                }
+                echo '<button class="button button-primary">Save custom values</button></form>';
+            }
+        } elseif ( $id ) { echo '<p>Record not found.</p>'; }
+        echo '</section>';
     }
     private static function action_form( $action, $nonce, $values, $label ) {
         $html = '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
