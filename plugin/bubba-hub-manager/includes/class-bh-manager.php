@@ -8,6 +8,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class BH_Manager_3 {
     private static $booted = false;
 
+    /** Explicitly disabled until isolated staging compatibility QA. */
+    public const FEATURE_DIRECTORY = false;
+    public const FEATURE_LEADER = false;
+    public const FEATURE_FAMILY = false;
+    public const FEATURE_BOOKINGS = false;
+
     public static function boot() {
         if ( self::$booted ) {
             return;
@@ -33,6 +39,12 @@ final class BH_Manager_3 {
         echo '<div class="wrap"><h1>' . esc_html__( 'Bubba Hub Manager 3.0', 'bubba-hub-manager' ) . '</h1>';
         echo '<p>' . esc_html__( 'Foundation installed. All business modules remain disabled pending like-for-like audit and staging tests.', 'bubba-hub-manager' ) . '</p>';
         echo '<p><strong>' . esc_html__( 'Version:', 'bubba-hub-manager' ) . '</strong> ' . esc_html( BUBBA_HUB_MANAGER_VERSION ) . '</p>';
+        echo '<h2>' . esc_html__( 'Feature readiness', 'bubba-hub-manager' ) . '</h2>';
+        echo '<ul>';
+        foreach ( array( 'Directory' => self::FEATURE_DIRECTORY, 'Leader portal' => self::FEATURE_LEADER, 'My Hub' => self::FEATURE_FAMILY, 'Bookings' => self::FEATURE_BOOKINGS ) as $label => $enabled ) {
+            echo '<li>' . esc_html( $label ) . ': ' . esc_html( $enabled ? __( 'Enabled', 'bubba-hub-manager' ) : __( 'Disabled — awaiting parity tests', 'bubba-hub-manager' ) ) . '</li>';
+        }
+        echo '</ul>';
         echo '<p>' . esc_html__( 'No database tables, user roles, rewrite rules, REST endpoints or scheduled tasks are created by this version.', 'bubba-hub-manager' ) . '</p></div>';
     }
 }
