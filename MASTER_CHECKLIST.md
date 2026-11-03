@@ -17,9 +17,9 @@
 ## Current focus
 
 - **Active stage:** 0 — Project governance and architecture
-- **Current task:** G-01 — Create master work checklist
+- **Current task:** G-02 — Establish repository conventions and protected workflow
 - **Next task:** G-02 — Establish repository conventions and protected workflow
-- **Last verified milestone:** New private `bubbashub1/bubbawp` repository exists
+- **Last verified milestone:** Master checklist created; custom block theme approach approved and documented
 - **Staging QA:** Not started
 - **Production changes:** None authorised
 
@@ -30,7 +30,7 @@
 - [ ] **R-03** Preserve existing PHP APIs, account access, URLs and behaviour via compatibility adapters until replacements are tested and approved.
 - [ ] **R-04** Build **our own installable WordPress plugin**. GeoDirectory, Directorist, Amelia, LatePoint, Bookwhen and ClassForKids are **feature inspiration only**, not dependencies; do not copy proprietary code or designs.
 - [ ] **R-05** No AI APIs, paid plugins, new paid services or recurring service costs in this development phase.
-- [ ] **R-06** Prefer existing hosting, WordPress/Astra/Elementor/Forminator where useful, and free/open-source tools after licence and limits review.
+- [ ] **R-06** Prefer existing hosting, WordPress core and free/open-source tools after licence and limits review. **New theme must not depend on Astra, Elementor or paid builders**; existing Elementor content remains supported during legacy migration where necessary.
 - [ ] **R-07** Use staging/test fixtures first; no live data writes from the new plugin.
 - [ ] **R-08** Privacy and child safety by design: minimal data, parent-controlled child profiles, private memories, access controls and retention policies.
 - [ ] **R-09** Mobile-first for families, leaders and administrators.
@@ -48,19 +48,28 @@
 - [ ] **G-08** Create risk register, privacy/security requirements, rollback approach and test fixtures.
 - [ ] **G-09** Write architecture decision records for directory, booking, payments and My Hub.
 - [ ] **G-10** Approve MVP boundaries and deferred features.
+- [x] **G-11** Select architecture: fully custom native WordPress block theme, separately installable from the Bubba Hub Manager plugin.
+- [ ] **G-12** Specify block theme design system, template coverage, editor patterns and legacy Elementor transition.
 - **Exit gate:** architecture, schema constraints, migration strategy and test plan reviewed; no unknown critical data dependency.
 
-## Stage 1 — Installable plugin foundation
+## Stage 1 — Installable plugin and theme foundations
 
 - [ ] **F-01** Create WordPress plugin bootstrap with version, activation/deactivation and safe uninstall policy.
 - [ ] **F-02** Create modular architecture and feature flags; disabled modules must not damage data.
 - [ ] **F-03** Add admin dashboard, settings, capabilities and audit logging.
 - [ ] **F-04** Add read-only data repositories and adapters to existing `bh_` tables/PHP APIs.
 - [ ] **F-05** Add REST routes with authentication, permissions, validation and CSRF protections.
-- [ ] **F-06** Add Elementor widget registration and design system without mandatory premium dependencies.
+- [ ] **F-06** Add native WordPress dynamic blocks (server-rendered where appropriate), block patterns and a shared design-token contract; Elementor compatibility is a migration adapter only.
 - [ ] **F-07** Add PHPUnit/static checks, security checks and reproducible plugin ZIP build.
 - [ ] **F-08** Install on isolated/staging WordPress; verify activation, deactivation and no database mutations.
-- **Exit gate:** clean install/disable, passing CI, documented adapters, no live changes.
+- [ ] **T-01** Create separate installable theme at `theme/bubba-hub/` with `style.css`, `theme.json`, `templates/`, `parts/`, `patterns/` and theme bootstrap as needed.
+- [ ] **T-02** Implement native Site Editor global styles: colours, typography, spacing, buttons and responsive layouts without paid dependencies.
+- [ ] **T-03** Implement header, footer, navigation, homepage, page, archive, search, 404 and relevant single templates.
+- [ ] **T-04** Provide theme patterns for homepage hero, category navigation, directory entry, leader CTA, family CTA and event promotions.
+- [ ] **T-05** Integrate dynamic directory/booking/family blocks from plugin; theme remains presentation-only and usable when plugin disabled.
+- [ ] **T-06** Create independent plugin and theme ZIP packaging with versioned release artefacts.
+- [ ] **T-07** Test Site Editor, mobile, accessibility, plugin disabled fallback, SEO/permalinks and legacy Elementor content rendering on staging.
+- **Exit gate:** clean independent theme/plugin install/disable, Site Editor functionality, passing CI, documented adapters, no live changes.
 
 ## Stage 2 — Directory and discovery
 
@@ -70,7 +79,7 @@
 - [ ] **D-04** Postcode, Near Me, distance/radius search with free/approved location solution.
 - [ ] **D-05** Filters: age, category, date, time, price/free, accessibility, term time and availability.
 - [ ] **D-06** Venue/organiser linking, duplicate prevention and location management.
-- [ ] **D-07** Elementor widgets: search, cards, map, timetable, organiser profile.
+- [ ] **D-07** Native Gutenberg dynamic blocks: search, cards, map, timetable and organiser profile; optional legacy Elementor compatibility adapter.
 - [ ] **D-08** SEO-friendly activity URLs, redirects and compatibility tests.
 - [ ] **D-09** Featured placements clearly marked as sponsored (monetisation later).
 - **Exit gate:** search/filter/map consistency, mobile QA, URL parity and no duplicated master records.
@@ -183,6 +192,9 @@
 | ADR-010 | Stripe Connect/payment service configuration | Research later; not selected/activated |
 | ADR-011 | Pro subscription pricing and commission variations | Undecided |
 | ADR-012 | Exact new tables needed for new features | Pending schema audit and approval |
+| ADR-013 | **Approach A:** fully custom native WordPress **block theme**, no Astra/Elementor dependency; separate theme ZIP and plugin ZIP | Agreed 2026-11-03 |
+| ADR-014 | WordPress Site Editor, `theme.json`, templates, parts and patterns for visual editing; plugin owns business logic and dynamic blocks | Agreed 2026-11-03 |
+| ADR-015 | Legacy Astra/Elementor content must be inventoried and transitioned on staging; no live theme switch until approved | Agreed 2026-11-03 |
 
 ## Work item template
 
@@ -227,3 +239,4 @@ Copy for each substantial issue/PR:
 | Date | Change | Evidence |
 | --- | --- | --- |
 | 2026-11-03 | Initial master checklist created; no plugin implementation or staging QA claimed | This file |
+| 2026-11-03 | Approved custom block theme approach A; added G-11/G-12 and T-01–T-07, revised F-06/D-07 and decisions | `docs/ARCHITECTURE.md` |
