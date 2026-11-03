@@ -22,9 +22,11 @@ final class BH_Manager_3 {
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-settings.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activity-repository.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activities-admin.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-legacy-directory-admin.php';
         add_action( 'admin_menu', array( __CLASS__, 'register_admin_page' ) );
         add_action( 'admin_menu', array( 'BH_Settings_3', 'register' ) );
         add_action( 'admin_menu', array( 'BH_Activities_Admin_3', 'register' ) );
+        add_action( 'admin_menu', array( 'BH_Legacy_Directory_Admin_3', 'register' ) );
         add_action( 'admin_post_bh3_save_settings', array( 'BH_Settings_3', 'save' ) );
     }
 
