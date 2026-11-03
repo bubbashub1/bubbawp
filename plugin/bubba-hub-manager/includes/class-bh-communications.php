@@ -219,7 +219,8 @@ final class BH_Communications_3 {
         self::require_admin();
         $key = isset( $_GET['template'] ) ? sanitize_key( wp_unslash( $_GET['template'] ) ) : '';
         check_admin_referer( 'bh3_preview_template_' . $key );
-        if ( ! isset( BH_Email_Templates_3::definitions()[ $key ] ) ) {
+        $definitions = BH_Email_Templates_3::definitions();
+        if ( ! isset( $definitions[ $key ] ) ) {
             wp_die( esc_html__( 'Unknown email template.', 'bubba-hub-manager' ), '', array( 'response' => 404 ) );
         }
         nocache_headers();
@@ -347,6 +348,10 @@ final class BH_Communications_3 {
             wp_die( esc_html__( 'Please enter a valid email address and confirm consent.', 'bubba-hub-manager' ), '', array( 'response' => 400 ) );
         }
         $existing = get_posts( array( 'post_type' => self::SUBSCRIBER, 'post_status' => 'private', 'numberposts' => 1, 'meta_key' => '_bh3_email', 'meta_value' => $email ) );
+        if ( $existing && 'active' === get_post_meta( $existing[0]->ID, '_bh3_status', true ) ) {
+            wp_safe_redirect( add_query_arg( 'bh3_subscribed', '1', wp_get_referer() ?: home_url( '/' ) ) );
+            exit;
+        }
         $subscriber_id = $existing ? $existing[0]->ID : wp_insert_post( array( 'post_type' => self::SUBSCRIBER, 'post_status' => 'private', 'post_title' => $email ), true );
         if ( is_wp_error( $subscriber_id ) ) {
             wp_die( esc_html( $subscriber_id->get_error_message() ) );
