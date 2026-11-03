@@ -19,6 +19,12 @@ foreach (['Plugin Name:', 'Version:', 'Requires PHP:', 'Text Domain:'] as $heade
 foreach (glob($root . '/**/*.php') ?: [] as $file) {
     $source = file_get_contents($file);
     foreach (['register_activation_hook(', 'dbDelta(', 'wp_schedule_event(', 'register_rest_route('] as $unsafe) {
+        // The explicit schema installer may use dbDelta, but never on activation.
+        if ($unsafe === 'dbDelta(' && basename($file) === 'class-bh-schema.php' &&
+            strpos($source, 'public static function install()') !== false &&
+            strpos($source, "current_user_can( 'manage_options' )") !== false) {
+            continue;
+        }
         if (strpos($source, $unsafe) !== false) {
             fwrite(STDERR, "Unexpected side-effect API in {$file}: {$unsafe}\n");
             exit(1);
