@@ -90,6 +90,39 @@ final class BH_Activities_3 {
         }
         echo '</tbody></table><p>Preview only. This does not change the activity or its assigned records.</p>';
     }
+    /** Inspect known timetable candidates without querying or changing session rows. */
+    private static function timetable_readiness() {
+        global $wpdb;
+        $candidates = array(
+            'bh_activity_sessions', 'bh_sessions', 'bh_activity_schedules',
+            'bh_schedules', 'bh_timetables', 'bh_activity_timetable'
+        );
+        $found = 0;
+        echo '<p>Known timetable table candidates are checked below. A matching name alone does not confirm the correct relationship.</p>';
+        foreach ( $candidates as $base ) {
+            foreach ( array_unique( array( $base, $wpdb->prefix . $base ) ) as $candidate ) {
+                $exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $candidate ) ) );
+                if ( $exists !== $candidate ) { continue; }
+                $found++;
+                $quoted = '`' . str_replace( '`', '``', $candidate ) . '`';
+                $columns = $wpdb->get_col( 'SHOW COLUMNS FROM ' . $quoted, 0 );
+                echo '<h4>' . esc_html( $candidate ) . '</h4>';
+                if ( ! is_array( $columns ) ) {
+                    echo '<p>Unable to inspect columns.</p>';
+                    continue;
+                }
+                $relation = array_values( array_intersect( array( 'activity_id', 'listing_id', 'class_id' ), $columns ) );
+                echo '<p>Columns: ' . esc_html( implode( ', ', $columns ) ) . '</p>';
+                echo '<p>' . ( $relation
+                    ? 'Possible activity link field: ' . esc_html( implode( ', ', $relation ) ) . ' — requires verification.'
+                    : 'No recognised activity link field. Manual mapping required.' ) . '</p>';
+            }
+        }
+        if ( ! $found ) {
+            echo '<p>No known timetable table was found on this WordPress connection. The legacy system may use another table name or database.</p>';
+        }
+        echo '<p><strong>Timetable editing remains disabled.</strong> Verify recurrence, date, venue, cancellation and term-time fields before enabling it.</p>';
+    }
     private static function detail( $table, $columns, $id ) {
         global $wpdb;
         $allowed = array(
@@ -150,7 +183,8 @@ final class BH_Activities_3 {
         self::related_search( 'venue' );
         self::related_search( 'organiser' );
         echo '<h3>Images</h3><p>Image library and upload controls will be connected after media field mapping.</p>';
-        echo '<h3>Session timetable</h3><p>Session editor will be connected after schedule table and venue relationships are verified.</p>';
+        echo '<h3>Session timetable readiness</h3>';
+        self::timetable_readiness();
         echo '<p><button type="button" class="button button-primary" disabled>Save changes (not available yet)</button></p></div>';
     }
     public static function render() {
