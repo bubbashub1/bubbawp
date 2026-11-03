@@ -217,6 +217,18 @@ final class BH_Communications_3 {
         return (int) $query->found_posts;
     }
 
+    public static function save_template() {
+        self::require_admin();
+        check_admin_referer( 'bh3_save_template' );
+        $key = isset( $_POST['template'] ) ? sanitize_key( wp_unslash( $_POST['template'] ) ) : '';
+        $defs = BH_Email_Templates_3::definitions();
+        if ( ! isset( $defs[ $key ] ) ) { wp_die( 'Invalid template' ); }
+        $body = isset( $_POST['body'] ) ? wp_kses_post( wp_unslash( $_POST['body'] ) ) : '';
+        update_option( 'bh3_email_template_' . $key, $body, false );
+        wp_safe_redirect( admin_url( 'admin.php?page=bh3-communications&template=saved' ) );
+        exit;
+    }
+
     public static function preview_template() {
         self::require_admin();
         $key = isset( $_GET['template'] ) ? sanitize_key( wp_unslash( $_GET['template'] ) ) : '';
