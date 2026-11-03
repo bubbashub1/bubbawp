@@ -98,7 +98,7 @@ final class BH_Activities_3 {
             'bh_schedules', 'bh_timetables', 'bh_activity_timetable'
         );
         $found = 0;
-        echo '<p>Known timetable table candidates are checked below. A matching name alone does not confirm the correct relationship.</p>';
+        echo '<p>The legacy API uses bh_activity_schedules for activity-owned sessions and bh_sessions as a venue-owned fallback. Venue-owned rows must not be attributed to an activity unless the venue relationship is explicitly verified.</p>';
         foreach ( $candidates as $base ) {
             foreach ( array_unique( array( $base, $wpdb->prefix . $base ) ) as $candidate ) {
                 $exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $candidate ) ) );
@@ -162,7 +162,7 @@ final class BH_Activities_3 {
             return;
         }
         list( $table, $day, $columns ) = $matches[0];
-        $extras = array_values( array_intersect( array( 'venue_id', 'status', 'term_time_only' ), $columns ) );
+        $extras = array_values( array_intersect( array( 'venue_id', 'status', 'term_time_only', 'frequency', 'start_date', 'end_date', 'duration_minutes', 'price' ), $columns ) );
         $select = array_merge( array( $day, 'start_time', 'end_time' ), $extras );
         $quoted_fields = implode( ', ', array_map( static function ( $field ) { return '`' . $field . '`'; }, $select ) );
         $rows = $wpdb->get_results( $wpdb->prepare( 'SELECT ' . $quoted_fields . ' FROM ' . $table . ' WHERE `activity_id` = %d LIMIT 100', absint( $activity_id ) ), ARRAY_A );
