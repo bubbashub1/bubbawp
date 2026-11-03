@@ -10,6 +10,7 @@ on:
     paths:
       - 'theme/bubba-hub/**'
       - 'scripts/validate-theme.php'
+      - 'scripts/security-check-theme.php'
       - '.github/workflows/theme-checks.yml'
   workflow_dispatch:
 permissions:
@@ -34,23 +35,12 @@ jobs:
           cd theme
           zip -qr ../dist/bubba-hub-theme.zip bubba-hub -x '*/.DS_Store' '*/Thumbs.db'
           unzip -t ../dist/bubba-hub-theme.zip
-          unzip -Z1 ../dist/bubba-hub-theme.zip | grep -q '^bubba-hub/style.css
-      - name: Upload theme ZIP
-        uses: actions/upload-artifact@v4
-        with:
-          name: bubba-hub-theme
-          path: dist/bubba-hub-theme.zip
-          if-no-files-found: error
-
-          unzip -Z1 ../dist/bubba-hub-theme.zip | grep -q '^bubba-hub/theme.json
-      - name: Upload theme ZIP
-        uses: actions/upload-artifact@v4
-        with:
-          name: bubba-hub-theme
-          path: dist/bubba-hub-theme.zip
-          if-no-files-found: error
-
-          if unzip -Z1 ../dist/bubba-hub-theme.zip | grep -E '(^|/)(\\.env|wp-config\\.php|\\.git)(/|$)'; then echo 'Sensitive file in ZIP'; exit 1; fi
+          unzip -Z1 ../dist/bubba-hub-theme.zip | grep -Fqx 'bubba-hub/style.css'
+          unzip -Z1 ../dist/bubba-hub-theme.zip | grep -Fqx 'bubba-hub/theme.json'
+          if unzip -Z1 ../dist/bubba-hub-theme.zip | grep -E '(^|/)([.]env|wp-config[.]php|[.]git)(/|$)'; then
+            echo 'Sensitive file in ZIP'
+            exit 1
+          fi
       - name: Upload theme ZIP
         uses: actions/upload-artifact@v4
         with:
