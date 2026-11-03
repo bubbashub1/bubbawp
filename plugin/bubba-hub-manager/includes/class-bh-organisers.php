@@ -29,7 +29,7 @@ final class BH_Organisers_3 {
         echo '<h2>' . ( $id ? 'Edit organiser' : 'Add organiser' ) . '</h2>';
         echo '<form method="get" action="' . esc_url( admin_url( 'admin.php' ) ) . '">';
         echo '<input type="hidden" name="page" value="bh3-organisers"><input type="hidden" name="organiser_id" value="' . esc_attr( (string) $id ) . '">';
-        echo '<label for="user_search">Find WordPress user</label> <input id="user_search" type="search" name="user_search" value="' . esc_attr( $search_user ?? sanitize_text_field( wp_unslash( $_GET['user_search'] ?? '' ) ) ) . '" placeholder="Name, username or email"> ';
+        echo '<label for="user_search">Find WordPress user</label> <input id="user_search" type="search" name="user_search" value="' . esc_attr( sanitize_text_field( wp_unslash( $_GET['user_search'] ?? '' ) ) ) . '" placeholder="Name, username or email"> ';
         submit_button( 'Find user', 'secondary', '', false );
         echo '</form>';
         echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
@@ -51,7 +51,7 @@ final class BH_Organisers_3 {
         $options = array();
         if ( $linked ) { $options[$linked->ID] = $linked; }
         if ( strlen( trim( $search_user ) ) >= 2 ) {
-            $matches = get_users( array( 'search' => '*' . esc_attr( $search_user ) . '*',
+            $matches = get_users( array( 'search' => '*' . $search_user . '*',
                 'search_columns' => array( 'user_login', 'user_email', 'display_name' ), 'number' => 25 ) );
             foreach ( $matches as $user ) { $options[$user->ID] = $user; }
         }
