@@ -15,10 +15,13 @@ final class BH_Communications_3 {
     const EMAIL_LOG  = 'bh3_email_log';
     const CRON_HOOK  = 'bh3_process_newsletter_batch';
     const BATCH_SIZE = 20;
+    const LOG_RETENTION_DAYS = 90;
     private static $current_type = 'WordPress email';
 
     public static function register() {
         add_action( 'init', array( __CLASS__, 'register_post_types' ) );
+        add_action( 'init', array( __CLASS__, 'schedule_log_cleanup' ), 20 );
+        add_action( 'bh3_cleanup_email_logs', array( __CLASS__, 'cleanup_email_logs' ) );
         add_action( 'init', array( __CLASS__, 'handle_public_tokens' ), 1 );
         add_action( 'admin_menu', array( __CLASS__, 'register_admin_page' ) );
         add_action( 'admin_post_bh3_save_campaign', array( __CLASS__, 'save_campaign' ) );
@@ -170,6 +173,21 @@ final class BH_Communications_3 {
             echo '</tbody></table>';
         }
         echo '<p class="description">For privacy, message bodies and attachments are not copied into this central log. FluentSMTP may retain its own detailed transport log.</p></div>';
+        echo '<div class="bh3-panel"><h2>Recent subscribers</h2>';
+        $subscribers = get_posts( array( 'post_type' => self::SUBSCRIBER, 'post_status' => 'private', 'numberposts' => 50, 'orderby' => 'date', 'order' => 'DESC' ) );
+        if ( ! $subscribers ) {
+            echo '<p>No newsletter subscribers yet.</p>';
+        } else {
+            echo '<table class="bh3-table"><thead><tr><th>Email</th><th>Status</th><th>Consent recorded (UTC)</th><th>Confirmed (UTC)</th></tr></thead><tbody>';
+            foreach ( $subscribers as $subscriber ) {
+                echo '<tr><td>' . esc_html( (string) get_post_meta( $subscriber->ID, '_bh3_email', true ) ) . '</td>';
+                echo '<td>' . esc_html( ucfirst( (string) get_post_meta( $subscriber->ID, '_bh3_status', true ) ) ) . '</td>';
+                echo '<td>' . esc_html( (string) get_post_meta( $subscriber->ID, '_bh3_consent_at', true ) ) . '</td>';
+                echo '<td>' . esc_html( (string) get_post_meta( $subscriber->ID, '_bh3_confirmed_at', true ) ) . '</td></tr>';
+            }
+            echo '</tbody></table>';
+        }
+        echo '<p class="description">Only confirmed subscribers receive campaigns. Unsubscribed and pending records are excluded.</p></div>';
         echo '<div class="bh3-panel"><h2>Subscriber sign-up</h2><p>Use shortcode <code>[bubbahub_newsletter_signup]</code> to display the double opt-in sign-up form. Subscribers are not added to campaigns until they confirm by email.</p>';
         echo '<p>Subscriber totals above show status counts. Subscriber export, suppression management and preference categories are planned follow-up work.</p></div>';
         echo '</div>';
@@ -368,6 +386,26 @@ final class BH_Communications_3 {
         update_post_meta( $id, '_bh3_status', $status );
         update_post_meta( $id, '_bh3_detail', sanitize_text_field( $detail ) );
         update_post_meta( $id, '_bh3_type', self::$current_type );
+    }
+
+    public static function schedule_log_cleanup() {
+        if ( ! wp_next_scheduled( 'bh3_cleanup_email_logs' ) ) {
+            wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'bh3_cleanup_email_logs' );
+        }
+    }
+
+    public static function cleanup_email_logs() {
+        $cutoff = gmdate( 'Y-m-d H:i:s', time() - ( self::LOG_RETENTION_DAYS * DAY_IN_SECONDS ) );
+        $expired = get_posts( array(
+            'post_type'      => self::EMAIL_LOG,
+            'post_status'    => 'private',
+            'numberposts'    => 100,
+            'fields'         => 'ids',
+            'date_query'     => array( array( 'column' => 'post_date_gmt', 'before' => $cutoff ) ),
+        ) );
+        foreach ( $expired as $log_id ) {
+            wp_delete_post( $log_id, true );
+        }
     }
 
     private static function require_admin() {
