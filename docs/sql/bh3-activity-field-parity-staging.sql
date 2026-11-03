@@ -1,58 +1,38 @@
--- Bubba Hub 3.0 activity schema parity: corrected from actual 44-column
--- legacy bh_activities phpMyAdmin column listing supplied 2026-11-03.
--- REVIEW ONLY. Do not run blindly: existing columns differ in type/length.
--- Run SHOW CREATE TABLE on staging and take a backup before migrations.
--- WordPress uses configured prefix, not necessarily wp_.
+-- Bubba Hub 3.0 legacy activity field parity reference.
+-- Actual legacy bh_activities columns supplied via INFORMATION_SCHEMA on
+-- SCWORDPRESS-35303433c4eb: 44 columns.
+-- DO NOT execute this file as ALTER SQL. Use the guarded, idempotent PHP
+-- migration on the staging-only BH3 status page after a staging backup.
+-- The migration uses $wpdb->prefix and never connects to the live database.
 --
--- Existing BH3: id organiser_id title slug description status booking_url
--- price_from age_min_months age_max_months category is_free image_id
--- created_at updated_at.
--- Existing BH3 differences to review separately:
--- slug varchar(200) vs legacy varchar(255)
--- description longtext vs legacy text (keep longtext)
--- category varchar(150) vs legacy varchar(255)
--- booking_url varchar(2048) vs legacy varchar(1000) (keep 2048)
--- status varchar(30) vs legacy enum (keep varchar, validate in app)
--- created_at/updated_at without legacy automatic timestamp defaults
--- image_id is a BH3 WP-media field; retain.
+-- Existing BH3 columns retained:
+-- id, organiser_id, title, slug, description, status, category,
+-- age_min_months, age_max_months, price_from, is_free, booking_url,
+-- image_id, created_at, updated_at.
 --
--- Additive migration proposal for missing legacy fields:
-ALTER TABLE wp_activities
- ADD COLUMN leader_id BIGINT(20) UNSIGNED NULL,
- ADD COLUMN booking_required TINYINT(1) NOT NULL DEFAULT 0,
- ADD COLUMN price DECIMAL(10,2) NULL,
- ADD COLUMN image_path VARCHAR(1000) NULL,
- ADD COLUMN price_type VARCHAR(40) NOT NULL DEFAULT 'per_session',
- ADD COLUMN currency CHAR(3) NOT NULL DEFAULT 'GBP',
- ADD COLUMN session_length_minutes SMALLINT(5) UNSIGNED NULL,
- ADD COLUMN term_time_only TINYINT(1) NOT NULL DEFAULT 0,
- ADD COLUMN contact_email VARCHAR(255) NULL,
- ADD COLUMN contact_phone VARCHAR(100) NULL,
- ADD COLUMN website VARCHAR(1000) NULL,
- ADD COLUMN facebook_url VARCHAR(500) NULL,
- ADD COLUMN instagram_url VARCHAR(500) NULL,
- ADD COLUMN featured TINYINT(1) NOT NULL DEFAULT 0,
- ADD COLUMN created_by BIGINT(20) UNSIGNED NULL,
- ADD COLUMN published_at DATETIME NULL,
- ADD COLUMN age_range VARCHAR(255) NULL,
- ADD COLUMN accessibility TEXT NULL,
- ADD COLUMN tags TEXT NULL,
- ADD COLUMN weekly_schedule TEXT NULL,
- ADD COLUMN price_per_family TINYINT(1) NOT NULL DEFAULT 0,
- ADD COLUMN price_per_session TINYINT(1) NOT NULL DEFAULT 0,
- ADD COLUMN drop_in_welcome TINYINT(1) NOT NULL DEFAULT 0,
- ADD COLUMN trial_available TINYINT(1) NOT NULL DEFAULT 0,
- ADD COLUMN holiday_sessions TINYINT(1) NOT NULL DEFAULT 0,
- ADD COLUMN siblings_welcome TINYINT(1) NOT NULL DEFAULT 0,
- ADD COLUMN what_to_bring VARCHAR(250) NULL,
- ADD COLUMN good_to_know VARCHAR(250) NULL,
- ADD COLUMN gallery_images TEXT NULL,
- ADD COLUMN block_length_weeks SMALLINT(5) UNSIGNED NULL;
+-- 29 missing legacy-compatible columns added by
+-- includes/class-bh-activity-parity.php:
+-- leader_id, booking_required, price, image_path, price_type, currency,
+-- session_length_minutes, term_time_only, contact_email, contact_phone,
+-- website, facebook_url, instagram_url, featured, created_by, published_at,
+-- age_range, accessibility, tags, weekly_schedule, price_per_family,
+-- price_per_session, drop_in_welcome, trial_available, holiday_sessions,
+-- siblings_welcome, what_to_bring, good_to_know, gallery_images,
+-- block_length_weeks.
 --
--- Additional indexes to consider after inspecting existing indexes:
--- leader_id, created_by, featured, title, age_min_months, age_max_months.
--- Existing BH3 sessions table remains canonical for structured schedules;
--- weekly_schedule is retained as legacy/import compatibility text.
--- price_type enum full values and status enum full values were truncated
--- in supplied screenshot; confirm exact SHOW COLUMNS before mapping.
--- Run via idempotent guarded PHP migration, not raw SQL on existing DB.
+-- IMPORTANT design decisions:
+-- * price_per_family and price_per_session are boolean flags, not amounts.
+-- * price_type is varchar(40), preserving all legacy enum strings even though
+--   phpMyAdmin truncated the full enum output.
+-- * status remains the existing BH3 varchar(30), allowing legacy values
+--   without narrowing or converting existing rows.
+-- * weekly_schedule is retained for import/backward compatibility; BH3
+--   structured wp_sessions is the canonical timetable going forward.
+-- * gallery_images is retained as longtext; BH3 image_id remains the featured
+--   WordPress media attachment reference.
+-- * organiser and venue contact/address data are not duplicated into these
+--   tables; legacy activity-level contact fields are preserved separately.
+-- * no legacy records are copied or modified by this schema-only migration.
+--
+-- To inspect exact enum values if needed, use SUBSTRING(COLUMN_TYPE,1,500)
+-- from INFORMATION_SCHEMA.COLUMNS. The migration deliberately avoids enums.
