@@ -19,7 +19,9 @@ final class BH_Manager_3 {
             return;
         }
         self::$booted = true;
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-settings.php';
         add_action( 'admin_menu', array( __CLASS__, 'register_admin_page' ) );
+        add_action( 'admin_menu', array( 'BH_Settings_3', 'register' ) );
     }
 
     public static function register_admin_page() {
