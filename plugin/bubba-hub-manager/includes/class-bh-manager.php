@@ -23,6 +23,7 @@ final class BH_Manager_3 {
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-directory-audit.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-directory-preview.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-directory.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activity-detail.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-modules.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activities.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-schema.php';
@@ -35,6 +36,7 @@ final class BH_Manager_3 {
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-my-listings.php';
         BH_Directory_Preview_3::register();
         BH_Directory_3::register();
+        BH_Activity_Detail_3::register();
         add_action( 'admin_menu', array( __CLASS__, 'register_admin_page' ) );
         add_action( 'admin_menu', array( 'BH_Settings_3', 'register' ) );
         add_action( 'admin_menu', array( 'BH_Directory_Audit_3', 'register' ) );
