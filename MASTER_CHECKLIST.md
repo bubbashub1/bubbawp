@@ -18,7 +18,7 @@
 
 - **Active stage:** Theme-first foundation (Stage T0; design before feature modules)
 - **Current task:** T0-01 — Build and preview initial native block theme
-- **Next task:** T0-03 reusable theme patterns; T0-02 visual approval when user can review
+- **Next task:** Verify latest theme build, then T0-04 automated/static QA and T0-02 visual approval
 - **Last verified milestone:** Theme ZIP produced by passing GitHub Actions run 41639189965; WordPress activation and visual QA pending
 - **Staging QA:** Not started
 - **Production changes:** None authorised
@@ -43,7 +43,7 @@
 - [x] **T0-00** Approve theme-first development order.
 - [ ] **T0-01** Create an installable native WordPress block theme with theme.json, global tokens, header/footer, homepage and core templates. **In progress:** theme files and templates committed; installability not yet verified.
 - [ ] **T0-02** Review desktop/mobile look, brand colours, typography, navigation, card system and page widths; refine to approval. **Draft brief:** `docs/THEME_DESIGN_BRIEF.md`; awaiting visual review.
-- [ ] **T0-03** Build reusable Site Editor patterns for hero, discovery placeholder, categories, featured cards, family and leader CTAs.
+- [x] **T0-03** Build reusable Site Editor patterns for hero, discovery placeholder, categories, featured cards, family and leader CTAs. **Verified in source:** patterns committed; actual Site Editor rendering remains in T0-04.
 - [ ] **T0-04** Verify editor customisation, responsive behaviour, accessibility and graceful placeholder behaviour without plugin.
 - [ ] **T0-05** Produce independent theme ZIP and test activation on isolated/staging WordPress; document evidence. **Partially verified:** GitHub Actions run 41639189965 passed and uploaded `bubba-hub-theme` artifact; WordPress activation not tested.
 - [ ] **T0-06** Approve design baseline and component contracts for Directory, Leader Portal and My Hub.
@@ -259,3 +259,4 @@ Copy for each substantial issue/PR:
 | 2026-11-03 | Added single/archive/search/404 templates, theme bootstrap, responsive/focus CSS and test notes; no staging QA yet | `theme/bubba-hub/README.md` |
 | 2026-11-03 | Added GitHub Actions static checks and theme ZIP packaging, plus staging/browser QA checklist; initial run failed, subsequent run passed | `.github/workflows/theme-checks.yml`, `docs/THEME_QA.md` |
 | 2026-11-03 | Verified successful GitHub Actions theme ZIP artifact (run 41639189965); drafted visual design brief; staging/browser QA still outstanding | `docs/THEME_DESIGN_BRIEF.md` |
+| 2026-11-03 | Added category grid, featured placeholder, event promo and directory shell patterns; homepage updated; browser review still pending | `theme/bubba-hub/patterns/` |
