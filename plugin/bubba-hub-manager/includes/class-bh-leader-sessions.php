@@ -58,7 +58,7 @@ final class BH_Leader_Sessions_3 {
         echo '</select></td></tr><tr><th>Start</th><td><input type="time" name="start_time" required></td></tr><tr><th>End</th><td><input type="time" name="end_time" required></td></tr>';
         echo '<tr><th>Venue</th><td><select name="venue_id"><option value="0">No venue</option>';
         foreach ( $assigned as $venue ) { echo '<option value="' . esc_attr( (string) $venue['id'] ) . '">' . esc_html( $venue['name'] . ( $venue['town'] ? ' — ' . $venue['town'] : '' ) ) . '</option>'; }
-        echo '</select><p>Ask an administrator to assign a new venue to your activity.</p></td></tr>';
+        echo '</select><p><a href="' . esc_url( add_query_arg( array( 'page' => 'bh3-leader-venues', 'activity_id' => $id ), admin_url( 'admin.php' ) ) ) . '">Manage assigned venues</a>.</p></td></tr>';
         echo '<tr><th>First date (optional)</th><td><input type="date" name="start_date"></td></tr><tr><th>Last date (optional)</th><td><input type="date" name="end_date"></td></tr>';
         echo '<tr><th>Term time only</th><td><label><input type="checkbox" name="term_time_only" value="1"> Yes</label></td></tr></tbody></table>';
         submit_button( 'Add session' );
