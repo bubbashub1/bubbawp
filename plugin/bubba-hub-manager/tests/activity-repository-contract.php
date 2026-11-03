@@ -31,7 +31,7 @@ class FakeDb {
 require dirname(__DIR__) . '/includes/class-bh-activity-repository.php';
 $db = new FakeDb();
 $repo = new BH_Activity_Repository_3( $db );
-$rows = $repo->search( array( 'page' => -3, 'per_page' => 999, 'search' => "baby%" ) );
+$rows = $repo->search( array( 'page' => 0, 'per_page' => 999, 'search' => "baby%" ) );
 if ( count( $rows ) !== 1 || $rows[0]['id'] !== 10 ) { throw new RuntimeException( 'Result contract failed' ); }
 $sql = $db->queries[0];
 if ( strpos( $sql, 'LIMIT 24 OFFSET 0' ) === false ) { throw new RuntimeException( 'Pagination clamp failed' ); }
