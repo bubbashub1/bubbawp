@@ -139,25 +139,22 @@ final class BH_Activities_3 {
         echo '<p><button type="button" class="button" disabled>+ Add session</button> ';
         echo '<button type="button" class="button" disabled>Remove session</button></p>';
     }
-    /**
-     * Only read actual timetable rows when a single unambiguous mapping exists.
-     * Never interprets alternate relationship columns as activity IDs.
-     */
     /** Legacy fallback: only venues explicitly owned by this activity. */
     private static function legacy_venue_sessions( $activity_id ) {
         global $wpdb;
         $tables = array();
         foreach ( array( 'bh_sessions', 'bh_venues' ) as $base ) {
+            $found = array();
             foreach ( array_unique( array( $base, $wpdb->prefix . $base ) ) as $candidate ) {
                 if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $candidate ) ) ) === $candidate ) {
-                    $tables[$base] = '`' . str_replace( '`', '``', $candidate ) . '`';
-                    break;
+                    $found[] = '`' . str_replace( '`', '``', $candidate ) . '`';
                 }
             }
-        }
-        if ( count( $tables ) !== 2 ) {
-            echo '<p>Legacy sessions unavailable: venue or session table not found.</p>';
-            return;
+            if ( count( $found ) !== 1 ) {
+                echo '<p>Legacy sessions unavailable: ' . esc_html( $base ) . ' has ' . esc_html( (string) count( $found ) ) . ' matching tables; exactly one is required.</p>';
+                return;
+            }
+            $tables[$base] = $found[0];
         }
         $venue_columns = $wpdb->get_col( 'SHOW COLUMNS FROM ' . $tables['bh_venues'], 0 );
         $session_columns = $wpdb->get_col( 'SHOW COLUMNS FROM ' . $tables['bh_sessions'], 0 );
@@ -188,10 +185,11 @@ final class BH_Activities_3 {
         }
         echo '</tbody></table></div>';
     }
+    /** Read only the direct activity schedule table documented in the legacy API. */
     private static function verified_session_rows( $activity_id ) {
         global $wpdb;
         $matches = array();
-        foreach ( array( 'bh_activity_sessions', 'bh_sessions', 'bh_activity_schedules', 'bh_schedules', 'bh_timetables', 'bh_activity_timetable' ) as $base ) {
+        foreach ( array( 'bh_activity_schedules' ) as $base ) {
             foreach ( array_unique( array( $base, $wpdb->prefix . $base ) ) as $candidate ) {
                 if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $candidate ) ) ) !== $candidate ) { continue; }
                 $quoted = '`' . str_replace( '`', '``', $candidate ) . '`';
