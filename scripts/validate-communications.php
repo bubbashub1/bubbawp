@@ -13,7 +13,7 @@ $required = array(
     'explicit enable option'   => 'bh3_communications_enabled',
     'double opt-in'            => '_bh3_confirm_hash',
     'unsubscribe route'        => 'bh3_unsubscribe',
-    'active subscriber filter' => "'_bh3_status', 'active'",
+    'active subscriber filter' => "'meta_value' => 'active'",
     'batched sending'          => 'BATCH_SIZE',
     'central success log'      => 'wp_mail_succeeded',
     'central failure log'      => 'wp_mail_failed',
