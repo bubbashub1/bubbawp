@@ -357,7 +357,7 @@ final class BH_Activities_3 {
         echo '<table class="widefat striped"><thead><tr><th scope="col">ID</th><th scope="col">Activity title</th><th scope="col">Actions</th></tr></thead><tbody>';
         if ( $rows ) {
             foreach ( $rows as $row ) {
-                echo '<tr><td>' . esc_html( (string) $row['activity_id'] ) . '</td><td>' . esc_html( (string) $row['activity_title'] ) . '</td><td><a href="' . esc_url( add_query_arg( array( 'page' => 'bh3-activities', 'bh3_activity_id' => absint( $row['activity_id'] ) ), admin_url( 'admin.php' ) ) ) . '">View details</a> | <a href="' . esc_url( add_query_arg( array( 'page' => 'bh3-edit-activity', 'activity_id' => absint( $row['activity_id'] ) ), admin_url( 'admin.php' ) ) ) . '">Edit draft</a></td></tr>';
+                echo '<tr><td>' . esc_html( (string) $row['activity_id'] ) . '</td><td>' . esc_html( (string) $row['activity_title'] ) . '</td><td><a href="' . esc_url( add_query_arg( array( 'page' => 'bh3-activities', 'bh3_activity_id' => absint( $row['activity_id'] ) ), admin_url( 'admin.php' ) ) ) . '">View details</a> | <a href="' . esc_url( add_query_arg( array( 'page' => 'bh3-edit-activity', 'activity_id' => absint( $row['activity_id'] ) ), admin_url( 'admin.php' ) ) ) . '">Edit draft</a> | <a href="' . esc_url( add_query_arg( array( 'page' => 'bh3-activity-venues', 'activity_id' => absint( $row['activity_id'] ) ), admin_url( 'admin.php' ) ) ) . '">Venues</a></td></tr>';
             }
         } else { echo '<tr><td colspan="3">No activities found.</td></tr>'; }
         echo '</tbody></table>';
