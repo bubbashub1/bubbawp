@@ -43,6 +43,14 @@ final class BH_Manager_3 {
         add_action( 'admin_menu', array( 'BH_Activity_Venues_3', 'register' ) );
         add_action( 'admin_menu', array( 'BH_Organisers_3', 'register' ) );
         add_action( 'admin_menu', array( 'BH_Sessions_3', 'register' ) );
+        // admin-post.php does not fire admin_menu; register handlers at bootstrap.
+        add_action( 'admin_post_bh3_update_activity', array( 'BH_Activity_Edit_3', 'save' ) );
+        add_action( 'admin_post_bh3_save_venue', array( 'BH_Venues_3', 'save' ) );
+        add_action( 'admin_post_bh3_attach_venue', array( 'BH_Activity_Venues_3', 'attach' ) );
+        add_action( 'admin_post_bh3_detach_venue', array( 'BH_Activity_Venues_3', 'detach' ) );
+        add_action( 'admin_post_bh3_save_organiser', array( 'BH_Organisers_3', 'save' ) );
+        add_action( 'admin_post_bh3_save_session', array( 'BH_Sessions_3', 'save' ) );
+        add_action( 'admin_post_bh3_delete_session', array( 'BH_Sessions_3', 'remove' ) );
         add_action( 'admin_init', array( 'BH_Activity_Create_3', 'register_save' ) );
         add_action( 'admin_post_bh3_save_settings', array( 'BH_Settings_3', 'save' ) );
         add_action( 'admin_post_bh3_install_schema', array( __CLASS__, 'install_schema' ) );
