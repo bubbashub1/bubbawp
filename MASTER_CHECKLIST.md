@@ -18,7 +18,7 @@
 
 - **Active stage:** Theme-first foundation (Stage T0; design before feature modules)
 - **Current task:** T0-01 — Build and preview initial native block theme
-- **Next task:** Verify latest theme build, then T0-04 automated/static QA and T0-02 visual approval
+- **Next task:** Verify expanded static checks in CI, then T0-04 WordPress/browser QA and T0-02 visual approval
 - **Last verified milestone:** Theme ZIP produced by passing GitHub Actions run 41639189965; WordPress activation and visual QA pending
 - **Staging QA:** Not started
 - **Production changes:** None authorised
@@ -260,3 +260,4 @@ Copy for each substantial issue/PR:
 | 2026-11-03 | Added GitHub Actions static checks and theme ZIP packaging, plus staging/browser QA checklist; initial run failed, subsequent run passed | `.github/workflows/theme-checks.yml`, `docs/THEME_QA.md` |
 | 2026-11-03 | Verified successful GitHub Actions theme ZIP artifact (run 41639189965); drafted visual design brief; staging/browser QA still outstanding | `docs/THEME_DESIGN_BRIEF.md` |
 | 2026-11-03 | Added category grid, featured placeholder, event promo and directory shell patterns; homepage updated; browser review still pending | `theme/bubba-hub/patterns/` |
+| 2026-11-03 | Confirmed theme build passed run 41642060861; expanded static validation for pattern and template-part references, CI result pending | `scripts/validate-theme.php` |
