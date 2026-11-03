@@ -20,8 +20,11 @@ final class BH_Manager_3 {
         }
         self::$booted = true;
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-settings.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activity-repository.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activities-admin.php';
         add_action( 'admin_menu', array( __CLASS__, 'register_admin_page' ) );
         add_action( 'admin_menu', array( 'BH_Settings_3', 'register' ) );
+        add_action( 'admin_menu', array( 'BH_Activities_Admin_3', 'register' ) );
         add_action( 'admin_post_bh3_save_settings', array( 'BH_Settings_3', 'save' ) );
     }
 
@@ -40,7 +43,7 @@ final class BH_Manager_3 {
             wp_die( esc_html__( 'You do not have permission to view this page.', 'bubba-hub-manager' ) );
         }
         echo '<div class="wrap"><h1>' . esc_html__( 'Bubba Hub Manager 3.0', 'bubba-hub-manager' ) . '</h1>';
-        echo '<p>' . esc_html__( 'Foundation installed. All business modules remain disabled pending like-for-like audit and staging tests.', 'bubba-hub-manager' ) . '</p>';
+        echo '<p>' . esc_html__( 'Foundation installed. Read-only Activities admin preview available under Tools; public and write-enabled modules remain disabled pending staging tests.', 'bubba-hub-manager' ) . '</p>';
         echo '<p><strong>' . esc_html__( 'Version:', 'bubba-hub-manager' ) . '</strong> ' . esc_html( BUBBA_HUB_MANAGER_VERSION ) . '</p>';
         echo '<h2>' . esc_html__( 'Feature readiness', 'bubba-hub-manager' ) . '</h2>';
         echo '<ul>';
