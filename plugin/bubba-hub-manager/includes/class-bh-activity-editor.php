@@ -30,6 +30,12 @@ final class BH_Activity_Editor_3 {
         foreach ( array( 'title' => 'Title', 'category' => 'Category' ) as $key => $label ) {
             echo '<tr><th><label for="bh3-' . esc_attr( $key ) . '">' . esc_html( $label ) . '</label></th><td><input class="regular-text" id="bh3-' . esc_attr( $key ) . '" type="text" name="' . esc_attr( $key ) . '" value="' . esc_attr( (string) ( $activity[ $key ] ?? '' ) ) . '" required></td></tr>';
         }
+        echo '<tr><th><label for="bh3-price">Price from (£)</label></th><td><input id="bh3-price" type="number" min="0" max="99999999.99" step="0.01" name="price_from" value="' . esc_attr( (string) ( $activity['price_from'] ?? '' ) ) . '"> <small>Leave blank if unspecified.</small></td></tr>';
+        echo '<tr><th><label for="bh3-status">Publishing status</label></th><td><select id="bh3-status" name="status">';
+        foreach ( array( 'draft' => 'Draft', 'pending' => 'Pending review', 'published' => 'Published' ) as $value => $label ) {
+            echo '<option value="' . esc_attr( $value ) . '"' . selected( $activity['status'] ?? '', $value, false ) . '>' . esc_html( $label ) . '</option>';
+        }
+        echo '</select></td></tr>';
         echo '<tr><th><label for="bh3-description">Description</label></th><td><textarea id="bh3-description" name="description" rows="8" class="large-text">' . esc_textarea( (string) ( $activity['description'] ?? '' ) ) . '</textarea></td></tr>';
         echo '</tbody></table>';
         submit_button( 'Save listing details' );
@@ -46,6 +52,15 @@ final class BH_Activity_Editor_3 {
         $title = isset( $_POST['title'] ) && is_string( $_POST['title'] ) ? sanitize_text_field( wp_unslash( $_POST['title'] ) ) : '';
         $category = isset( $_POST['category'] ) && is_string( $_POST['category'] ) ? sanitize_text_field( wp_unslash( $_POST['category'] ) ) : '';
         $description = isset( $_POST['description'] ) && is_string( $_POST['description'] ) ? wp_kses_post( wp_unslash( $_POST['description'] ) ) : '';
+        $status = isset( $_POST['status'] ) && is_string( $_POST['status'] ) ? sanitize_key( wp_unslash( $_POST['status'] ) ) : '';
+        $price_raw = isset( $_POST['price_from'] ) && is_string( $_POST['price_from'] ) ? trim( wp_unslash( $_POST['price_from'] ) ) : '';
+        if ( ! in_array( $status, array( 'draft', 'pending', 'published' ), true ) ) {
+            wp_die( 'Invalid publishing status.', '', array( 'response' => 400 ) );
+        }
+        if ( '' !== $price_raw && ( ! is_numeric( $price_raw ) || (float) $price_raw < 0 || (float) $price_raw > 99999999.99 ) ) {
+            wp_die( 'Invalid price.', '', array( 'response' => 400 ) );
+        }
+        $price = '' === $price_raw ? null : number_format( (float) $price_raw, 2, '.', '' );
         if ( '' === $title || '' === $category || mb_strlen( $title ) > 190 || mb_strlen( $category ) > 120 ) {
             wp_die( 'Title and category are required and must fit the legacy schema.', '', array( 'response' => 400 ) );
         }
@@ -54,9 +69,9 @@ final class BH_Activity_Editor_3 {
         if ( (int) $existing !== $id ) { wp_die( 'Activity not found.', '', array( 'response' => 404 ) ); }
         $updated = $wpdb->update(
             'bh_activities',
-            array( 'title' => $title, 'category' => $category, 'description' => $description ),
+            array( 'title' => $title, 'category' => $category, 'description' => $description, 'price_from' => $price, 'status' => $status ),
             array( 'id' => $id ),
-            array( '%s', '%s', '%s' ),
+            array( '%s', '%s', '%s', '%s', '%s' ),
             array( '%d' )
         );
         if ( false === $updated ) { wp_die( 'Database update failed.', '', array( 'response' => 500 ) ); }
