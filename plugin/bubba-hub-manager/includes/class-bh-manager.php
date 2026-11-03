@@ -20,18 +20,28 @@ final class BH_Manager_3 {
         }
         self::$booted = true;
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-settings.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-directory-audit.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-directory-preview.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-modules.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activities.php';
+        BH_Directory_Preview_3::register();
         add_action( 'admin_menu', array( __CLASS__, 'register_admin_page' ) );
         add_action( 'admin_menu', array( 'BH_Settings_3', 'register' ) );
+        add_action( 'admin_menu', array( 'BH_Directory_Audit_3', 'register' ) );
+        add_action( 'admin_menu', array( 'BH_Modules_3', 'register' ) );
+        add_action( 'admin_menu', array( 'BH_Activities_3', 'register' ) );
         add_action( 'admin_post_bh3_save_settings', array( 'BH_Settings_3', 'save' ) );
     }
 
     public static function register_admin_page() {
-        add_management_page(
+        add_menu_page(
             __( 'Bubba Hub 3.0 Status', 'bubba-hub-manager' ),
             __( 'Bubba Hub 3.0', 'bubba-hub-manager' ),
             'manage_options',
             'bubba-hub-3-status',
-            array( __CLASS__, 'render_status' )
+            array( __CLASS__, 'render_status' ),
+            'dashicons-location-alt',
+            26
         );
     }
 
