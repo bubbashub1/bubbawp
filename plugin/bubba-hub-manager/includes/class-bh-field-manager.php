@@ -16,6 +16,8 @@ final class BH_Field_Manager_3 {
         add_action( 'admin_post_bh3_field_install', array( __CLASS__, 'install' ) );
         add_action( 'admin_post_bh3_field_group_save', array( __CLASS__, 'save_group' ) );
         add_action( 'admin_post_bh3_field_definition_save', array( __CLASS__, 'save_field' ) );
+        add_action( 'admin_post_bh3_field_toggle', array( __CLASS__, 'toggle' ) );
+        add_action( 'admin_post_bh3_field_move', array( __CLASS__, 'move' ) );
     }
     private static function guard( $nonce ) {
         if ( ! self::enabled() || ! current_user_can( 'manage_options' ) ) { wp_die( 'Staging administrator access required.', '', array( 'response' => 403 ) ); }
@@ -120,6 +122,52 @@ final class BH_Field_Manager_3 {
         if ( $ok === false ) { wp_die( 'Could not save field. Its key may already exist in this group.', '', array( 'response' => 409 ) ); }
         self::redirect( 'field_saved' );
     }
+    public static function toggle() {
+        self::guard( 'bh3_field_toggle' );
+        if ( ! self::ready() ) { wp_die( 'Field Manager not installed.', '', array( 'response' => 409 ) ); }
+        global $wpdb; $t = self::tables();
+        $kind = sanitize_key( $_POST['kind'] ?? '' );
+        $id = absint( $_POST['id'] ?? 0 );
+        $table = $kind === 'group' ? $t['groups'] : ( $kind === 'field' ? $t['fields'] : '' );
+        if ( ! $table || ! $id ) { wp_die( 'Invalid record.', '', array( 'response' => 400 ) ); }
+        $current = $wpdb->get_var( $wpdb->prepare( "SELECT is_active FROM `{$table}` WHERE id=%d", $id ) );
+        if ( $current === null || false === $wpdb->update( $table, array( 'is_active' => $current ? 0 : 1 ), array( 'id' => $id ), array( '%d' ), array( '%d' ) ) ) {
+            wp_die( 'Could not change field status.', '', array( 'response' => 409 ) );
+        }
+        self::redirect( 'status_updated' );
+    }
+    public static function move() {
+        self::guard( 'bh3_field_move' );
+        if ( ! self::ready() ) { wp_die( 'Field Manager not installed.', '', array( 'response' => 409 ) ); }
+        global $wpdb; $t = self::tables();
+        $id = absint( $_POST['id'] ?? 0 );
+        $direction = sanitize_key( $_POST['direction'] ?? '' );
+        if ( ! $id || ! in_array( $direction, array( 'up', 'down' ), true ) ) { wp_die( 'Invalid order request.', '', array( 'response' => 400 ) ); }
+        $field = $wpdb->get_row( $wpdb->prepare( "SELECT id,group_id FROM `{$t['fields']}` WHERE id=%d", $id ), ARRAY_A );
+        if ( ! $field ) { wp_die( 'Field not found.', '', array( 'response' => 404 ) ); }
+        $ids = array_map( 'intval', $wpdb->get_col( $wpdb->prepare( "SELECT id FROM `{$t['fields']}` WHERE group_id=%d ORDER BY sort_order,id", $field['group_id'] ) ) );
+        $index = array_search( $id, $ids, true );
+        $other = $direction === 'up' ? $index - 1 : $index + 1;
+        if ( $index === false || ! isset( $ids[ $other ] ) ) { self::redirect( 'order_unchanged' ); }
+        $tmp = $ids[ $other ]; $ids[ $other ] = $id; $ids[ $index ] = $tmp;
+        $wpdb->query( 'START TRANSACTION' );
+        foreach ( $ids as $position => $field_id ) {
+            if ( false === $wpdb->update( $t['fields'], array( 'sort_order' => $position + 1 ), array( 'id' => $field_id, 'group_id' => $field['group_id'] ), array( '%d' ), array( '%d', '%d' ) ) ) {
+                $wpdb->query( 'ROLLBACK' ); wp_die( 'Unable to reorder fields.', '', array( 'response' => 500 ) );
+            }
+        }
+        $wpdb->query( 'COMMIT' );
+        self::redirect( 'order_updated' );
+    }
+    private static function action_form( $action, $nonce, $values, $label ) {
+        $html = '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+        $html .= '<input type="hidden" name="action" value="' . esc_attr( $action ) . '">';
+        foreach ( $values as $key => $value ) {
+            $html .= '<input type="hidden" name="' . esc_attr( $key ) . '" value="' . esc_attr( (string) $value ) . '">';
+        }
+        $html .= wp_nonce_field( $nonce, '_wpnonce', true, false );
+        return $html . '<button type="submit" class="button button-small">' . esc_html( $label ) . '</button></form>';
+    }
     private static function redirect( $notice ) {
         wp_safe_redirect( add_query_arg( array( 'page' => 'bh3-field-manager', 'notice' => $notice ), admin_url( 'admin.php' ) ) );
         exit;
@@ -137,7 +185,7 @@ final class BH_Field_Manager_3 {
     }
     public static function render() {
         if ( ! self::enabled() || ! current_user_can( 'manage_options' ) ) { wp_die( 'Not permitted.', '', array( 'response' => 403 ) ); }
-        echo '<div class="wrap"><h1>Bubba Hub Field Manager</h1><p>Create reusable groups of custom fields for activities, venues and sessions. This foundation defines fields; editing actual record values will be added separately.</p>';
+        echo '<div class="wrap bh3-fm"><style>.bh3-fm{max-width:1200px}.bh3-fm .bh3-fm-card{background:#fff;border:1px solid #dbe5de;border-radius:12px;padding:20px;margin:18px 0}.bh3-fm .bh3-fm-card h2{margin-top:0}.bh3-fm .bh3-fm-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.bh3-fm .bh3-fm-grid label{display:flex;flex-direction:column;gap:6px;font-weight:600}.bh3-fm .bh3-fm-grid input,.bh3-fm .bh3-fm-grid select{width:100%;max-width:100%;box-sizing:border-box}.bh3-fm .bh3-fm-checks{display:flex;gap:18px;flex-wrap:wrap;margin:16px 0}.bh3-fm .bh3-fm-checks label{display:flex;align-items:center;gap:7px}.bh3-fm .bh3-fm-checks input{margin:0}.bh3-fm .bh3-fm-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.bh3-fm .bh3-fm-actions form{display:inline}.bh3-fm .bh3-fm-muted{color:#66746b}.bh3-fm .bh3-fm-card table{border-radius:8px;overflow:hidden}.bh3-fm .bh3-fm-card td{vertical-align:middle}.bh3-fm .bh3-fm-disabled{opacity:.55}@media(max-width:700px){.bh3-fm .bh3-fm-grid{grid-template-columns:1fr}.bh3-fm .bh3-fm-card{padding:14px;overflow-x:auto}}</style><h1>Bubba Hub Field Manager</h1><p>Create reusable field groups and assign them to activities, venues and sessions. Values on individual records will be added in the next stage.</p>'; 
         if ( isset( $_GET['notice'] ) ) { echo '<div class="notice notice-success"><p>' . esc_html( sanitize_text_field( wp_unslash( $_GET['notice'] ) ) ) . '</p></div>'; }
         if ( ! self::ready() ) {
             echo '<h2>Install Field Manager tables</h2><p>Back up staging first. Creates three new tables without altering legacy or BH3 activity tables.</p><form action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" method="post"><input type="hidden" name="action" value="bh3_field_install">';
@@ -154,41 +202,41 @@ final class BH_Field_Manager_3 {
         foreach ( $groups as $g ) { if ( (int) $g['id'] === $edit_group_id ) { $edit_group = $g; break; } }
         foreach ( $fields as $f ) { if ( (int) $f['id'] === $edit_field_id ) { $edit_field = $f; break; } }
 
-        echo '<h2>Field groups</h2><table class="widefat striped"><thead><tr><th>Group</th><th>Key</th><th>Assigned to</th><th>Fields</th></tr></thead><tbody>';
+        echo '<section class="bh3-fm-card"><h2>Field groups</h2><table class="widefat striped"><thead><tr><th>Group</th><th>Key</th><th>Assigned to</th><th>Fields</th></tr></thead><tbody>';
         foreach ( $groups as $group ) {
             $count = count( array_filter( $fields, function( $f ) use ( $group ) { return (int) $f['group_id'] === (int) $group['id']; } ) );
-            echo '<tr><td>' . esc_html( $group['name'] ) . ' <a href="' . esc_url( add_query_arg( array( 'page' => 'bh3-field-manager', 'edit_group' => absint( $group['id'] ) ), admin_url( 'admin.php' ) ) ) . '">Edit</a></td><td><code>' . esc_html( $group['group_key'] ) . '</code></td><td>' . esc_html( str_replace( ',', ', ', $group['targets'] ) ) . '</td><td>' . esc_html( (string) $count ) . '</td></tr>';
+            echo '<tr><td>' . esc_html( $group['name'] ) . ' <a href="' . esc_url( add_query_arg( array( 'page' => 'bh3-field-manager', 'edit_group' => absint( $group['id'] ) ), admin_url( 'admin.php' ) ) ) . '">Edit</a></td><td><code>' . esc_html( $group['group_key'] ) . '</code></td><td>' . esc_html( str_replace( ',', ', ', $group['targets'] ) ) . '</td><td>' . esc_html( (string) $count ) . '</td><td>' . self::action_form( 'bh3_field_toggle', 'bh3_field_toggle', array( 'kind' => 'group', 'id' => $group['id'] ), $group['is_active'] ? 'Disable' : 'Enable' ) . '</td></tr>';
         }
-        if ( ! $groups ) { echo '<tr><td colspan="4">No groups yet.</td></tr>'; }
-        echo '</tbody></table><h2>' . ( $edit_group ? 'Edit field group' : 'Add field group' ) . '</h2><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="bh3_field_group_save">';
+        if ( ! $groups ) { echo '<tr><td colspan="5">No groups yet.</td></tr>'; }
+        echo '</tbody></table></section><section class="bh3-fm-card"><h2>' . ( $edit_group ? 'Edit field group' : 'Add field group' ) . '</h2><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="bh3_field_group_save">';
         wp_nonce_field( 'bh3_field_group_save' );
         echo '<input type="hidden" name="group_id" value="' . esc_attr( (string) ( $edit_group['id'] ?? 0 ) ) . '">';
         echo '<p><label>Group name <input name="name" required maxlength="190"></label> <label>Unique key <input name="group_key" required maxlength="100" pattern="[a-z0-9_\-]+"></label></p><p>Assign to: ';
         foreach ( array( 'activity' => 'Activities', 'venue' => 'Venues', 'session' => 'Sessions' ) as $key => $label ) {
             echo '<label style="margin-right:14px"><input type="checkbox" name="targets[]" value="' . esc_attr( $key ) . '" ' . checked( in_array( $key, explode( ',', $edit_group['targets'] ?? '' ), true ), true, false ) . '> ' . esc_html( $label ) . '</label>';
         }
-        echo '</p><button class="button button-primary">Create group</button></form>';
-        echo '<h2>Field definitions</h2><table class="widefat striped"><thead><tr><th>Group</th><th>Field</th><th>Key</th><th>Type</th><th>Required</th></tr></thead><tbody>';
+        echo '</div><button class="button button-primary">' . ( $edit_group ? 'Save group' : 'Create group' ) . '</button></form></section>';
+        echo '<section class="bh3-fm-card"><h2>Field definitions</h2><table class="widefat striped"><thead><tr><th>Group</th><th>Field</th><th>Key</th><th>Type</th><th>Required</th></tr></thead><tbody>';
         foreach ( $fields as $field ) {
             $group_name = '';
             foreach ( $groups as $g ) { if ( (int) $g['id'] === (int) $field['group_id'] ) { $group_name = $g['name']; break; } }
-            echo '<tr><td>' . esc_html( $group_name ) . '</td><td>' . esc_html( $field['label'] ) . ' <a href="' . esc_url( add_query_arg( array( 'page' => 'bh3-field-manager', 'edit_field' => absint( $field['id'] ) ), admin_url( 'admin.php' ) ) ) . '">Edit</a>' . '</td><td><code>' . esc_html( $field['field_key'] ) . '</code></td><td>' . esc_html( $field['field_type'] ) . '</td><td>' . ( $field['is_required'] ? 'Yes' : 'No' ) . '</td></tr>';
+            echo '<tr><td>' . esc_html( $group_name ) . '</td><td>' . esc_html( $field['label'] ) . ' <a href="' . esc_url( add_query_arg( array( 'page' => 'bh3-field-manager', 'edit_field' => absint( $field['id'] ) ), admin_url( 'admin.php' ) ) ) . '">Edit</a>' . '</td><td><code>' . esc_html( $field['field_key'] ) . '</code></td><td>' . esc_html( $field['field_type'] ) . '</td><td>' . ( $field['is_required'] ? 'Yes' : 'No' ) . '</td><td><div class="bh3-fm-actions">' . self::action_form( 'bh3_field_move', 'bh3_field_move', array( 'id' => $field['id'], 'direction' => 'up' ), '↑' ) . self::action_form( 'bh3_field_move', 'bh3_field_move', array( 'id' => $field['id'], 'direction' => 'down' ), '↓' ) . self::action_form( 'bh3_field_toggle', 'bh3_field_toggle', array( 'kind' => 'field', 'id' => $field['id'] ), $field['is_active'] ? 'Disable' : 'Enable' ) . '</div></td></tr>';
         }
-        if ( ! $fields ) { echo '<tr><td colspan="5">No custom fields yet.</td></tr>'; }
-        echo '</tbody></table><h2>' . ( $edit_field ? 'Edit field' : 'Add field to group' ) . '</h2>'; 
+        if ( ! $fields ) { echo '<tr><td colspan="6">No custom fields yet.</td></tr>'; }
+        echo '</tbody></table></section><section class="bh3-fm-card"><h2>' . ( $edit_field ? 'Edit field' : 'Add field to group' ) . '</h2>'; 
         if ( $groups ) {
             echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="bh3_field_definition_save">';
             wp_nonce_field( 'bh3_field_definition_save' );
             echo '<input type="hidden" name="field_id" value="' . esc_attr( (string) ( $edit_field['id'] ?? 0 ) ) . '">';
-            echo '<p><label>Group <select name="group_id">';
+            echo '<div class="bh3-fm-grid"><label>Group<select name="group_id">';
             foreach ( $groups as $group ) { echo '<option value="' . esc_attr( (string) $group['id'] ) . '" ' . selected( (int) ( $edit_field['group_id'] ?? 0 ), (int) $group['id'], false ) . '>' . esc_html( $group['name'] ) . '</option>'; }
             echo '</select></label> <label>Label <input name="label" maxlength="190" required></label> <label>Unique field key <input name="field_key" maxlength="100" required pattern="[a-z0-9_\-]+"></label></p>';
             echo '<p><label>Field type <select name="field_type">';
             foreach ( array( 'text', 'textarea', 'number', 'checkbox', 'select', 'multiselect', 'date', 'time', 'url', 'email' ) as $type ) { echo '<option value="' . esc_attr( $type ) . '" ' . selected( $edit_field['field_type'] ?? '', $type, false ) . '>' . esc_html( ucfirst( $type ) ) . '</option>'; }
             echo '</select></label> <label><input type="checkbox" name="is_required" value="1" ' . checked( (int) ( $edit_field['is_required'] ?? 0 ), 1, false ) . '> Required</label></p>';
             echo '<p><label>Options (for select/multiselect, one per line)<br><textarea name="options" rows="5" cols="55">' . esc_textarea( implode( "\n", json_decode( $edit_field['options_json'] ?? '[]', true ) ?: array() ) ) . '</textarea></label></p>';
-            echo '<button class="button button-primary">Create field</button></form>';
+            echo '<button class="button button-primary">' . ( $edit_field ? 'Save field' : 'Create field' ) . '</button></form>';
         }
-        echo '</div>';
+        echo '<script>(function(){function keyify(v){return v.toLowerCase().trim().replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"").slice(0,100)}for(const pair of [["bh3-group-name","bh3-group-key"],["bh3-field-label","bh3-field-key"]]){const source=document.getElementById(pair[0]),key=document.getElementById(pair[1]);if(source&&key){let manual=!!key.value;key.addEventListener("input",()=>{manual=!!key.value});source.addEventListener("input",()=>{if(!manual)key.value=keyify(source.value)})}}})();</script></section></div>';
     }
 }
