@@ -1,0 +1,38 @@
+name: Theme checks and ZIP
+on:
+  push:
+    paths:
+      - 'theme/bubba-hub/**'
+      - 'scripts/validate-theme.php'
+      - '.github/workflows/theme-checks.yml'
+  pull_request:
+    paths:
+      - 'theme/bubba-hub/**'
+      - 'scripts/validate-theme.php'
+      - '.github/workflows/theme-checks.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check PHP syntax
+        run: |
+          find theme/bubba-hub -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+          php -l scripts/validate-theme.php
+      - name: Validate theme files and block markup
+        run: php scripts/validate-theme.php
+      - name: Package installable theme
+        run: |
+          mkdir -p dist
+          cd theme
+          zip -qr ../dist/bubba-hub-theme.zip bubba-hub -x '*/.DS_Store' '*/Thumbs.db'
+          unzip -t ../dist/bubba-hub-theme.zip
+      - name: Upload theme ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: bubba-hub-theme
+          path: dist/bubba-hub-theme.zip
+          if-no-files-found: error
