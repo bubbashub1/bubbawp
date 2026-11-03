@@ -7,7 +7,7 @@ final class BH_Schema_3 {
 
     public static function table_names() {
         global $wpdb;
-        $prefix = $wpdb->prefix . 'bh3_';
+        $prefix = $wpdb->prefix;
         return array(
             'organisers' => $prefix . 'organisers',
             'venues' => $prefix . 'venues',
