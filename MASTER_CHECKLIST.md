@@ -16,9 +16,9 @@
 
 ## Current focus
 
-- **Active stage:** 0 — Project governance and architecture
-- **Current task:** G-02 — Establish repository conventions and protected workflow
-- **Next task:** G-02 — Establish repository conventions and protected workflow
+- **Active stage:** Theme-first foundation (Stage T0; design before feature modules)
+- **Current task:** T0-01 — Build and preview initial native block theme
+- **Next task:** T0-02 — Review visual design and mobile layouts, then iterate
 - **Last verified milestone:** Master checklist created; custom block theme approach approved and documented
 - **Staging QA:** Not started
 - **Production changes:** None authorised
@@ -35,6 +35,19 @@
 - [ ] **R-08** Privacy and child safety by design: minimal data, parent-controlled child profiles, private memories, access controls and retention policies.
 - [ ] **R-09** Mobile-first for families, leaders and administrators.
 - [ ] **R-10** All production releases require tests, backup/rollback plan, approval and recorded evidence.
+
+## Stage T0 — Theme first: design and layout baseline
+
+**Approved sequence:** Theme first → governance/legacy audit → plugin foundation → feature modules. Theme work may use placeholder blocks and sample content, but must not touch live or connect to existing production data. The theme design must be approved before feature-specific layouts are built.
+
+- [x] **T0-00** Approve theme-first development order.
+- [ ] **T0-01** Create an installable native WordPress block theme with theme.json, global tokens, header/footer, homepage and core templates.
+- [ ] **T0-02** Review desktop/mobile look, brand colours, typography, navigation, card system and page widths; refine to approval.
+- [ ] **T0-03** Build reusable Site Editor patterns for hero, discovery placeholder, categories, featured cards, family and leader CTAs.
+- [ ] **T0-04** Verify editor customisation, responsive behaviour, accessibility and graceful placeholder behaviour without plugin.
+- [ ] **T0-05** Produce independent theme ZIP and test activation on isolated/staging WordPress; document evidence.
+- [ ] **T0-06** Approve design baseline and component contracts for Directory, Leader Portal and My Hub.
+- **Exit gate:** visual direction approved, install/activation and mobile QA evidenced; then proceed with Stage 0 inventory and plugin work.
 
 ## Stage 0 — Governance, inventory and design
 
@@ -195,6 +208,7 @@
 | ADR-013 | **Approach A:** fully custom native WordPress **block theme**, no Astra/Elementor dependency; separate theme ZIP and plugin ZIP | Agreed 2026-11-03 |
 | ADR-014 | WordPress Site Editor, `theme.json`, templates, parts and patterns for visual editing; plugin owns business logic and dynamic blocks | Agreed 2026-11-03 |
 | ADR-015 | Legacy Astra/Elementor content must be inventoried and transitioned on staging; no live theme switch until approved | Agreed 2026-11-03 |
+| ADR-016 | **Theme-first sequencing:** establish and approve design system before implementing directory, leader and family features | Agreed 2026-11-03 |
 
 ## Work item template
 
@@ -240,3 +254,4 @@ Copy for each substantial issue/PR:
 | --- | --- | --- |
 | 2026-11-03 | Initial master checklist created; no plugin implementation or staging QA claimed | This file |
 | 2026-11-03 | Approved custom block theme approach A; added G-11/G-12 and T-01–T-07, revised F-06/D-07 and decisions | `docs/ARCHITECTURE.md` |
+| 2026-11-03 | Reordered roadmap to theme-first Stage T0; design approval precedes feature modules | ADR-016 |
