@@ -312,6 +312,61 @@ final class BH_Field_Manager_3 {
         unset( $field );
         return $definitions;
     }
+    /** Shared validation for the admin record editor and the BH3 listing wizard. */
+    public static function validate_submitted_values( $target, $submitted ) {
+        if ( ! self::enabled() || ! current_user_can( 'manage_options' ) || ! self::ready() ) {
+            return new WP_Error( 'unavailable', 'Custom fields are unavailable.' );
+        }
+        if ( ! is_array( $submitted ) ) {
+            return new WP_Error( 'invalid_input', 'Invalid custom field values.' );
+        }
+        $result = array();
+        foreach ( self::definitions_for( $target ) as $field ) {
+            $id = (int) $field['field_id'];
+            $raw = $submitted[ $id ] ?? ( $field['field_type'] === 'multiselect' ? array() : '' );
+            $value = self::normalized_value( $field, $raw );
+            if ( is_wp_error( $value ) ) {
+                return new WP_Error( $value->get_error_code(), $field['label'] . ': ' . $value->get_error_message() );
+            }
+            if ( $field['is_required'] && ( $value === '' || $value === array() || $value === false ) ) {
+                return new WP_Error( 'required_field', $field['label'] . ' is required.' );
+            }
+            $result[ $id ] = wp_json_encode( $value );
+        }
+        return $result;
+    }
+    /** Call inside an existing transaction when saving a draft activity. */
+    public static function persist_validated_values( $target, $object_id, $values ) {
+        if ( ! self::enabled() || ! current_user_can( 'manage_options' ) || ! self::ready()
+            || ! self::object_exists( $target, $object_id ) || ! is_array( $values ) ) {
+            return false;
+        }
+        global $wpdb; $t = self::tables();
+        foreach ( $values as $field_id => $json ) {
+            if ( ! is_int( $field_id ) || ! is_string( $json ) ) { return false; }
+            $ok = $wpdb->replace( $t['values'], array(
+                'object_type' => $target,
+                'object_id' => $object_id,
+                'field_id' => $field_id,
+                'value_json' => $json,
+                'updated_at' => current_time( 'mysql', true ),
+            ) );
+            if ( false === $ok ) { return false; }
+        }
+        return true;
+    }
+    public static function values_for( $target, $object_id ) {
+        if ( ! self::enabled() || ! current_user_can( 'manage_options' )
+            || ! self::ready() || ! self::object_exists( $target, $object_id ) ) { return array(); }
+        global $wpdb; $t = self::tables();
+        $rows = $wpdb->get_results( $wpdb->prepare(
+            "SELECT field_id,value_json FROM \`{$t['values']}\` WHERE object_type=%s AND object_id=%d",
+            $target, $object_id
+        ), ARRAY_A );
+        $values = array();
+        foreach ( $rows as $row ) { $values[ (int) $row['field_id'] ] = json_decode( $row['value_json'], true ); }
+        return $values;
+    }
     private static function action_form( $action, $nonce, $values, $label ) {
         $html = '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
         $html .= '<input type="hidden" name="action" value="' . esc_attr( $action ) . '">';
