@@ -1,0 +1,387 @@
+-- Bubba Hub standalone database foundation
+-- Safe design: ONLY bh_* tables. Do not modify existing WordPress wp_* tables.
+-- Run this after confirming the existing MySQL database is the one intended for Bubba Hub.
+
+CREATE TABLE IF NOT EXISTS bh_organisers (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ user_id BIGINT UNSIGNED NULL,
+ organisation_name VARCHAR(190) NOT NULL,
+ slug VARCHAR(190) NOT NULL UNIQUE,
+ description TEXT NULL,
+ email VARCHAR(190) NULL,
+ phone VARCHAR(80) NULL,
+ website VARCHAR(255) NULL,
+ status ENUM('draft','pending','published','suspended') NOT NULL DEFAULT 'draft',
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS bh_activities (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ organiser_id BIGINT UNSIGNED NOT NULL,
+ title VARCHAR(190) NOT NULL,
+ slug VARCHAR(190) NOT NULL UNIQUE,
+ description TEXT NULL,
+ category VARCHAR(120) NULL,
+ age_range VARCHAR(255) NULL,
+ county ENUM('Devon','Cornwall','Plymouth','Torbay') NULL,
+ price_from DECIMAL(10,2) NULL,
+ booking_url VARCHAR(500) NULL,
+ image_path VARCHAR(500) NULL,
+ status ENUM('draft','pending','published','archived') NOT NULL DEFAULT 'draft',
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ INDEX idx_activity_organiser (organiser_id),
+ INDEX idx_activity_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS bh_venues (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ activity_id BIGINT UNSIGNED NOT NULL,
+ venue_name VARCHAR(190) NOT NULL,
+ address TEXT NULL,
+ town VARCHAR(120) NULL,
+ region VARCHAR(120) NULL,
+ postcode VARCHAR(20) NULL,
+ latitude DECIMAL(10,7) NULL,
+ longitude DECIMAL(10,7) NULL,
+ notes TEXT NULL,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ INDEX idx_venue_activity (activity_id),
+ INDEX idx_venue_town (town)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS bh_sessions (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ venue_id BIGINT UNSIGNED NOT NULL,
+ day_of_week TINYINT UNSIGNED NOT NULL,
+ start_time TIME NOT NULL,
+ end_time TIME NULL,
+ duration_minutes SMALLINT UNSIGNED NULL,
+ price DECIMAL(10,2) NULL,
+ term_time_only TINYINT(1) NOT NULL DEFAULT 0,
+ frequency VARCHAR(80) NULL DEFAULT 'weekly',
+ start_date DATE NULL,
+ end_date DATE NULL,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ INDEX idx_session_venue (venue_id),
+ INDEX idx_session_day (day_of_week)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS bh_users (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ email VARCHAR(190) NOT NULL UNIQUE,
+ password_hash VARCHAR(255) NOT NULL,
+ role ENUM('family','leader','organiser','admin') NOT NULL DEFAULT 'family',
+ status ENUM('active','pending','suspended') NOT NULL DEFAULT 'active',
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Account-backed family discovery and notification preferences.
+CREATE TABLE IF NOT EXISTS bh_user_preferences (
+ user_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+ email_enabled TINYINT(1) NOT NULL DEFAULT 1,
+ push_enabled TINYINT(1) NOT NULL DEFAULT 0,
+ planner_reminders TINYINT(1) NOT NULL DEFAULT 1,
+ booking_updates TINYINT(1) NOT NULL DEFAULT 1,
+ saved_searches TINYINT(1) NOT NULL DEFAULT 0,
+ support_replies TINYINT(1) NOT NULL DEFAULT 1,
+ event_reminders TINYINT(1) NOT NULL DEFAULT 1,
+ region VARCHAR(120) NULL,
+ town VARCHAR(120) NULL,
+ preferred_day VARCHAR(20) NULL,
+ categories_json TEXT NULL,
+ free_activities TINYINT(1) NOT NULL DEFAULT 0,
+ term_time TINYINT(1) NOT NULL DEFAULT 0,
+ max_price DECIMAL(10,2) NULL,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS bh_children (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ user_id BIGINT UNSIGNED NOT NULL,
+ name VARCHAR(120) NOT NULL,
+ gender VARCHAR(40) NULL,
+ photo_path VARCHAR(500) NULL,
+ date_of_birth DATE NULL,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ INDEX idx_child_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS bh_bumps (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ user_id BIGINT UNSIGNED NOT NULL,
+ nickname VARCHAR(120) NULL,
+ photo_path VARCHAR(500) NULL,
+ due_date DATE NULL,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ INDEX idx_bump_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS bh_saved_activities (
+ user_id BIGINT UNSIGNED NOT NULL,
+ activity_id BIGINT UNSIGNED NOT NULL,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ PRIMARY KEY (user_id, activity_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS bh_planner (
+ user_id BIGINT UNSIGNED NOT NULL,
+ activity_id BIGINT UNSIGNED NOT NULL,
+ visited TINYINT(1) NOT NULL DEFAULT 0,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ PRIMARY KEY (user_id, activity_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS bh_hidden_planner_days (
+ user_id BIGINT UNSIGNED NOT NULL,
+ day_of_week TINYINT UNSIGNED NOT NULL,
+ PRIMARY KEY (user_id, day_of_week)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS bh_bookings (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ user_id BIGINT UNSIGNED NOT NULL,
+ activity_id BIGINT UNSIGNED NOT NULL,
+ session_id BIGINT UNSIGNED NULL,
+ status ENUM('pending','confirmed','cancelled','completed') NOT NULL DEFAULT 'pending',
+ consent_given TINYINT(1) NOT NULL DEFAULT 0,
+ amount DECIMAL(10,2) NULL,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ INDEX idx_booking_user (user_id),
+ INDEX idx_booking_activity (activity_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- Private family Help & Support. These tables are separate from public leader FAQs.
+CREATE TABLE IF NOT EXISTS bh_guidance_topics (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ name VARCHAR(120) NOT NULL UNIQUE,
+ description VARCHAR(500) NULL,
+ active TINYINT(1) NOT NULL DEFAULT 1,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS bh_guidance_offers (
+ user_id BIGINT UNSIGNED NOT NULL,
+ topic_id BIGINT UNSIGNED NOT NULL,
+ enabled TINYINT(1) NOT NULL DEFAULT 1,
+ PRIMARY KEY (user_id, topic_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS bh_support_questions (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ user_id BIGINT UNSIGNED NOT NULL,
+ topic_id BIGINT UNSIGNED NULL,
+ subject VARCHAR(190) NULL,
+ question TEXT NOT NULL,
+ status ENUM('submitted','assigned','awaiting_user','answered','closed') NOT NULL DEFAULT 'submitted',
+ assigned_user_id BIGINT UNSIGNED NULL,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ INDEX idx_support_user (user_id),
+ INDEX idx_support_assigned (assigned_user_id),
+ INDEX idx_support_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS bh_support_answers (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ question_id BIGINT UNSIGNED NOT NULL,
+ responder_user_id BIGINT UNSIGNED NOT NULL,
+ answer TEXT NOT NULL,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ INDEX idx_support_answer_question (question_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS bh_leader_faqs (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ organiser_id BIGINT UNSIGNED NOT NULL,
+ activity_id BIGINT UNSIGNED NULL,
+ question VARCHAR(500) NOT NULL,
+ answer TEXT NOT NULL,
+ status ENUM('draft','published','archived') NOT NULL DEFAULT 'draft',
+ sort_order INT NOT NULL DEFAULT 0,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ INDEX idx_faq_organiser (organiser_id),
+ INDEX idx_faq_activity (activity_id),
+ INDEX idx_faq_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- Booking modes and cached external booking schedules.
+CREATE TABLE IF NOT EXISTS bh_booking_sources (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ activity_id BIGINT UNSIGNED NOT NULL,
+ mode ENUM('bubba','external') NOT NULL DEFAULT 'bubba',
+ booking_url VARCHAR(1000) NULL,
+ source_type ENUM('auto','json','ics','html') NOT NULL DEFAULT 'auto',
+ last_checked_at DATETIME NULL,
+ next_check_at DATETIME NULL,
+ last_success_at DATETIME NULL,
+ last_error TEXT NULL,
+ content_hash CHAR(64) NULL,
+ active TINYINT(1) NOT NULL DEFAULT 1,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ UNIQUE KEY uq_booking_source_activity (activity_id),
+ INDEX idx_booking_source_refresh (active,next_check_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS bh_booking_slots (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ activity_id BIGINT UNSIGNED NOT NULL,
+ venue_id BIGINT UNSIGNED NULL,
+ source_id BIGINT UNSIGNED NULL,
+ starts_at DATETIME NOT NULL,
+ ends_at DATETIME NULL,
+ capacity INT UNSIGNED NULL,
+ seats_remaining INT UNSIGNED NULL,
+ price DECIMAL(10,2) NULL,
+ booking_mode ENUM('bubba','external','schedule_only') NOT NULL DEFAULT 'bubba',
+ external_url VARCHAR(1000) NULL,
+ status ENUM('open','full','closed','cancelled') NOT NULL DEFAULT 'open',
+ external_key VARCHAR(255) NULL,
+ last_synced_at DATETIME NULL,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ INDEX idx_booking_slot_activity (activity_id,starts_at),
+ INDEX idx_booking_slot_source (source_id,starts_at),
+ UNIQUE KEY uq_external_slot (source_id,external_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS bh_booking_reservations (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ slot_id BIGINT UNSIGNED NOT NULL,
+ user_id BIGINT UNSIGNED NOT NULL,
+ status ENUM('reserved','confirmed','cancelled','attended') NOT NULL DEFAULT 'reserved',
+ quantity TINYINT UNSIGNED NOT NULL DEFAULT 1,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ UNIQUE KEY uq_slot_user (slot_id,user_id),
+ INDEX idx_reservation_slot (slot_id),
+ INDEX idx_reservation_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Family booking consent profiles and booking-time consent snapshots.
+-- Sensitive child/medical data is kept separate from public activity data.
+CREATE TABLE IF NOT EXISTS bh_consent_profiles (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ user_id BIGINT UNSIGNED NOT NULL,
+ child_id BIGINT UNSIGNED NULL,
+ child_name VARCHAR(120) NOT NULL,
+ date_of_birth DATE NULL,
+ gender VARCHAR(40) NULL,
+ additional_needs TEXT NULL,
+ allergies TEXT NULL,
+ medical_conditions TEXT NULL,
+ medications TEXT NULL,
+ dietary_requirements TEXT NULL,
+ emergency_information TEXT NULL,
+ emergency_contact_name VARCHAR(190) NULL,
+ emergency_contact_phone VARCHAR(80) NULL,
+ photo_activity TINYINT(1) NOT NULL DEFAULT 0,
+ photo_bubbahub TINYINT(1) NOT NULL DEFAULT 0,
+ photo_organiser_marketing TINYINT(1) NOT NULL DEFAULT 0,
+ support_prefill_enabled TINYINT(1) NOT NULL DEFAULT 0,
+ support_prefill_topics VARCHAR(500) NULL,
+ consent_to_share_with_organiser TINYINT(1) NOT NULL DEFAULT 0,
+ consent_version VARCHAR(30) NOT NULL DEFAULT '1.0',
+ consent_given_at DATETIME NULL,
+ updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ INDEX idx_consent_user (user_id),
+ INDEX idx_consent_child (child_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS bh_booking_consent_snapshots (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ user_id BIGINT UNSIGNED NOT NULL,
+ booking_id BIGINT UNSIGNED NULL,
+ reservation_id BIGINT UNSIGNED NULL,
+ consent_profile_id BIGINT UNSIGNED NULL,
+ consent_version VARCHAR(30) NOT NULL,
+ child_name VARCHAR(120) NOT NULL,
+ consent_json LONGTEXT NOT NULL,
+ consent_given_at DATETIME NOT NULL,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ INDEX idx_consent_snapshot_user (user_id),
+ INDEX idx_consent_snapshot_booking (booking_id),
+ INDEX idx_consent_snapshot_reservation (reservation_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
+ALTER TABLE bh_activities ADD COLUMN IF NOT EXISTS county ENUM('Devon','Cornwall','Plymouth','Torbay') NULL AFTER age_range;
+
+
+-- Optional Bubba Hub Round Up newsletter preferences.
+ALTER TABLE bh_user_preferences ADD COLUMN IF NOT EXISTS newsletter_enabled TINYINT(1) NOT NULL DEFAULT 0;
+ALTER TABLE bh_user_preferences ADD COLUMN IF NOT EXISTS newsletter_frequency ENUM('daily','weekly','monthly') NOT NULL DEFAULT 'weekly';
+ALTER TABLE bh_user_preferences ADD COLUMN IF NOT EXISTS newsletter_last_sent_at DATETIME NULL;
+
+
+CREATE TABLE IF NOT EXISTS bh_push_subscriptions (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ user_id BIGINT UNSIGNED NOT NULL,
+ endpoint TEXT NOT NULL,
+ endpoint_hash CHAR(64) NOT NULL,
+ p256dh VARCHAR(255) NOT NULL,
+ auth VARCHAR(255) NOT NULL,
+ content_encoding VARCHAR(30) NOT NULL DEFAULT 'aes128gcm',
+ user_agent VARCHAR(500) NULL,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ UNIQUE KEY uq_push_endpoint_hash (endpoint_hash),
+ INDEX idx_push_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE bh_user_preferences DROP COLUMN IF EXISTS sms_enabled;
+ALTER TABLE bh_user_preferences DROP COLUMN IF EXISTS phone;
+ALTER TABLE bh_user_preferences DROP COLUMN IF EXISTS sms_marketing;
+
+
+CREATE TABLE IF NOT EXISTS bh_push_notifications (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ user_id BIGINT UNSIGNED NOT NULL,
+ slot_id BIGINT UNSIGNED NULL,
+ notification_type VARCHAR(60) NOT NULL,
+ sent_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ UNIQUE KEY uq_push_notification (user_id,slot_id,notification_type),
+ INDEX idx_push_notification_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- Leader support expertise. These choices are used for private family support matching.
+CREATE TABLE IF NOT EXISTS bh_leader_expertise (
+ organiser_id BIGINT UNSIGNED NOT NULL,
+ topic_key VARCHAR(80) NOT NULL,
+ enabled TINYINT(1) NOT NULL DEFAULT 1,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ PRIMARY KEY (organiser_id, topic_key),
+ INDEX idx_leader_expertise_topic (topic_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- Public website newsletter subscribers.
+CREATE TABLE IF NOT EXISTS bh_newsletter_subscribers (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ email VARCHAR(190) NOT NULL UNIQUE,
+ status ENUM('subscribed','unsubscribed') NOT NULL DEFAULT 'subscribed',
+ source VARCHAR(80) NOT NULL DEFAULT 'website',
+ consented_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ unsubscribed_at DATETIME NULL,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ INDEX idx_newsletter_status (status),
+ INDEX idx_newsletter_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
