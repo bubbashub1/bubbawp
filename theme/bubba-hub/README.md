@@ -20,3 +20,15 @@ Home, index, page, single, archive, search and 404. Header and footer template p
 - No logo asset bundled; set the site logo in WordPress after installation.
 - Visual design has not been approved and theme compatibility has not been tested.
 - Links such as `/directory/`, `/leader/` and `/my-hub/` are placeholders pending URL compatibility audit.
+
+
+## Editor style parity
+
+The theme registers `assets/css/site.css` for both the public site and the block editor via `add_editor_style()`. This is presentation-only CSS; the visual appearance still needs real Site Editor/browser QA. Navigation links are deliberately not auto-created or redirected during activation.
+
+## Header and mobile checks
+
+1. Add the actual Bubba Hub logo via Appearance → Editor → Header → Site Logo.
+2. Create or assign the desired WordPress navigation menu; verify each destination against the existing URL inventory.
+3. Preview at 360px, 390px, 768px and desktop widths; check menu overlay, logo sizing, keyboard navigation and zoom.
+4. Do not switch the live site's theme until Elementor and existing page routes have a documented migration path.
