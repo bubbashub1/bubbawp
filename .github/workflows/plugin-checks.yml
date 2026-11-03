@@ -4,6 +4,7 @@ on:
     paths:
       - 'plugin/bubba-hub-manager/**'
       - 'scripts/validate-plugin.php'
+      - 'scripts/validate-wizard-js.cjs'
       - '.github/workflows/plugin-checks.yml'
   pull_request:
     paths:
@@ -24,6 +25,7 @@ jobs:
           php -l scripts/validate-plugin.php
           php scripts/validate-plugin.php
           php plugin/bubba-hub-manager/tests/activity-repository-contract.php
+          node scripts/validate-wizard-js.cjs
       - name: Package plugin
         run: |
           mkdir -p dist
