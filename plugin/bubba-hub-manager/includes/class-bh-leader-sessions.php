@@ -27,6 +27,7 @@ final class BH_Leader_Sessions_3 {
         $id = absint( $_GET['activity_id'] ?? 0 );
         $activity = self::activity( $id );
         if ( ! $activity ) { wp_die( 'Activity not found.', '', array( 'response' => 404 ) ); }
+        if ( ! $activity ) { wp_die( 'You cannot manage this timetable.', '', array( 'response' => 403 ) ); }
         $sessions = $wpdb->prefix . 'sessions';
         $venues = $wpdb->prefix . 'venues';
         $links = $wpdb->prefix . 'activity_venues';
@@ -91,6 +92,7 @@ final class BH_Leader_Sessions_3 {
                 wp_die( 'Venue must be assigned to this activity first.', '', array( 'response' => 400 ) );
             }
         }
+        if ( ! self::activity( $id ) ) { wp_die( 'Activity ownership changed.', '', array( 'response' => 403 ) ); }
         $table = $wpdb->prefix . 'sessions';
         $now = current_time( 'mysql', true );
         $result = $wpdb->insert( $table, array(
