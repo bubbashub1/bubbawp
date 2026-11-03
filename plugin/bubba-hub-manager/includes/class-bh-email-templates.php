@@ -18,6 +18,12 @@ final class BH_Email_Templates_3 {
         );
     }
 
+    public static function editable_content( $key ) {
+        $definitions = self::definitions();
+        if ( ! isset( $definitions[ $key ] ) ) { return ''; }
+        return (string) get_option( 'bh3_email_template_' . $key, '' );
+    }
+
     public static function render( $key, $vars = array() ) {
         $defs = self::definitions();
         if ( ! isset( $defs[ $key ] ) ) { return ''; }
@@ -54,6 +60,19 @@ final class BH_Email_Templates_3 {
             default:
                 $body = '<h1>Your Bubba Hub Round Up</h1><p>A little nudge towards what is happening for families.</p><h2>New on Bubba Hub</h2>' . wp_kses_post( (string) $v['content'] ) . $button( 'Explore Bubba Hub', home_url( '/' ) );
                 break;
+        }
+        $custom = self::editable_content( $key );
+        if ( '' !== $custom ) {
+            // Only these named placeholders are supported; escape each substituted value.
+            $replacements = array(
+                '{{first_name}}' => $name,
+                '{{activity_title}}' => $activity,
+                '{{date_time}}' => esc_html( (string) $v['date_time'] ),
+                '{{venue}}' => esc_html( (string) $v['venue'] ),
+                '{{action_url}}' => $action,
+                '{{content}}' => wp_kses_post( (string) $v['content'] ),
+            );
+            $body = strtr( $custom, $replacements );
         }
         $logo = esc_url( home_url( '/wp-content/uploads/logo/logoheader.png' ) );
         $footer = '<p style="font-size:12px;line-height:1.6;color:#617261;margin:28px 0 0;padding-top:18px;border-top:1px solid #d8e6db">Bubba Hub South West · Devon &amp; Cornwall<br><a href="' . esc_url( home_url( '/' ) ) . '" style="color:#416651">bubbahub.co.uk</a></p>';
