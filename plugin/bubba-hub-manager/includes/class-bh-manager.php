@@ -75,12 +75,14 @@ final class BH_Manager_3 {
         require_once BUBBA_HUB_MANAGER_PATH . 'modules/Families/class-bh-family-recommendations.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'modules/Families/class-bh-family-account.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'modules/Families/class-bh-family-notifications.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'modules/Families/class-bh-family-privacy.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'modules/Families/class-bh-family-settings.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'modules/Families/class-bh-family-hub.php';
         BH_Family_Preferences_3::register();
         BH_Family_Settings_3::register();
         BH_Family_Account_3::register();
         BH_Family_Notifications_3::register();
+        BH_Family_Privacy_3::register();
         BH_Family_Profile_Editor_3::register();
         BH_Family_Actions_3::register();
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-frontend-editor.php';
