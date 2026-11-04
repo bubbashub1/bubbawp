@@ -16,6 +16,7 @@ final class BH_Leader_Layout_3 {
             'bh_leader_booking_dashboard' => 'Bookings',
             'bh_leader_support' => 'Help',
             'bh_leader_statistics' => 'Statistics',
+            'bh_leader_account' => 'Account',
         );
         if ( ! isset( $pages[ $tag ] ) ||
             strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ||
@@ -31,6 +32,7 @@ final class BH_Leader_Layout_3 {
             array( 'Bookings', home_url( '/leader/bookings/' ), 'Bookings' ),
             array( 'Statistics', home_url( '/leader/statistics/' ), 'Statistics' ),
             array( 'Help & Support', home_url( '/leader/support/' ), 'Help' ),
+            array( 'Account Settings', home_url( '/leader/account/' ), 'Account' ),
         );
         // Activity-specific screens need an activity selection; avoid links to empty editors.
         if ( $id ) {
