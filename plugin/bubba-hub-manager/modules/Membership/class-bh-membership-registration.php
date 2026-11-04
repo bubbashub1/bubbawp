@@ -52,7 +52,7 @@ final class BH_Membership_Registration_3 {
                     <div class="bh-membership-action">
                         <?php
                         if ( $swpm_ready && $family_button_id ) {
-                            echo wp_kses_post( do_shortcode( '[swpm_payment_button id="' . $family_button_id . '"]' ) );
+                            echo do_shortcode( '[swpm_payment_button id="' . $family_button_id . '"]' );
                         } else {
                             self::render_unconfigured_button( 'Family Pro' );
                         }
@@ -75,7 +75,7 @@ final class BH_Membership_Registration_3 {
                     <div class="bh-membership-action">
                         <?php
                         if ( $swpm_ready && $leader_button_id ) {
-                            echo wp_kses_post( do_shortcode( '[swpm_payment_button id="' . $leader_button_id . '"]' ) );
+                            echo do_shortcode( '[swpm_payment_button id="' . $leader_button_id . '"]' );
                         } else {
                             self::render_unconfigured_button( 'Leader Pro' );
                         }
