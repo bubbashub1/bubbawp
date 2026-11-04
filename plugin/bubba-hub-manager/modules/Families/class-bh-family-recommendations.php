@@ -13,6 +13,11 @@ final class BH_Family_Recommendations_3 {
         $conditions = array("a.status IN ('published','publish')");
         $params = array();
         if (!empty($preferences['free_only'])) $conditions[] = 'a.is_free = 1';
+        $price = $preferences['max_price'] ?? null;
+        if ($price !== null && $price !== '' && is_numeric($price) && $price >= 0 && $price <= 10000) {
+            $conditions[] = '(a.is_free = 1 OR (a.price_from IS NOT NULL AND a.price_from <= %f))';
+            $params[] = (float) $price;
+        }
         if (!empty($preferences['term_time'])) $conditions[] = "EXISTS (SELECT 1 FROM `{$s}` st WHERE st.activity_id=a.id AND st.term_time_only=1)";
         $days = array('monday'=>1,'tuesday'=>2,'wednesday'=>3,'thursday'=>4,'friday'=>5,'saturday'=>6,'sunday'=>7);
         $chosen = array_values(array_intersect_key($days, array_flip((array)($preferences['days'] ?? array()))));
