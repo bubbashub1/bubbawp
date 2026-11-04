@@ -23,7 +23,7 @@ final class BH_Leader_Frontend_Business_3 {
         if ( ! $profile ) { return '<p>Please sign in with a linked organiser account to manage your business profile.</p>'; }
         ob_start(); ?>
         <section class="bh-leader-business">
-        <style>.bh-leader-business{max-width:900px;margin:32px auto;padding:0 20px;color:#203c31;font-family:inherit}.bh-leader-business *{box-sizing:border-box}.bh-leader-business .bh-business-card{background:#fff;border:1px solid #dbe5df;border-radius:16px;padding:24px;margin:20px 0}.bh-leader-business label{display:block;font-weight:600;margin:16px 0 6px}.bh-leader-business input,.bh-leader-business textarea{width:100%;max-width:680px;padding:11px;border:1px solid #b6c8bc;border-radius:9px;font:inherit}.bh-leader-business button{background:#245e4a;color:#fff;border:0;border-radius:9px;padding:12px 20px;font:inherit;font-weight:600;cursor:pointer}.bh-leader-business .bh-business-note{color:#53665e} .bh-leader-business .bh-business-hero{background:linear-gradient(120deg,#1e5743,#367d5d);color:#fff;padding:26px;border-radius:20px;margin:14px 0 24px}.bh-leader-business .bh-business-hero h1{color:#fff;margin:5px 0;font-size:clamp(28px,4vw,38px)}.bh-leader-business .bh-business-hero p{color:#edf7ef;margin:5px 0}.bh-leader-business .bh-business-card{box-shadow:0 8px 24px rgba(25,58,40,.05)}.bh-leader-business input:focus-visible,.bh-leader-business textarea:focus-visible,.bh-leader-business button:focus-visible{outline:3px solid #245e4a;outline-offset:2px}@media(max-width:650px){.bh-leader-business .bh-business-hero{padding:20px}.bh-leader-business .bh-business-card{padding:17px}}</style>
+        <style>.bh-leader-business{max-width:900px;margin:32px auto;padding:0 20px;color:#203c31;font-family:inherit}.bh-leader-business *{box-sizing:border-box}.bh-leader-business .bh-business-card{background:#fff;border:1px solid #dbe5df;border-radius:16px;padding:24px;margin:20px 0}.bh-leader-business label{display:block;font-weight:600;margin:16px 0 6px}.bh-leader-business input:not([type=checkbox]),.bh-leader-business textarea,.bh-leader-business select{width:100%;max-width:680px;padding:11px;border:1px solid #b6c8bc;border-radius:9px;font:inherit}.bh-leader-business button{background:#245e4a;color:#fff;border:0;border-radius:9px;padding:12px 20px;font:inherit;font-weight:600;cursor:pointer}.bh-leader-business .bh-business-note{color:#53665e} .bh-leader-business .bh-business-hero{background:linear-gradient(120deg,#1e5743,#367d5d);color:#fff;padding:26px;border-radius:20px;margin:14px 0 24px}.bh-leader-business .bh-business-hero h1{color:#fff;margin:5px 0;font-size:clamp(28px,4vw,38px)}.bh-leader-business .bh-business-hero p{color:#edf7ef;margin:5px 0}.bh-leader-business .bh-business-card{box-shadow:0 8px 24px rgba(25,58,40,.05)}.bh-leader-business input:focus-visible,.bh-leader-business textarea:focus-visible,.bh-leader-business button:focus-visible{outline:3px solid #245e4a;outline-offset:2px}@media(max-width:650px){.bh-leader-business .bh-business-hero{padding:20px}.bh-leader-business .bh-business-card{padding:17px}}</style>
         <p><a href="<?php echo esc_url( home_url( '/leader/' ) ); ?>">← Leader Dashboard</a> · <a href="<?php echo esc_url( home_url( '/leader/about/' ) ); ?>">Preview storefront</a></p>
         <header class="bh-business-hero"><p>YOUR ORGANISER PROFILE</p><h1>My Business</h1><p>Make it easy for families to learn about your organisation and get in touch.</p></header>
         <?php if ( isset( $_GET['saved'] ) && $_GET['saved'] === '1' ) : ?><p role="status">Business profile saved successfully.</p><?php endif; ?>
@@ -40,6 +40,16 @@ final class BH_Leader_Frontend_Business_3 {
         <?php $extras = get_option( 'bh3_storefront_' . (int) $profile['id'], array() ); ?>
         <label for="bh-business-logo">Logo image URL</label><input id="bh-business-logo" name="logo_url" type="url" maxlength="2048" placeholder="https://" value="<?php echo esc_attr( $extras['logo_url'] ?? '' ); ?>">
         <label for="bh-business-cover">Cover image URL</label><input id="bh-business-cover" name="cover_url" type="url" maxlength="2048" placeholder="https://" value="<?php echo esc_attr( $extras['cover_url'] ?? '' ); ?>">
+        <h2>Business directory</h2>
+        <p class="bh-business-note">Help families discover your business. Directory publishing will remain disabled until the directory is ready.</p>
+        <label for="bh-business-category">Business category</label>
+        <select id="bh-business-category" name="business_category">
+          <?php foreach ( array( '' => 'Choose a category', 'classes' => 'Classes & activities', 'family-services' => 'Family services', 'pregnancy' => 'Pregnancy & postnatal', 'childcare' => 'Childcare & education', 'shops' => 'Shops & gifts', 'venues' => 'Family-friendly venues', 'other' => 'Other family business' ) as $value => $label ) : ?>
+          <option value="<?php echo esc_attr( $value ); ?>" <?php selected( $extras['business_category'] ?? '', $value ); ?>><?php echo esc_html( $label ); ?></option>
+          <?php endforeach; ?>
+        </select>
+        <label for="bh-business-area">Areas served</label><input id="bh-business-area" name="areas_served" type="text" maxlength="200" placeholder="e.g. Torbay, Exeter, South Devon" value="<?php echo esc_attr( $extras['areas_served'] ?? '' ); ?>">
+        <label><input type="checkbox" name="directory_opt_in" value="1" <?php checked( ! empty( $extras['directory_opt_in'] ) ); ?>> Include my business when the directory launches</label>
         <h2>Social links</h2>
         <label for="bh-business-facebook">Facebook URL</label><input id="bh-business-facebook" name="facebook_url" type="url" maxlength="2048" placeholder="https://" value="<?php echo esc_attr( $extras['facebook_url'] ?? '' ); ?>">
         <label for="bh-business-instagram">Instagram URL</label><input id="bh-business-instagram" name="instagram_url" type="url" maxlength="2048" placeholder="https://" value="<?php echo esc_attr( $extras['instagram_url'] ?? '' ); ?>">
@@ -67,6 +77,14 @@ final class BH_Leader_Frontend_Business_3 {
             }
             $extras[ $field ] = $clean;
         }
+        $categories = array( 'classes', 'family-services', 'pregnancy', 'childcare', 'shops', 'venues', 'other' );
+        $category = sanitize_key( wp_unslash( $_POST['business_category'] ?? '' ) );
+        if ( $category && ! in_array( $category, $categories, true ) ) { wp_die( 'Invalid business category.', '', array( 'response' => 400 ) ); }
+        $areas = sanitize_text_field( wp_unslash( $_POST['areas_served'] ?? '' ) );
+        if ( mb_strlen( $areas ) > 200 ) { wp_die( 'Areas served is too long.', '', array( 'response' => 400 ) ); }
+        $extras['business_category'] = $category;
+        $extras['areas_served'] = $areas;
+        $extras['directory_opt_in'] = ! empty( $_POST['directory_opt_in'] ) ? 1 : 0;
         global $wpdb;
         $table = $wpdb->prefix . 'organisers';
         $result = $wpdb->update( $table, array( 'contact_email'=>$email, 'website_url'=>$url, 'description'=>$description, 'updated_at'=>current_time( 'mysql', true ) ), array( 'id'=>(int) $profile['id'] ) );
