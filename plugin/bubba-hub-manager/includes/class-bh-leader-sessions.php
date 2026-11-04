@@ -27,6 +27,9 @@ final class BH_Leader_Sessions_3 {
         $id = absint( $_GET['activity_id'] ?? 0 );
         $activity = self::activity( $id );
         if ( ! $activity ) { wp_die( 'Activity not found.', '', array( 'response' => 404 ) ); }
+        foreach ( array( 'sessions', 'venues', 'activity_venues' ) as $required ) {
+            if ( ! BH_Leader_Access_3::table_exists( $required ) ) { wp_die( 'Session tables are not ready.', '', array( 'response' => 503 ) ); }
+        }
         $sessions = $wpdb->prefix . 'sessions';
         $venues = $wpdb->prefix . 'venues';
         $links = $wpdb->prefix . 'activity_venues';
