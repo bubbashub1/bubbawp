@@ -39,13 +39,13 @@ final class BH_Leader_Frontend_3 {
         ob_start();
         ?>
         <style>
-        .bh-leader-shell{max-width:1180px;margin:32px auto;padding:0 20px;color:#203c31;font-family:inherit}
+        .bh-leader-shell{max-width:1180px;margin:32px auto;padding:0 20px;color:#203c31;font-family:inherit}.bh-leader-shell p,.bh-leader-shell a,.bh-leader-shell span,.bh-leader-shell li,.bh-leader-shell input,.bh-leader-shell select,.bh-leader-shell button{font-family:inherit!important;letter-spacing:normal}
         .bh-leader-shell *{box-sizing:border-box}.bh-leader-head{margin-bottom:26px}
         .bh-leader-head h1{font-size:clamp(28px,4vw,42px);line-height:1.2;margin:0 0 10px}
         .bh-leader-muted{color:#53665e}.bh-leader-stats,.bh-leader-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:20px 0}
         .bh-leader-stat,.bh-leader-card,.bh-leader-list{background:#fff;border:1px solid #dbe5df;border-radius:16px;padding:22px;box-shadow:0 3px 12px rgba(25,58,40,.04)}
         .bh-leader-stat strong{display:block;font-size:30px;color:#245e4a}.bh-leader-card h2{font-size:20px;margin:0 0 10px}
-        .bh-leader-card p{line-height:1.55}.bh-leader-button{display:inline-flex;padding:10px 16px;background:#245e4a;color:#fff!important;border-radius:9px;text-decoration:none!important;font-weight:600}
+        .bh-leader-card p{line-height:1.55}.bh-leader-card a{display:inline-block;margin-top:8px;color:#245e4a;font-weight:700;text-decoration:underline}.bh-leader-card a:focus-visible,.bh-leader-shell a:focus-visible{outline:3px solid #245e4a;outline-offset:3px}.bh-leader-nav{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 24px}.bh-leader-nav a{padding:9px 14px;border:1px solid #cbdcd0;border-radius:30px;text-decoration:none;color:#245e4a;font-weight:600;background:#fff}.bh-leader-nav a:hover{background:#eef5ef}.bh-leader-button{display:inline-flex;padding:10px 16px;background:#245e4a;color:#fff!important;border-radius:9px;text-decoration:none!important;font-weight:600}
         .bh-leader-list{margin:22px 0}.bh-leader-list h2{font-size:22px}.bh-leader-list ul{list-style:none;padding:0;margin:0}
         .bh-leader-list li{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid #edf0ed}
         .bh-leader-status{text-transform:capitalize;color:#245e4a;font-weight:600}.bh-leader-filters{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}.bh-leader-filters input,.bh-leader-filters select{min-height:43px;padding:8px 12px;border:1px solid #cbd8cf;border-radius:9px}.bh-leader-filters input{flex:1;min-width:180px}.bh-leader-filters button{border:0;cursor:pointer}.bh-leader-pagination{display:flex;gap:12px;margin-top:16px}.bh-leader-pagination a{color:#245e4a;font-weight:600}
@@ -53,28 +53,31 @@ final class BH_Leader_Frontend_3 {
         </style>
         <main class="bh-leader-shell">
             <header class="bh-leader-head"><h1>Leader Dashboard</h1><p class="bh-leader-muted">Welcome, <?php echo esc_html( $name ); ?>. Manage your Bubba Hub activities.</p></header>
+            <nav class="bh-leader-nav" aria-label="Leader portal navigation"><a href="#my-activities">My Activities</a><a href="<?php echo esc_url( home_url( '/leader/business/' ) ); ?>">My Business</a><a href="#leader-tools">Manage classes</a></nav>
             <section class="bh-leader-stats" aria-label="Listing summary">
                 <div class="bh-leader-stat"><strong><?php echo esc_html( number_format_i18n( $totals['all'] ) ); ?></strong>Total activities</div>
                 <div class="bh-leader-stat"><strong><?php echo esc_html( number_format_i18n( $totals['draft'] ) ); ?></strong>Drafts</div>
                 <div class="bh-leader-stat"><strong><?php echo esc_html( number_format_i18n( $totals['published'] ) ); ?></strong>Published</div>
             </section>
-            <section class="bh-leader-grid" aria-label="Leader sections">
+            <section class="bh-leader-grid" id="leader-tools" aria-label="Leader sections">
                 <?php
                 $sections = array(
-                    array( 'My Activities', 'Review your linked listings and their status.' ),
-                    array( 'My Venues', 'Venue management is being prepared for the front end.' ),
-                    array( 'My Timetables', 'Session editing is being prepared for the front end.' ),
-                    array( 'Bookings', 'Bookings are not yet enabled.' ),
-                    array( 'My Business', 'Organiser profile settings are coming next.' ),
-                    array( 'Help & Support', 'Leader resources and guidance are being prepared.' ),
+                    array( 'My Activities', 'Search, edit and manage your own draft listings.', '#my-activities', 'View activities' ),
+                    array( 'My Venues', 'Choose an activity below to assign or remove its venues.', '#my-activities', 'Choose activity' ),
+                    array( 'My Timetables', 'Choose an activity below to edit its weekly sessions.', '#my-activities', 'Choose activity' ),
+                    array( 'Bookings', 'Bookings and enrolments are not yet enabled.', '', '' ),
+                    array( 'My Business', 'Update your public organiser profile and contact details.', home_url( '/leader/business/' ), 'Edit business profile' ),
+                    array( 'Help & Support', 'Find family guidance and website support resources.', home_url( '/guidance/resources/' ), 'View resources' ),
                 );
                 foreach ( $sections as $section ) {
-                    echo '<article class="bh-leader-card"><h2>' . esc_html( $section[0] ) . '</h2><p>' . esc_html( $section[1] ) . '</p></article>';
+                    echo '<article class="bh-leader-card"><h2>' . esc_html( $section[0] ) . '</h2><p>' . esc_html( $section[1] ) . '</p>';
+                    if ( $section[2] ) { echo '<a href="' . esc_url( $section[2] ) . '">' . esc_html( $section[3] ) . '</a>'; }
+                    echo '</article>';
                 }
                 ?>
             </section>
             <section class="bh-leader-list" id="my-activities"><h2>My Activities</h2>
-                <p class="bh-leader-muted">Search your own listings. Editing will be available here once the front-end editor passes testing.</p>
+                <p class="bh-leader-muted">Search your listings, then use Edit draft, Timetable or Venues to manage each draft.</p>
                 <form class="bh-leader-filters" method="get" action="<?php echo esc_url( get_permalink() ); ?>">
                     <label class="screen-reader-text" for="bh-leader-search">Search activities</label>
                     <input id="bh-leader-search" type="search" name="bh_leader_search" placeholder="Search activities" value="<?php echo esc_attr( $search ); ?>">
