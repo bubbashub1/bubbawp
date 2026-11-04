@@ -36,6 +36,19 @@ final class BH_Leader_Frontend_3 {
         $page_count = max( 1, (int) ceil( $total_results / 15 ) );
         $page_num = min( $page_num, $page_count );
         $listings = $wpdb->get_results( $wpdb->prepare( "SELECT id,title,status,category FROM `{$activities}` WHERE {$where} ORDER BY id DESC LIMIT %d OFFSET %d", array_merge( $args, array( 15, ( $page_num - 1 ) * 15 ) ) ), ARRAY_A );
+        // Only use verified organiser-owned records. Do not invent booking/message counts.
+        $draft_attention = $wpdb->get_results( $wpdb->prepare(
+            "SELECT id,title FROM `{$activities}` WHERE organiser_id=%d AND status='draft' ORDER BY id DESC LIMIT 3",
+            $organiser_id
+        ), ARRAY_A );
+        $sessions_table = $wpdb->prefix . 'sessions';
+        $session_summary = null;
+        if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $sessions_table ) ) ) === $sessions_table ) {
+            $session_summary = (int) $wpdb->get_var( $wpdb->prepare(
+                "SELECT COUNT(*) FROM `{$sessions_table}` s INNER JOIN `{$activities}` a ON a.id=s.activity_id WHERE a.organiser_id=%d AND a.status='published' AND s.frequency='weekly'",
+                $organiser_id
+            ) );
+        }
         ob_start();
         ?>
 
@@ -45,6 +58,42 @@ final class BH_Leader_Frontend_3 {
                 <div class="bh-leader-stat"><strong><?php echo esc_html( number_format_i18n( $totals['all'] ) ); ?></strong>Total activities</div>
                 <div class="bh-leader-stat"><strong><?php echo esc_html( number_format_i18n( $totals['draft'] ) ); ?></strong>Drafts</div>
                 <div class="bh-leader-stat"><strong><?php echo esc_html( number_format_i18n( $totals['published'] ) ); ?></strong>Published</div>
+            </section>
+            <section class="bh-leader-overview" aria-label="Your next steps">
+                <header><h2>Your next steps</h2><p class="bh-leader-muted">Everything important, in one place.</p></header>
+                <div class="bh-leader-overview-grid">
+                    <article class="bh-leader-overview-card">
+                        <h3>Activities to finish</h3>
+                        <?php if ( ! $draft_attention ) : ?><p>No drafts waiting for attention.</p>
+                        <?php else : ?>
+                            <p><?php echo esc_html( number_format_i18n( $totals['draft'] ) ); ?> draft activities</p>
+                            <ul><?php foreach ( $draft_attention as $draft ) : ?><li>
+                                <a href="<?php echo esc_url( add_query_arg( 'activity_id', absint( $draft['id'] ), home_url( '/leader/edit-activity/' ) ) ); ?>"><?php echo esc_html( $draft['title'] ); ?></a>
+                            </li><?php endforeach; ?></ul>
+                        <?php endif; ?>
+                        <a class="bh-leader-overview-action" href="<?php echo esc_url( home_url( '/leader/statistics/' ) ); ?>">Review listing improvements</a>
+                    </article>
+                    <article class="bh-leader-overview-card">
+                        <h3>Your timetable</h3>
+                        <?php if ( $session_summary === null ) : ?>
+                            <p>Session information is not available yet.</p>
+                        <?php else : ?>
+                            <p><?php echo esc_html( number_format_i18n( $session_summary ) ); ?> weekly session records on published activities.</p>
+                            <p class="bh-leader-muted">This is not a live count of upcoming classes or cancellations.</p>
+                        <?php endif; ?>
+                        <a class="bh-leader-overview-action" href="<?php echo esc_url( home_url( '/leader/' ) . '#my-activities' ); ?>">Manage activity timetables</a>
+                    </article>
+                    <article class="bh-leader-overview-card">
+                        <h3>Bookings</h3>
+                        <p>Booking totals and alerts will appear when reservation records are connected.</p>
+                        <a class="bh-leader-overview-action" href="<?php echo esc_url( home_url( '/leader/bookings/' ) ); ?>">Open bookings</a>
+                    </article>
+                    <article class="bh-leader-overview-card">
+                        <h3>Family questions</h3>
+                        <p>Specialist messages are managed in Help &amp; Support. No unread count is available yet.</p>
+                        <a class="bh-leader-overview-action" href="<?php echo esc_url( home_url( '/leader/support/' ) ); ?>">Open support inbox</a>
+                    </article>
+                </div>
             </section>
             <section class="bh-leader-list" id="my-activities"><h2>My Activities</h2>
                 <p class="bh-leader-muted">Find an activity below to update its details, venues and timetable. Published listings remain read-only until the team enables editing.</p>
