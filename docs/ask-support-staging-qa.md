@@ -1,6 +1,6 @@
 # Ask Support staging release gate
 
-This feature is **not production-ready**. PRs #110–#115 are stacked, draft, and must be reviewed and consolidated before deployment.
+This feature is **not production-ready**. Consolidated PR #117 remains draft until staging verification is complete.
 
 ## Deployment prerequisites
 
@@ -34,9 +34,9 @@ This feature is **not production-ready**. PRs #110–#115 are stacked, draft, an
 
 - Current form field names and explicit specialist-sharing consent have **not been verified**.
 - Approval depends on human redaction; automated PII checks and escalation for safeguarding concerns are not implemented.
-- Replies are approved **as written**, with no moderator redaction/editing facility. Review this before sending any response to parents.
+- Moderators can edit replies before approval; staging testing of that review step remains outstanding.
 - Guest access, notifications, opt-out/deletion, retention, parent follow-up and reporting are not built.
-- Current intake duplicate check is not database-enforced; concurrency hardening is required.
+- Verify the unique submission index on any already-installed staging tables before enabling intake.
 - Code-level CI does not substitute for WordPress/Fluent Forms staging integration tests.
 
 ## Rollout rule
