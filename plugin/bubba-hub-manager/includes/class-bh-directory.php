@@ -86,7 +86,7 @@ final class BH_Directory_3 {
         }
         $where = implode( ' AND ', $conditions );
         $order = $sort === 'newest' ? 'a.id DESC' : ( $sort === 'town' ? 'town ASC, a.title ASC' : 'a.title ASC' );
-        $sql = "SELECT a.id,a.title,a.slug,a.description,a.category,a.price_from,a.is_free,o.name AS organiser,
+        $sql = "SELECT a.id,a.title,a.slug,a.description,a.category,a.age_min_months,a.age_max_months,a.price_from,a.is_free,o.name AS organiser,
             (SELECT v.town FROM `{$links}` av INNER JOIN `{$venues}` v ON v.id=av.venue_id WHERE av.activity_id=a.id ORDER BY v.name LIMIT 1) AS town
             FROM `{$activities}` a LEFT JOIN `{$organisers}` o ON o.id=a.organiser_id
             WHERE {$where} ORDER BY {$order} LIMIT 13 OFFSET " . ( ( $page - 1 ) * 12 );
@@ -134,7 +134,7 @@ final class BH_Directory_3 {
         .bh3-real-directory.bh3-view-map .bh3-cards,.bh3-real-directory.bh3-view-map .bh3-pages{display:none}
         .bh3-real-directory .bh3-map:focus-visible,.bh3-real-directory button:focus-visible{outline:3px solid #74b38b;outline-offset:3px}
         .bh3-real-directory .bh3-map-card-link{display:inline-block;margin-top:8px;padding:7px 10px;border-radius:7px;border:1px solid #bcd9c5;background:#f4faf6;color:#175c46;font-weight:700;cursor:pointer}
-        .bh3-real-directory article h3{margin:8px 0}.bh3-real-directory .bh3-meta{color:#50675e;font-size:14px}
+        .bh3-real-directory article h3{margin:8px 0}.bh3-real-directory .bh3-card-facts{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}.bh3-real-directory .bh3-card-facts span{display:inline-flex;align-items:center;background:#f0f7f2;border:1px solid #dce9df;border-radius:999px;padding:5px 9px;font-size:12px;color:#315b46}.bh3-real-directory article{min-width:0;overflow-wrap:anywhere}.bh3-real-directory .bh3-meta{color:#50675e;font-size:14px}
         .bh3-real-directory .bh3-pages{display:flex;gap:16px;margin-top:24px}
         .bh3-real-directory .bh3-map{border-radius:14px;overflow:hidden;border:1px solid #d7e3dc;margin:16px 0;z-index:0}
         .bh3-real-directory .bh3-map-message{font-size:14px;color:#50675e}
@@ -192,7 +192,16 @@ final class BH_Directory_3 {
             echo '<article data-activity-id="' . esc_attr( (string) absint( $row['id'] ) ) . '"><div class="bh3-meta">' . esc_html( (string) $row['category'] ) . '</div><h3>' . esc_html( $row['title'] ) . '</h3>';
             if ( $detail_url ) { echo '<p><a href="' . esc_url( $detail_url ) . '">View activity details</a></p>'; }
             echo '<p>' . esc_html( wp_trim_words( wp_strip_all_tags( (string) $row['description'] ), 24 ) ) . '</p>';
-            echo '<p class="bh3-meta">' . esc_html( (string) $row['town'] ) . ( $row['organiser'] ? ' · ' . esc_html( $row['organiser'] ) : '' ) . '</p>';
+            echo '<div class="bh3-card-facts">';
+            if ( $row['town'] ) { echo '<span>📍 ' . esc_html( (string) $row['town'] ) . '</span>'; }
+            if ( $row['age_min_months'] !== null || $row['age_max_months'] !== null ) {
+                $age_min = $row['age_min_months'] !== null ? (int) $row['age_min_months'] : null;
+                $age_max = $row['age_max_months'] !== null ? (int) $row['age_max_months'] : null;
+                $age_label = $age_min !== null && $age_max !== null ? $age_min . '–' . $age_max . ' months' : ( $age_min !== null ? $age_min . '+ months' : 'Up to ' . $age_max . ' months' );
+                echo '<span>Age: ' . esc_html( $age_label ) . '</span>';
+            }
+            echo '</div>';
+            if ( $row['organiser'] ) { echo '<p class="bh3-meta">By ' . esc_html( $row['organiser'] ) . '</p>'; }
             echo '<strong>' . ( (int) $row['is_free'] ? 'Free' : ( $row['price_from'] !== null ? 'From £' . esc_html( number_format( (float) $row['price_from'], 2 ) ) : 'Price on enquiry' ) ) . '</strong></article>';
         }
         if ( ! $rows ) { echo '<p>No published activities match these filters. Draft listings are not public.</p>'; }
