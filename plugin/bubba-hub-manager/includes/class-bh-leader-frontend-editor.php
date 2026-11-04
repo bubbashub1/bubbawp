@@ -11,7 +11,7 @@ final class BH_Leader_Frontend_Editor_3 {
         if ( ! $organiser ) { return null; }
         global $wpdb;
         $table = $wpdb->prefix . 'activities';
-        return $wpdb->get_row( $wpdb->prepare( "SELECT id,title,description,category,age_min_months,age_max_months,price_from,is_free,booking_url FROM `{$table}` WHERE id=%d AND organiser_id=%d AND status='draft' LIMIT 1", $id, $organiser ), ARRAY_A );
+        return $wpdb->get_row( $wpdb->prepare( "SELECT id,title,description,category,age_min_months,age_max_months,price_from,is_free,booking_url,image_id FROM `{$table}` WHERE id=%d AND organiser_id=%d AND status='draft' LIMIT 1", $id, $organiser ), ARRAY_A );
     }
     public static function register() {
         add_shortcode( 'bh_leader_edit_activity', array( __CLASS__, 'render' ) );
@@ -49,6 +49,14 @@ final class BH_Leader_Frontend_Editor_3 {
         </nav>
         <?php if ( isset( $_GET['saved'] ) && $_GET['saved'] === '1' ) : ?><p class="bh-edit-success" role="status">Draft saved successfully.</p><?php endif; ?>
         <p>Draft details only. Publishing and deletion remain with the Bubba Hub team.</p>
+        <section class="bh-edit-image-preview" aria-label="Current listing image">
+            <h2>Listing image</h2>
+            <?php if ( ! empty( $row['image_id'] ) && wp_attachment_is_image( absint( $row['image_id'] ) ) ) : ?>
+                <?php echo wp_get_attachment_image( absint( $row['image_id'] ), 'medium_large', false, array( 'style' => 'max-width:100%;height:auto;border-radius:10px' ) ); ?>
+            <?php else : ?>
+                <p class="bh-edit-hint">No listing image has been assigned yet.</p>
+            <?php endif; ?>
+        </section>
         <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
             <input type="hidden" name="action" value="bh3_leader_frontend_save">
             <input type="hidden" name="activity_id" value="<?php echo esc_attr( $id ); ?>">
