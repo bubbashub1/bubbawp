@@ -10,6 +10,7 @@ final class BH_Family_Native_Profiles_3 {
         add_action('admin_post_bh3_native_family_update',array(__CLASS__,'update'));
         add_action('admin_post_bh3_native_family_delete',array(__CLASS__,'delete'));
         add_filter('the_content',array(__CLASS__,'replace_family_profile_page'),30);
+        add_action('admin_init',array(__CLASS__,'maybe_add_gender_column'));
     }
     /** Render the native manager on the existing /family/profile/ page. */
     public static function replace_family_profile_page($content) {
@@ -17,6 +18,13 @@ final class BH_Family_Native_Profiles_3 {
         $page_id=get_queried_object_id();
         if (!$page_id || get_page_uri($page_id)!=='family/profile') return $content;
         return self::dashboard();
+    }
+    public static function maybe_add_gender_column() {
+        if (!current_user_can('manage_options') || strtolower((string)wp_parse_url(home_url(),PHP_URL_HOST))!=='staging.bubbahub.co.uk') return;
+        global $wpdb; $table=$wpdb->prefix.'bh_family_profiles';
+        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s',$wpdb->esc_like($table)))!==$table) return;
+        $columns=$wpdb->get_col("SHOW COLUMNS FROM `{$table}`",0);
+        if (is_array($columns) && !in_array('gender',$columns,true)) $wpdb->query("ALTER TABLE `{$table}` ADD COLUMN gender varchar(40) NOT NULL DEFAULT '' AFTER profile_date");
     }
     public static function allowed() {
         // Native profiles belong to the authenticated WordPress account. They do not
@@ -77,7 +85,7 @@ final class BH_Family_Native_Profiles_3 {
         global $wpdb;
         $table=$wpdb->prefix.'bh_family_profiles';
         if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s',$wpdb->esc_like($table)))!==$table) return '<p>Profile storage is not available.</p>';
-        $records=$wpdb->get_results($wpdb->prepare("SELECT id,profile_type,display_name,profile_date FROM `{$table}` WHERE user_id=%d ORDER BY id DESC LIMIT 70",get_current_user_id()),ARRAY_A);
+        $records=$wpdb->get_results($wpdb->prepare("SELECT id,profile_type,display_name,profile_date,gender FROM `{$table}` WHERE user_id=%d ORDER BY id DESC LIMIT 70",get_current_user_id()),ARRAY_A);
         if (!is_array($records)) return '<p>Unable to load profiles.</p>';
         ob_start(); ?>
         <div class="bh3-family-profile-preview">
@@ -132,6 +140,7 @@ final class BH_Family_Native_Profiles_3 {
           <?php wp_nonce_field('bh3_native_family_update_' . absint($record['id'])); ?>
           <label>Name or nickname <input name="display_name" maxlength="100" required value="<?php echo esc_attr($record['display_name']); ?>"></label>
           <label><?php echo esc_html($type==='child'?'Date of birth':'Due date'); ?> <input name="profile_date" type="date" required value="<?php echo esc_attr($record['profile_date']); ?>"></label>
+          <?php if ($type==='child') : ?><label>Gender (optional) <select name="gender"><option value="">Prefer not to say</option><option value="girl" <?php selected($record['gender'] ?? '', 'girl'); ?>>Girl</option><option value="boy" <?php selected($record['gender'] ?? '', 'boy'); ?>>Boy</option><option value="another" <?php selected($record['gender'] ?? '', 'another'); ?>>Another identity</option></select></label><?php endif; ?>
           <button type="submit">Save changes</button>
         </form>
         <?php return ob_get_clean();
@@ -152,7 +161,9 @@ final class BH_Family_Native_Profiles_3 {
         if (!$name || strlen($name)>100 || !$parsed || $parsed->format('Y-m-d')!==$date) wp_die('Invalid profile details.','',array('response'=>400));
         if ($record['profile_type']==='child' && ($parsed>$today || (int)$parsed->format('Y')<1900)) wp_die('Invalid birth date.','',array('response'=>400));
         if ($record['profile_type']==='bump' && ($parsed<$today->modify('-300 days') || $parsed>$today->modify('+600 days'))) wp_die('Invalid due date.','',array('response'=>400));
-        $result=$wpdb->update($table,array('display_name'=>$name,'profile_date'=>$date,'updated_at'=>current_time('mysql')),array('id'=>$id,'user_id'=>get_current_user_id()),array('%s','%s','%s'),array('%d','%d'));
+        $gender=isset($_POST['gender']) && is_scalar($_POST['gender']) ? sanitize_key(wp_unslash($_POST['gender'])) : '';
+        if (!in_array($gender,array('','girl','boy','another'),true) || $record['profile_type']==='bump') $gender='';
+        $result=$wpdb->update($table,array('display_name'=>$name,'profile_date'=>$date,'gender'=>$gender,'updated_at'=>current_time('mysql')),array('id'=>$id,'user_id'=>get_current_user_id()),array('%s','%s','%s','%s'),array('%d','%d'));
         if ($result===false) wp_die('Unable to update profile.','',array('response'=>500));
         wp_safe_redirect(add_query_arg('bh3_profile_status','saved',home_url('/family/profile/')));
         exit;
@@ -180,7 +191,9 @@ final class BH_Family_Native_Profiles_3 {
         $duplicate=$wpdb->get_var($wpdb->prepare("SELECT id FROM `{$table}` WHERE user_id=%d AND profile_type=%s AND display_name=%s AND profile_date=%s LIMIT 1",$user,$type,$name,$date));
         if ($duplicate) wp_die('This profile already exists.','',array('response'=>409));
         $now=current_time('mysql');
-        $saved=$wpdb->insert($table,array('user_id'=>$user,'profile_type'=>$type,'display_name'=>$name,'profile_date'=>$date,'created_at'=>$now,'updated_at'=>$now),array('%d','%s','%s','%s','%s','%s'));
+        $gender=isset($_POST['gender']) && is_scalar($_POST['gender']) ? sanitize_key(wp_unslash($_POST['gender'])) : '';
+        if (!in_array($gender,array('','girl','boy','another'),true) || $type==='bump') $gender='';
+        $saved=$wpdb->insert($table,array('user_id'=>$user,'profile_type'=>$type,'display_name'=>$name,'profile_date'=>$date,'gender'=>$gender,'created_at'=>$now,'updated_at'=>$now),array('%d','%s','%s','%s','%s','%s','%s'));
         if ($saved===false) wp_die('Could not save profile.','',array('response'=>500));
         wp_safe_redirect(add_query_arg('bh3_profile_status','saved',home_url('/family/profile/')));
         exit;
