@@ -5,6 +5,7 @@ final class BH_Family_Native_Profiles_3 {
     public static function register() {
         add_shortcode('bubbahub_family_add_profile',array(__CLASS__,'form'));
         add_action('admin_post_bh3_native_family_profile',array(__CLASS__,'save'));
+        add_action('admin_post_bh3_native_family_update',array(__CLASS__,'update'));
     }
     public static function allowed() {
         return BH_Family_Preferences_3::can_edit()
@@ -52,6 +53,41 @@ final class BH_Family_Native_Profiles_3 {
           </div>
         </div>
         <?php return ob_get_clean();
+    }
+    public static function edit_form($record) {
+        if (!self::allowed() || !is_array($record) || empty($record['id'])) return '';
+        $type = ($record['profile_type'] ?? '') === 'bump' ? 'bump' : 'child';
+        ob_start(); ?>
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="bh3-family__edit">
+          <input type="hidden" name="action" value="bh3_native_family_update">
+          <input type="hidden" name="profile_id" value="<?php echo esc_attr(absint($record['id'])); ?>">
+          <?php wp_nonce_field('bh3_native_family_update_' . absint($record['id'])); ?>
+          <label>Name or nickname <input name="display_name" maxlength="100" required value="<?php echo esc_attr($record['display_name']); ?>"></label>
+          <label><?php echo esc_html($type==='child'?'Date of birth':'Due date'); ?> <input name="profile_date" type="date" required value="<?php echo esc_attr($record['profile_date']); ?>"></label>
+          <button type="submit">Save changes</button>
+        </form>
+        <?php return ob_get_clean();
+    }
+    public static function update() {
+        if (!self::allowed()) wp_die('Profile editing unavailable.','',array('response'=>403));
+        $id=isset($_POST['profile_id']) && is_scalar($_POST['profile_id']) ? absint($_POST['profile_id']) : 0;
+        $nonce=isset($_POST['_wpnonce']) && is_scalar($_POST['_wpnonce']) ? sanitize_text_field(wp_unslash($_POST['_wpnonce'])) : '';
+        if (!$id || !wp_verify_nonce($nonce,'bh3_native_family_update_'.$id)) wp_die('Invalid request.','',array('response'=>403));
+        global $wpdb;
+        $table=$wpdb->prefix.'bh_family_profiles';
+        $record=$wpdb->get_row($wpdb->prepare("SELECT id,profile_type FROM `{$table}` WHERE id=%d AND user_id=%d LIMIT 1",$id,get_current_user_id()),ARRAY_A);
+        if (!$record) wp_die('Profile not found.','',array('response'=>404));
+        $name=isset($_POST['display_name']) && is_scalar($_POST['display_name']) ? sanitize_text_field(wp_unslash($_POST['display_name'])) : '';
+        $date=isset($_POST['profile_date']) && is_scalar($_POST['profile_date']) ? sanitize_text_field(wp_unslash($_POST['profile_date'])) : '';
+        $parsed=DateTimeImmutable::createFromFormat('!Y-m-d',$date,wp_timezone());
+        $today=new DateTimeImmutable('today',wp_timezone());
+        if (!$name || strlen($name)>100 || !$parsed || $parsed->format('Y-m-d')!==$date) wp_die('Invalid profile details.','',array('response'=>400));
+        if ($record['profile_type']==='child' && ($parsed>$today || (int)$parsed->format('Y')<1900)) wp_die('Invalid birth date.','',array('response'=>400));
+        if ($record['profile_type']==='bump' && ($parsed<$today->modify('-300 days') || $parsed>$today->modify('+600 days'))) wp_die('Invalid due date.','',array('response'=>400));
+        $result=$wpdb->update($table,array('display_name'=>$name,'profile_date'=>$date,'updated_at'=>current_time('mysql')),array('id'=>$id,'user_id'=>get_current_user_id()),array('%s','%s','%s'),array('%d','%d'));
+        if ($result===false) wp_die('Unable to update profile.','',array('response'=>500));
+        wp_safe_redirect(add_query_arg('bh3_profile_status','saved',home_url('/family/profile/')));
+        exit;
     }
     public static function save() {
         if (!self::allowed() || !isset($_POST['_wpnonce']) || !is_scalar($_POST['_wpnonce'])
