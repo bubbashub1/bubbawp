@@ -23,7 +23,7 @@ final class BH_Leader_Sessions_3 {
         exit;
     }
     public static function render() {
-        if ( ! self::allowed() ) { wp_die( 'Staging administrator access required.', '', array( 'response' => 403 ) ); }
+        if ( ! self::allowed() ) { wp_die( 'Leader access required.', '', array( 'response' => 403 ) ); }
         global $wpdb;
         $id = absint( $_GET['activity_id'] ?? 0 );
         $activity = self::activity( $id );
