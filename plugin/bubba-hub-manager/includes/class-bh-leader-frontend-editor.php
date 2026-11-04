@@ -24,9 +24,25 @@ final class BH_Leader_Frontend_Editor_3 {
         if ( ! $row ) { return '<p>This draft is unavailable or is not assigned to your organiser.</p>'; }
         ob_start(); ?>
         <section class="bh-leader-edit" style="max-width:850px;margin:32px auto;padding:24px;background:#fff;border:1px solid #dbe5df;border-radius:16px">
+        <style>
+        .bh-leader-edit{font-family:inherit;color:#203c31;box-sizing:border-box}
+        .bh-leader-edit *{box-sizing:border-box}
+        .bh-leader-edit .bh-edit-links{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 22px}
+        .bh-leader-edit .bh-edit-links a{display:inline-flex;padding:9px 14px;border:1px solid #cadbcf;border-radius:9px;color:#245e4a;text-decoration:none;font-weight:600}
+        .bh-leader-edit label{display:block;font-weight:600;margin-bottom:6px}
+        .bh-leader-edit input:not([type=checkbox]),.bh-leader-edit textarea{width:100%;max-width:680px;padding:11px;border:1px solid #b8c9bd;border-radius:9px;font:inherit}
+        .bh-leader-edit input:focus-visible,.bh-leader-edit textarea:focus-visible,.bh-leader-edit a:focus-visible,.bh-leader-edit button:focus-visible{outline:3px solid #245e4a;outline-offset:2px}
+        .bh-leader-edit .bh-edit-success{padding:12px 16px;border-left:4px solid #245e4a;background:#f0f6f0}
+        .bh-leader-edit .bh-edit-hint{font-size:.92em;color:#53665e}
+        @media(max-width:650px){.bh-leader-edit{padding:18px!important;margin:16px auto!important}}
+        </style>
         <h1>Edit <?php echo esc_html( $row['title'] ); ?></h1>
         <p><a href="<?php echo esc_url( home_url( '/leader/' ) ); ?>">← Leader Dashboard</a></p>
-        <?php if ( isset( $_GET['saved'] ) && $_GET['saved'] === '1' ) : ?><p role="status">Draft saved successfully.</p><?php endif; ?>
+        <nav class="bh-edit-links" aria-label="Activity management">
+          <a href="<?php echo esc_url( add_query_arg( 'activity_id', $id, home_url( '/leader/venues/' ) ) ); ?>">Manage venues</a>
+          <a href="<?php echo esc_url( add_query_arg( 'activity_id', $id, home_url( '/leader/timetable/' ) ) ); ?>">Manage timetable</a>
+        </nav>
+        <?php if ( isset( $_GET['saved'] ) && $_GET['saved'] === '1' ) : ?><p class="bh-edit-success" role="status">Draft saved successfully.</p><?php endif; ?>
         <p>Draft details only. Publishing and deletion remain with the Bubba Hub team.</p>
         <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
             <input type="hidden" name="action" value="bh3_leader_frontend_save">
@@ -38,8 +54,10 @@ final class BH_Leader_Frontend_Editor_3 {
                 <p><label for="bh-edit-<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $label ); ?></label>
                 <input style="display:block;width:100%;max-width:600px;padding:10px" id="bh-edit-<?php echo esc_attr( $key ); ?>" name="<?php echo esc_attr( $key ); ?>" type="<?php echo esc_attr( $type ); ?>" value="<?php echo esc_attr( (string) ( $row[$key] ?? '' ) ); ?>" <?php if ( $numeric ) : ?>min="0" step="<?php echo $key === 'price_from' ? '0.01' : '1'; ?>"<?php endif; ?> <?php if ( $key === 'title' ) : ?>required<?php endif; ?>></p>
             <?php endforeach; ?>
+            <p class="bh-edit-hint">Age ranges are entered in months. Use 0 for newborns. The booking link must begin with https:// or http://.</p>
             <p><label for="bh-edit-description">Description</label><textarea id="bh-edit-description" name="description" rows="8" style="display:block;width:100%"><?php echo esc_textarea( $row['description'] ); ?></textarea></p>
             <p><label><input type="checkbox" name="is_free" value="1" <?php checked( (int) $row['is_free'], 1 ); ?>> This activity is free</label></p>
+            <p class="bh-edit-hint">Ticking Free will save the starting price as £0. Changes remain in draft until approved for publishing.</p>
             <button type="submit" style="background:#245e4a;color:#fff;border:0;border-radius:8px;padding:12px 20px;cursor:pointer">Save draft</button>
         </form></section>
         <?php return ob_get_clean();
