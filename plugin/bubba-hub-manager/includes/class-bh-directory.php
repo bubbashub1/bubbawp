@@ -4,6 +4,15 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 final class BH_Directory_3 {
     public static function register() {
         add_shortcode( 'bubbahub_directory', array( __CLASS__, 'render' ) );
+        add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue_map_styles' ) );
+    }
+    public static function enqueue_map_styles() {
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) { return; }
+        global $post;
+        if ( ! $post instanceof WP_Post || ! has_shortcode( (string) $post->post_content, 'bubbahub_directory' ) ) { return; }
+        wp_enqueue_style( 'bh3-leaflet', 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css', array(), '1.9.4' );
+        wp_enqueue_style( 'bh3-leaflet-cluster', 'https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css', array( 'bh3-leaflet' ), '1.5.3' );
+        wp_enqueue_style( 'bh3-leaflet-cluster-default', 'https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css', array( 'bh3-leaflet-cluster' ), '1.5.3' );
     }
     public static function render() {
         if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) {
