@@ -54,7 +54,7 @@ final class BH_Leader_Bookings_3 {
             <?php else : ?>
               <table><thead><tr><th scope="col">Activity</th><th scope="col">Status</th><th scope="col">Bookings</th></tr></thead><tbody>
               <?php foreach ( $activities as $activity ) : ?>
-                <tr><td><?php echo esc_html( $activity['title'] ); ?></td><td><?php echo esc_html( ucfirst( $activity['status'] ) ); ?></td><td><a href="<?php echo esc_url( add_query_arg( 'activity_id', absint( $activity['id'] ), home_url( '/leader/booking-setup/' ) ) ); ?>">View timetable setup</a></td></tr>
+                <tr><td><?php echo esc_html( $activity['title'] ); ?></td><td><?php echo esc_html( ucfirst( $activity['status'] ) ); ?></td><td><a href="<?php echo esc_url( add_query_arg( 'activity_id', absint( $activity['id'] ), home_url( '/leader/bookins/' ) ) ); ?>">View timetable setup</a></td></tr>
               <?php endforeach; ?>
               </tbody></table>
             <?php endif; ?>
