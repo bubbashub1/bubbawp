@@ -91,8 +91,8 @@ final class BH_Leader_Sessions_3 {
         $activity = self::activity( $id );
         if ( ! $activity || $activity['status'] !== 'draft' ) { wp_die( 'Draft activity required.', '', array( 'response' => 409 ) ); }
         $day = filter_var( wp_unslash( $_POST['day_of_week'] ?? '' ), FILTER_VALIDATE_INT );
-        $start = (string) wp_unslash( $_POST['start_time'] ?? '' );
-        $end = (string) wp_unslash( $_POST['end_time'] ?? '' );
+        $start = isset( $_POST['start_time'] ) && is_string( $_POST['start_time'] ) ? wp_unslash( $_POST['start_time'] ) : '';
+        $end = isset( $_POST['end_time'] ) && is_string( $_POST['end_time'] ) ? wp_unslash( $_POST['end_time'] ) : '';
         if ( $day === false || $day < 1 || $day > 7 || ! preg_match( '/^([01][0-9]|2[0-3]):[0-5][0-9]$/', $start ) || ! preg_match( '/^([01][0-9]|2[0-3]):[0-5][0-9]$/', $end ) || $end <= $start ) {
             wp_die( 'Invalid day or session times.', '', array( 'response' => 400 ) );
         }
