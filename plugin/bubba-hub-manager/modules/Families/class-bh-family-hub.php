@@ -42,6 +42,7 @@ final class BH_Family_Hub_3 {
         $saved = $private_preview ? BH_Family_Read_Model_3::saved_ids() : array();
         $planner = $private_preview ? BH_Family_Read_Model_3::planner_items() : array();
         $profiles = $private_preview ? BH_Family_Read_Model_3::family_profiles() : array();
+        $planned_ids = is_array($planner) ? array_map('absint', array_column($planner, 'activity_id')) : array();
         $activity_ids = array_merge(is_array($saved) ? $saved : array(), is_array($planner) ? array_column($planner, 'activity_id') : array());
         $activity_titles = $private_preview ? BH_Family_Read_Model_3::activity_titles($activity_ids) : array();
         if (is_wp_error($activity_titles)) $activity_titles = array();
@@ -84,6 +85,17 @@ final class BH_Family_Hub_3 {
                       <li>
                         <span><?php echo esc_html($activity_titles[absint($activity_id)] ?? sprintf(__('Activity #%d', 'bubba-hub-manager'), absint($activity_id))); ?></span>
                         <?php if (BH_Family_Actions_3::enabled()) : ?>
+                          <?php foreach (array('plan_saved' => __('Add to planner', 'bubba-hub-manager'), 'visit_saved' => __('Mark visited', 'bubba-hub-manager')) as $add_action => $add_label) : ?>
+                            <?php if ($add_action !== 'plan_saved' || !in_array(absint($activity_id), $planned_ids, true)) : ?>
+                              <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                                <input type="hidden" name="action" value="bh3_family_activity_action">
+                                <input type="hidden" name="bh3_action" value="<?php echo esc_attr($add_action); ?>">
+                                <input type="hidden" name="bh3_activity_id" value="<?php echo esc_attr(absint($activity_id)); ?>">
+                                <?php wp_nonce_field('bh3_family_activity_action'); ?>
+                                <button type="submit" class="bh3-family__action"><?php echo esc_html($add_label); ?></button>
+                              </form>
+                            <?php endif; ?>
+                          <?php endforeach; ?>
                           <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
                             <input type="hidden" name="action" value="bh3_family_activity_action">
                             <input type="hidden" name="bh3_action" value="unsave">
