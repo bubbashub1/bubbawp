@@ -268,6 +268,16 @@ final class BH_Family_Hub_3 {
                       <button type="submit"><?php echo esc_html__('Save name', 'bubba-hub-manager'); ?></button>
                     </form>
                   <?php endforeach; ?>
+                  <?php foreach ($profiles['bumps'] as $bump) : ?>
+                    <form class="bh3-family__edit" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                      <input type="hidden" name="action" value="bh3_family_bump_name">
+                      <input type="hidden" name="bh3_bump_id" value="<?php echo esc_attr(absint($bump['id'])); ?>">
+                      <?php wp_nonce_field('bh3_family_profile_edit'); ?>
+                      <label for="bh3-bump-<?php echo esc_attr(absint($bump['id'])); ?>"><?php echo esc_html__('Pregnancy profile nickname', 'bubba-hub-manager'); ?></label>
+                      <input id="bh3-bump-<?php echo esc_attr(absint($bump['id'])); ?>" name="bh3_bump_name" type="text" maxlength="100" required value="<?php echo esc_attr($bump['nickname']); ?>">
+                      <button type="submit"><?php echo esc_html__('Save nickname', 'bubba-hub-manager'); ?></button>
+                    </form>
+                  <?php endforeach; ?>
                 <?php else : ?>
                   <p><?php echo esc_html__('Profile editing is not enabled in this preview.', 'bubba-hub-manager'); ?></p>
                 <?php endif; ?>
