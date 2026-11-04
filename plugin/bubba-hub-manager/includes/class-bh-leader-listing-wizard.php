@@ -178,7 +178,7 @@ final class BH_Leader_Listing_Wizard_3 {
         $intent = isset( $_POST['intent'] ) && is_scalar( $_POST['intent'] ) ? sanitize_key( wp_unslash( $_POST['intent'] ) ) : 'next';
         $existing = null;
         if ( $id ) {
-            $existing = $wpdb->get_row( $wpdb->prepare( "SELECT id FROM `{$table}` WHERE id=%d AND organiser_id=%d AND status='draft' LIMIT 1", $id, (int) $organiser['id'] ), ARRAY_A );
+            $existing = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM `{$table}` WHERE id=%d AND organiser_id=%d AND status='draft' LIMIT 1", $id, (int) $organiser['id'] ), ARRAY_A );
             if ( ! $existing ) { wp_die( 'Draft not found or not owned by this organiser.', '', array( 'response' => 404 ) ); }
         }
         $title = self::value( 'title' );
@@ -192,27 +192,34 @@ final class BH_Leader_Listing_Wizard_3 {
         if ( ! in_array( $method, array( 'external', 'enquiry', 'drop_in' ), true ) ) { $method = 'external'; }
         $booking_url = self::url( 'booking_url' );
         if ( $method === 'external' && self::value( 'booking_url', 2048 ) !== '' && ! $booking_url ) { wp_die( 'Please enter a valid booking URL.', '', array( 'response' => 400 ) ); }
-        $values = array(
-            'organiser_id' => (int) $organiser['id'],
-            'title' => $title ?: 'Untitled listing draft',
-            'description' => wp_kses_post( wp_unslash( $_POST['description'] ?? '' ) ),
-            'category' => self::value( 'category', 150 ),
-            'age_min_months' => $min === '' ? null : (int) $min,
-            'age_max_months' => $max === '' ? null : (int) $max,
-            'price_from' => null,
-            'is_free' => 0,
-            'booking_url' => $method === 'external' ? $booking_url : '',
-            'website' => self::url( 'website' ),
-            'contact_email' => $email,
-            'contact_phone' => self::value( 'contact_phone', 100 ),
-            'what_to_bring' => self::value( 'what_to_bring', 250 ),
-            'good_to_know' => sanitize_textarea_field( wp_unslash( $_POST['good_to_know'] ?? '' ) ),
-            'tags' => sanitize_textarea_field( wp_unslash( $_POST['tags'] ?? '' ) ),
-            'booking_method' => $method,
-            'updated_at' => current_time( 'mysql', true ),
-        );
+        // Persist only this step's fields so later steps cannot erase earlier answers.
+        $values = array( 'organiser_id' => (int) $organiser['id'], 'updated_at' => current_time( 'mysql', true ) );
+        if ( $step === 1 ) {
+            $values['title'] = $title;
+            $source = self::url( 'source_url' );
+            if ( self::value( 'source_url', 2048 ) !== '' && ! $source ) { wp_die( 'Please enter a valid website URL.', '', array( 'response' => 400 ) ); }
+            $values['website'] = $source;
+        } elseif ( $step === 2 ) {
+            $values['description'] = wp_kses_post( wp_unslash( $_POST['description'] ?? '' ) );
+            $values['category'] = self::value( 'category', 150 );
+            $values['tags'] = sanitize_textarea_field( wp_unslash( $_POST['tags'] ?? '' ) );
+        } elseif ( $step === 3 ) {
+            $values['age_min_months'] = $min === '' ? null : (int) $min;
+            $values['age_max_months'] = $max === '' ? null : (int) $max;
+            $values['contact_email'] = $email;
+            $values['contact_phone'] = self::value( 'contact_phone', 100 );
+            $website = self::url( 'website' );
+            if ( self::value( 'website', 2048 ) !== '' && ! $website ) { wp_die( 'Please enter a valid website URL.', '', array( 'response' => 400 ) ); }
+            $values['website'] = $website;
+            $values['what_to_bring'] = self::value( 'what_to_bring', 250 );
+            $values['good_to_know'] = sanitize_textarea_field( wp_unslash( $_POST['good_to_know'] ?? '' ) );
+        } elseif ( $step === 4 ) {
+            $values['booking_url'] = $method === 'external' ? $booking_url : '';
+            $values['booking_method'] = $method;
+        }
         $columns = self::columns( $table );
         $data = array_intersect_key( $values, $columns );
+        if ( ! $id && ! isset( $data['title'] ) ) { $data['title'] = 'Untitled listing draft'; }
         if ( ! isset( $columns['organiser_id'], $columns['title'], $columns['status'] ) ) { wp_die( 'The activity table is missing required fields.', '', array( 'response' => 409 ) ); }
         if ( $step === 7 && $intent === 'submit' ) {
             // The request is submitted for moderation, never published automatically.
