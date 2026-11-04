@@ -48,7 +48,7 @@ final class BH_Leader_Booking_Queue_3 {
         echo '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th scope="col">Parent</th><th scope="col">Child</th><th scope="col">Activity ID</th><th scope="col">Session</th><th scope="col">Status</th><th scope="col">Contact</th></tr></thead><tbody>';
         foreach ($rows as $row) {
             $name = trim($row['parent_first_name'].' '.($row['parent_last_name'] ? mb_substr($row['parent_last_name'],0,1).'.' : ''));
-            $session = $row['session_starts_at'] ? wp_date(get_option('date_format').' '.get_option('time_format'), strtotime($row['session_starts_at']), wp_timezone()) : 'Not assigned';
+            $session = $row['session_starts_at'] ? (new DateTimeImmutable($row['session_starts_at'], wp_timezone()))->format(get_option('date_format').' '.get_option('time_format')) : 'Not assigned';
             echo '<tr>';
             foreach (array($name,$row['child_first_name'],$row['activity_id'],$session,ucfirst($row['status']),$row['parent_email']) as $value) {
                 echo '<td style="padding:12px;border-bottom:1px solid #e5ede7">'.esc_html($value).'</td>';
