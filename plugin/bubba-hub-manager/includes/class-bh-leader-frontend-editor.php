@@ -61,11 +61,7 @@ final class BH_Leader_Frontend_Editor_3 {
         @media(max-width:650px){.bh-leader-edit{padding:18px!important;margin:16px auto!important}}
         </style>
         <h1>Edit <?php echo esc_html( $row['title'] ); ?></h1>
-        <p><a href="<?php echo esc_url( home_url( '/leader/' ) ); ?>">← Leader Dashboard</a></p>
-        <nav class="bh-edit-links" aria-label="Activity management">
-          <a href="<?php echo esc_url( add_query_arg( 'activity_id', $id, home_url( '/leader/venues/' ) ) ); ?>">Manage venues</a>
-          <a href="<?php echo esc_url( add_query_arg( 'activity_id', $id, home_url( '/leader/timetable/' ) ) ); ?>">Manage timetable</a>
-        </nav>
+        
         <?php if ( isset( $_GET['saved'] ) && $_GET['saved'] === '1' ) : ?><p class="bh-edit-success" role="status">Draft saved successfully.</p><?php endif; ?>
         <p>Draft details only. Publishing and deletion remain with the Bubba Hub team.</p>
         <section class="bh-image-card" aria-label="Listing image">
