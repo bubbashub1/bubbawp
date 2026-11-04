@@ -317,7 +317,8 @@ final class BH_Field_Manager_3 {
         $placements = self::placements();
         $placements[ $id ] = array_merge( $placements[ $id ] ?? array(), array( 'wizard_step' => $step ) );
         update_option( 'bh3_field_placements', $placements, false );
-        self::redirect( 'placement_saved' );
+        wp_safe_redirect( add_query_arg( array( 'page' => 'bh3-field-manager', 'notice' => 'placement_saved' ), admin_url( 'admin.php' ) ) . '#bh3-form-builder' );
+        exit;
     }
     public static function definitions_with_placement( $target ) {
         $definitions = self::definitions_for( $target );
@@ -422,12 +423,13 @@ final class BH_Field_Manager_3 {
             $wpdb->query( 'ROLLBACK' );
             wp_die( 'Unable to finish field reorder.', '', array( 'response' => 500 ) );
         }
-        self::redirect( 'field_order_saved' );
+        wp_safe_redirect( add_query_arg( array( 'page' => 'bh3-field-manager', 'notice' => 'field_order_saved' ), admin_url( 'admin.php' ) ) . '#bh3-form-builder' );
+        exit;
     }
     private static function render_builder( $groups, $fields ) {
         if ( ! $groups ) { return; }
         $placements = self::placements();
-        echo '<section class="bh3-fm-card" id="bh3-form-builder"><h2>Visual form builder</h2><p class="description">Drag fields to reorder them within a group, then use Edit to select the wizard section and display settings. For keyboard access, the ↑ and ↓ buttons remain available in the field table above.</p><div class="bh3-builder-grid">';
+        echo '<section class="bh3-fm-card" id="bh3-form-builder"><h2>Visual form builder</h2><p class="description">Use Add field or Edit to configure fields, choose a wizard section and press Move to change placement. Drag the card to reorder within its group, or use ↑ and ↓ for touch and keyboard access. Changes are saved immediately.</p><div class="bh3-builder-grid">';
         foreach ( $groups as $group ) {
             $add_url = add_query_arg( array( 'page' => 'bh3-field-manager', 'add_to_group' => absint( $group['id'] ) ), admin_url( 'admin.php' ) ) . '#bh3-field-editor';
             echo '<div class="bh3-builder-group"><h3>' . esc_html( $group['name'] ) . '</h3><p class="description">' . esc_html( str_replace( ',', ', ', $group['targets'] ) ) . '</p><p><a class="button button-secondary" href="' . esc_url( $add_url ) . '">+ Add field to this group</a></p>';
@@ -450,7 +452,7 @@ final class BH_Field_Manager_3 {
             echo '</div>';
         }
         echo '</div></section>';
-        echo '<script>(function(){document.querySelectorAll(".bh3-builder-list").forEach(list=>{let moving=null;const saveOrder=()=>{const form=list.parentElement.querySelector(".bh3-builder-order-form");if(!form)return;form.elements.namedItem("order").value=[...list.querySelectorAll("[data-field-id]")].map(item=>item.dataset.fieldId).join(",");form.submit()};list.addEventListener("click",e=>{const btn=e.target.closest("[data-move-direction]");if(!btn)return;const item=btn.closest(".bh3-builder-item");if(!item||!list.contains(item))return;const dir=Number(btn.dataset.moveDirection);if(dir<0&&item.previousElementSibling){list.insertBefore(item,item.previousElementSibling);saveOrder()}else if(dir>0&&item.nextElementSibling){list.insertBefore(item.nextElementSibling,item);saveOrder()}});list.addEventListener("dragstart",e=>{const item=e.target.closest(".bh3-builder-item");if(!item||!list.contains(item))return;moving=item;e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",item.dataset.fieldId);item.classList.add("is-dragging")});list.addEventListener("dragover",e=>{if(!moving)return;e.preventDefault();const target=e.target.closest(".bh3-builder-item");if(!target||target===moving)return;const midpoint=target.getBoundingClientRect().top+target.offsetHeight/2;list.insertBefore(moving,e.clientY<midpoint?target:target.nextSibling)});list.addEventListener("drop",e=>{if(!moving)return;e.preventDefault();const form=list.parentElement.querySelector(".bh3-builder-order-form");if(form){form.elements.namedItem("order").value=[...list.querySelectorAll("[data-field-id]")].map(item=>item.dataset.fieldId).join(",");form.submit()}});list.addEventListener("dragend",()=>{if(moving)moving.classList.remove("is-dragging");moving=null})})})();</script>';
+        echo '<script>(function(){document.querySelectorAll(".bh3-builder-list").forEach(list=>{let moving=null;const saveOrder=()=>{const form=list.parentElement.querySelector(".bh3-builder-order-form");if(!form)return;form.elements.namedItem("order").value=[...list.querySelectorAll("[data-field-id]")].map(item=>item.dataset.fieldId).join(",");form.submit()};list.addEventListener("click",e=>{const btn=e.target.closest("[data-move-direction]");if(!btn)return;const item=btn.closest(".bh3-builder-item");if(!item||!list.contains(item))return;const dir=Number(btn.dataset.moveDirection);if(dir<0&&item.previousElementSibling){list.insertBefore(item,item.previousElementSibling);saveOrder()}else if(dir>0&&item.nextElementSibling){list.insertBefore(item.nextElementSibling,item);saveOrder()}});list.addEventListener("dragstart",e=>{const item=e.target.closest(".bh3-builder-item");if(!item||!list.contains(item)||e.target.closest("input,select,button,a,textarea"))return;moving=item;e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",item.dataset.fieldId);item.classList.add("is-dragging")});list.addEventListener("dragover",e=>{if(!moving)return;e.preventDefault();const target=e.target.closest(".bh3-builder-item");if(!target||target===moving)return;const midpoint=target.getBoundingClientRect().top+target.offsetHeight/2;list.insertBefore(moving,e.clientY<midpoint?target:target.nextSibling)});list.addEventListener("drop",e=>{if(!moving)return;e.preventDefault();const form=list.parentElement.querySelector(".bh3-builder-order-form");if(form){form.elements.namedItem("order").value=[...list.querySelectorAll("[data-field-id]")].map(item=>item.dataset.fieldId).join(",");form.submit()}});list.addEventListener("dragend",()=>{if(moving)moving.classList.remove("is-dragging");moving=null})})})();</script>';
     }
     private static function action_form( $action, $nonce, $values, $label ) {
         $html = '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
