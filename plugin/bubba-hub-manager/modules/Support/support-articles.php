@@ -13,6 +13,7 @@ add_shortcode('bh_support_articles', static function ($atts): string {
     $search = isset($_GET['bh_article_search']) && is_string($_GET['bh_article_search'])
         ? sanitize_text_field(wp_unslash($_GET['bh_article_search'])) : '';
     $page = isset($_GET['bh_article_page']) ? max(1, absint($_GET['bh_article_page'])) : 1;
+    $page = min($page, 10000);
     $args = ['post_type' => 'post', 'post_status' => 'publish', 'posts_per_page' => $limit,
         'paged' => $page, 's' => $search, 'ignore_sticky_posts' => true];
     if ($topic !== '') {
