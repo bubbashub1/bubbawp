@@ -48,8 +48,42 @@ final class BH_Family_Hub_3 {
 
         $saved = $verified_family ? BH_Family_Read_Model_3::saved_ids() : array();
         $planner = $verified_family ? BH_Family_Read_Model_3::planner_items() : array();
-        $profiles = $verified_family ? BH_Family_Read_Model_3::family_profiles() : array();
-        $family_read_error = $verified_family && (is_wp_error($saved) || is_wp_error($planner) || is_wp_error($profiles));
+        // Native WordPress family profiles are owned by the signed-in WP account.
+        // Read only that account's rows; do not rely on legacy identity mapping.
+        $profiles = array('children' => array(), 'bumps' => array());
+        $native_profile_error = false;
+        if ($wp_signed_in) {
+            global $wpdb;
+            $native_table = $wpdb->prefix . 'bh_family_profiles';
+            $native_exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($native_table))) === $native_table;
+            if ($native_exists) {
+                $native_rows = $wpdb->get_results($wpdb->prepare(
+                    "SELECT id, profile_type, display_name, profile_date, gender FROM `{$native_table}` WHERE user_id = %d ORDER BY id DESC LIMIT 70",
+                    get_current_user_id()
+                ), ARRAY_A);
+                if (is_array($native_rows)) {
+                    foreach ($native_rows as $row) {
+                        if (($row['profile_type'] ?? '') === 'child') {
+                            $profiles['children'][] = array(
+                                'id' => absint($row['id']),
+                                'name' => (string) $row['display_name'],
+                                'date_of_birth' => (string) $row['profile_date'],
+                                'gender' => (string) ($row['gender'] ?? ''),
+                            );
+                        } elseif (($row['profile_type'] ?? '') === 'bump') {
+                            $profiles['bumps'][] = array(
+                                'id' => absint($row['id']),
+                                'nickname' => (string) $row['display_name'],
+                                'due_date' => (string) $row['profile_date'],
+                            );
+                        }
+                    }
+                } else {
+                    $native_profile_error = true;
+                }
+            }
+        }
+        $family_read_error = ($verified_family && (is_wp_error($saved) || is_wp_error($planner))) || $native_profile_error;
         $saved = is_array($saved) ? $saved : array();
         $planner = is_array($planner) ? $planner : array();
         $planned_ids = array_map('absint', array_column($planner, 'activity_id'));
@@ -153,7 +187,7 @@ final class BH_Family_Hub_3 {
                 <div class="bh3-family__profiles">
                   <h3><?php echo esc_html__('Children', 'bubba-hub-manager'); ?></h3>
                   <?php if (empty($profiles['children'])) : ?>
-                    <div class="bh3-family__empty-profile"><span class="bh3-family__avatar" aria-hidden="true">👶</span><div><strong><?php echo esc_html__('Your children', 'bubba-hub-manager'); ?></strong><p><?php echo esc_html__('Child profiles will appear here when connected.', 'bubba-hub-manager'); ?></p></div></div>
+                    <div class="bh3-family__empty-profile"><span class="bh3-family__avatar" aria-hidden="true">👶</span><div><strong><?php echo esc_html__('Your children', 'bubba-hub-manager'); ?></strong><p><?php echo esc_html__('Add a child profile to see them here.', 'bubba-hub-manager'); ?></p></div></div>
                   <?php else : ?>
                     <ul class="bh3-family__profile-list">
                       <?php foreach ($profiles['children'] as $child) : ?>
@@ -164,7 +198,7 @@ final class BH_Family_Hub_3 {
                   <?php endif; ?>
                   <h3><?php echo esc_html__('Pregnancy profiles', 'bubba-hub-manager'); ?></h3>
                   <?php if (empty($profiles['bumps'])) : ?>
-                    <div class="bh3-family__empty-profile"><span class="bh3-family__avatar" aria-hidden="true">🍼</span><div><strong><?php echo esc_html__('Expecting a baby?', 'bubba-hub-manager'); ?></strong><p><?php echo esc_html__('Pregnancy profiles and due dates will appear here.', 'bubba-hub-manager'); ?></p></div></div>
+                    <div class="bh3-family__empty-profile"><span class="bh3-family__avatar" aria-hidden="true">🍼</span><div><strong><?php echo esc_html__('Expecting a baby?', 'bubba-hub-manager'); ?></strong><p><?php echo esc_html__('Add a pregnancy profile to see due dates here.', 'bubba-hub-manager'); ?></p></div></div>
                   <?php else : ?>
                     <ul class="bh3-family__profile-list">
                       <?php foreach ($profiles['bumps'] as $bump) : ?>
@@ -174,6 +208,7 @@ final class BH_Family_Hub_3 {
                     </ul>
                   <?php endif; ?>
                 </div>
+                <?php if ($wp_signed_in) : ?><p class="bh3-family__manage-profiles"><a href="<?php echo esc_url(home_url('/family/profile/')); ?>"><?php echo esc_html__('Manage family profiles', 'bubba-hub-manager'); ?> →</a></p><?php endif; ?>
                 <?php if (!$admin_demo && class_exists('BH_Family_Native_Profiles_3') && BH_Family_Native_Profiles_3::allowed()) : ?>
                   <div class="bh3-family__create-profiles">
                     <h3><?php echo esc_html__('Add a family profile', 'bubba-hub-manager'); ?></h3>
