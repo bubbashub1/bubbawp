@@ -130,6 +130,105 @@ final class BH_Family_Hub_3 {
               <a href="#bh3-planner"><?php echo esc_html__('Planner', 'bubba-hub-manager'); ?></a>
             </nav>
             <div class="bh3-family__grid bh3-family__private" aria-label="<?php echo esc_attr__('Your private family overview', 'bubba-hub-manager'); ?>">
+              <article id="bh3-my-family" class="bh3-family__card bh3-family__card--family">
+                <div class="bh3-family__section-heading"><div><span class="bh3-family__kicker"><?php echo esc_html__('YOUR HOUSEHOLD', 'bubba-hub-manager'); ?></span><h2><?php echo esc_html__('My family', 'bubba-hub-manager'); ?></h2></div><span class="bh3-family__count"><?php echo esc_html(sprintf(__('%d profiles', 'bubba-hub-manager'), count($profiles['children']) + count($profiles['bumps']))); ?></span></div>
+                <p><?php echo esc_html(sprintf(__('%1$d child profiles · %2$d pregnancy profiles', 'bubba-hub-manager'), count($profiles['children']), count($profiles['bumps']))); ?></p>
+                <div class="bh3-family__profiles">
+                  <h3><?php echo esc_html__('Children', 'bubba-hub-manager'); ?></h3>
+                  <?php if (empty($profiles['children'])) : ?>
+                    <div class="bh3-family__empty-profile"><span class="bh3-family__avatar" aria-hidden="true">👶</span><div><strong><?php echo esc_html__('Your children', 'bubba-hub-manager'); ?></strong><p><?php echo esc_html__('Child profiles will appear here when connected.', 'bubba-hub-manager'); ?></p></div></div>
+                  <?php else : ?>
+                    <ul class="bh3-family__profile-list">
+                      <?php foreach ($profiles['children'] as $child) : ?>
+                        <li><span class="bh3-family__avatar" aria-hidden="true">👶</span><strong><?php echo esc_html($child['name'] ?: __('Child profile', 'bubba-hub-manager')); ?></strong>
+                        <?php if (!empty($child['date_of_birth'])) : ?><span><?php echo esc_html(sprintf(__('Born %s', 'bubba-hub-manager'), wp_date(get_option('date_format'), strtotime($child['date_of_birth'])))); ?></span><?php endif; ?></li>
+                      <?php endforeach; ?>
+                    </ul>
+                  <?php endif; ?>
+                  <h3><?php echo esc_html__('Pregnancy profiles', 'bubba-hub-manager'); ?></h3>
+                  <?php if (empty($profiles['bumps'])) : ?>
+                    <div class="bh3-family__empty-profile"><span class="bh3-family__avatar" aria-hidden="true">🍼</span><div><strong><?php echo esc_html__('Expecting a baby?', 'bubba-hub-manager'); ?></strong><p><?php echo esc_html__('Pregnancy profiles and due dates will appear here.', 'bubba-hub-manager'); ?></p></div></div>
+                  <?php else : ?>
+                    <ul class="bh3-family__profile-list">
+                      <?php foreach ($profiles['bumps'] as $bump) : ?>
+                        <li><span class="bh3-family__avatar" aria-hidden="true">🍼</span><strong><?php echo esc_html($bump['nickname'] ?: __('Pregnancy profile', 'bubba-hub-manager')); ?></strong>
+                        <?php if (!empty($bump['due_date'])) : ?><span><?php echo esc_html(sprintf(__('Due %s', 'bubba-hub-manager'), wp_date(get_option('date_format'), strtotime($bump['due_date'])))); ?></span><?php endif; ?></li>
+                      <?php endforeach; ?>
+                    </ul>
+                  <?php endif; ?>
+                </div>
+                <?php if (!$admin_demo && BH_Family_Profile_Editor_3::creation_enabled()) : ?>
+                  <div class="bh3-family__create-profiles">
+                    <h3><?php echo esc_html__('Add a family profile', 'bubba-hub-manager'); ?></h3>
+                    <?php foreach (array('child' => array(__('Add child', 'bubba-hub-manager'), __('Child name', 'bubba-hub-manager'), __('Date of birth', 'bubba-hub-manager')), 'bump' => array(__('Add pregnancy', 'bubba-hub-manager'), __('Nickname', 'bubba-hub-manager'), __('Due date', 'bubba-hub-manager'))) as $profile_type => $profile_fields) : ?>
+                      <form class="bh3-family__edit" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                        <h4><?php echo esc_html($profile_fields[0]); ?></h4>
+                        <input type="hidden" name="action" value="bh3_family_create_profile">
+                        <input type="hidden" name="bh3_profile_type" value="<?php echo esc_attr($profile_type); ?>">
+                        <?php wp_nonce_field('bh3_family_profile_create'); ?>
+                        <label for="bh3-create-<?php echo esc_attr($profile_type); ?>-name"><?php echo esc_html($profile_fields[1]); ?></label>
+                        <input id="bh3-create-<?php echo esc_attr($profile_type); ?>-name" name="bh3_profile_name" type="text" maxlength="100" required>
+                        <label for="bh3-create-<?php echo esc_attr($profile_type); ?>-date"><?php echo esc_html($profile_fields[2]); ?></label>
+                        <input id="bh3-create-<?php echo esc_attr($profile_type); ?>-date" name="bh3_profile_date" type="date" required>
+                        <button type="submit"><?php echo esc_html($profile_fields[0]); ?></button>
+                      </form>
+                    <?php endforeach; ?>
+                  </div>
+                <?php endif; ?>
+                <?php if (!$admin_demo && BH_Family_Profile_Editor_3::enabled()) : ?>
+                  <?php if (isset($_GET['bh3_profile_status']) && $_GET['bh3_profile_status'] === 'saved') : ?>
+                    <p role="status"><?php echo esc_html__('Profile updated.', 'bubba-hub-manager'); ?></p>
+                  <?php elseif (isset($_GET['bh3_profile_status']) && $_GET['bh3_profile_status'] === 'error') : ?>
+                    <p role="alert"><?php echo esc_html__('Profile could not be updated.', 'bubba-hub-manager'); ?></p>
+                  <?php endif; ?>
+                  <?php foreach (array('child' => $profiles['children'], 'bump' => $profiles['bumps']) as $date_type => $date_profiles) : ?>
+                    <?php foreach ($date_profiles as $date_profile) : ?>
+                      <?php $date_field = $date_type === 'child' ? 'date_of_birth' : 'due_date'; ?>
+                      <form class="bh3-family__edit" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                        <input type="hidden" name="action" value="bh3_family_profile_date">
+                        <input type="hidden" name="bh3_profile_type" value="<?php echo esc_attr($date_type); ?>">
+                        <input type="hidden" name="bh3_profile_id" value="<?php echo esc_attr(absint($date_profile['id'])); ?>">
+                        <?php wp_nonce_field('bh3_family_profile_edit'); ?>
+                        <label for="bh3-date-<?php echo esc_attr($date_type . '-' . absint($date_profile['id'])); ?>">
+                          <?php echo esc_html(sprintf($date_type === 'child' ? __('Birth date for %s', 'bubba-hub-manager') : __('Due date for %s', 'bubba-hub-manager'), $date_type === 'child' ? $date_profile['name'] : $date_profile['nickname'])); ?>
+                        </label>
+                        <input id="bh3-date-<?php echo esc_attr($date_type . '-' . absint($date_profile['id'])); ?>" name="bh3_profile_date" type="date" required value="<?php echo esc_attr($date_profile[$date_field] ?? ''); ?>">
+                        <button type="submit"><?php echo esc_html__('Save date', 'bubba-hub-manager'); ?></button>
+                      </form>
+                    <?php endforeach; ?>
+                  <?php endforeach; ?>
+                  <?php foreach ($profiles['children'] as $child) : ?>
+                    <form class="bh3-family__edit" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                      <input type="hidden" name="action" value="bh3_family_child_name">
+                      <input type="hidden" name="bh3_child_id" value="<?php echo esc_attr(absint($child['id'])); ?>">
+                      <?php wp_nonce_field('bh3_family_profile_edit'); ?>
+                      <label for="bh3-child-<?php echo esc_attr(absint($child['id'])); ?>"><?php echo esc_html__('Child profile name', 'bubba-hub-manager'); ?></label>
+                      <input id="bh3-child-<?php echo esc_attr(absint($child['id'])); ?>" name="bh3_child_name" type="text" maxlength="100" required value="<?php echo esc_attr($child['name']); ?>">
+                      <button type="submit"><?php echo esc_html__('Save name', 'bubba-hub-manager'); ?></button>
+                    </form>
+                  <?php endforeach; ?>
+                  <?php foreach ($profiles['bumps'] as $bump) : ?>
+                    <form class="bh3-family__edit" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                      <input type="hidden" name="action" value="bh3_family_bump_name">
+                      <input type="hidden" name="bh3_bump_id" value="<?php echo esc_attr(absint($bump['id'])); ?>">
+                      <?php wp_nonce_field('bh3_family_profile_edit'); ?>
+                      <label for="bh3-bump-<?php echo esc_attr(absint($bump['id'])); ?>"><?php echo esc_html__('Pregnancy profile nickname', 'bubba-hub-manager'); ?></label>
+                      <input id="bh3-bump-<?php echo esc_attr(absint($bump['id'])); ?>" name="bh3_bump_name" type="text" maxlength="100" required value="<?php echo esc_attr($bump['nickname']); ?>">
+                      <button type="submit"><?php echo esc_html__('Save nickname', 'bubba-hub-manager'); ?></button>
+                    </form>
+                  <?php endforeach; ?>
+                <?php else : ?>
+                  <p><?php echo esc_html__('Profile editing is not enabled in this preview.', 'bubba-hub-manager'); ?></p>
+                <?php endif; ?>
+              </article>
+            </div>
+          <?php endif; ?>
+          <?php if ($verified_family && BH_Family_Actions_3::enabled() && isset($_GET['bh3_activity_status'])) : ?>
+            <p class="bh3-family__notice" role="status"><?php echo esc_html($_GET['bh3_activity_status'] === 'saved' ? __('Activity updated.', 'bubba-hub-manager') : __('Activity could not be updated.', 'bubba-hub-manager')); ?></p>
+          <?php endif; ?>
+          <div class="bh3-family__grid">
+            <?php foreach ( $sections as $section ) : ?>
+              <?php if ($private_preview && in_array($section[0], array('My family', 'Saved activities', 'Family planner'), true)) continue; ?>
               <article id="bh3-saved" class="bh3-family__card bh3-family__card--saved">
                 <h2><?php echo esc_html__('Saved activities', 'bubba-hub-manager'); ?></h2>
                 <?php if (!empty($saved) || $saved_search !== '') : ?>
@@ -237,105 +336,6 @@ final class BH_Family_Hub_3 {
                   <?php if (count($filtered_planner) > 8) : ?><p><a href="<?php echo esc_url(add_query_arg(array('bh3_show_planner' => $show_planner ? '0' : '1', 'bh3_planner_filter' => $planner_filter, 'bh3_planner_search' => $planner_search), $return_url)); ?>"><?php echo esc_html($show_planner ? __('Show fewer planned activities', 'bubba-hub-manager') : sprintf(__('View all %d matching activities', 'bubba-hub-manager'), count($filtered_planner))); ?></a></p><?php endif; ?>
                 <?php endif; ?>
               </article>
-              <article id="bh3-my-family" class="bh3-family__card bh3-family__card--family">
-                <h2><?php echo esc_html__('My family', 'bubba-hub-manager'); ?></h2>
-                <p><?php echo esc_html(sprintf(__('%1$d child profiles · %2$d pregnancy profiles', 'bubba-hub-manager'), count($profiles['children']), count($profiles['bumps']))); ?></p>
-                <div class="bh3-family__profiles">
-                  <h3><?php echo esc_html__('Children', 'bubba-hub-manager'); ?></h3>
-                  <?php if (empty($profiles['children'])) : ?>
-                    <p><?php echo esc_html__('No child profiles connected yet.', 'bubba-hub-manager'); ?></p>
-                  <?php else : ?>
-                    <ul class="bh3-family__profile-list">
-                      <?php foreach ($profiles['children'] as $child) : ?>
-                        <li><strong><?php echo esc_html($child['name'] ?: __('Child profile', 'bubba-hub-manager')); ?></strong>
-                        <?php if (!empty($child['date_of_birth'])) : ?><span><?php echo esc_html(sprintf(__('Born %s', 'bubba-hub-manager'), wp_date(get_option('date_format'), strtotime($child['date_of_birth'])))); ?></span><?php endif; ?></li>
-                      <?php endforeach; ?>
-                    </ul>
-                  <?php endif; ?>
-                  <h3><?php echo esc_html__('Pregnancy profiles', 'bubba-hub-manager'); ?></h3>
-                  <?php if (empty($profiles['bumps'])) : ?>
-                    <p><?php echo esc_html__('No pregnancy profiles connected yet.', 'bubba-hub-manager'); ?></p>
-                  <?php else : ?>
-                    <ul class="bh3-family__profile-list">
-                      <?php foreach ($profiles['bumps'] as $bump) : ?>
-                        <li><strong><?php echo esc_html($bump['nickname'] ?: __('Pregnancy profile', 'bubba-hub-manager')); ?></strong>
-                        <?php if (!empty($bump['due_date'])) : ?><span><?php echo esc_html(sprintf(__('Due %s', 'bubba-hub-manager'), wp_date(get_option('date_format'), strtotime($bump['due_date'])))); ?></span><?php endif; ?></li>
-                      <?php endforeach; ?>
-                    </ul>
-                  <?php endif; ?>
-                </div>
-                <?php if (!$admin_demo && BH_Family_Profile_Editor_3::creation_enabled()) : ?>
-                  <div class="bh3-family__create-profiles">
-                    <h3><?php echo esc_html__('Add a family profile', 'bubba-hub-manager'); ?></h3>
-                    <?php foreach (array('child' => array(__('Add child', 'bubba-hub-manager'), __('Child name', 'bubba-hub-manager'), __('Date of birth', 'bubba-hub-manager')), 'bump' => array(__('Add pregnancy', 'bubba-hub-manager'), __('Nickname', 'bubba-hub-manager'), __('Due date', 'bubba-hub-manager'))) as $profile_type => $profile_fields) : ?>
-                      <form class="bh3-family__edit" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-                        <h4><?php echo esc_html($profile_fields[0]); ?></h4>
-                        <input type="hidden" name="action" value="bh3_family_create_profile">
-                        <input type="hidden" name="bh3_profile_type" value="<?php echo esc_attr($profile_type); ?>">
-                        <?php wp_nonce_field('bh3_family_profile_create'); ?>
-                        <label for="bh3-create-<?php echo esc_attr($profile_type); ?>-name"><?php echo esc_html($profile_fields[1]); ?></label>
-                        <input id="bh3-create-<?php echo esc_attr($profile_type); ?>-name" name="bh3_profile_name" type="text" maxlength="100" required>
-                        <label for="bh3-create-<?php echo esc_attr($profile_type); ?>-date"><?php echo esc_html($profile_fields[2]); ?></label>
-                        <input id="bh3-create-<?php echo esc_attr($profile_type); ?>-date" name="bh3_profile_date" type="date" required>
-                        <button type="submit"><?php echo esc_html($profile_fields[0]); ?></button>
-                      </form>
-                    <?php endforeach; ?>
-                  </div>
-                <?php endif; ?>
-                <?php if (!$admin_demo && BH_Family_Profile_Editor_3::enabled()) : ?>
-                  <?php if (isset($_GET['bh3_profile_status']) && $_GET['bh3_profile_status'] === 'saved') : ?>
-                    <p role="status"><?php echo esc_html__('Profile updated.', 'bubba-hub-manager'); ?></p>
-                  <?php elseif (isset($_GET['bh3_profile_status']) && $_GET['bh3_profile_status'] === 'error') : ?>
-                    <p role="alert"><?php echo esc_html__('Profile could not be updated.', 'bubba-hub-manager'); ?></p>
-                  <?php endif; ?>
-                  <?php foreach (array('child' => $profiles['children'], 'bump' => $profiles['bumps']) as $date_type => $date_profiles) : ?>
-                    <?php foreach ($date_profiles as $date_profile) : ?>
-                      <?php $date_field = $date_type === 'child' ? 'date_of_birth' : 'due_date'; ?>
-                      <form class="bh3-family__edit" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-                        <input type="hidden" name="action" value="bh3_family_profile_date">
-                        <input type="hidden" name="bh3_profile_type" value="<?php echo esc_attr($date_type); ?>">
-                        <input type="hidden" name="bh3_profile_id" value="<?php echo esc_attr(absint($date_profile['id'])); ?>">
-                        <?php wp_nonce_field('bh3_family_profile_edit'); ?>
-                        <label for="bh3-date-<?php echo esc_attr($date_type . '-' . absint($date_profile['id'])); ?>">
-                          <?php echo esc_html(sprintf($date_type === 'child' ? __('Birth date for %s', 'bubba-hub-manager') : __('Due date for %s', 'bubba-hub-manager'), $date_type === 'child' ? $date_profile['name'] : $date_profile['nickname'])); ?>
-                        </label>
-                        <input id="bh3-date-<?php echo esc_attr($date_type . '-' . absint($date_profile['id'])); ?>" name="bh3_profile_date" type="date" required value="<?php echo esc_attr($date_profile[$date_field] ?? ''); ?>">
-                        <button type="submit"><?php echo esc_html__('Save date', 'bubba-hub-manager'); ?></button>
-                      </form>
-                    <?php endforeach; ?>
-                  <?php endforeach; ?>
-                  <?php foreach ($profiles['children'] as $child) : ?>
-                    <form class="bh3-family__edit" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-                      <input type="hidden" name="action" value="bh3_family_child_name">
-                      <input type="hidden" name="bh3_child_id" value="<?php echo esc_attr(absint($child['id'])); ?>">
-                      <?php wp_nonce_field('bh3_family_profile_edit'); ?>
-                      <label for="bh3-child-<?php echo esc_attr(absint($child['id'])); ?>"><?php echo esc_html__('Child profile name', 'bubba-hub-manager'); ?></label>
-                      <input id="bh3-child-<?php echo esc_attr(absint($child['id'])); ?>" name="bh3_child_name" type="text" maxlength="100" required value="<?php echo esc_attr($child['name']); ?>">
-                      <button type="submit"><?php echo esc_html__('Save name', 'bubba-hub-manager'); ?></button>
-                    </form>
-                  <?php endforeach; ?>
-                  <?php foreach ($profiles['bumps'] as $bump) : ?>
-                    <form class="bh3-family__edit" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-                      <input type="hidden" name="action" value="bh3_family_bump_name">
-                      <input type="hidden" name="bh3_bump_id" value="<?php echo esc_attr(absint($bump['id'])); ?>">
-                      <?php wp_nonce_field('bh3_family_profile_edit'); ?>
-                      <label for="bh3-bump-<?php echo esc_attr(absint($bump['id'])); ?>"><?php echo esc_html__('Pregnancy profile nickname', 'bubba-hub-manager'); ?></label>
-                      <input id="bh3-bump-<?php echo esc_attr(absint($bump['id'])); ?>" name="bh3_bump_name" type="text" maxlength="100" required value="<?php echo esc_attr($bump['nickname']); ?>">
-                      <button type="submit"><?php echo esc_html__('Save nickname', 'bubba-hub-manager'); ?></button>
-                    </form>
-                  <?php endforeach; ?>
-                <?php else : ?>
-                  <p><?php echo esc_html__('Profile editing is not enabled in this preview.', 'bubba-hub-manager'); ?></p>
-                <?php endif; ?>
-              </article>
-            </div>
-          <?php endif; ?>
-          <?php if ($verified_family && BH_Family_Actions_3::enabled() && isset($_GET['bh3_activity_status'])) : ?>
-            <p class="bh3-family__notice" role="status"><?php echo esc_html($_GET['bh3_activity_status'] === 'saved' ? __('Activity updated.', 'bubba-hub-manager') : __('Activity could not be updated.', 'bubba-hub-manager')); ?></p>
-          <?php endif; ?>
-          <div class="bh3-family__grid">
-            <?php foreach ( $sections as $section ) : ?>
-              <?php if ($private_preview && in_array($section[0], array('My family', 'Saved activities', 'Family planner'), true)) continue; ?>
               <article class="bh3-family__card">
                 <h2><?php echo esc_html( $section[0] ); ?></h2>
                 <p><?php echo esc_html( $section[1] ); ?></p>
