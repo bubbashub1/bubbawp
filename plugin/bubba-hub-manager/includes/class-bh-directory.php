@@ -31,6 +31,8 @@ final class BH_Directory_3 {
         $search = isset( $_GET['bh_search'] ) && is_string( $_GET['bh_search'] ) ? substr( sanitize_text_field( wp_unslash( $_GET['bh_search'] ) ), 0, 100 ) : '';
         $category = isset( $_GET['bh_category'] ) && is_string( $_GET['bh_category'] ) ? substr( sanitize_text_field( wp_unslash( $_GET['bh_category'] ) ), 0, 150 ) : '';
         $town = isset( $_GET['bh_town'] ) && is_string( $_GET['bh_town'] ) ? substr( sanitize_text_field( wp_unslash( $_GET['bh_town'] ) ), 0, 120 ) : '';
+        $sort = isset( $_GET['bh_sort'] ) && is_scalar( $_GET['bh_sort'] ) ? sanitize_key( wp_unslash( $_GET['bh_sort'] ) ) : 'title';
+        if ( ! in_array( $sort, array( 'title', 'town', 'newest' ), true ) ) { $sort = 'title'; }
         $free = isset( $_GET['bh_free'] ) && (string) $_GET['bh_free'] === '1';
         $page = min( 100, max( 1, absint( $_GET['bh_page'] ?? 1 ) ) );
         $conditions = array( "a.status IN ('published','publish')" );
@@ -59,10 +61,11 @@ final class BH_Directory_3 {
             $params[] = $wpdb->esc_like( $postcode ) . '%';
         }
         $where = implode( ' AND ', $conditions );
+        $order = $sort === 'newest' ? 'a.id DESC' : ( $sort === 'town' ? 'town ASC, a.title ASC' : 'a.title ASC' );
         $sql = "SELECT a.id,a.title,a.slug,a.description,a.category,a.price_from,a.is_free,o.name AS organiser,
             (SELECT v.town FROM `{$links}` av INNER JOIN `{$venues}` v ON v.id=av.venue_id WHERE av.activity_id=a.id ORDER BY v.name LIMIT 1) AS town
             FROM `{$activities}` a LEFT JOIN `{$organisers}` o ON o.id=a.organiser_id
-            WHERE {$where} ORDER BY a.title ASC LIMIT 13 OFFSET " . ( ( $page - 1 ) * 12 );
+            WHERE {$where} ORDER BY {$order} LIMIT 13 OFFSET " . ( ( $page - 1 ) * 12 );
         $rows = $wpdb->get_results( $params ? $wpdb->prepare( $sql, $params ) : $sql, ARRAY_A );
         if ( ! is_array( $rows ) ) { return '<p>Unable to load the directory.</p>'; }
         $more = count( $rows ) > 12;
@@ -119,7 +122,8 @@ final class BH_Directory_3 {
         if ( $show( 'near_me' ) ) { echo '<label><span>Postcode</span><input type="search" name="bh_postcode" placeholder="Postcode prefix" value="' . esc_attr( $postcode ) . '"></label>'; }
         if ( $show( 'free' ) ) { echo '<label class="bh3-check"><input type="checkbox" name="bh_free" value="1" ' . checked( $free, true, false ) . '> Free only</label>'; }
         if ( $show( 'term_time' ) ) { echo '<label class="bh3-check"><input type="checkbox" name="bh_term" value="1" ' . checked( $term, true, false ) . '> Term time</label>'; }
-        echo '<div class="bh3-search-actions"><button type="submit">Find activities</button><a href="' . esc_url( remove_query_arg( array( 'bh_search', 'bh_category', 'bh_town', 'bh_region', 'bh_age', 'bh_day', 'bh_postcode', 'bh_free', 'bh_term', 'bh_page' ) ) ) . '">Clear filters</a></div></form>';
+        echo '<label><span>Sort activities</span><select name="bh_sort"><option value="title" ' . selected( $sort, 'title', false ) . '>Name A–Z</option><option value="town" ' . selected( $sort, 'town', false ) . '>Town A–Z</option><option value="newest" ' . selected( $sort, 'newest', false ) . '>Recently added</option></select></label>';
+        echo '<div class="bh3-search-actions"><button type="submit">Find activities</button><a href="' . esc_url( remove_query_arg( array( 'bh_search', 'bh_category', 'bh_town', 'bh_region', 'bh_age', 'bh_day', 'bh_postcode', 'bh_free', 'bh_term', 'bh_sort', 'bh_page' ) ) ) . '">Clear filters</a></div></form>';
         echo '<section aria-label="Activity locations"><h3>Activities on the map</h3>';
         if ( $map_points ) {
             $map_id = 'bh3-map-' . wp_unique_id();
