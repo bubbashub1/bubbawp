@@ -30,21 +30,6 @@ final class BH_Leader_Layout_3 {
         );
         ob_start(); ?>
         <div class="bh-leader-unified">
-          <style>
-          body:has(.bh-leader-unified) .wp-block-post-title{display:none}
-          .bh-leader-unified{max-width:1320px;margin:0 auto 40px;padding:0 20px;box-sizing:border-box;color:#203c31}
-          .bh-leader-unified *{box-sizing:border-box}
-          .bh-leader-unified .bh-unified-layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:26px;align-items:start}
-          .bh-leader-unified .bh-unified-nav{position:sticky;top:110px;display:flex;flex-direction:column;gap:4px;padding:18px;background:#fff;border:1px solid #dbe5df;border-radius:18px}
-          .bh-leader-unified .bh-unified-nav strong{font-size:19px;color:#1e5743;padding:8px 12px 12px}
-          .bh-leader-unified .bh-unified-nav a{display:block;color:#294a3b;text-decoration:none;font-weight:600;padding:11px 12px;border-radius:10px;font-size:15px}
-          .bh-leader-unified .bh-unified-nav a:hover,.bh-leader-unified .bh-unified-nav a:focus-visible,.bh-leader-unified .bh-unified-nav a[aria-current=page]{background:#e8f3ec}
-          .bh-leader-unified .bh-unified-content{min-width:0}
-          .bh-leader-unified .bh-unified-content > section,.bh-leader-unified .bh-unified-content > .bh-leader-shell{max-width:100%!important;margin:0!important}
-          .bh-leader-unified .bh-unified-content .bh-leader-edit{padding:24px!important}
-          .bh-leader-unified .bh-unified-content a:focus-visible{outline:3px solid #245e4a;outline-offset:2px}
-          @media(max-width:850px){.bh-leader-unified .bh-unified-layout{grid-template-columns:minmax(0,1fr);gap:14px}.bh-leader-unified .bh-unified-nav{position:static;flex-direction:row;overflow-x:auto;white-space:nowrap;padding:8px;gap:2px}.bh-leader-unified .bh-unified-nav strong{display:none}.bh-leader-unified .bh-unified-nav a{font-size:13px;padding:10px}}
-          </style>
           <div class="bh-unified-layout">
             <nav class="bh-unified-nav" aria-label="Leader portal navigation"><strong>Leader Hub</strong>
               <?php foreach ( $links as $link ) : ?>
