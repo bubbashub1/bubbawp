@@ -192,7 +192,7 @@ final class BH_Family_Hub_3 {
                     <ul class="bh3-family__profile-list">
                       <?php foreach ($profiles['children'] as $child) : ?>
                         <li><span class="bh3-family__avatar" aria-hidden="true">👶</span><strong><?php echo esc_html($child['name'] ?: __('Child profile', 'bubba-hub-manager')); ?></strong>
-                        <?php if (!empty($child['date_of_birth'])) : ?><span><?php echo esc_html(sprintf(__('Born %s', 'bubba-hub-manager'), wp_date(get_option('date_format'), strtotime($child['date_of_birth'])))); ?></span><?php endif; ?></li><?php if (class_exists('BH_Family_Native_Profiles_3')) echo BH_Family_Native_Profiles_3::render_reminders($child['id'],'child'); ?>
+                        <?php if (!empty($child['date_of_birth'])) : ?><span><?php echo esc_html(sprintf(__('Born %s', 'bubba-hub-manager'), wp_date(get_option('date_format'), strtotime($child['date_of_birth'])))); ?></span><?php endif; ?><?php if (class_exists('BH_Family_Native_Profiles_3')) echo BH_Family_Native_Profiles_3::render_reminders($child['id'],'child'); ?></li>
                       <?php endforeach; ?>
                     </ul>
                   <?php endif; ?>
@@ -203,7 +203,7 @@ final class BH_Family_Hub_3 {
                     <ul class="bh3-family__profile-list">
                       <?php foreach ($profiles['bumps'] as $bump) : ?>
                         <li><span class="bh3-family__avatar" aria-hidden="true">🍼</span><strong><?php echo esc_html($bump['nickname'] ?: __('Pregnancy profile', 'bubba-hub-manager')); ?></strong>
-                        <?php if (!empty($bump['due_date'])) : ?><span><?php echo esc_html(sprintf(__('Due %s', 'bubba-hub-manager'), wp_date(get_option('date_format'), strtotime($bump['due_date'])))); ?></span><?php endif; ?></li><?php if (class_exists('BH_Family_Native_Profiles_3')) echo BH_Family_Native_Profiles_3::render_reminders($bump['id'],'bump'); ?>
+                        <?php if (!empty($bump['due_date'])) : ?><span><?php echo esc_html(sprintf(__('Due %s', 'bubba-hub-manager'), wp_date(get_option('date_format'), strtotime($bump['due_date'])))); ?></span><?php endif; ?><?php if (class_exists('BH_Family_Native_Profiles_3')) echo BH_Family_Native_Profiles_3::render_reminders($bump['id'],'bump'); ?></li>
                       <?php endforeach; ?>
                     </ul>
                   <?php endif; ?>
