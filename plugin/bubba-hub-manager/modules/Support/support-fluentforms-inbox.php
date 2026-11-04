@@ -28,6 +28,14 @@ add_action('admin_post_bh3_support_install_schema', static function (): void {
         exit;
     }
     global $wpdb;
+    // Refuse to modify existing tables whose ownership/schema has not been reviewed.
+    $status_table = bh_support_status_table();
+    $history_table = bh_support_history_table();
+    foreach ([$status_table, $history_table] as $existing_table) {
+        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($existing_table))) === $existing_table) {
+            wp_die(esc_html__('A support workflow table already exists. Review its schema and ownership before installation.', 'bubbahub'), '', ['response' => 409]);
+        }
+    }
     require_once ABSPATH . 'wp-admin/includes/upgrade.php';
     $table = bh_support_status_table();
     $charset = $wpdb->get_charset_collate();
@@ -120,7 +128,7 @@ function bh_support_enquiries_page(): void {
     }
     $ids = array_values(array_filter(array_map('absint', (array) get_option('bh_support_fluent_form_ids', []))));
     echo '<div class="wrap"><h1>' . esc_html__('Bubba Hub · Support Enquiries', 'bubbahub') . '</h1>';
-    if (get_option('bh_support_status_schema_version') !== '2') {
+    if (get_option('bh_support_status_schema_version') !== '2' && strtolower((string) wp_parse_url(home_url(), PHP_URL_HOST)) === 'staging.bubbahub.co.uk') {
         echo '<div class="notice notice-warning"><p>' . esc_html__('Workflow tracking tables have not been installed. Back up staging before proceeding.', 'bubbahub') . '</p></div>';
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
         echo '<input type="hidden" name="action" value="bh3_support_install_schema">';
