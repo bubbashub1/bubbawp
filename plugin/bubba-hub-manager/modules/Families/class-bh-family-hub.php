@@ -45,7 +45,7 @@ final class BH_Family_Hub_3 {
         $verified_family = $preview_enabled && $wp_signed_in && !$admin_demo && BH_Family_Identity_3::current_legacy_id() > 0;
         $private_preview = $admin_demo || $verified_family;
         $preferences = BH_Family_Preferences_3::read();
-        $suggestions = $private_preview ? BH_Family_Recommendations_3::fetch($preferences) : array();
+
         $saved = $verified_family ? BH_Family_Read_Model_3::saved_ids() : array();
         $planner = $verified_family ? BH_Family_Read_Model_3::planner_items() : array();
         $profiles = $verified_family ? BH_Family_Read_Model_3::family_profiles() : array();
@@ -55,6 +55,7 @@ final class BH_Family_Hub_3 {
         $planned_ids = array_map('absint', array_column($planner, 'activity_id'));
         $visited_count = count(array_filter($planner, static function($item) { return !empty($item['visited']); }));
         $profiles = is_array($profiles) && isset($profiles['children'], $profiles['bumps']) && is_array($profiles['children']) && is_array($profiles['bumps']) ? $profiles : array('children' => array(), 'bumps' => array());
+        $suggestions = $private_preview ? BH_Family_Recommendations_3::fetch($preferences, $verified_family ? $profiles : array()) : array();
         $show_saved = $private_preview && isset($_GET['bh3_show_saved']) && is_scalar($_GET['bh3_show_saved']) && (string) $_GET['bh3_show_saved'] === '1';
         $show_planner = $private_preview && isset($_GET['bh3_show_planner']) && is_scalar($_GET['bh3_show_planner']) && (string) $_GET['bh3_show_planner'] === '1';
         $planner_filter = isset($_GET['bh3_planner_filter']) && is_scalar($_GET['bh3_planner_filter']) ? sanitize_key(wp_unslash($_GET['bh3_planner_filter'])) : 'all';
@@ -288,7 +289,7 @@ final class BH_Family_Hub_3 {
                     <?php endforeach; ?>
                   </div>
                 <?php endif; ?>
-                <p class="bh3-family__matching-note"><?php echo esc_html__('Distance radius and child-age matching are planned for the next integration stage.', 'bubba-hub-manager'); ?></p>
+                <p class="bh3-family__matching-note"><?php echo esc_html__('Child ages are matched when profiles are available. Travel radius applies only when your postcode can be matched to a unique venue location.', 'bubba-hub-manager'); ?></p>
               </article>
               <article id="bh3-saved" class="bh3-family__card bh3-family__card--saved">
                 <h2><?php echo esc_html__('Saved activities', 'bubba-hub-manager'); ?></h2>
