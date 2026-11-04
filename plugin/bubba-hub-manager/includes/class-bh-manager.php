@@ -64,6 +64,8 @@ final class BH_Manager_3 {
         BH_Leader_Listing_Wizard_3::register();
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-venue-requests.php';
         BH_Leader_Venue_Requests_3::register();
+        require_once BUBBA_HUB_MANAGER_PATH . 'modules/Bookings/class-bh-booking-terms.php';
+        BH_Booking_Terms_3::register();
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-ask-support-optin.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-ask-support-inbox.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-ask-support-storage.php';
