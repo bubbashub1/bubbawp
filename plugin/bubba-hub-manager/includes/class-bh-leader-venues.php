@@ -11,10 +11,8 @@ final class BH_Leader_Venues_3 {
         add_action( 'admin_post_bh3_leader_detach_venue', array( __CLASS__, 'detach' ) );
     }
     private static function tables_ready() {
-        global $wpdb;
         foreach ( array( 'activities', 'venues', 'activity_venues', 'sessions' ) as $name ) {
-            $table = $wpdb->prefix . $name;
-            if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ) !== $table ) { return false; }
+            if ( ! BH_Leader_Access_3::table_exists( $name ) ) { return false; }
         }
         return true;
     }
