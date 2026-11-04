@@ -48,7 +48,7 @@ final class BH_Business_Directory_3 {
             .bh-business-directory .bh-dir-card{background:#fff;border:1px solid #dbe5df;border-radius:16px;padding:20px;box-shadow:0 8px 22px rgba(20,65,42,.05)}
             .bh-business-directory .bh-dir-card img{width:70px;height:70px;object-fit:contain;border-radius:12px;margin-bottom:12px}
             .bh-business-directory .bh-dir-card h3{font-size:20px;margin:0 0 10px}.bh-business-directory .bh-dir-card p{margin:8px 0;color:#53665e}
-            .bh-business-directory .bh-dir-card a{color:#245e4a;font-weight:700}.bh-business-directory [hidden]{display:none!important}
+            .bh-business-directory .bh-dir-card button{border:0;background:#245e4a;color:#fff;border-radius:9px;padding:10px 12px;margin:8px 0;cursor:pointer}.bh-business-directory .bh-dir-card a{color:#245e4a;font-weight:700}.bh-business-directory [hidden]{display:none!important}
           </style>
           <header class="bh-dir-head"><h2>Business directory preview</h2><p>Administrator-only staging review of opted-in family businesses. Not publicly published.</p></header>
           <div class="bh-dir-controls">
@@ -64,6 +64,14 @@ final class BH_Business_Directory_3 {
               <article class="bh-dir-card" data-category="<?php echo esc_attr( $e['business_category'] ?? '' ); ?>" data-search="<?php echo esc_attr( strtolower( $p['name'] . ' ' . ( $e['areas_served'] ?? '' ) . ' ' . ( $categories[ $e['business_category'] ?? '' ] ?? '' ) ) ); ?>">
                 <?php if ( ! empty( $e['logo_url'] ) ) : ?><img src="<?php echo esc_url( $e['logo_url'] ); ?>" alt="" loading="lazy"><?php endif; ?>
                 <h3><?php echo esc_html( $p['name'] ); ?></h3>
+                <p><strong><?php echo ! empty( $e['directory_approved'] ) ? 'Approved for launch' : 'Awaiting approval'; ?></strong></p>
+                <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+                  <input type="hidden" name="action" value="bh3_directory_approve">
+                  <input type="hidden" name="business_id" value="<?php echo esc_attr( $p['id'] ); ?>">
+                  <input type="hidden" name="approved" value="<?php echo empty( $e['directory_approved'] ) ? '1' : '0'; ?>">
+                  <?php wp_nonce_field( 'bh3_directory_approve_' . (int) $p['id'] ); ?>
+                  <button type="submit"><?php echo empty( $e['directory_approved'] ) ? 'Approve for launch' : 'Revoke approval'; ?></button>
+                </form>
                 <?php if ( ! empty( $e['business_category'] ) ) : ?><p><?php echo esc_html( $categories[ $e['business_category'] ] ?? '' ); ?></p><?php endif; ?>
                 <?php if ( ! empty( $e['areas_served'] ) ) : ?><p><?php echo esc_html( $e['areas_served'] ); ?></p><?php endif; ?>
                 <p><?php echo esc_html( wp_trim_words( wp_strip_all_tags( $p['description'] ?? '' ), 22 ) ); ?></p>
