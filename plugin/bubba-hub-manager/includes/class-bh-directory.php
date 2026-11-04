@@ -4,6 +4,15 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 final class BH_Directory_3 {
     public static function register() {
         add_shortcode( 'bubbahub_directory', array( __CLASS__, 'render' ) );
+        add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue_map_styles' ) );
+    }
+    public static function enqueue_map_styles() {
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) { return; }
+        global $post;
+        if ( ! $post instanceof WP_Post || ! has_shortcode( (string) $post->post_content, 'bubbahub_directory' ) ) { return; }
+        wp_enqueue_style( 'bh3-leaflet', 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css', array(), '1.9.4' );
+        wp_enqueue_style( 'bh3-leaflet-cluster', 'https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css', array( 'bh3-leaflet' ), '1.5.3' );
+        wp_enqueue_style( 'bh3-leaflet-cluster-default', 'https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css', array( 'bh3-leaflet-cluster' ), '1.5.3' );
     }
     public static function render() {
         if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) {
@@ -82,7 +91,7 @@ final class BH_Directory_3 {
                 $lat = (float) $geo['latitude']; $lng = (float) $geo['longitude'];
                 if ( $lat < -90 || $lat > 90 || $lng < -180 || $lng > 180 ) { continue; }
                 $map_points[] = array(
-                    'lat' => $lat, 'lng' => $lng,
+                    'lat' => $lat, 'lng' => $lng, 'activity_id' => (int) $geo['activity_id'],
                     'title' => $names[ (int) $geo['activity_id'] ] ?? '',
                     'venue' => (string) $geo['name'],
                     'town' => (string) $geo['town'],
@@ -97,7 +106,16 @@ final class BH_Directory_3 {
         .bh3-real-directory input{min-width:130px;flex:1;padding:12px;border:1px solid #cbd8d0;border-radius:9px}
         .bh3-real-directory button{background:#175c46;color:white;border:0;border-radius:9px;padding:12px 20px;cursor:pointer}
         .bh3-real-directory .bh3-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-        .bh3-real-directory article{background:#fff;border:1px solid #d7e3dc;border-radius:14px;padding:20px}
+        .bh3-real-directory article{background:#fff;border:1px solid #d7e3dc;border-radius:14px;padding:20px;scroll-margin-top:90px;transition:border-color .2s,box-shadow .2s,background .2s}
+        .bh3-real-directory article.bh3-card-active{border-color:#176345;background:#f2f9f4;box-shadow:0 0 0 3px rgba(23,99,69,.16)}
+        .bh3-real-directory .bh3-map-note{margin:8px 0 18px;color:#50675e;font-size:14px}
+        .bh3-real-directory .bh3-view-toggle{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
+        .bh3-real-directory .bh3-view-toggle button{background:#fff;color:#175c46;border:1px solid #bcd9c5;min-height:44px;font-weight:650}
+        .bh3-real-directory .bh3-view-toggle button[aria-pressed=true]{background:#175c46;color:#fff}
+        .bh3-real-directory.bh3-view-list .bh3-map-section{display:none}
+        .bh3-real-directory.bh3-view-map .bh3-cards,.bh3-real-directory.bh3-view-map .bh3-pages{display:none}
+        .bh3-real-directory .bh3-map:focus-visible,.bh3-real-directory button:focus-visible{outline:3px solid #74b38b;outline-offset:3px}
+        .bh3-real-directory .bh3-map-card-link{display:inline-block;margin-top:8px;padding:7px 10px;border-radius:7px;border:1px solid #bcd9c5;background:#f4faf6;color:#175c46;font-weight:700;cursor:pointer}
         .bh3-real-directory article h3{margin:8px 0}.bh3-real-directory .bh3-meta{color:#50675e;font-size:14px}
         .bh3-real-directory .bh3-pages{display:flex;gap:16px;margin-top:24px}
         .bh3-real-directory .bh3-map{border-radius:14px;overflow:hidden;border:1px solid #d7e3dc;margin:16px 0;z-index:0}
@@ -120,28 +138,32 @@ final class BH_Directory_3 {
         if ( $show( 'free' ) ) { echo '<label class="bh3-check"><input type="checkbox" name="bh_free" value="1" ' . checked( $free, true, false ) . '> Free only</label>'; }
         if ( $show( 'term_time' ) ) { echo '<label class="bh3-check"><input type="checkbox" name="bh_term" value="1" ' . checked( $term, true, false ) . '> Term time</label>'; }
         echo '<div class="bh3-search-actions"><button type="submit">Find activities</button><a href="' . esc_url( remove_query_arg( array( 'bh_search', 'bh_category', 'bh_town', 'bh_region', 'bh_age', 'bh_day', 'bh_postcode', 'bh_free', 'bh_term', 'bh_page' ) ) ) . '">Clear filters</a></div></form>';
-        echo '<section aria-label="Activity locations"><h3>Activities on the map</h3>';
+        if ( $map_points ) { echo '<div class="bh3-view-toggle" role="group" aria-label="Directory view"><button type="button" data-bh3-view="both" aria-pressed="true">Map &amp; list</button><button type="button" data-bh3-view="map" aria-pressed="false">Map only</button><button type="button" data-bh3-view="list" aria-pressed="false">List only</button></div>'; }
+        echo '<section class="bh3-map-section" aria-label="Activity locations"><h3>Activities on the map</h3>';
         if ( $map_points ) {
             $map_id = 'bh3-map-' . wp_unique_id();
             $height = min( 750, max( 240, (int) ( $builder['map_height'] ?? 420 ) ) );
             echo '<div id="' . esc_attr( $map_id ) . '" class="bh3-map" style="height:' . esc_attr( $height ) . 'px" role="region" aria-label="Map of activity venues"></div>';
             wp_enqueue_style( 'bh3-leaflet', 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css', array(), '1.9.4' );
             wp_enqueue_script( 'bh3-leaflet', 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js', array(), '1.9.4', true );
+            wp_enqueue_style( 'bh3-leaflet-cluster', 'https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css', array( 'bh3-leaflet' ), '1.5.3' );
+            wp_enqueue_style( 'bh3-leaflet-cluster-default', 'https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css', array( 'bh3-leaflet-cluster' ), '1.5.3' );
+            wp_enqueue_script( 'bh3-leaflet-cluster', 'https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js', array( 'bh3-leaflet' ), '1.5.3', true );
             $payload = array(
                 'id' => $map_id,
                 'points' => $map_points,
                 'center' => array( (float) ( $builder['map_lat'] ?? 50.53 ), (float) ( $builder['map_lng'] ?? -3.55 ) ),
                 'zoom' => min( 18, max( 3, (int) ( $builder['map_zoom'] ?? 11 ) ) ),
             );
-            wp_add_inline_script( 'bh3-leaflet', '(function(){const cfg=' . wp_json_encode( $payload, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ) . ';function init(){const el=document.getElementById(cfg.id);if(!el||!window.L)return;const map=L.map(el,{scrollWheelZoom:false}).setView(cfg.center,cfg.zoom);L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"&copy; OpenStreetMap contributors"}).addTo(map);const bounds=[];cfg.points.forEach(p=>{const marker=L.marker([p.lat,p.lng]).addTo(map);const wrap=document.createElement("div");const title=document.createElement("strong");title.textContent=p.title;const desc=document.createElement("p");desc.textContent=[p.venue,p.town].filter(Boolean).join(", ");wrap.append(title,desc);marker.bindPopup(wrap);bounds.push([p.lat,p.lng])});if(bounds.length)map.fitBounds(bounds,{padding:[25,25],maxZoom:cfg.zoom});setTimeout(()=>map.invalidateSize(),100)}if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init()})();', 'after' );
+            wp_add_inline_script( 'bh3-leaflet-cluster', '(function(){const cfg=' . wp_json_encode( $payload, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ) . ';function init(){const el=document.getElementById(cfg.id);if(!el||!window.L)return;const map=L.map(el,{scrollWheelZoom:false}).setView(cfg.center,cfg.zoom);const scope=el.closest(".bh3-real-directory");if(scope){const controls=[...scope.querySelectorAll("[data-bh3-view]")];controls.forEach(button=>button.addEventListener("click",()=>{const view=button.dataset.bh3View;scope.classList.toggle("bh3-view-map",view==="map");scope.classList.toggle("bh3-view-list",view==="list");controls.forEach(b=>b.setAttribute("aria-pressed",String(b===button)));if(view!=="list")setTimeout(()=>map.invalidateSize(),60)}))}L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"&copy; OpenStreetMap contributors"}).addTo(map);const bounds=[];const clusters=L.markerClusterGroup?L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:48}):null;if(clusters)map.addLayer(clusters);cfg.points.forEach(p=>{const marker=L.marker([p.lat,p.lng]);if(clusters)clusters.addLayer(marker);else marker.addTo(map);const wrap=document.createElement("div");const title=document.createElement("strong");title.textContent=p.title;const desc=document.createElement("p");desc.textContent=[p.venue,p.town].filter(Boolean).join(", ");const action=document.createElement("button");action.type="button";action.className="bh3-map-card-link";action.textContent="Show listing";action.addEventListener("click",()=>{const scope=el.closest(".bh3-real-directory"),card=[...scope.querySelectorAll("[data-activity-id]")].find(x=>x.dataset.activityId===String(p.activity_id));if(!card)return;scope.querySelectorAll(".bh3-card-active").forEach(x=>x.classList.remove("bh3-card-active"));card.classList.add("bh3-card-active");if(scope.classList.contains("bh3-view-map")){scope.classList.remove("bh3-view-map");const both=[...scope.querySelectorAll("[data-bh3-view]")].find(x=>x.dataset.bh3View==="both");scope.querySelectorAll("[data-bh3-view]").forEach(b=>b.setAttribute("aria-pressed",String(b===both)))}card.scrollIntoView({behavior:"smooth",block:"center"});card.setAttribute("tabindex","-1");card.focus({preventScroll:true})});wrap.append(title,desc,action);marker.bindPopup(wrap);bounds.push([p.lat,p.lng])});if(bounds.length)map.fitBounds(bounds,{padding:[25,25],maxZoom:cfg.zoom});setTimeout(()=>map.invalidateSize(),100)}if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init()})();', 'after' );
         } else { echo '<p class="bh3-map-message">No mapped venues for the activities on this page. Listings are available below.</p>'; }
         echo '<p class="bh3-map-message">Map data © OpenStreetMap contributors. Use the list below for full activity details.</p></section>';
-        echo '<div class="bh3-cards">';
+        echo '<p class="bh3-map-note">Select a map pin, then choose “Show listing” to highlight its activity card below.</p><div class="bh3-cards">';
         foreach ( $rows as $row ) {
             $detail_page = get_page_by_path( 'activity-preview' );
             $detail_url = $detail_page && has_shortcode( (string) $detail_page->post_content, 'bubbahub_activity' )
                 ? add_query_arg( 'bh_activity', absint( $row['id'] ), get_permalink( $detail_page ) ) : '';
-            echo '<article><div class="bh3-meta">' . esc_html( (string) $row['category'] ) . '</div><h3>' . esc_html( $row['title'] ) . '</h3>';
+            echo '<article data-activity-id="' . esc_attr( (string) absint( $row['id'] ) ) . '"><div class="bh3-meta">' . esc_html( (string) $row['category'] ) . '</div><h3>' . esc_html( $row['title'] ) . '</h3>';
             if ( $detail_url ) { echo '<p><a href="' . esc_url( $detail_url ) . '">View activity details</a></p>'; }
             echo '<p>' . esc_html( wp_trim_words( wp_strip_all_tags( (string) $row['description'] ), 24 ) ) . '</p>';
             echo '<p class="bh3-meta">' . esc_html( (string) $row['town'] ) . ( $row['organiser'] ? ' · ' . esc_html( $row['organiser'] ) : '' ) . '</p>';
