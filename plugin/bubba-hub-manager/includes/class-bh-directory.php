@@ -151,7 +151,7 @@ final class BH_Directory_3 {
         .bh3-real-directory .bh3-map-note{margin:8px 0 18px;color:#50675e;font-size:14px}
         .bh3-real-directory .bh3-view-toggle{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
         .bh3-real-directory .bh3-view-toggle button{background:#fff;color:#175c46;border:1px solid #bcd9c5;min-height:44px;font-weight:650}
-        .bh3-real-directory .bh3-view-toggle button[aria-pressed=true]{background:#175c46;color:#fff}
+        .bh3-real-directory .bh3-view-toggle button[aria-pressed=true]{background:#175c46;color:#fff}@media(max-width:560px){.bh3-real-directory .bh3-view-toggle{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:5px;background:#f1f7f3;border:1px solid #d5e5da;border-radius:12px}.bh3-real-directory .bh3-view-toggle button{width:100%;padding:10px 5px;min-height:46px;font-size:13px;border-radius:9px}.bh3-real-directory .bh3-map{max-height:55vh}}
         .bh3-real-directory.bh3-view-list .bh3-map-section{display:none}
         .bh3-real-directory.bh3-view-map .bh3-cards,.bh3-real-directory.bh3-view-map .bh3-pages{display:none}
         .bh3-real-directory .bh3-map:focus-visible,.bh3-real-directory button:focus-visible{outline:3px solid #74b38b;outline-offset:3px}
@@ -190,7 +190,7 @@ final class BH_Directory_3 {
             if ( $geo_valid ) { echo '<input type="hidden" name="bh_lat" value="' . esc_attr( (string) $geo_lat ) . '"><input type="hidden" name="bh_lng" value="' . esc_attr( (string) $geo_lng ) . '">'; }
         }
         echo '<div class="bh3-search-actions"><button type="submit">Find activities</button><a href="' . esc_url( remove_query_arg( array( 'bh_search', 'bh_category', 'bh_town', 'bh_region', 'bh_age', 'bh_day', 'bh_postcode', 'bh_free', 'bh_max_price', 'bh_term', 'bh_sort', 'bh_radius', 'bh_lat', 'bh_lng', 'bh_page' ) ) ) . '">Clear filters</a></div></div></details></form>';
-        if ( $map_points ) { echo '<div class="bh3-view-toggle" role="group" aria-label="Directory view"><button type="button" data-bh3-view="both" aria-pressed="true">Map &amp; list</button><button type="button" data-bh3-view="map" aria-pressed="false">Map only</button><button type="button" data-bh3-view="list" aria-pressed="false">List only</button></div>'; }
+        if ( $map_points ) { echo '<div class="bh3-view-toggle" role="group" aria-label="Directory view"><button type="button" data-bh3-view="both" aria-pressed="true">Map &amp; list</button><button type="button" data-bh3-view="map" aria-pressed="false">Map</button><button type="button" data-bh3-view="list" aria-pressed="false">List</button></div>'; }
         echo '<section class="bh3-map-section" aria-label="Activity locations"><h3>Activities on the map</h3>';
         if ( $map_points ) {
             $map_id = 'bh3-map-' . wp_unique_id();
