@@ -37,3 +37,13 @@ Branch: feature/my-hub-framework
 
 ## Initial presentation
 Shortcode [bubbahub_family_hub] renders a read-only UI foundation. It is intentionally not registered as a replacement for the live My Hub route. It does not claim to show actual saved records or child profiles.
+
+## FluentAuth integration decision (2026-11-04)
+- Preferred new WordPress sign-in UX: FluentAuth, subject to verifying the installed plugin's documented hooks and actual session behaviour on staging.
+- The plugin must use WordPress's authenticated identity and capability APIs after FluentAuth sign-in, rather than relying on undocumented FluentAuth internals.
+- Introduce a **verified account-linking adapter** mapping authenticated WP user IDs to existing `bh_users.id`. Never assume numeric ID equality, match accounts automatically by email alone, or silently create duplicate family accounts.
+- Preserve existing `BUBBAHUBSESSID` sessions and legacy URLs until migration and logout/login parity is confirmed.
+- Never store passwords or FluentAuth session tokens in Bubba Hub tables. Keep the mapping server-side, audit linking and unlinking, and provide a safe recovery path.
+- If FluentAuth is disabled, existing WordPress authentication must continue to work and private family data must remain inaccessible without verified mapping.
+- Test registration, sign-in, logout, password reset, expired sessions, existing-family linking, role separation, account deletion, and return-to-My-Hub redirects.
+- **Status:** design requirement only. FluentAuth API compatibility and existing account linking have not yet been verified or implemented.
