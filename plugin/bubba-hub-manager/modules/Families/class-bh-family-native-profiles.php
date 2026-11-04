@@ -7,7 +7,6 @@ final class BH_Family_Native_Profiles_3 {
         add_action('admin_post_bh3_native_family_profile',array(__CLASS__,'save'));
         add_action('admin_post_bh3_native_family_update',array(__CLASS__,'update'));
         add_action('admin_post_bh3_native_family_delete',array(__CLASS__,'delete'));
-        add_action('fluentform/submission_inserted',array(__CLASS__,'fluent_form_submission'),10,3);
         add_action('admin_init',array(__CLASS__,'maybe_upgrade_schema'));
     }
     public static function allowed() {
@@ -20,18 +19,20 @@ final class BH_Family_Native_Profiles_3 {
             && BH3_FAMILY_NATIVE_PROFILE_WRITES === true;
     }
     public static function form() {
-        if (!self::allowed()) {
-            return '<p>Please sign in to manage your family profiles. Profile editing is currently available on the staging site only.</p>';
-        }
-        if (shortcode_exists('fluentform')) return do_shortcode('[fluentform id="5"]');
-        return '<p>Family profile form is not available yet. Please contact support.</p>';
+        if (!self::allowed()) return '<p>Please sign in to manage your family profiles. Profile editing is currently available on the staging site only.</p>';
         ob_start(); ?>
-        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="bh3-family-profile-add">
           <input type="hidden" name="action" value="bh3_native_family_profile">
           <?php wp_nonce_field('bh3_native_family_profile'); ?>
-          <p><label>Profile type <select name="profile_type" required><option value="child">Child</option><option value="bump">Pregnancy</option></select></label></p>
-          <p><label>Name or nickname <input name="display_name" maxlength="100" required></label></p>
+          <p><label>Profile type
+            <select name="profile_type" required>
+              <option value="child">Child</option>
+              <option value="bump">Pregnancy</option>
+            </select>
+          </label></p>
+          <p><label>Name or nickname <input name="display_name" maxlength="100" required autocomplete="off"></label></p>
           <p><label>Birth or due date <input type="date" name="profile_date" required></label></p>
+          <p><label>Gender (optional, child profiles only) <input name="gender" maxlength="40" autocomplete="off"></label></p>
           <p><button type="submit">Add family profile</button></p>
         </form>
         <?php return ob_get_clean();
@@ -63,41 +64,18 @@ final class BH_Family_Native_Profiles_3 {
         </div>
         <?php return ob_get_clean();
     }
-    /** Add optional gender column without replacing existing family records. */
+    /** Add only the missing gender column; preserve the installed table definition and records. */
     public static function maybe_upgrade_schema() {
         if (!current_user_can('manage_options') || wp_parse_url(home_url(),PHP_URL_HOST)!=='staging.bubbahub.co.uk') return;
-        if (get_option('bh3_family_profiles_gender_schema')==='1') return;
-        global $wpdb; $table=$wpdb->prefix.'bh_family_profiles';
+        global $wpdb;
+        $table=$wpdb->prefix.'bh_family_profiles';
         if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s',$wpdb->esc_like($table)))!==$table) return;
-        require_once ABSPATH.'wp-admin/includes/upgrade.php';
-        $sql="CREATE TABLE {$table} (id bigint(20) unsigned NOT NULL AUTO_INCREMENT,user_id bigint(20) unsigned NOT NULL,profile_type varchar(20) NOT NULL,display_name varchar(100) NOT NULL DEFAULT '',profile_date date NULL,gender varchar(40) NOT NULL DEFAULT '',created_at datetime NOT NULL,updated_at datetime NOT NULL,PRIMARY KEY  (id),KEY user_id (user_id)) ".$wpdb->get_charset_collate().";";
-        dbDelta($sql);
+        $columns=$wpdb->get_col("SHOW COLUMNS FROM `{$table}`",0);
+        if (!is_array($columns) || !in_array('gender',$columns,true)) {
+            $wpdb->query("ALTER TABLE `{$table}` ADD COLUMN gender varchar(40) NOT NULL DEFAULT ''");
+        }
         $columns=$wpdb->get_col("SHOW COLUMNS FROM `{$table}`",0);
         if (is_array($columns) && in_array('gender',$columns,true)) update_option('bh3_family_profiles_gender_schema','1',false);
-    }
-    /** Store authenticated submissions from Fluent Forms form 5. */
-    public static function fluent_form_submission($entry_id,$form_data,$form) {
-        $form_id=is_object($form) && isset($form->id) ? absint($form->id) : (is_array($form) && isset($form['id']) ? absint($form['id']) : 0);
-        if ($form_id!==5 || !self::allowed() || !is_user_logged_in() || !is_array($form_data)) return;
-        $type=isset($form_data['profile_type']) && is_scalar($form_data['profile_type']) ? sanitize_key($form_data['profile_type']) : '';
-        $name=isset($form_data['display_name']) && is_scalar($form_data['display_name']) ? sanitize_text_field($form_data['display_name']) : '';
-        $date=isset($form_data['profile_date']) && is_scalar($form_data['profile_date']) ? sanitize_text_field($form_data['profile_date']) : '';
-        $gender=isset($form_data['gender']) && is_scalar($form_data['gender']) ? sanitize_text_field($form_data['gender']) : '';
-        if (!in_array($type,array('child','bump'),true) || $name==='' || strlen($name)>100) return;
-        if ($type==='bump') $gender=''; if (strlen($gender)>40) $gender=substr($gender,0,40);
-        $parsed=DateTimeImmutable::createFromFormat('!Y-m-d',$date,wp_timezone());
-        if (!$parsed || $parsed->format('Y-m-d')!==$date) return;
-        $today=new DateTimeImmutable('today',wp_timezone());
-        if ($type==='child' && ($parsed>$today || (int)$parsed->format('Y')<1900)) return;
-        if ($type==='bump' && ($parsed<$today->modify('-300 days') || $parsed>$today->modify('+600 days')) ) return;
-        global $wpdb; $table=$wpdb->prefix.'bh_family_profiles';
-        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s',$wpdb->esc_like($table)))!==$table) return;
-        $user=get_current_user_id();
-        $count=(int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM `{$table}` WHERE user_id=%d AND profile_type=%s",$user,$type));
-        if ($count>=($type==='child'?50:20)) return;
-        $duplicate=$wpdb->get_var($wpdb->prepare("SELECT id FROM `{$table}` WHERE user_id=%d AND profile_type=%s AND display_name=%s AND profile_date=%s LIMIT 1",$user,$type,$name,$date));
-        if ($duplicate) return;
-        $wpdb->insert($table,array('user_id'=>$user,'profile_type'=>$type,'display_name'=>$name,'profile_date'=>$date,'gender'=>$gender,'created_at'=>current_time('mysql'),'updated_at'=>current_time('mysql')),array('%d','%s','%s','%s','%s','%s','%s'));
     }
     public static function dashboard() {
         if (!self::allowed()) return '<p>Please sign in to manage your family profiles. Profile editing is currently available on the staging site only.</p>';
