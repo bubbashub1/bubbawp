@@ -228,6 +228,30 @@ final class BH_Family_Hub_3 {
               <article class="bh3-family__card">
                 <h2><?php echo esc_html__('My family', 'bubba-hub-manager'); ?></h2>
                 <p><?php echo esc_html(sprintf(__('%1$d child profiles · %2$d pregnancy profiles', 'bubba-hub-manager'), count($profiles['children']), count($profiles['bumps']))); ?></p>
+                <div class="bh3-family__profiles">
+                  <h3><?php echo esc_html__('Children', 'bubba-hub-manager'); ?></h3>
+                  <?php if (empty($profiles['children'])) : ?>
+                    <p><?php echo esc_html__('No child profiles connected yet.', 'bubba-hub-manager'); ?></p>
+                  <?php else : ?>
+                    <ul class="bh3-family__profile-list">
+                      <?php foreach ($profiles['children'] as $child) : ?>
+                        <li><strong><?php echo esc_html($child['name'] ?: __('Child profile', 'bubba-hub-manager')); ?></strong>
+                        <?php if (!empty($child['date_of_birth'])) : ?><span><?php echo esc_html(sprintf(__('Born %s', 'bubba-hub-manager'), wp_date(get_option('date_format'), strtotime($child['date_of_birth'])))); ?></span><?php endif; ?></li>
+                      <?php endforeach; ?>
+                    </ul>
+                  <?php endif; ?>
+                  <h3><?php echo esc_html__('Pregnancy profiles', 'bubba-hub-manager'); ?></h3>
+                  <?php if (empty($profiles['bumps'])) : ?>
+                    <p><?php echo esc_html__('No pregnancy profiles connected yet.', 'bubba-hub-manager'); ?></p>
+                  <?php else : ?>
+                    <ul class="bh3-family__profile-list">
+                      <?php foreach ($profiles['bumps'] as $bump) : ?>
+                        <li><strong><?php echo esc_html($bump['nickname'] ?: __('Pregnancy profile', 'bubba-hub-manager')); ?></strong>
+                        <?php if (!empty($bump['due_date'])) : ?><span><?php echo esc_html(sprintf(__('Due %s', 'bubba-hub-manager'), wp_date(get_option('date_format'), strtotime($bump['due_date'])))); ?></span><?php endif; ?></li>
+                      <?php endforeach; ?>
+                    </ul>
+                  <?php endif; ?>
+                </div>
                 <?php if (BH_Family_Profile_Editor_3::enabled()) : ?>
                   <?php if (isset($_GET['bh3_profile_status']) && $_GET['bh3_profile_status'] === 'saved') : ?>
                     <p role="status"><?php echo esc_html__('Profile updated.', 'bubba-hub-manager'); ?></p>
@@ -245,7 +269,7 @@ final class BH_Family_Hub_3 {
                     </form>
                   <?php endforeach; ?>
                 <?php else : ?>
-                  <p><?php echo esc_html__('Profile details are hidden in this initial preview.', 'bubba-hub-manager'); ?></p>
+                  <p><?php echo esc_html__('Profile editing is not enabled in this preview.', 'bubba-hub-manager'); ?></p>
                 <?php endif; ?>
               </article>
             </div>
