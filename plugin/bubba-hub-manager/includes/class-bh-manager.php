@@ -47,6 +47,8 @@ final class BH_Manager_3 {
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-modules.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activities.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-schema.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-family-db-setup.php';
+        BH_Family_DB_Setup_3::register();
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activity-parity.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activity-create.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activity-edit.php';
