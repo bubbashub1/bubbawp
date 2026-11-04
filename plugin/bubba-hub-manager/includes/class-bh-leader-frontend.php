@@ -61,7 +61,7 @@ final class BH_Leader_Frontend_3 {
         </style>
         <main class="bh-leader-shell">
             <header class="bh-leader-head"><h1>Leader Dashboard</h1><p class="bh-leader-muted">Welcome, <?php echo esc_html( $name ); ?>. Manage your Bubba Hub activities.</p></header>
-            <nav class="bh-leader-nav" aria-label="Leader portal navigation"><a href="#my-activities">My Activities</a><a href="<?php echo esc_url( home_url( '/leader/business/' ) ); ?>">My Business</a><a href="#leader-tools">Manage classes</a></nav>
+            <nav class="bh-leader-nav" aria-label="Leader portal navigation"><a href="#my-activities">My Activities</a><a href="<?php echo esc_url( home_url( '/leader/business/' ) ); ?>">My Business</a><a href="#leader-tools">Manage classes</a><a href="#leader-ask-inbox">Ask Support</a></nav>
             <section class="bh-leader-stats" aria-label="Listing summary">
                 <div class="bh-leader-stat"><strong><?php echo esc_html( number_format_i18n( $totals['all'] ) ); ?></strong>Total activities</div>
                 <div class="bh-leader-stat"><strong><?php echo esc_html( number_format_i18n( $totals['draft'] ) ); ?></strong>Drafts</div>
@@ -76,6 +76,7 @@ final class BH_Leader_Frontend_3 {
                     array( 'Bookings', 'Bookings and enrolments are not yet enabled.', '', '' ),
                     array( 'My Business', 'Update your public organiser profile and contact details.', home_url( '/leader/business/' ), 'Edit business profile' ),
                     array( 'Help & Support', 'Find family guidance and website support resources.', home_url( '/guidance/resources/' ), 'View resources' ),
+                    array( 'Ask Support', 'Choose your specialist topics and prepare to answer family questions.', '#leader-ask-inbox', 'Manage Ask Support' ),
                 );
                 foreach ( $sections as $section ) {
                     echo '<article class="bh-leader-card"><h2>' . esc_html( $section[0] ) . '</h2><p>' . esc_html( $section[1] ) . '</p>';
@@ -84,6 +85,8 @@ final class BH_Leader_Frontend_3 {
                 }
                 ?>
             </section>
+            <?php echo do_shortcode('[bh_leader_ask_inbox]'); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+            <?php echo do_shortcode('[bh_leader_ask_support]'); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
             <section class="bh-leader-list" id="my-activities"><h2>My Activities</h2>
                 <p class="bh-leader-muted">Search your listings, then use Edit draft, Timetable or Venues to manage each draft.</p>
                 <form class="bh-leader-filters" method="get" action="<?php echo esc_url( get_permalink() ); ?>">
