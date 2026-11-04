@@ -103,14 +103,17 @@ final class BH_Directory_3 {
             $session_sql = "SELECT activity_id,day_of_week,LEFT(start_time,5) AS start_time FROM `{$session_table}`
                 WHERE activity_id IN ({$session_ids}) AND frequency='weekly' AND status='scheduled'
                 AND day_of_week BETWEEN 1 AND 7 AND start_time IS NOT NULL
-                ORDER BY activity_id,day_of_week,start_time LIMIT 240";
+                ORDER BY activity_id,day_of_week,start_time LIMIT 1000";
             foreach ( (array) $wpdb->get_results( $wpdb->prepare( $session_sql, $row_ids ), ARRAY_A ) as $session ) {
                 $activity_id = (int) $session['activity_id'];
                 $day_number = (int) $session['day_of_week'];
                 $time = (string) $session['start_time'];
                 if ( ! preg_match( '/^([01][0-9]|2[0-3]):[0-5][0-9]$/', $time ) ) { continue; }
                 $day_names = array( 1 => 'Mon', 2 => 'Tue', 3 => 'Wed', 4 => 'Thu', 5 => 'Fri', 6 => 'Sat', 7 => 'Sun' );
-                $label = $day_names[ $day_number ] . ' ' . $time;
+                $hour = (int) substr( $time, 0, 2 );
+                $minute = substr( $time, 3, 2 );
+                $display_time = ( $hour % 12 ?: 12 ) . ( $minute === '00' ? '' : ':' . $minute ) . ( $hour >= 12 ? 'pm' : 'am' );
+                $label = $day_names[ $day_number ] . ' ' . $display_time;
                 if ( ! isset( $sessions_by_activity[ $activity_id ] ) ) { $sessions_by_activity[ $activity_id ] = array(); }
                 if ( ! in_array( $label, $sessions_by_activity[ $activity_id ], true ) ) { $sessions_by_activity[ $activity_id ][] = $label; }
             }
@@ -226,7 +229,7 @@ final class BH_Directory_3 {
             if ( $session_labels ) {
                 echo '<div class="bh3-card-sessions" aria-label="Weekly session times"><strong>Weekly sessions</strong><div class="bh3-card-session-list">';
                 foreach ( array_slice( $session_labels, 0, 3 ) as $session_label ) { echo '<span>' . esc_html( $session_label ) . '</span>'; }
-                if ( count( $session_labels ) > 3 ) { echo '<span>+' . esc_html( (string) ( count( $session_labels ) - 3 ) ) . ' more</span>'; }
+                if ( count( $session_labels ) > 3 ) { echo '<span aria-label="' . esc_attr( (string) ( count( $session_labels ) - 3 ) . ' additional weekly session times' ) . '">+' . esc_html( (string) ( count( $session_labels ) - 3 ) ) . ' more</span>'; }
                 echo '</div></div>';
             }
             echo '<strong>' . ( (int) $row['is_free'] ? 'Free' : ( $row['price_from'] !== null ? 'From £' . esc_html( number_format( (float) $row['price_from'], 2 ) ) : 'Price on enquiry' ) ) . '</strong></article>';
