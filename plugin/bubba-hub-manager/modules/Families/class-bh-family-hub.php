@@ -101,7 +101,30 @@ final class BH_Family_Hub_3 {
         );
         ob_start();
         ?>
-        <section class="bh3-family" aria-labelledby="bh3-family-heading">
+        <section class="bh3-family bh3-family--sidebar" aria-labelledby="bh3-family-heading">
+          <style>
+            .bh3-family--sidebar{max-width:1320px!important;margin:0 auto!important;padding:0 20px!important}
+            .bh3-family__shell{display:grid;grid-template-columns:220px minmax(0,1fr);gap:26px;align-items:start}
+            .bh3-family__side{position:sticky;top:110px;background:#fff;border:1px solid #dbe5df;border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:4px}
+            .bh3-family__side strong{font-size:19px;color:#1e5743;padding:8px 12px 12px}
+            .bh3-family__side a{display:block;padding:11px 12px;border-radius:10px;color:#294a3b;text-decoration:none;font-weight:650}
+            .bh3-family__side a:hover,.bh3-family__side a:focus-visible{background:#e8f3ec}
+            .bh3-family__body{min-width:0}.bh3-family__body>.bh3-family__hero{margin-top:0}
+            .bh3-family--sidebar .bh3-family__quick-nav{display:none}
+            @media(max-width:850px){.bh3-family__shell{grid-template-columns:minmax(0,1fr);gap:14px}.bh3-family__side{position:static;flex-direction:row;overflow-x:auto;white-space:nowrap;padding:8px}.bh3-family__side strong{display:none}.bh3-family__side a{font-size:13px;padding:10px}}
+          </style>
+          <div class="bh3-family__shell">
+            <nav class="bh3-family__side" aria-label="Family Hub navigation">
+              <strong>My Hub</strong>
+              <a href="#bh3-family-heading">Overview</a>
+              <a href="#bh3-my-family">My family</a>
+              <a href="#bh3-saved">Favourites</a>
+              <a href="#bh3-planner">Planner</a>
+              <a href="#bh3-suggestions">Discover</a>
+              <a href="<?php echo esc_url( home_url( '/family/settings/' ) ); ?>">Settings</a>
+              <a href="<?php echo esc_url( home_url( '/support/' ) ); ?>">Help &amp; Support</a>
+            </nav>
+            <div class="bh3-family__body">
           <div class="bh3-family__hero">
             <p class="bh3-family__eyebrow"><?php echo esc_html__( 'Bubba Hub · My Hub', 'bubba-hub-manager' ); ?></p>
             <h1 id="bh3-family-heading"><?php echo esc_html__( 'Your family, all in one place', 'bubba-hub-manager' ); ?></h1>
@@ -367,6 +390,8 @@ final class BH_Family_Hub_3 {
                 <p><?php echo esc_html( $section[1] ); ?></p>
               </article>
             <?php endforeach; ?>
+          </div>
+            </div>
           </div>
         </section>
         <?php
