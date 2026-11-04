@@ -41,7 +41,7 @@ foreach (glob($root . '/**/*.php') ?: [] as $file) {
             strpos($source, 'self::staging()') !== false &&
             strpos($source, "current_user_can('manage_options')") !== false &&
             strpos($source, "check_admin_referer('bh3_create_family_tables')") !== false &&
-            strpos($source, "if (self::exists($table)) continue;") !== false &&
+            strpos($source, 'if (self::exists($table)) continue;') !== false &&
             strpos($source, "add_action('admin_post_bh3_create_family_tables'") !== false) {
             continue;
         }
