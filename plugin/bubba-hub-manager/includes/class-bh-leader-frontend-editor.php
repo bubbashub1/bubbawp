@@ -34,7 +34,16 @@ final class BH_Leader_Frontend_Editor_3 {
 
         <h1>Edit <?php echo esc_html( $row['title'] ); ?></h1>
         
-        <?php if ( isset( $_GET['saved'] ) && $_GET['saved'] === '1' ) : ?><p class="bh-edit-success" role="status">Draft saved successfully.</p><?php endif; ?>
+        <?php if ( isset( $_GET['saved'] ) && $_GET['saved'] === '1' ) : ?>
+          <div class="bh-edit-success" role="status">
+            <strong>Draft saved successfully.</strong>
+            <p>Your activity details are up to date. You can now continue to venues or timetable.</p>
+            <div class="bh-edit-next-actions">
+              <a href="<?php echo esc_url( add_query_arg( 'activity_id', $id, home_url( '/leader/venues/' ) ) ); ?>">Continue to venues</a>
+              <a href="<?php echo esc_url( add_query_arg( 'activity_id', $id, home_url( '/leader/timetable/' ) ) ); ?>">Go to timetable</a>
+            </div>
+          </div>
+        <?php endif; ?>
         <p>Draft details only. Publishing and deletion remain with the Bubba Hub team.</p>
         <section class="bh-image-card" aria-label="Listing image">
           <h2>Listing image</h2>
