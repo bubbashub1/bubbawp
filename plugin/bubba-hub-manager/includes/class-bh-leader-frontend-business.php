@@ -17,6 +17,7 @@ final class BH_Leader_Frontend_Business_3 {
     public static function register() {
         add_shortcode( 'bh_leader_business', array( __CLASS__, 'render' ) );
         add_action( 'admin_post_bh3_leader_business_save', array( __CLASS__, 'save' ) );
+        add_action( 'admin_post_bh3_leader_business_image', array( __CLASS__, 'upload_image' ) );
     }
     public static function render() {
         $profile = self::profile();
@@ -40,6 +41,7 @@ final class BH_Leader_Frontend_Business_3 {
         <?php $extras = get_option( 'bh3_storefront_' . (int) $profile['id'], array() ); ?>
         <label for="bh-business-logo">Logo image URL</label><input id="bh-business-logo" name="logo_url" type="url" maxlength="2048" placeholder="https://" value="<?php echo esc_attr( $extras['logo_url'] ?? '' ); ?>">
         <label for="bh-business-cover">Cover image URL</label><input id="bh-business-cover" name="cover_url" type="url" maxlength="2048" placeholder="https://" value="<?php echo esc_attr( $extras['cover_url'] ?? '' ); ?>">
+        <p class="bh-business-note">Or upload an image directly from your device using the separate image uploader below.</p>
         <h2>Business directory</h2>
         <p class="bh-business-note">Help families discover your business. Directory publishing will remain disabled until the directory is ready.</p>
         <label for="bh-business-category">Business category</label>
@@ -54,8 +56,56 @@ final class BH_Leader_Frontend_Business_3 {
         <label for="bh-business-facebook">Facebook URL</label><input id="bh-business-facebook" name="facebook_url" type="url" maxlength="2048" placeholder="https://" value="<?php echo esc_attr( $extras['facebook_url'] ?? '' ); ?>">
         <label for="bh-business-instagram">Instagram URL</label><input id="bh-business-instagram" name="instagram_url" type="url" maxlength="2048" placeholder="https://" value="<?php echo esc_attr( $extras['instagram_url'] ?? '' ); ?>">
         <p class="bh-business-note">Your account permissions and linked activities will not change.</p>
-        <button type="submit">Save business profile</button></form></div></section>
+        <button type="submit">Save business profile</button></form>
+        <div class="bh-business-upload">
+          <h2>Upload branding</h2>
+          <p class="bh-business-note">JPG, PNG or WebP, maximum 5 MB. Uploading a new image replaces the corresponding storefront image, not the original Media Library file.</p>
+          <form method="post" enctype="multipart/form-data" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+            <input type="hidden" name="action" value="bh3_leader_business_image">
+            <?php wp_nonce_field( 'bh3_leader_business_image_' . (int) $profile['id'] ); ?>
+            <label for="bh-branding-type">Image type</label>
+            <select id="bh-branding-type" name="image_type"><option value="logo_url">Business logo</option><option value="cover_url">Cover photo</option></select>
+            <label for="bh-branding-file">Choose image</label>
+            <input id="bh-branding-file" type="file" name="branding_image" accept="image/jpeg,image/png,image/webp" required>
+            <p><button type="submit">Upload image</button></p>
+          </form>
+        </div></div></section>
         <?php return ob_get_clean();
+    }
+    public static function upload_image() {
+        $profile = self::profile();
+        if ( ! $profile ) { wp_die( 'Organiser access required.', '', array( 'response' => 403 ) ); }
+        check_admin_referer( 'bh3_leader_business_image_' . (int) $profile['id'] );
+        $field = sanitize_key( wp_unslash( $_POST['image_type'] ?? '' ) );
+        if ( ! in_array( $field, array( 'logo_url', 'cover_url' ), true ) ) { wp_die( 'Invalid image type.', '', array( 'response' => 400 ) ); }
+        $file = $_FILES['branding_image'] ?? null;
+        if ( ! is_array( $file ) || ! isset( $file['error'], $file['size'], $file['tmp_name'] ) ||
+            (int) $file['error'] !== UPLOAD_ERR_OK || (int) $file['size'] < 1 || (int) $file['size'] > 5242880 ) {
+            wp_die( 'Choose an image smaller than 5 MB.', '', array( 'response' => 400 ) );
+        }
+        $checked = wp_check_filetype_and_ext( $file['tmp_name'], $file['name'], array(
+            'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp'
+        ) );
+        if ( empty( $checked['type'] ) || ! in_array( $checked['type'], array( 'image/jpeg', 'image/png', 'image/webp' ), true ) ) {
+            wp_die( 'Only JPG, PNG and WebP images are supported.', '', array( 'response' => 400 ) );
+        }
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/media.php';
+        require_once ABSPATH . 'wp-admin/includes/image.php';
+        $attachment_id = media_handle_upload( 'branding_image', 0, array(), array(
+            'test_form' => false,
+            'mimes' => array( 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp' )
+        ) );
+        if ( is_wp_error( $attachment_id ) ) { wp_die( esc_html( $attachment_id->get_error_message() ), '', array( 'response' => 400 ) ); }
+        $url = wp_get_attachment_url( $attachment_id );
+        if ( ! $url ) { wp_die( 'Could not retrieve the uploaded image.', '', array( 'response' => 500 ) ); }
+        $key = 'bh3_storefront_' . (int) $profile['id'];
+        $extras = get_option( $key, array() );
+        if ( ! is_array( $extras ) ) { $extras = array(); }
+        $extras[ $field ] = esc_url_raw( $url );
+        update_option( $key, $extras, false );
+        wp_safe_redirect( add_query_arg( 'image_saved', '1', home_url( '/leader/business/' ) ) );
+        exit;
     }
     public static function save() {
         $profile = self::profile();
