@@ -57,6 +57,24 @@ final class BH_Leader_Booking_Dashboard_3 {
           <p class="bh3-db-subtitle">Your classes, places and booking enquiries in one place.</p></div>
         </div>
         <p class="bh3-db-note">Staging preview: public reservations, payments and automatic reminders are not enabled.<?php if ( ! $installed ) : ?> Booking database installation is still pending.<?php endif; ?></p>
+        <?php if ( ! $installed && current_user_can( 'manage_options' ) ) : ?>
+          <div class="bh3-db-card" role="region" aria-label="Booking database setup">
+            <h2>Connect booking records</h2>
+            <p>Administrator setup on staging only. Back up the staging database first. This creates two empty booking tables; it does not import existing bookings or enable public reservations.</p>
+            <?php if ( sanitize_key( wp_unslash( $_GET['booking_schema_notice'] ?? '' ) ) === 'failed' ) : ?>
+              <p role="alert">The table installation could not be verified. Check the database logs before retrying.</p>
+            <?php endif; ?>
+            <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+              <input type="hidden" name="action" value="bh3_booking_install_schema">
+              <?php wp_nonce_field( 'bh3_booking_install_schema' ); ?>
+              <label for="bh3-booking-install-confirm">Type INSTALL to create the booking tables</label>
+              <input id="bh3-booking-install-confirm" name="booking_confirm" required pattern="INSTALL" autocomplete="off">
+              <button type="submit">Install booking tables on staging</button>
+            </form>
+          </div>
+        <?php elseif ( $installed && current_user_can( 'manage_options' ) ) : ?>
+          <p role="status" class="bh3-db-note">Booking tables are connected. Public booking and payments remain disabled.</p>
+        <?php endif; ?>
         <nav class="bh3-db-tabs" aria-label="Booking dashboard sections">
           <?php foreach ( $labels as $key => $label ) : ?>
             <a href="<?php echo esc_url( add_query_arg( 'booking_tab', $key, $base ) ); ?>" <?php if ( $tab === $key ) : ?>aria-current="page"<?php endif; ?>><?php echo esc_html( $label ); ?></a>
