@@ -27,7 +27,8 @@ final class BH_Family_Hub_3 {
         // FluentAuth should establish the standard WordPress session; no plugin-specific hooks assumed.
         // This is an authentication UX gate, NOT permission to access legacy bh_users records.
         $wp_signed_in = is_user_logged_in();
-        $legacy_family_id = $wp_signed_in ? BH_Family_Identity_3::current_legacy_id() : 0;
+        // Do not query legacy identity or data until the family module passes staging QA.
+        // BH_Family_Identity_3 is available for future gated integration.
         $return_url = is_singular() ? get_permalink() : home_url( '/' );
         $login_url = wp_login_url( $return_url );
         $sections = array(
