@@ -96,6 +96,25 @@ final class BH_Directory_3 {
         $rows = array_slice( $rows, 0, 12 );
         $map_points = array();
         $row_ids = array_map( 'intval', array_column( $rows, 'id' ) );
+        $sessions_by_activity = array();
+        if ( $row_ids ) {
+            $session_ids = implode( ',', array_fill( 0, count( $row_ids ), '%d' ) );
+            $session_table = $wpdb->prefix . 'sessions';
+            $session_sql = "SELECT activity_id,day_of_week,LEFT(start_time,5) AS start_time FROM `{$session_table}`
+                WHERE activity_id IN ({$session_ids}) AND frequency='weekly' AND status='scheduled'
+                AND day_of_week BETWEEN 1 AND 7 AND start_time IS NOT NULL
+                ORDER BY activity_id,day_of_week,start_time LIMIT 240";
+            foreach ( (array) $wpdb->get_results( $wpdb->prepare( $session_sql, $row_ids ), ARRAY_A ) as $session ) {
+                $activity_id = (int) $session['activity_id'];
+                $day_number = (int) $session['day_of_week'];
+                $time = (string) $session['start_time'];
+                if ( ! preg_match( '/^([01][0-9]|2[0-3]):[0-5][0-9]$/', $time ) ) { continue; }
+                $day_names = array( 1 => 'Mon', 2 => 'Tue', 3 => 'Wed', 4 => 'Thu', 5 => 'Fri', 6 => 'Sat', 7 => 'Sun' );
+                $label = $day_names[ $day_number ] . ' ' . $time;
+                if ( ! isset( $sessions_by_activity[ $activity_id ] ) ) { $sessions_by_activity[ $activity_id ] = array(); }
+                if ( ! in_array( $label, $sessions_by_activity[ $activity_id ], true ) ) { $sessions_by_activity[ $activity_id ][] = $label; }
+            }
+        }
         if ( $row_ids ) {
             $placeholders = implode( ',', array_fill( 0, count( $row_ids ), '%d' ) );
             $geo_sql = "SELECT av.activity_id,v.name,v.town,v.latitude,v.longitude FROM `{$links}` av
@@ -134,7 +153,8 @@ final class BH_Directory_3 {
         .bh3-real-directory.bh3-view-map .bh3-cards,.bh3-real-directory.bh3-view-map .bh3-pages{display:none}
         .bh3-real-directory .bh3-map:focus-visible,.bh3-real-directory button:focus-visible{outline:3px solid #74b38b;outline-offset:3px}
         .bh3-real-directory .bh3-map-card-link{display:inline-block;margin-top:8px;padding:7px 10px;border-radius:7px;border:1px solid #bcd9c5;background:#f4faf6;color:#175c46;font-weight:700;cursor:pointer}
-        .bh3-real-directory article h3{margin:8px 0}.bh3-real-directory .bh3-card-facts{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}.bh3-real-directory .bh3-card-facts span{display:inline-flex;align-items:center;background:#f0f7f2;border:1px solid #dce9df;border-radius:999px;padding:5px 9px;font-size:12px;color:#315b46}.bh3-real-directory article{min-width:0;overflow-wrap:anywhere}.bh3-real-directory .bh3-meta{color:#50675e;font-size:14px}
+        .bh3-real-directory article h3{margin:8px 0}.bh3-real-directory .bh3-card-sessions{margin:12px 0;font-size:12px;color:#315b46}.bh3-real-directory .bh3-card-session-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.bh3-real-directory .bh3-card-session-list span{border:1px solid #c8ded0;background:#f5faf6;padding:5px 8px;border-radius:7px;white-space:nowrap}
+        .bh3-real-directory .bh3-card-facts{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}.bh3-real-directory .bh3-card-facts span{display:inline-flex;align-items:center;background:#f0f7f2;border:1px solid #dce9df;border-radius:999px;padding:5px 9px;font-size:12px;color:#315b46}.bh3-real-directory article{min-width:0;overflow-wrap:anywhere}.bh3-real-directory .bh3-meta{color:#50675e;font-size:14px}
         .bh3-real-directory .bh3-pages{display:flex;gap:16px;margin-top:24px}
         .bh3-real-directory .bh3-map{border-radius:14px;overflow:hidden;border:1px solid #d7e3dc;margin:16px 0;z-index:0}
         .bh3-real-directory .bh3-map-message{font-size:14px;color:#50675e}
@@ -202,6 +222,13 @@ final class BH_Directory_3 {
             }
             echo '</div>';
             if ( $row['organiser'] ) { echo '<p class="bh3-meta">By ' . esc_html( $row['organiser'] ) . '</p>'; }
+            $session_labels = $sessions_by_activity[ (int) $row['id'] ] ?? array();
+            if ( $session_labels ) {
+                echo '<div class="bh3-card-sessions" aria-label="Weekly session times"><strong>Weekly sessions</strong><div class="bh3-card-session-list">';
+                foreach ( array_slice( $session_labels, 0, 3 ) as $session_label ) { echo '<span>' . esc_html( $session_label ) . '</span>'; }
+                if ( count( $session_labels ) > 3 ) { echo '<span>+' . esc_html( (string) ( count( $session_labels ) - 3 ) ) . ' more</span>'; }
+                echo '</div></div>';
+            }
             echo '<strong>' . ( (int) $row['is_free'] ? 'Free' : ( $row['price_from'] !== null ? 'From £' . esc_html( number_format( (float) $row['price_from'], 2 ) ) : 'Price on enquiry' ) ) . '</strong></article>';
         }
         if ( ! $rows ) { echo '<p>No published activities match these filters. Draft listings are not public.</p>'; }
