@@ -43,7 +43,10 @@ final class BH_Family_Hub_3 {
         $planner = $private_preview ? BH_Family_Read_Model_3::planner_items() : array();
         $profiles = $private_preview ? BH_Family_Read_Model_3::family_profiles() : array();
         $planned_ids = is_array($planner) ? array_map('absint', array_column($planner, 'activity_id')) : array();
-        $activity_ids = array_merge(is_array($saved) ? $saved : array(), is_array($planner) ? array_column($planner, 'activity_id') : array());
+        $saved = is_array($saved) ? $saved : array();
+        $planner = is_array($planner) ? $planner : array();
+        $profiles = is_array($profiles) && isset($profiles['children'], $profiles['bumps']) && is_array($profiles['children']) && is_array($profiles['bumps']) ? $profiles : array('children' => array(), 'bumps' => array());
+        $activity_ids = array_merge($saved, array_column($planner, 'activity_id'));
         $activity_titles = $private_preview ? BH_Family_Read_Model_3::activity_titles($activity_ids) : array();
         if (is_wp_error($activity_titles)) $activity_titles = array();
         $sections = array(
@@ -66,7 +69,7 @@ final class BH_Family_Hub_3 {
               <p><a class="bh3-family__login" href="<?php echo esc_url( $login_url ); ?>"><?php echo esc_html__( 'Sign in', 'bubba-hub-manager' ); ?></a></p>
             </div>
           <?php else : ?>
-            <div class="bh3-family__notice" role="status"><?php echo esc_html__( 'Signed in. Family data remains in preview mode while account compatibility checks are completed.', 'bubba-hub-manager' ); ?></div>
+            <div class="bh3-family__notice" role="status"><?php echo esc_html__( 'Signed in. Family Hub is in preview mode; changes require staging verification.', 'bubba-hub-manager' ); ?></div>
           <?php endif; ?>
           <?php if ($private_preview && !is_wp_error($saved) && !is_wp_error($planner) && !is_wp_error($profiles)) : ?>
             <div class="bh3-family__notice" role="status">
@@ -166,6 +169,7 @@ final class BH_Family_Hub_3 {
           <?php endif; ?>
           <div class="bh3-family__grid">
             <?php foreach ( $sections as $section ) : ?>
+              <?php if ($private_preview && in_array($section[0], array('My family', 'Saved activities', 'Family planner'), true)) continue; ?>
               <article class="bh3-family__card">
                 <h2><?php echo esc_html( $section[0] ); ?></h2>
                 <p><?php echo esc_html( $section[1] ); ?></p>
