@@ -9,12 +9,12 @@ add_action('admin_menu', static function (): void {
     add_submenu_page(
         'bh-support-dashboard', __('Support Article Review', 'bubbahub'),
         __('Support Article Review', 'bubbahub'),
-        'edit_others_posts', 'bh-support-article-review', 'bh_support_render_article_review'
+        'manage_options', 'bh-support-article-review', 'bh_support_render_article_review'
     );
 });
 
 function bh_support_render_article_review(): void {
-    if (!current_user_can('edit_others_posts')) {
+    if (!current_user_can('manage_options')) {
         wp_die(esc_html__('You do not have permission to review articles.', 'bubbahub'));
     }
     $notice = '';
