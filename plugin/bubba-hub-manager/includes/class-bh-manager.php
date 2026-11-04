@@ -39,6 +39,7 @@ final class BH_Manager_3 {
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-sessions.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-my-listings.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-dashboard.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-frontend.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-edit.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-sessions.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-venues.php';
@@ -50,6 +51,7 @@ final class BH_Manager_3 {
         require_once BUBBA_HUB_MANAGER_PATH . 'modules/Families/class-bh-family-hub.php';
         BH_Family_Profile_Editor_3::register();
         BH_Family_Actions_3::register();
+        BH_Leader_Frontend_3::register();
         BH_Family_Hub_3::register(); // Preview shortcode only; FEATURE_FAMILY stays disabled.
         BH_Directory_Preview_3::register();
         BH_Directory_3::register();
