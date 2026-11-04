@@ -5,8 +5,26 @@ if (!defined('ABSPATH')) { exit; }
  * No public REST route, no legacy session mutation, no schema changes.
  */
 final class BH_Family_Profile_Editor_3 {
+    public static function register() {
+        add_action('admin_post_bh3_family_child_name', array(__CLASS__, 'handle_child_name'));
+    }
+
+    public static function handle_child_name() {
+        if (!self::enabled() || !is_user_logged_in() || !isset($_POST['bh3_child_id'], $_POST['bh3_child_name'], $_POST['_wpnonce'])) {
+            wp_die(esc_html__('Family profile editing is unavailable.', 'bubba-hub-manager'), '', array('response' => 403));
+        }
+        $id = absint(wp_unslash($_POST['bh3_child_id']));
+        $name = sanitize_text_field(wp_unslash($_POST['bh3_child_name']));
+        $nonce = sanitize_text_field(wp_unslash($_POST['_wpnonce']));
+        $result = self::update_child_name($id, $name, $nonce);
+        $status = is_wp_error($result) ? 'error' : 'saved';
+        wp_safe_redirect(add_query_arg('bh3_profile_status', $status, wp_get_referer() ?: home_url('/')));
+        exit;
+    }
+
     public static function enabled() {
-        return defined('BH3_FAMILY_PROFILE_EDITING') && BH3_FAMILY_PROFILE_EDITING === true
+        return wp_parse_url(home_url(), PHP_URL_HOST) === 'staging.bubbahub.co.uk'
+            && defined('BH3_FAMILY_PROFILE_EDITING') && BH3_FAMILY_PROFILE_EDITING === true
             && defined('BH3_FAMILY_PRIVATE_PREVIEW') && BH3_FAMILY_PRIVATE_PREVIEW === true;
     }
 
