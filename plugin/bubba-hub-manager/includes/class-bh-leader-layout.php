@@ -9,6 +9,7 @@ final class BH_Leader_Layout_3 {
         $pages = array(
             'bh_leader_dashboard' => 'Dashboard',
             'bh_leader_new_listing' => 'Create listing',
+            'bh_leader_new_venue_request' => 'Venues',
             'bh_leader_edit_activity' => 'Edit activity',
             'bh_leader_venues' => 'Venues',
             'bh_leader_timetable' => 'Timetable',
