@@ -167,7 +167,7 @@ function bh_support_enquiries_page(): void {
             echo '<div class="notice ' . ($schema_result === 'error' ? 'notice-error' : 'notice-success') . '"><p>' . esc_html($schema_result === 'installed' ? 'Support workflow tables installed.' : ($schema_result === 'already' ? 'Support workflow tables already installed.' : 'Support workflow installation failed; inspect database logs.')) . '</p></div>';
         }
     }
-    echo '<p>' . esc_html__('Select the Fluent Forms form IDs used for support enquiries. Entries remain stored in Fluent Forms; this page shows limited metadata only. Open Fluent Forms to view private responses.', 'bubbahub') . '</p>';
+    echo '<p>' . esc_html__('Select the Fluent Forms form IDs used for support enquiries. Entries remain stored in Fluent Forms. This administrator-only inbox displays the contact details, topic and question for configured support forms.', 'bubbahub') . '</p>';
     echo '<form method="post">';
     wp_nonce_field('bh_support_form_settings');
     echo '<label for="bh_support_form_ids"><strong>' . esc_html__('Support form IDs (comma-separated)', 'bubbahub') . '</strong></label><br>';
@@ -241,10 +241,18 @@ function bh_support_enquiries_page(): void {
         $name = $read_answer($answers, 'full_name');
         $email = sanitize_email($read_answer($answers, 'email'));
         $topic = $read_answer($answers, 'question_topic');
+        $topic_labels = [
+            'family_activities_and_listings' => __('Family activities and listings', 'bubbahub'),
+            'using_my_hub_or_planner' => __('Using My Hub or planner', 'bubbahub'),
+            'class_leader_or_listing_claim' => __('Class leader or listing claim', 'bubbahub'),
+            'website_problem' => __('Website problem', 'bubbahub'),
+            'general_question' => __('General question', 'bubbahub'),
+        ];
+        $topic_display = $topic_labels[$topic] ?? $topic;
         $question = $read_answer($answers, 'question');
         echo '<tr><td><a href="' . esc_url(add_query_arg(['page' => 'bh-support-enquiries', 'bh_history_entry' => (int) $entry->id], admin_url('admin.php'))) . '">#' . esc_html((string) $entry->id) . '</a></td>';
         echo '<td>' . ($name !== '' ? '<strong>' . esc_html($name) . '</strong><br>' : '') . ($email !== '' ? '<a href="mailto:' . esc_attr($email) . '">' . esc_html($email) . '</a>' : '<span aria-label="No email supplied">—</span>') . '</td>';
-        echo '<td>' . ($topic !== '' ? '<strong>' . esc_html($topic) . '</strong>' : '<span>—</span>');
+        echo '<td>' . ($topic_display !== '' ? '<strong>' . esc_html($topic_display) . '</strong>' : '<span>—</span>');
         if ($question !== '') echo '<details style="margin-top:6px"><summary>' . esc_html__('Read question', 'bubbahub') . '</summary><p style="white-space:pre-wrap;max-width:460px">' . esc_html($question) . '</p></details>';
         echo '</td><td>' . esc_html((string) $entry->created_at) . '</td><td>' . esc_html((string) $entry->status) . '</td><td>';
         if (!$status_table_exists) {
