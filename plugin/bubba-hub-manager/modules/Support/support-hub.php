@@ -14,7 +14,7 @@ add_shortcode('bh_support_hub', static function (): string {
         ? get_permalink($resources_page) : '#bh-family-resources';
     $blog_url = $blog_page && $blog_page->post_status === 'publish'
         ? get_permalink($blog_page) : '#bh-family-articles';
-    $website_help_url = $website_help ? get_permalink($website_help) : '';
+    $website_help_url = $website_help && $website_help->post_status === 'publish' ? get_permalink($website_help) : '';
     ob_start();
     ?>
     <div class="bh-support-landing">
@@ -26,7 +26,7 @@ add_shortcode('bh_support_hub', static function (): string {
       <nav class="bh-support-landing__links" aria-label="<?php esc_attr_e('Support sections', 'bubbahub'); ?>">
         <a href="<?php echo esc_url($resources_url); ?>"><strong><?php esc_html_e('Family resources', 'bubbahub'); ?></strong><span><?php esc_html_e('Guides, useful links and downloads', 'bubbahub'); ?></span></a>
         <a href="<?php echo esc_url($blog_url); ?>"><strong><?php esc_html_e('Blogs & articles', 'bubbahub'); ?></strong><span><?php esc_html_e('Ideas, experiences and advice', 'bubbahub'); ?></span></a>
-        <a href="#bh-website-help"><strong><?php esc_html_e('Website help', 'bubbahub'); ?></strong><span><?php esc_html_e('Help using your Bubba Hub account', 'bubbahub'); ?></span></a>
+        <a href="<?php echo esc_url($website_help_url ?: '#bh-website-help'); ?>"><strong><?php esc_html_e('Website help', 'bubbahub'); ?></strong><span><?php esc_html_e('Help using your Bubba Hub account', 'bubbahub'); ?></span></a>
       </nav>
       <section id="bh-family-resources" class="bh-support-landing__section">
         <h2><?php esc_html_e('Family resources', 'bubbahub'); ?></h2>
