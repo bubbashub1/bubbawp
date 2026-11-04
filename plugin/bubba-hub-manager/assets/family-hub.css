@@ -127,3 +127,58 @@
 .bh3-family__account-form input[readonly]{background:#f2f5f2;color:#526459}
 .bh3-family__account-form button{justify-self:start;border:0;border-radius:12px;background:#205d46;color:#fff;padding:12px 22px;min-height:46px;font:inherit;font-weight:750;cursor:pointer}
 @media(max-width:700px){.bh3-family__account-form .bh3-family__location-grid{grid-template-columns:1fr}.bh3-family__account-form button{width:100%}}
+
+/* Standalone settings: override the theme's generic grid/form rules. */
+body .bh3-family.bh3-family__settings-page > .bh3-family__grid.bh3-family__private{
+ display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:20px!important;
+ grid-template-columns:none!important;width:100%!important;max-width:100%!important;
+}
+body .bh3-family__settings-page .bh3-family__card--account,
+body .bh3-family__settings-page .bh3-family__card--preferences{
+ display:block!important;flex:none!important;grid-column:1/-1!important;width:100%!important;max-width:100%!important;
+ margin:0!important;padding:clamp(20px,3vw,34px)!important;box-sizing:border-box!important;
+}
+body .bh3-family__settings-page .bh3-family__account-form,
+body .bh3-family__settings-page .bh3-family__preferences-form{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:22px!important}
+body .bh3-family__settings-page .bh3-family__location-grid{
+ display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:18px!important;width:100%!important;
+}
+body .bh3-family__settings-page .bh3-family__location-grid>label{
+ display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:8px!important;
+ min-width:0!important;font-weight:650!important;
+}
+body .bh3-family__settings-page .bh3-family__location-grid input,
+body .bh3-family__settings-page .bh3-family__location-grid select{
+ display:block!important;width:100%!important;max-width:none!important;min-height:46px!important;
+ box-sizing:border-box!important;margin:0!important;padding:10px 12px!important;
+}
+body .bh3-family__settings-page .bh3-family__preferences-form fieldset{
+ display:block!important;min-width:0!important;width:100%!important;box-sizing:border-box!important;
+ border:0!important;margin:0!important;padding:0!important;
+}
+body .bh3-family__settings-page .bh3-family__preferences-form legend{
+ display:block!important;width:100%!important;margin:0 0 12px!important;padding:0!important;font-weight:750!important;
+}
+body .bh3-family__settings-page .bh3-family__choice-grid{
+ display:flex!important;flex-wrap:wrap!important;gap:10px!important;align-items:stretch!important;
+}
+body .bh3-family__settings-page .bh3-family__choice-grid>label{
+ position:relative!important;display:inline-flex!important;align-items:center!important;margin:0!important;padding:0!important;cursor:pointer!important;
+}
+body .bh3-family__settings-page .bh3-family__choice-grid>label>input[type=checkbox]{
+ position:absolute!important;opacity:0!important;width:1px!important;height:1px!important;min-height:0!important;margin:0!important;
+}
+body .bh3-family__settings-page .bh3-family__choice-grid>label>span{
+ display:inline-flex!important;align-items:center!important;justify-content:center!important;
+ padding:10px 16px!important;min-height:44px!important;border:1px solid #d4e3d7!important;
+ border-radius:12px!important;background:#f8faf7!important;color:#315646!important;font-size:.92rem!important;font-weight:650!important;
+}
+body .bh3-family__settings-page .bh3-family__choice-grid>label>input:checked+span{
+ background:#e0f1e5!important;border-color:#4f9671!important;color:#174c33!important;
+}
+body .bh3-family__settings-page .bh3-family__choice-grid>label>input:focus-visible+span{outline:3px solid #387b5c!important;outline-offset:2px!important}
+@media(max-width:700px){
+ body .bh3-family__settings-page .bh3-family__location-grid{grid-template-columns:1fr!important}
+ body .bh3-family__settings-page .bh3-family__choice-grid--days>label{flex:1 1 calc(33.333% - 10px)!important}
+ body .bh3-family__settings-page .bh3-family__choice-grid--days>label>span{width:100%!important}
+}
