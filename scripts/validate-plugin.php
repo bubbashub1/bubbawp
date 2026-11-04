@@ -34,6 +34,17 @@ foreach (glob($root . '/**/*.php') ?: [] as $file) {
             strpos($source, "staging.bubbahub.co.uk") !== false) {
             continue;
         }
+        // Ask Support schema is an explicit, staging-only administrator action.
+        // Keep this narrowly scoped: no activation hook, nonce and typed confirmation required.
+        if ($unsafe === 'dbDelta(' && basename($file) === 'class-bh-ask-support-storage.php' &&
+            strpos($source, 'public static function install(): void') !== false &&
+            strpos($source, "current_user_can('manage_options')") !== false &&
+            strpos($source, "check_admin_referer('bh3_ask_install_schema')") !== false &&
+            strpos($source, "!== 'INSTALL'") !== false &&
+            strpos($source, "staging.bubbahub.co.uk") !== false &&
+            strpos($source, "add_action('admin_post_bh3_ask_install_schema'") !== false) {
+            continue;
+        }
         if (strpos($source, $unsafe) !== false) {
             fwrite(STDERR, "Unexpected side-effect API in {$file}: {$unsafe}\n");
             exit(1);
