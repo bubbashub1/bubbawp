@@ -142,7 +142,7 @@ final class BH_Family_Native_Profiles_3 {
               $date=DateTimeImmutable::createFromFormat('!Y-m-d',$row['reminder_date'],wp_timezone());
               $today=new DateTimeImmutable('today',wp_timezone());
               $days=$date?(int)$today->diff($date)->format('%r%a'):0;
-              $countdown=!$date?'':($days<0?abs($days).'d overdue':($days===0?'Due today':($days>=365?intdiv($days,365).'y '.($days%365).'d left':($days>=30?intdiv($days,30).'m '.($days%30).'d left':$days.'d left')));
+              if (!$date) { $countdown=''; } elseif ($days<0) { $countdown=abs($days).'d overdue'; } elseif ($days===0) { $countdown='Due today'; } elseif ($days>=365) { $countdown=intdiv($days,365).'y '.($days%365).'d left'; } elseif ($days>=30) { $countdown=intdiv($days,30).'m '.($days%30).'d left'; } else { $countdown=$days.'d left'; }
             ?>
               <div class="bh3-profile-reminder">
                 <div><strong><?php echo esc_html(($kind==='school'?'🏫 ':'🤰 ').$row['title']); ?></strong><br><span><?php echo esc_html($countdown.' ('.wp_date(get_option('date_format'),$date?$date->getTimestamp():time()).')'); ?></span></div>
