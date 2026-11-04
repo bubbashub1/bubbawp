@@ -135,9 +135,13 @@ function bh_support_enquiries_page(): void {
                             'old_status' => $previous, 'new_status' => $status,
                             'changed_at' => $changed_at, 'changed_by' => $actor,
                         ], ['%d', '%d', '%s', '%s', '%d']);
-                        if ($saved === false || $logged === false || $wpdb->query('COMMIT') === false) {
+                        if ($saved === false || $logged === false) {
                             $wpdb->query('ROLLBACK');
-                            echo '<div class="notice notice-error"><p>' . esc_html__('The enquiry update could not be completed. Check the database and try again.', 'bubbahub') . '</p></div>';
+                            echo '<div class="notice notice-error"><p>' . esc_html__('The enquiry update was rolled back because a database write failed.', 'bubbahub') . '</p></div>';
+                        } elseif ($wpdb->query('COMMIT') === false) {
+                            // A failed COMMIT can leave the outcome uncertain; do not claim rollback succeeded.
+                            $wpdb->query('ROLLBACK');
+                            echo '<div class="notice notice-error"><p>' . esc_html__('The database could not confirm the enquiry update. Check the status and audit history before retrying.', 'bubbahub') . '</p></div>';
                         } else {
                             echo '<div class="notice notice-success"><p>' . esc_html__('Enquiry status and activity history updated.', 'bubbahub') . '</p></div>';
                         }
