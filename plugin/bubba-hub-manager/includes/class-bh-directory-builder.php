@@ -43,7 +43,7 @@ final class BH_Directory_Builder_3 {
         $raw_order = isset( $_POST['detail_order'] ) && is_scalar( $_POST['detail_order'] ) ? explode( ',', sanitize_text_field( wp_unslash( $_POST['detail_order'] ) ) ) : array();
         $order = array_values( array_unique( array_intersect( $raw_order, $allowed_sections ) ) );
         $order = array_merge( $order, array_values( array_diff( $allowed_sections, $order ) ) );
-        $search = array_values( array_intersect( array( 'keyword', 'category', 'age', 'day', 'region', 'town', 'free', 'term_time', 'near_me' ), array_map( 'sanitize_key', (array) wp_unslash( $_POST['search_fields'] ?? array() ) ) ) );
+        $search = array_values( array_intersect( array( 'keyword', 'category', 'age', 'day', 'region', 'town', 'price', 'free', 'term_time', 'near_me' ), array_map( 'sanitize_key', (array) wp_unslash( $_POST['search_fields'] ?? array() ) ) ) );
         $lat = filter_var( wp_unslash( $_POST['map_lat'] ?? '' ), FILTER_VALIDATE_FLOAT );
         $lng = filter_var( wp_unslash( $_POST['map_lng'] ?? '' ), FILTER_VALIDATE_FLOAT );
         if ( $lat === false || $lng === false || $lat < -90 || $lat > 90 || $lng < -180 || $lng > 180 ) {
