@@ -91,7 +91,7 @@ function bh_support_enquiries_page(): void {
         $entry_id = isset($_POST['bh_support_entry_id']) ? absint($_POST['bh_support_entry_id']) : 0;
         $status = isset($_POST['bh_support_status']) ? sanitize_key(wp_unslash($_POST['bh_support_status'])) : '';
         $allowed = ['new', 'in_progress', 'resolved'];
-        $configured = array_values(array_filter(array_map('absint', (array) get_option('bh_support_fluent_form_ids', []))));
+        $configured = array_values(array_filter(array_map('absint', (array) get_option('bh_support_fluent_form_ids', [4]))));
         $submissions_table = $wpdb->prefix . 'fluentform_submissions';
         if ($entry_id && in_array($status, $allowed, true) && $configured
             && get_option('bh_support_status_schema_version') === '2'
@@ -150,7 +150,7 @@ function bh_support_enquiries_page(): void {
             }
         }
     }
-    $ids = array_values(array_filter(array_map('absint', (array) get_option('bh_support_fluent_form_ids', []))));
+    $ids = array_values(array_filter(array_map('absint', (array) get_option('bh_support_fluent_form_ids', [4]))));
     echo '<div class="wrap"><h1>' . esc_html__('Bubba Hub · Support Enquiries', 'bubbahub') . '</h1>';
     if (get_option('bh_support_status_schema_version') !== '2' && strtolower((string) wp_parse_url(home_url(), PHP_URL_HOST)) === 'staging.bubbahub.co.uk') {
         echo '<div class="notice notice-warning"><p>' . esc_html__('Workflow tracking tables have not been installed. Back up staging before proceeding.', 'bubbahub') . '</p></div>';
