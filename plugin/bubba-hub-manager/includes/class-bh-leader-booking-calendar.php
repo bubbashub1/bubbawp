@@ -54,6 +54,24 @@ final class BH_Leader_Booking_Calendar_3 {
         if (!preg_match('/^20[0-9]{2}-(0[1-9]|1[0-2])-([0-2][0-9]|3[01])$/', $selected)) { $selected = ''; }
         $selected_date = $selected ? DateTimeImmutable::createFromFormat('!Y-m-d', $selected, $tz) : false;
         if (!$selected_date || $selected_date->format('Y-m-d') !== $selected || $selected_date->format('Y-m') !== $month) { $selected = ''; $selected_date = false; }
+        $selected_session = absint($_GET['booking_session'] ?? 0);
+        $selected_session_row = null;
+        $selected_reservations = array();
+        if ($selected && $selected_session) {
+            foreach ((array)$rows as $row) {
+                if (absint($row['id']) !== $selected_session || (int)$row['day_of_week'] !== (int)$selected_date->format('N')) { continue; }
+                if ((!empty($row['start_date']) && $selected < $row['start_date']) || (!empty($row['end_date']) && $selected > $row['end_date'])) { continue; }
+                $selected_session_row = $row;
+                break;
+            }
+            if ($selected_session_row && $storage_ready) {
+                $selected_reservations = $wpdb->get_results($wpdb->prepare(
+                    "SELECT id,parent_first_name,parent_last_name,child_first_name,child_age_months,status,created_at FROM {$booking_table} WHERE organiser_id=%d AND activity_id=%d AND session_id=%d AND session_starts_at >= %s AND session_starts_at < %s ORDER BY FIELD(status,'pending','confirmed','waitlisted','cancelled'),created_at DESC LIMIT 100",
+                    $owner, absint($selected_session_row['activity_id']), $selected_session,
+                    $selected . ' 00:00:00', $selected_date->modify('+1 day')->format('Y-m-d') . ' 00:00:00'
+                ), ARRAY_A);
+            }
+        }
         $previous = $first->modify('-1 month')->format('Y-m');
         $next = $first->modify('+1 month')->format('Y-m');
         $start_offset = (int)$first->format('N') - 1;
@@ -67,7 +85,7 @@ final class BH_Leader_Booking_Calendar_3 {
         .bh3-cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-top:16px}.bh3-cal-dayname{text-align:center;font-weight:700;font-size:13px;padding:8px 0}
         .bh3-cal-day{border:1px solid #e1eae4;border-radius:9px;min-height:105px;padding:7px;overflow-wrap:anywhere}.bh3-cal-day time{font-weight:700;font-size:13px}
         .bh3-cal-item{display:block;background:#edf6f0;border-left:3px solid #2c7555;border-radius:5px;padding:5px;margin-top:5px;font-size:12px;line-height:1.35}
-        .bh3-cal-item small{display:block;color:#52685c}.bh3-cal-date-link{display:inline-block;padding:2px 6px;border-radius:7px;color:#195940;text-decoration:none}.bh3-cal-date-link:hover,.bh3-cal-date-link:focus{background:#dbeee1}.bh3-cal-day.is-selected{border:2px solid #195940;background:#f1f8f3}.bh3-cal-selected{margin-top:18px;border:1px solid #d5e4da;border-radius:13px;padding:17px}.bh3-cal-selected ul{margin:8px 0;padding-left:20px}.bh3-cal-muted{opacity:.35}.bh3-cal-note{font-size:13px;color:#53675c;margin:12px 0 0}
+        .bh3-cal-item small{display:block;color:#52685c}.bh3-cal-date-link{display:inline-block;padding:2px 6px;border-radius:7px;color:#195940;text-decoration:none}.bh3-cal-date-link:hover,.bh3-cal-date-link:focus{background:#dbeee1}.bh3-cal-day.is-selected{border:2px solid #195940;background:#f1f8f3}.bh3-cal-selected{margin-top:18px;border:1px solid #d5e4da;border-radius:13px;padding:17px}.bh3-cal-selected ul{margin:8px 0;padding-left:20px}.bh3-cal-session-link{display:inline-block;margin-left:8px;font-size:12px;color:#195940;font-weight:700}.bh3-cal-roster{margin-top:16px;overflow-x:auto}.bh3-cal-roster table{width:100%;border-collapse:collapse}.bh3-cal-roster th,.bh3-cal-roster td{padding:10px;text-align:left;border-bottom:1px solid #e0eae3}.bh3-cal-muted{opacity:.35}.bh3-cal-note{font-size:13px;color:#53675c;margin:12px 0 0}
         @media(max-width:700px){.bh3-booking-calendar{padding:12px}.bh3-cal-grid{gap:3px}.bh3-cal-day{padding:4px;min-height:74px}.bh3-cal-item{font-size:10px;padding:3px}.bh3-cal-dayname{font-size:11px}}
         </style>
         <div class="bh3-cal-head">
@@ -114,10 +132,33 @@ final class BH_Leader_Booking_Calendar_3 {
                     if ($capacity !== null) { echo ' <small>· '.esc_html(max(0,$capacity-$total['confirmed'])).' of '.esc_html($capacity).' places not confirmed</small>'; }
                 } else { echo ' <small>· Booking totals unavailable until setup</small>'; }
                 if (!empty($session['term_time_only'])) { echo ' <small>(term-time date requires verification)</small>'; }
+                echo ' <a class="bh3-cal-session-link" href="'.esc_url(add_query_arg(array('booking_month'=>$month,'booking_date'=>$selected,'booking_session'=>absint($session['id'])),$base)).'#bh3-cal-session-detail">View reservations</a>';
                 echo '</li>';
             }
             if ($shown) { echo '</ul>'; } else { echo '<p>No timetable sessions scheduled for this date.</p>'; }
             ?>
+            <?php if ($selected_session_row) : ?>
+              <div class="bh3-cal-roster" id="bh3-cal-session-detail">
+                <h4><?php echo esc_html($selected_session_row['title']); ?> · <?php echo esc_html(substr($selected_session_row['start_time'],0,5)); ?></h4>
+                <p class="bh3-cal-note">Read-only reservation list for this session and date. No messages or changes are sent.</p>
+                <?php if (!$storage_ready) : ?>
+                  <p>Reservation records are unavailable until the booking schema is installed.</p>
+                <?php elseif (!$selected_reservations) : ?>
+                  <p>No reservations recorded for this session.</p>
+                <?php else : ?>
+                  <table><thead><tr><th scope="col">Parent</th><th scope="col">Child</th><th scope="col">Age</th><th scope="col">Status</th></tr></thead><tbody>
+                  <?php foreach ($selected_reservations as $reservation) : ?>
+                    <tr>
+                      <td><?php echo esc_html(trim($reservation['parent_first_name'].' '.($reservation['parent_last_name'] ? substr($reservation['parent_last_name'],0,1).'.' : ''))); ?></td>
+                      <td><?php echo esc_html($reservation['child_first_name']); ?></td>
+                      <td><?php echo $reservation['child_age_months'] === null ? '—' : esc_html((string)absint($reservation['child_age_months']).' months'); ?></td>
+                      <td><?php echo esc_html(ucfirst($reservation['status'])); ?></td>
+                    </tr>
+                  <?php endforeach; ?>
+                  </tbody></table>
+                <?php endif; ?>
+              </div>
+            <?php endif; ?>
             <p class="bh3-cal-note">Counts reflect stored reservations only, not verified availability. No booking actions are enabled yet.</p>
           </div>
         <?php endif; ?>
