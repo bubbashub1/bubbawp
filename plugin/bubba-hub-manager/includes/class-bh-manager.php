@@ -27,6 +27,7 @@ final class BH_Manager_3 {
                 'support-resources.php',
                 'support-articles.php',
                 'support-hub.php',
+                'support-website-help.php',
                 'support-article-moderation.php',
                 'support-fluentforms-inbox.php',
                 'support-admin-dashboard.php',
