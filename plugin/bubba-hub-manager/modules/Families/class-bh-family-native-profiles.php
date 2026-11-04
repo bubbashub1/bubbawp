@@ -11,13 +11,17 @@ final class BH_Family_Native_Profiles_3 {
         add_action('admin_init',array(__CLASS__,'maybe_upgrade_schema'));
     }
     public static function allowed() {
-        return BH_Family_Preferences_3::can_edit()
-            && defined('BH3_FAMILY_NATIVE_PROFILE_WRITES') && BH3_FAMILY_NATIVE_PROFILE_WRITES === true;
+        // Native profiles belong to the authenticated WordPress account. They do not
+        // require the legacy Bubba Hub session bridge used by older family records.
+        // Keep writes staging-only until the full Family Hub migration is approved.
+        return wp_parse_url(home_url(), PHP_URL_HOST) === 'staging.bubbahub.co.uk'
+            && is_user_logged_in()
+            && defined('BH3_FAMILY_NATIVE_PROFILE_WRITES')
+            && BH3_FAMILY_NATIVE_PROFILE_WRITES === true;
     }
     public static function form() {
         if (!self::allowed()) {
-            if (current_user_can('manage_options') && wp_parse_url(home_url(), PHP_URL_HOST) === 'staging.bubbahub.co.uk') return self::preview();
-            return '<p>Sign in with a verified family account to manage your family profiles.</p>';
+            return '<p>Please sign in to manage your family profiles. Profile editing is currently available on the staging site only.</p>';
         }
         if (shortcode_exists('fluentform')) return do_shortcode('[fluentform id="5"]');
         return '<p>Family profile form is not available yet. Please contact support.</p>';
@@ -96,8 +100,7 @@ final class BH_Family_Native_Profiles_3 {
         $wpdb->insert($table,array('user_id'=>$user,'profile_type'=>$type,'display_name'=>$name,'profile_date'=>$date,'gender'=>$gender,'created_at'=>current_time('mysql'),'updated_at'=>current_time('mysql')),array('%d','%s','%s','%s','%s','%s','%s'));
     }
     public static function dashboard() {
-        if (current_user_can('manage_options') && wp_parse_url(home_url(),PHP_URL_HOST)==='staging.bubbahub.co.uk') return self::preview();
-        if (!self::allowed()) return '<p>Sign in with a verified family account to manage your family profiles.</p>';
+        if (!self::allowed()) return '<p>Please sign in to manage your family profiles. Profile editing is currently available on the staging site only.</p>';
         global $wpdb;
         $table=$wpdb->prefix.'bh_family_profiles';
         if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s',$wpdb->esc_like($table)))!==$table) return '<p>Profile storage is not available.</p>';
