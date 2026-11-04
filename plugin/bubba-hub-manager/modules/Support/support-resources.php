@@ -30,9 +30,6 @@ add_shortcode('bh_support_resources', static function ($atts): string {
     $search = isset($_GET['bh_search']) && is_string($_GET['bh_search'])
         ? sanitize_text_field(wp_unslash($_GET['bh_search'])) : '';
     $page = isset($_GET['bh_page']) ? max(1, absint($_GET['bh_page'])) : 1;
-    // Preserve the host page and other shortcode filters when submitting this GET form.
-    $request_uri = isset($_SERVER['REQUEST_URI']) ? esc_url_raw(wp_unslash($_SERVER['REQUEST_URI'])) : '';
-    $form_action = $request_uri !== '' ? remove_query_arg(['bh_search', 'bh_topic', 'bh_page'], home_url($request_uri)) : get_permalink();
     $args = ['post_type' => 'bh_resource', 'post_status' => 'publish',
         'posts_per_page' => $limit, 'paged' => $page, 's' => $search,
         'ignore_sticky_posts' => true];
@@ -46,7 +43,7 @@ add_shortcode('bh_support_resources', static function ($atts): string {
     ob_start();
     ?>
     <section class="bh-resource-hub" aria-label="<?php esc_attr_e('Family resources', 'bubbahub'); ?>">
-      <form method="get" action="<?php echo esc_url($form_action); ?>" class="bh-resource-filters" role="search">
+      <form method="get" class="bh-resource-filters" role="search">
         <label for="<?php echo esc_attr($instance_id); ?>-search"><?php esc_html_e('Search resources', 'bubbahub'); ?></label>
         <input id="<?php echo esc_attr($instance_id); ?>-search" type="search" name="bh_search" value="<?php echo esc_attr($search); ?>" placeholder="<?php esc_attr_e('Search guides and resources', 'bubbahub'); ?>">
         <label for="<?php echo esc_attr($instance_id); ?>-topic"><?php esc_html_e('Topic', 'bubbahub'); ?></label>
@@ -56,6 +53,9 @@ add_shortcode('bh_support_resources', static function ($atts): string {
             <option value="<?php echo esc_attr($term->slug); ?>" <?php selected($topic, $term->slug); ?>><?php echo esc_html($term->name); ?></option>
           <?php endforeach; endif; ?>
         </select>
+        <?php foreach ($_GET as $key => $value) : if (!is_string($key) || !is_scalar($value) || in_array($key, ['bh_search', 'bh_topic', 'bh_page'], true)) continue; ?>
+          <input type="hidden" name="<?php echo esc_attr(sanitize_key($key)); ?>" value="<?php echo esc_attr(sanitize_text_field(wp_unslash((string) $value))); ?>">
+        <?php endforeach; ?>
         <button type="submit"><?php esc_html_e('Find resources', 'bubbahub'); ?></button>
       </form>
       <div class="bh-resource-grid">
