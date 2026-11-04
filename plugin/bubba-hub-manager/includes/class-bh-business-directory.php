@@ -40,6 +40,7 @@ final class BH_Business_Directory_3 {
             </select>
           </div>
           <p class="bh-dir-count" role="status"><?php echo count( $cards ); ?> businesses awaiting directory launch</p>
+          <p class="bh-dir-empty" hidden>No businesses match those filters. Try another search or category.</p>
           <div class="bh-dir-grid">
             <?php foreach ( $cards as $card ) : $p = $card['profile']; $e = $card['extras']; ?>
               <article class="bh-dir-card" data-category="<?php echo esc_attr( $e['business_category'] ?? '' ); ?>" data-search="<?php echo esc_attr( strtolower( $p['name'] . ' ' . ( $e['areas_served'] ?? '' ) . ' ' . ( $categories[ $e['business_category'] ?? '' ] ?? '' ) ) ); ?>">
@@ -55,8 +56,8 @@ final class BH_Business_Directory_3 {
           <script>
           (function(){const root=document.currentScript.closest('.bh-business-directory');if(!root)return;
             const search=root.querySelector('.bh-dir-search'),category=root.querySelector('.bh-dir-category'),count=root.querySelector('.bh-dir-count'),cards=Array.from(root.querySelectorAll('.bh-dir-card'));
-            function filter(){const q=search.value.trim().toLowerCase(),c=category.value;let visible=0;cards.forEach(card=>{const show=(!q||card.dataset.search.includes(q))&&(!c||card.dataset.category===c);card.hidden=!show;if(show)visible++;});count.textContent=visible+' businesses';}
-            search.addEventListener('input',filter);category.addEventListener('change',filter);
+            function filter(){const q=search.value.trim().toLowerCase(),c=category.value;let visible=0;cards.forEach(card=>{const show=(!q||card.dataset.search.includes(q))&&(!c||card.dataset.category===c);card.hidden=!show;if(show)visible++;});count.textContent=visible+' businesses';root.querySelector('.bh-dir-empty').hidden=visible!==0;}
+            search.addEventListener('input',filter);category.addEventListener('change',filter);filter();
           })();
           </script>
         </section>
