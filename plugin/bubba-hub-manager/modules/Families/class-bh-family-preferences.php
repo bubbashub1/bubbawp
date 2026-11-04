@@ -23,6 +23,16 @@ final class BH_Family_Preferences_3 {
     public static function read() {
         if (!self::can_edit()) return self::defaults();
         $value = get_user_meta(get_current_user_id(), self::META, true);
+        // New table is authoritative only when a row exists; older meta remains readable.
+        global $wpdb;
+        $table = $wpdb->prefix . 'bh_family_preferences';
+        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($table))) === $table) {
+            $json = $wpdb->get_var($wpdb->prepare("SELECT preferences_json FROM `{$table}` WHERE user_id = %d", get_current_user_id()));
+            if (is_string($json)) {
+                $decoded = json_decode($json, true);
+                if (is_array($decoded)) $value = $decoded;
+            }
+        }
         return is_array($value) ? array_merge(self::defaults(), $value) : self::defaults();
     }
     public static function register() {
@@ -47,10 +57,17 @@ final class BH_Family_Preferences_3 {
         if ($postcode !== '' && (strlen($postcode) > 9 || !preg_match('/^[A-Z0-9 ]+$/', $postcode))) $postcode = '';
         $radius = isset($_POST['radius']) && is_scalar($_POST['radius']) ? absint($_POST['radius']) : 10;
         if (!in_array($radius, array(5,10,15,25,50), true)) $radius = 10;
-        update_user_meta(get_current_user_id(), self::META, array(
+        $preferences = array(
             'interests'=>$interests, 'days'=>$days, 'town'=>$town, 'region'=>$region, 'max_price'=>$max_price, 'postcode'=>$postcode,
             'radius'=>$radius, 'free_only'=>!empty($_POST['free_only']), 'term_time'=>!empty($_POST['term_time'])
-        ));
+        );
+        global $wpdb;
+        $table = $wpdb->prefix . 'bh_family_preferences';
+        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($table))) !== $table) {
+            wp_die('Family preferences table is unavailable.', '', array('response'=>503));
+        }
+        $written = $wpdb->replace($table, array('user_id'=>get_current_user_id(), 'preferences_json'=>wp_json_encode($preferences), 'updated_at'=>current_time('mysql')), array('%d','%s','%s'));
+        if ($written === false) wp_die('Unable to save family preferences.', '', array('response'=>500));
         wp_safe_redirect(add_query_arg('bh3_preferences_saved','1',wp_get_referer() ?: home_url('/family/')));
         exit;
     }
