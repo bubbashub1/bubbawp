@@ -60,6 +60,13 @@ final class BH_Family_Hub_3 {
         $activity_titles = $private_preview ? BH_Family_Read_Model_3::activity_titles($activity_ids) : array();
         if (is_wp_error($activity_titles)) $activity_titles = array();
         $activity_links = $private_preview ? BH_Family_Read_Model_3::activity_links($activity_ids) : array();
+        $planner_sort = isset($_GET['bh3_planner_sort']) && is_scalar($_GET['bh3_planner_sort']) ? sanitize_key(wp_unslash($_GET['bh3_planner_sort'])) : 'recent';
+        if (!in_array($planner_sort, array('recent', 'name'), true)) $planner_sort = 'recent';
+        if ($planner_sort === 'name') usort($filtered_planner, static function($a, $b) use ($activity_titles) {
+            $left = $activity_titles[absint($a['activity_id'] ?? 0)] ?? '';
+            $right = $activity_titles[absint($b['activity_id'] ?? 0)] ?? '';
+            return strcasecmp($left, $right);
+        });
         if ($planner_search !== '') $filtered_planner = array_values(array_filter($filtered_planner, static function($item) use ($activity_titles, $planner_search) {
             $title = $activity_titles[absint($item['activity_id'] ?? 0)] ?? '';
             return $title !== '' && stripos($title, $planner_search) !== false;
@@ -145,12 +152,23 @@ final class BH_Family_Hub_3 {
                   <label for="bh3-planner-search"><?php echo esc_html__('Search planned activities', 'bubba-hub-manager'); ?></label>
                   <input id="bh3-planner-search" type="search" name="bh3_planner_search" maxlength="80" value="<?php echo esc_attr($planner_search); ?>" placeholder="<?php echo esc_attr__('Activity name', 'bubba-hub-manager'); ?>">
                   <input type="hidden" name="bh3_planner_filter" value="<?php echo esc_attr($planner_filter); ?>">
+                  <input type="hidden" name="bh3_planner_sort" value="<?php echo esc_attr($planner_sort); ?>">
                   <button type="submit"><?php echo esc_html__('Search', 'bubba-hub-manager'); ?></button>
                   <?php if ($planner_search !== '') : ?><a href="<?php echo esc_url(add_query_arg('bh3_planner_filter', $planner_filter, $return_url)); ?>"><?php echo esc_html__('Clear', 'bubba-hub-manager'); ?></a><?php endif; ?>
                 </form>
+                <form class="bh3-family__sort" method="get" action="<?php echo esc_url($return_url); ?>">
+                  <label for="bh3-planner-sort"><?php echo esc_html__('Sort planner', 'bubba-hub-manager'); ?></label>
+                  <select id="bh3-planner-sort" name="bh3_planner_sort">
+                    <option value="recent" <?php selected($planner_sort, 'recent'); ?>><?php echo esc_html__('Recently added', 'bubba-hub-manager'); ?></option>
+                    <option value="name" <?php selected($planner_sort, 'name'); ?>><?php echo esc_html__('Activity name A–Z', 'bubba-hub-manager'); ?></option>
+                  </select>
+                  <input type="hidden" name="bh3_planner_filter" value="<?php echo esc_attr($planner_filter); ?>">
+                  <input type="hidden" name="bh3_planner_search" value="<?php echo esc_attr($planner_search); ?>">
+                  <button type="submit"><?php echo esc_html__('Apply', 'bubba-hub-manager'); ?></button>
+                </form>
                 <nav class="bh3-family__filters" aria-label="<?php echo esc_attr__('Filter planner', 'bubba-hub-manager'); ?>">
                   <?php foreach (array('all' => __('All', 'bubba-hub-manager'), 'to_visit' => __('To visit', 'bubba-hub-manager'), 'visited' => __('Visited', 'bubba-hub-manager')) as $filter_key => $filter_label) : ?>
-                    <a <?php if ($planner_filter === $filter_key) : ?>aria-current="page"<?php endif; ?> href="<?php echo esc_url(add_query_arg(array('bh3_planner_filter' => $filter_key, 'bh3_show_planner' => '0', 'bh3_planner_search' => $planner_search), $return_url)); ?>"><?php echo esc_html($filter_label); ?></a>
+                    <a <?php if ($planner_filter === $filter_key) : ?>aria-current="page"<?php endif; ?> href="<?php echo esc_url(add_query_arg(array('bh3_planner_filter' => $filter_key, 'bh3_show_planner' => '0', 'bh3_planner_search' => $planner_search, 'bh3_planner_sort' => $planner_sort), $return_url)); ?>"><?php echo esc_html($filter_label); ?></a>
                   <?php endforeach; ?>
                 </nav>
                 <?php if (empty($filtered_planner)) : ?>
