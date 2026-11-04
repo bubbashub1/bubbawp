@@ -7,6 +7,11 @@ final class BH_Leader_Bookings_3 {
         if ( ! shortcode_exists( 'bh_leader_bookings' ) ) {
             add_shortcode( 'bh_leader_bookings', array( __CLASS__, 'render' ) );
         }
+        // Preserve the existing WordPress page shortcode. An integrated booking
+        // implementation can register its own handler before this fallback boots.
+        if ( ! shortcode_exists( 'bh_leader_booking_dashboard' ) ) {
+            add_shortcode( 'bh_leader_booking_dashboard', array( __CLASS__, 'render' ) );
+        }
     }
     public static function render() {
         if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) { return ''; }
