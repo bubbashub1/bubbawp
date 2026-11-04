@@ -23,22 +23,8 @@ final class BH_Leader_Frontend_Business_3 {
         $profile = self::profile();
         if ( ! $profile ) { return '<p>Please sign in with a linked organiser account to manage your business profile.</p>'; }
         ob_start(); ?>
-        <section class="bh-leader-business" id="bh-business-editor"><style>
-        body:has(#bh-business-editor) .wp-block-post-title{display:none}
-        body:has(#bh-business-editor) .wp-site-blocks main{padding-top:0!important}
-        .bh-leader-business{max-width:1250px!important;margin:0 auto 40px!important;padding:0 20px!important}
-        .bh-business-layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:26px;align-items:start}
-        .bh-business-sidebar{position:sticky;top:110px;display:flex;flex-direction:column;gap:5px;padding:18px;background:#fff;border:1px solid #dbe5df;border-radius:18px}
-        .bh-business-sidebar strong{padding:8px 12px 14px;color:#1e5743;font-size:19px}
-        .bh-business-sidebar a{padding:12px;border-radius:10px;text-decoration:none;color:#294a3b;font-weight:600}
-        .bh-business-sidebar a:hover,.bh-business-sidebar a:focus-visible{background:#e8f3ec}
-        .bh-business-main{min-width:0}.bh-leader-business .bh-business-hero{margin:0 0 18px}
-        .bh-leader-business .bh-business-card{margin:0}.bh-leader-business .bh-business-card h2{scroll-margin-top:100px;margin-top:30px;border-top:1px solid #e2ebe5;padding-top:24px;font-size:23px}
-        .bh-leader-business .bh-business-card h2:first-child{margin-top:0;border:0;padding-top:0}
-        .bh-business-mobile-save{display:none}
-        @media(max-width:850px){.bh-business-layout{grid-template-columns:1fr;gap:12px}.bh-business-sidebar{position:static;flex-direction:row;overflow-x:auto;white-space:nowrap;padding:8px;gap:2px}.bh-business-sidebar strong{display:none}.bh-business-sidebar a{font-size:13px;padding:10px}.bh-business-mobile-save{display:block;position:sticky;bottom:0;z-index:5;background:rgba(255,255,255,.96);border-top:1px solid #dbe5df;padding:10px 16px;margin:12px -20px 0}.bh-business-mobile-save button{width:100%}}
-        </style>
-        <style>.bh-leader-business{max-width:1250px;margin:0 auto 32px;padding:0 20px;color:#203c31;font-family:inherit}.bh-leader-business *{box-sizing:border-box}.bh-leader-business .bh-business-card{background:#fff;border:1px solid #dbe5df;border-radius:16px;padding:24px;margin:20px 0}.bh-leader-business label{display:block;font-weight:600;margin:16px 0 6px}.bh-leader-business input:not([type=checkbox]),.bh-leader-business textarea,.bh-leader-business select{width:100%;max-width:680px;padding:11px;border:1px solid #b6c8bc;border-radius:9px;font:inherit}.bh-leader-business button{background:#245e4a;color:#fff;border:0;border-radius:9px;padding:12px 20px;font:inherit;font-weight:600;cursor:pointer}.bh-leader-business .bh-business-note{color:#53665e} .bh-leader-business .bh-business-hero{background:linear-gradient(120deg,#1e5743,#367d5d);color:#fff;padding:26px;border-radius:20px;margin:14px 0 24px}.bh-leader-business .bh-business-hero h1{color:#fff;margin:5px 0;font-size:clamp(28px,4vw,38px)}.bh-leader-business .bh-business-hero p{color:#edf7ef;margin:5px 0}.bh-leader-business .bh-business-card{box-shadow:0 8px 24px rgba(25,58,40,.05)}.bh-leader-business input:focus-visible,.bh-leader-business textarea:focus-visible,.bh-leader-business button:focus-visible{outline:3px solid #245e4a;outline-offset:2px}@media(max-width:650px){.bh-leader-business .bh-business-hero{padding:20px}.bh-leader-business .bh-business-card{padding:17px}}</style>
+        <section class="bh-leader-business" id="bh-business-editor">
+        
         <div class="bh-business-layout"><aside class="bh-business-sidebar" aria-label="Business profile sections">
           <strong>My Business</strong>
           <a href="<?php echo esc_url( home_url( '/leader/' ) ); ?>">Dashboard</a>
