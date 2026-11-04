@@ -51,7 +51,9 @@ function bh_support_dashboard_render(): void {
             "SELECT COUNT(*) FROM `$submission_table` WHERE form_id IN ($placeholders)", ...$forms
         ));
         $counts['new'] = $total;
-        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($workflow_table))) === $workflow_table) {
+        if (get_option('bh_support_status_schema_version') === '2'
+            && $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($workflow_table))) === $workflow_table
+            && $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($wpdb->prefix . 'bh_support_enquiry_history'))) === $wpdb->prefix . 'bh_support_enquiry_history') {
             $rows = $wpdb->get_results($wpdb->prepare(
                 "SELECT w.status, COUNT(*) AS qty
                  FROM `$workflow_table` w
