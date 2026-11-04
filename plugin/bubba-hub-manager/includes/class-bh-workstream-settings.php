@@ -5,11 +5,52 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 final class BH_Workstream_Settings_3 {
     public static function register() {
         add_menu_page('Family Hub settings', 'Family Hub', 'manage_options', 'bh3-family-settings', array(__CLASS__, 'family'), 'dashicons-groups', 27);
+        add_submenu_page('bh3-family-settings', 'Family display settings', 'Display settings', 'manage_options', 'bh3-family-display', array(__CLASS__, 'family_display'));
         add_menu_page('Leader Portal settings', 'Leader Portal', 'manage_options', 'bh3-leader-settings', array(__CLASS__, 'leader'), 'dashicons-businessperson', 28);
         add_menu_page('Support & Help', 'Support & Help', 'manage_options', 'bh3-support-help', array(__CLASS__, 'support'), 'dashicons-sos', 29);
         add_menu_page('Team', 'Team', 'manage_options', 'bh3-team', array(__CLASS__, 'team'), 'dashicons-groups', 30);
     }
 
+    const FAMILY_DISPLAY_OPTION = 'bh3_family_display_preferences';
+
+    public static function family_display_defaults() {
+        return array('show_saved' => 1, 'show_planner' => 1, 'show_visited' => 1, 'show_discover' => 1, 'cards_per_row' => 2);
+    }
+    public static function family_display_current() {
+        $stored = get_option(self::FAMILY_DISPLAY_OPTION, array());
+        if (!is_array($stored)) $stored = array();
+        return array_merge(self::family_display_defaults(), array_intersect_key($stored, self::family_display_defaults()));
+    }
+    public static function family_display_save() {
+        if (!current_user_can('manage_options')) wp_die('Administrator permission required.', '', array('response' => 403));
+        check_admin_referer('bh3_family_display_save');
+        $raw = isset($_POST['bh3_family_display']) && is_array($_POST['bh3_family_display']) ? wp_unslash($_POST['bh3_family_display']) : array();
+        $out = array();
+        foreach (array('show_saved', 'show_planner', 'show_visited', 'show_discover') as $key) {
+            $out[$key] = empty($raw[$key]) ? 0 : 1;
+        }
+        $out['cards_per_row'] = isset($raw['cards_per_row']) ? max(1, min(3, absint($raw['cards_per_row']))) : 2;
+        update_option(self::FAMILY_DISPLAY_OPTION, $out, false);
+        wp_safe_redirect(add_query_arg('updated', '1', admin_url('admin.php?page=bh3-family-display')));
+        exit;
+    }
+    public static function family_display() {
+        if (!current_user_can('manage_options')) wp_die('Administrator permission required.', '', array('response' => 403));
+        $v = self::family_display_current();
+        echo '<div class="wrap"><h1>Family Hub display settings</h1><p>Save display preferences for the future Family Hub integration. These options do not yet change the public Family Hub, enable private data or grant permissions.</p>';
+        if (isset($_GET['updated']) && sanitize_key(wp_unslash($_GET['updated'])) === '1') echo '<div class="notice notice-success"><p>Preferences saved.</p></div>';
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+        wp_nonce_field('bh3_family_display_save');
+        echo '<input type="hidden" name="action" value="bh3_family_display_save">';
+        foreach (array('show_saved'=>'Saved activities','show_planner'=>'Family planner','show_visited'=>'Visited activities','show_discover'=>'Discover activities') as $key=>$label) {
+            echo '<p><label><input type="checkbox" name="bh3_family_display[' . esc_attr($key) . ']" value="1" ' . checked($v[$key], 1, false) . '> ' . esc_html($label) . '</label></p>';
+        }
+        echo '<p><label for="bh3-family-columns">Preferred desktop card columns</label> <select id="bh3-family-columns" name="bh3_family_display[cards_per_row]">';
+        for ($i=1; $i<=3; $i++) echo '<option value="' . esc_attr((string)$i) . '"' . selected((int)$v['cards_per_row'], $i, false) . '>' . esc_html((string)$i) . '</option>';
+        echo '</select></p>';
+        submit_button('Save display preferences');
+        echo '</form></div>';
+    }
     private static function header($title, $description) {
         if (!current_user_can('manage_options')) {
             wp_die('Administrator permission required.', '', array('response' => 403));
@@ -46,6 +87,7 @@ final class BH_Workstream_Settings_3 {
         self::card('Private preview', self::staging() && defined('BH3_FAMILY_PRIVATE_PREVIEW') && BH3_FAMILY_PRIVATE_PREVIEW === true ? 'Staging private preview flag is enabled. Verified family identity is still required.' : 'Private preview is not enabled for this site.');
         self::card('Family actions', self::staging() && class_exists('BH_Family_Actions_3') && BH_Family_Actions_3::enabled() ? 'Staging family actions are enabled. Test with a verified family account.' : 'Family write actions are disabled.');
         self::card('Account linking', function_exists('bh_wp_resolve_legacy_identity') ? 'Legacy identity bridge function is available. This does not prove any individual account is linked.' : 'Legacy identity bridge function is unavailable; private data must remain inaccessible.');
+        self::card('Display preferences', 'Choose which dashboard sections to show once frontend integration is ready.', admin_url('admin.php?page=bh3-family-display'), 'Edit display settings');
         self::card('Frontend shortcode', 'Use [bubbahub_family_hub] on a private staging test page. Do not expose real family records until QA is complete.');
         self::footer();
     }
