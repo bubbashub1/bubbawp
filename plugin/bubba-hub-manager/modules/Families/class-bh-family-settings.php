@@ -23,6 +23,7 @@ final class BH_Family_Settings_3 {
         $verified_family = !$admin_demo;
         $preferences = BH_Family_Preferences_3::read();
         $account = wp_get_current_user();
+        $notifications = BH_Family_Notifications_3::read();
         ob_start();
         ?>
         <section class="bh3-family bh3-family__settings-page">
@@ -84,6 +85,30 @@ final class BH_Family_Settings_3 {
                 </form>
               </article>
 
+              <article id="bh3-notifications" class="bh3-family__card bh3-family__card--notifications">
+                <div class="bh3-family__section-heading"><div><span class="bh3-family__kicker"><?php echo esc_html__('STAY IN THE LOOP', 'bubba-hub-manager'); ?></span><h2><?php echo esc_html__('Notifications', 'bubba-hub-manager'); ?></h2></div></div>
+                <p><?php echo esc_html__('Choose which optional updates you would like to receive. Essential account and booking messages are separate.', 'bubba-hub-manager'); ?></p>
+                <?php if ($admin_demo) : ?><p class="bh3-family__preview-note"><?php echo esc_html__('Administrator preview: notification choices cannot be saved here.', 'bubba-hub-manager'); ?></p><?php endif; ?>
+                <?php if (!$admin_demo && isset($_GET['bh3_notifications_saved'])) : ?><p role="status"><?php echo esc_html__('Notification choices saved.', 'bubba-hub-manager'); ?></p><?php endif; ?>
+                <form class="bh3-family__notification-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                  <input type="hidden" name="action" value="bh3_family_notifications">
+                  <?php wp_nonce_field('bh3_family_notifications'); ?>
+                  <div class="bh3-family__notification-list">
+                    <?php foreach (BH_Family_Notifications_3::choices() as $key=>$details) : ?>
+                      <label class="bh3-family__notification-option">
+                        <input type="checkbox" name="<?php echo esc_attr($key); ?>" value="1" <?php checked($notifications[$key]); ?> <?php disabled($admin_demo); ?>>
+                        <span><strong><?php echo esc_html($details[0]); ?></strong><small><?php echo esc_html($details[1]); ?></small></span>
+                      </label>
+                    <?php endforeach; ?>
+                  </div>
+                  <h3><?php echo esc_html__('Bubba Hub Round Up', 'bubba-hub-manager'); ?></h3>
+                  <label class="bh3-family__notification-option">
+                    <input type="checkbox" name="newsletter" value="1" <?php checked($notifications['newsletter']); ?> <?php disabled($admin_demo); ?>>
+                    <span><strong><?php echo esc_html__('I would like the Bubba Hub Round Up', 'bubba-hub-manager'); ?></strong><small><?php echo esc_html__('An optional newsletter about local family activities. This preference does not subscribe you until the mailing system is connected.', 'bubba-hub-manager'); ?></small></span>
+                  </label>
+                  <?php if (!$admin_demo) : ?><button type="submit"><?php echo esc_html__('Save notification choices', 'bubba-hub-manager'); ?></button><?php endif; ?>
+                </form>
+              </article>
           </div>
         </section>
         <?php
