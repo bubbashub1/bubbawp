@@ -108,6 +108,17 @@ final class BH_Family_Hub_3 {
                       <li>
                         <?php echo esc_html($activity_titles[absint($item['activity_id'] ?? 0)] ?? sprintf(__('Activity #%d', 'bubba-hub-manager'), absint($item['activity_id'] ?? 0))); ?>
                         <?php if (!empty($item['visited'])) : ?><span class="bh3-family__status"><?php echo esc_html__('Visited', 'bubba-hub-manager'); ?></span><?php endif; ?>
+                        <?php if (BH_Family_Actions_3::enabled()) : ?>
+                          <?php foreach (array('visited' => __('Visited', 'bubba-hub-manager'), 'not_visited' => __('Not visited', 'bubba-hub-manager'), 'unplan' => __('Remove', 'bubba-hub-manager')) as $action_key => $action_label) : ?>
+                            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                              <input type="hidden" name="action" value="bh3_family_activity_action">
+                              <input type="hidden" name="bh3_action" value="<?php echo esc_attr($action_key); ?>">
+                              <input type="hidden" name="bh3_activity_id" value="<?php echo esc_attr(absint($item['activity_id'] ?? 0)); ?>">
+                              <?php wp_nonce_field('bh3_family_activity_action'); ?>
+                              <button type="submit" class="bh3-family__action"><?php echo esc_html($action_label); ?></button>
+                            </form>
+                          <?php endforeach; ?>
+                        <?php endif; ?>
                       </li>
                     <?php endforeach; ?>
                   </ul>
