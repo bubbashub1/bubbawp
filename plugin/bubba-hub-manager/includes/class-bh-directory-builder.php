@@ -38,7 +38,7 @@ final class BH_Directory_Builder_3 {
         check_admin_referer( 'bh3_directory_builder_save' );
         $defaults = self::defaults();
         $detail = array_values( array_intersect( array( 'hero', 'overview', 'timetable', 'map', 'contact', 'organiser', 'gallery', 'accessibility' ), array_map( 'sanitize_key', (array) wp_unslash( $_POST['detail_sections'] ?? array() ) ) ) );
-        $search = array_values( array_intersect( array( 'keyword', 'category', 'age', 'day', 'price', 'region', 'town', 'free', 'term_time', 'near_me' ), array_map( 'sanitize_key', (array) wp_unslash( $_POST['search_fields'] ?? array() ) ) ) );
+        $search = array_values( array_intersect( array( 'keyword', 'category', 'age', 'day', 'region', 'town', 'free', 'term_time', 'near_me' ), array_map( 'sanitize_key', (array) wp_unslash( $_POST['search_fields'] ?? array() ) ) ) );
         $lat = filter_var( wp_unslash( $_POST['map_lat'] ?? '' ), FILTER_VALIDATE_FLOAT );
         $lng = filter_var( wp_unslash( $_POST['map_lng'] ?? '' ), FILTER_VALIDATE_FLOAT );
         if ( $lat === false || $lng === false || $lat < -90 || $lat > 90 || $lng < -180 || $lng > 180 ) {
@@ -63,7 +63,20 @@ final class BH_Directory_Builder_3 {
         if ( ! self::enabled() || ! current_user_can( 'manage_options' ) ) { wp_die( 'Not permitted.', '', array( 'response' => 403 ) ); }
         $s = self::settings();
         echo '<div class="wrap bh3-builder"><style>
-        .bh3-builder{max-width:1180px}.bh3-builder .intro{color:#596b60;max-width:850px}
+        .bh3-builder{max-width:1180px;color:#203c31}
+        .bh3-builder h1{font-size:30px;line-height:1.2;font-weight:750;letter-spacing:-.025em;margin:22px 0 12px}
+        .bh3-builder h2{font-size:21px;margin:0 0 12px;letter-spacing:-.015em}
+        .bh3-builder .intro{font-size:15px;line-height:1.7}
+        .bh3-builder .nav button{font-size:14px;line-height:1.4;transition:background .15s,border-color .15s,box-shadow .15s}
+        .bh3-builder .nav button:hover{background:#f4f8f5;border-color:#8db49b}
+        .bh3-builder .nav button:focus-visible,.bh3-builder .checks input:focus-visible{outline:3px solid #7cbf95;outline-offset:2px}
+        .bh3-builder .panel{box-shadow:0 12px 32px rgba(20,60,40,.055)}
+        .bh3-builder .checks label{background:#fcfdfc;cursor:pointer;min-height:48px;transition:background .15s,border-color .15s}
+        .bh3-builder .checks label:hover{background:#f0f8f2;border-color:#8db49b}
+        .bh3-builder .settings-grid{margin-top:20px}
+        .bh3-builder .settings-grid label{font-weight:600}
+        .bh3-builder .button-primary{background:#176345;border-color:#176345}
+        .bh3-builder .button-primary:hover{background:#104b35;border-color:#104b35}.bh3-builder .intro{color:#596b60;max-width:850px}
         .bh3-builder .layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:20px;margin-top:22px}
         .bh3-builder .nav{display:flex;flex-direction:column;gap:8px}.bh3-builder .nav button{text-align:left;padding:14px;border:1px solid #dce6df;background:white;border-radius:9px;cursor:pointer}
         .bh3-builder .nav button[aria-selected=true]{border-color:#36754d;background:#edf6ef;font-weight:700}
@@ -83,13 +96,13 @@ final class BH_Directory_Builder_3 {
         echo '</nav><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="bh3_directory_builder_save">';
         wp_nonce_field( 'bh3_directory_builder_save' );
         echo '<section class="panel" data-builder-panel="form"><h2>Listing form builder</h2><p>Seven-step activity submission with configurable custom fields. Use Field Manager to add fields, choose their wizard step and reorder them.</p><p><a class="button button-primary" href="' . esc_url( admin_url( 'admin.php?page=bh3-field-manager' ) ) . '">Manage fields</a> <a class="button" href="' . esc_url( admin_url( 'admin.php?page=bh3-add-activity' ) ) . '">Preview activity wizard</a></p><div class="preview"><strong>Form sections</strong><p>Basics → About & categories → Age & pricing → Contact & booking → Images & accessibility → Locations & timetable → Review</p></div></section>';
-        echo '<section class="panel" data-builder-panel="detail" hidden><h2>Single listing layout</h2><p>Choose the sections to include when the configurable activity template is connected. This does not change existing public pages yet.</p><div class="checks">';
+        echo '<section class="panel" data-builder-panel="detail" hidden><h2>Single listing layout</h2><p>Choose the sections shown on the staging activity page. Changes take effect after saving.</p><div class="checks">';
         foreach ( array( 'hero' => 'Hero and images', 'overview' => 'Overview', 'timetable' => 'Weekly timetable', 'map' => 'Map and directions', 'contact' => 'Contact and booking', 'organiser' => 'Organiser profile', 'gallery' => 'Photo gallery', 'accessibility' => 'Accessibility' ) as $key => $label ) {
             echo '<label><input type="checkbox" name="detail_sections[]" value="' . esc_attr( $key ) . '" ' . checked( in_array( $key, $s['detail_sections'], true ), true, false ) . '>' . esc_html( $label ) . '</label>';
         }
         echo '</div><div class="settings-grid"><label>Page width<select name="listing_layout"><option value="sidebar" ' . selected( $s['listing_layout'], 'sidebar', false ) . '>Content with sidebar</option><option value="full_width" ' . selected( $s['listing_layout'], 'full_width', false ) . '>Full width</option></select></label></div></section>';
-        echo '<section class="panel" data-builder-panel="search" hidden><h2>Directory search builder</h2><p>Select the search controls for the future configurable directory template. The current directory search is unchanged.</p><div class="checks">';
-        foreach ( array( 'keyword' => 'Keyword', 'category' => 'Category', 'age' => 'Child age', 'day' => 'Day of week', 'price' => 'Price', 'region' => 'Region', 'town' => 'Town', 'free' => 'Free only', 'term_time' => 'Term time', 'near_me' => 'Near me / postcode' ) as $key => $label ) {
+        echo '<section class="panel" data-builder-panel="search" hidden><h2>Directory search builder</h2><p>Choose the filters shown on the staging directory. Changes take effect after saving. Postcode searches match postcode prefixes; distance-based Near Me search is a separate upcoming feature.</p><div class="checks">';
+        foreach ( array( 'keyword' => 'Keyword', 'category' => 'Category', 'age' => 'Child age', 'day' => 'Day of week', 'region' => 'Region', 'town' => 'Town', 'free' => 'Free only', 'term_time' => 'Term time', 'near_me' => 'Near me / postcode' ) as $key => $label ) {
             echo '<label><input type="checkbox" name="search_fields[]" value="' . esc_attr( $key ) . '" ' . checked( in_array( $key, $s['search_fields'], true ), true, false ) . '>' . esc_html( $label ) . '</label>';
         }
         echo '</div></section>';
