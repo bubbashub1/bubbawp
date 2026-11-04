@@ -45,6 +45,21 @@ foreach (glob($root . '/**/*.php') ?: [] as $file) {
             strpos($source, "add_action('admin_post_bh3_ask_install_schema'") !== false) {
             continue;
         }
+        // Family profile tables are created only from the explicit staging admin setup screen.
+        if ($unsafe === 'dbDelta(' && basename($file) === 'class-bh-family-db-setup.php' &&
+            strpos($source, 'public static function create()') !== false &&
+            strpos($source, "check_admin_referer('bh3_create_family_tables')") !== false &&
+            strpos($source, "staging.bubbahub.co.uk") !== false) {
+            continue;
+        }
+        // Leader venue request storage is installed only by an explicit staging admin action.
+        if ($unsafe === 'dbDelta(' && basename($file) === 'class-bh-leader-venue-requests.php' &&
+            strpos($source, 'public static function install()') !== false &&
+            strpos($source, "check_admin_referer( 'bh3_venue_request_install' )") !== false &&
+            strpos($source, "staging.bubbahub.co.uk") !== false &&
+            strpos($source, "admin_post_bh3_venue_request_install") !== false) {
+            continue;
+        }
         if (strpos($source, $unsafe) !== false) {
             fwrite(STDERR, "Unexpected side-effect API in {$file}: {$unsafe}\n");
             exit(1);
