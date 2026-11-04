@@ -27,6 +27,9 @@ final class BH_Leader_UI_3 {
             #wpbody-content > .wrap .form-table input[type=time], #wpbody-content > .wrap .form-table input[type=date], #wpbody-content > .wrap .form-table select { min-height: 38px; min-width: 160px; max-width: 100%; }
             #wpbody-content > .wrap .form-table .regular-text, #wpbody-content > .wrap .form-table .large-text { width: 100%; max-width: 540px; }
             #wpbody-content > .wrap form[method=get] input[type=search] { min-height: 38px; min-width: min(320px, 100%); border-radius: 7px; }
+            #wpbody-content > .wrap .widefat td form { margin: 0; }
+            #wpbody-content > .wrap .widefat .button { white-space: nowrap; }
+            #wpbody-content > .wrap .notice { border-radius: 8px; }
             @media (max-width: 782px) {
                 #wpbody-content > .wrap { margin: 12px 10px; }
                 #wpbody-content > .wrap .form-table { padding: 10px 14px; }
