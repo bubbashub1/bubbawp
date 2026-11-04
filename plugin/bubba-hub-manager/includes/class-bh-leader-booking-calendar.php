@@ -140,8 +140,8 @@ final class BH_Leader_Booking_Calendar_3 {
             <?php if ($selected_session_row) : ?>
               <div class="bh3-cal-roster" id="bh3-cal-session-detail">
                 <h4><?php echo esc_html($selected_session_row['title']); ?> · <?php echo esc_html(substr($selected_session_row['start_time'],0,5)); ?></h4>
-                <p class="bh3-cal-note">Confirm pending placements here. Changes are recorded in an audit log; no emails are sent.</p>
-                <?php if (isset($_GET['booking_notice']) && sanitize_key(wp_unslash($_GET['booking_notice']))==='confirmed') : ?><p role="status">Placement confirmed. No email was sent.</p><?php endif; ?>
+                <p class="bh3-cal-note">Confirm or cancel reservations here. Changes are audited; no emails are sent.</p>
+                <?php if (isset($_GET['booking_notice']) && in_array(sanitize_key(wp_unslash($_GET['booking_notice'])),array('confirmed','cancelled'),true)) : ?><p role="status"><?php echo sanitize_key(wp_unslash($_GET['booking_notice']))==='confirmed' ? 'Placement confirmed.' : 'Reservation cancelled.'; ?> No email was sent.</p><?php endif; ?>
                 <?php if (!$storage_ready) : ?>
                   <p>Reservation records are unavailable until the booking schema is installed.</p>
                 <?php elseif (!$selected_reservations) : ?>
@@ -166,6 +166,16 @@ final class BH_Leader_Booking_Calendar_3 {
                           <button type="submit">Confirm place</button>
                         </form>
                         <?php else : ?>—<?php endif; ?>
+                        <?php if (in_array($reservation['status'],array('pending','confirmed','waitlisted'),true)) : ?>
+                        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                          <input type="hidden" name="action" value="bh3_booking_cancel">
+                          <input type="hidden" name="reservation_id" value="<?php echo esc_attr($reservation['id']); ?>">
+                          <input type="hidden" name="booking_date" value="<?php echo esc_attr($selected); ?>">
+                          <input type="hidden" name="booking_session" value="<?php echo esc_attr($selected_session); ?>">
+                          <?php wp_nonce_field('bh3_booking_cancel_'.absint($reservation['id'])); ?>
+                          <button type="submit">Cancel reservation</button>
+                        </form>
+                        <?php endif; ?>
                       </td>
                     </tr>
                   <?php endforeach; ?>
