@@ -49,6 +49,24 @@ final class BH_Leader_Frontend_3 {
                 $organiser_id
             ) );
         }
+        $upcoming = array();
+        if ( $session_summary !== null ) {
+            $today = new DateTimeImmutable( 'today', wp_timezone() );
+            $rules = $wpdb->get_results( $wpdb->prepare(
+                "SELECT s.day_of_week,s.start_time,s.start_date,s.end_date,s.term_time_only,a.title FROM `{$sessions_table}` s JOIN `{$activities}` a ON a.id=s.activity_id WHERE a.organiser_id=%d AND a.status='published' AND s.frequency='weekly' LIMIT 250",
+                $organiser_id
+            ), ARRAY_A );
+            foreach ( (array) $rules as $rule ) {
+                $day = (int) $rule['day_of_week'];
+                if ( $day < 1 || $day > 7 ) continue;
+                $date = $today->modify( '+' . ( ( $day - (int) $today->format( 'N' ) + 7 ) % 7 ) . ' days' );
+                $ymd = $date->format( 'Y-m-d' );
+                if ( ( $rule['start_date'] && $rule['start_date'] > $ymd ) || ( $rule['end_date'] && $rule['end_date'] < $ymd ) ) continue;
+                $upcoming[] = array( 'date' => $date, 'time' => $rule['start_time'], 'title' => $rule['title'], 'term' => $rule['term_time_only'] );
+            }
+            usort( $upcoming, static function ( $a, $b ) { return strcmp( $a['date']->format( 'Ymd' ) . $a['time'], $b['date']->format( 'Ymd' ) . $b['time'] ); } );
+            $upcoming = array_slice( $upcoming, 0, 5 );
+        }
         ob_start();
         ?>
 
@@ -80,6 +98,13 @@ final class BH_Leader_Frontend_3 {
                         <?php else : ?>
                             <p><?php echo esc_html( number_format_i18n( $session_summary ) ); ?> weekly session records on published activities.</p>
                             <p class="bh-leader-muted">This is not a live count of upcoming classes or cancellations.</p>
+                            <h4>Next seven days (planned)</h4>
+                            <?php if ( ! $upcoming ) : ?><p>No weekly sessions in the next seven days.</p><?php else : ?>
+                            <ul class="bh-leader-upcoming"><?php foreach ( $upcoming as $slot ) : ?>
+                              <li><strong><?php echo esc_html( wp_date( 'D j M', $slot['date']->getTimestamp() ) . ' ' . substr( $slot['time'], 0, 5 ) ); ?></strong>
+                              <span><?php echo esc_html( $slot['title'] ); ?><?php if ( $slot['term'] ) : ?> (term-time rule)<?php endif; ?></span></li>
+                            <?php endforeach; ?></ul><?php endif; ?>
+                            <p class="bh-leader-muted">Based on weekly rules only. School holidays and cancellations are not checked.</p>
                         <?php endif; ?>
                         <a class="bh-leader-overview-action" href="<?php echo esc_url( home_url( '/leader/' ) . '#my-activities' ); ?>">Manage activity timetables</a>
                     </article>
