@@ -8,6 +8,7 @@ final class BH_Leader_Layout_3 {
     public static function wrap( $output, $tag, $attr, $m ) {
         $pages = array(
             'bh_leader_dashboard' => 'Dashboard',
+            'bh_leader_new_listing' => 'Create listing',
             'bh_leader_edit_activity' => 'Edit activity',
             'bh_leader_venues' => 'Venues',
             'bh_leader_timetable' => 'Timetable',
@@ -27,6 +28,7 @@ final class BH_Leader_Layout_3 {
         $links = array(
             array( 'Dashboard', home_url( '/leader/' ), 'Dashboard' ),
             array( 'Activities', home_url( '/leader/' ) . '#my-activities', 'Activities' ),
+            array( 'Create a listing', home_url( '/leader/new/' ), 'Create listing' ),
 
             array( 'My Business', home_url( '/leader/business/' ), 'My Business' ),
             array( 'Bookings', home_url( '/leader/bookings/' ), 'Bookings' ),
