@@ -1,20 +1,26 @@
-# Family account linking — security and rollout contract
+# Family account linking — verified legacy bridge contract
 
-## Implemented in PR #70
-`BH_Family_Identity_3::current_legacy_id()` is a **read-only resolver**, not an account-linking workflow. It accepts only an authenticated WordPress user with a positive integer in protected user-meta key `_bh3_verified_legacy_family_id`, verifies that exactly one WordPress account maps to the legacy ID, checks for `bh_users` table existence, and requires legacy status `active`.
+## Source reviewed
+- `bubbashub1/bubbaplugin/wp-content/mu-plugins/bubbahub-login-bridge-foundation.php`
+- `bubbashub1/bubbaplugin/wp-content/mu-plugins/bubbahub-login-bridge-preflight.php`
 
-No code in this PR writes the mapping or returns child/saved/planner records. The Family Hub feature flag remains disabled, and the preview does not invoke the resolver.
+## Actual existing mapping
+The MU plugin exposes `bh_wp_resolve_legacy_identity()`, which returns either a `WP_Error` or an array with `legacy_id`, `wordpress_id`, and `role`. It uses **`bh_legacy_user_id`** user metadata (not the initially proposed `_bh3_verified_legacy_family_id`). It verifies:
+- WordPress login, one positive legacy ID and uniqueness across WP users.
+- Presence of `bh_users` and required columns.
+- Active legacy account and matching account email.
+- Matching role: `family` requires `bh_family`; `leader` requires `bh_leader`.
 
-## Requirements before activation
-1. Confirm whether `bh_users` is in the same database as the new WordPress install; the resolver currently checks the WordPress connection and deliberately fails closed if not.
-2. Audit the existing Login Bridge and FluentAuth account lifecycle, including how WordPress user IDs are provisioned.
-3. Implement an authenticated, deliberate linking ceremony (e.g. reauthentication to the legacy account plus confirmation). **Do not link on email equality alone.**
-4. Prevent arbitrary modification of `_bh3_verified_legacy_family_id` by ordinary users, REST profile writes, imports or profile forms; verify the WordPress user-meta registration/authorization policy.
-5. Protect against duplicate and racing links using transactional or otherwise atomic uniqueness enforcement before enabling mapping writes.
-6. Log mapping changes without logging tokens, passwords, child data or other secrets.
-7. Ensure linked user ID and status are revalidated on each private request; verify ownership for each child/planner/saved activity query.
-8. Add tests for missing tables, cross-database configuration, inactive accounts, duplicate links, changed emails, unlinked users, administrators and session expiry.
-9. No migrations or live changes without explicit approval.
+## 3.0 adapter
+`BH_Family_Identity_3::current_legacy_id()` delegates to the existing MU bridge and returns a positive legacy ID only when the result is a valid family identity matching the current WP user. It returns 0 on missing bridge, missing mapping, error, leader role, or inconsistent identity. It performs **no writes**.
 
-## Design limitation
-The current resolver uses a user-meta convention, not a complete verified linking implementation. Its presence must not be treated as evidence that FluentAuth, the Login Bridge or legacy family records are integrated.
+## Limitations and gates
+- The MU bridge is intentionally not wired into legacy API sessions; FluentAuth sign-in does not automatically create `BUBBAHUBSESSID`.
+- The preflight page is read-only and displays account readiness; it does not link users.
+- Confirm the MU plugin is actually active on the staging site and the preflight results are correct.
+- Confirm the legacy table is on the same DB connection; if not, the existing bridge fails closed.
+- No family data reads are enabled in the preview yet.
+- Do not auto-link by email or write mapping metadata until a separately reviewed, authenticated linking flow exists.
+- The role and email checks of the existing MU bridge must not be bypassed.
+- Do not expose child details in public endpoints, caches, logs, or admin preflight output.
+- Test FluentAuth sign-in, role mapping, account mismatch, duplicate links, logout and account status changes before activating private data access.
