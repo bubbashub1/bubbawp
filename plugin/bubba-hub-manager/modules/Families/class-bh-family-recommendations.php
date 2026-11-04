@@ -19,6 +19,11 @@ final class BH_Family_Recommendations_3 {
             $params[] = (float) $price;
         }
         if (!empty($preferences['term_time'])) $conditions[] = "EXISTS (SELECT 1 FROM `{$s}` st WHERE st.activity_id=a.id AND st.term_time_only=1)";
+        $region = strtolower(trim((string) ($preferences['region'] ?? '')));
+        if (in_array($region, array('devon', 'cornwall'), true)) {
+            $conditions[] = "EXISTS (SELECT 1 FROM `{$av}` ra INNER JOIN `{$v}` rv ON rv.id=ra.venue_id WHERE ra.activity_id=a.id AND LOWER(TRIM(rv.region))=%s)";
+            $params[] = $region;
+        }
         $days = array('monday'=>1,'tuesday'=>2,'wednesday'=>3,'thursday'=>4,'friday'=>5,'saturday'=>6,'sunday'=>7);
         $chosen = array_values(array_intersect_key($days, array_flip((array)($preferences['days'] ?? array()))));
         if ($chosen) {
