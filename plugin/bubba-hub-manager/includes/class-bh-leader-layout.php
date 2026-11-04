@@ -28,6 +28,7 @@ final class BH_Leader_Layout_3 {
         $links = array(
             array( 'Dashboard', home_url( '/leader/' ), 'Dashboard' ),
             array( 'Activities', home_url( '/leader/' ) . '#my-activities', 'Activities' ),
+            array( 'Create a listing', home_url( '/leader/new/' ), 'Create listing' ),
 
             array( 'My Business', home_url( '/leader/business/' ), 'My Business' ),
             array( 'Bookings', home_url( '/leader/bookings/' ), 'Bookings' ),
