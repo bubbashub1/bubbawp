@@ -41,7 +41,6 @@ final class BH_Leader_Frontend_3 {
 
         <main class="bh-leader-shell">
             <header class="bh-leader-head"><h1>Leader Dashboard</h1><p class="bh-leader-muted">Welcome, <?php echo esc_html( $name ); ?>. Manage your Bubba Hub activities.</p></header>
-            <nav class="bh-leader-nav" aria-label="Leader portal navigation"><a href="#my-activities">My Activities</a><a href="<?php echo esc_url( home_url( '/leader/business/' ) ); ?>">My Business</a><a href="#leader-tools">Manage classes</a><a href="#leader-ask-inbox">Ask Support</a></nav>
             <section class="bh-leader-stats" aria-label="Listing summary">
                 <div class="bh-leader-stat"><strong><?php echo esc_html( number_format_i18n( $totals['all'] ) ); ?></strong>Total activities</div>
                 <div class="bh-leader-stat"><strong><?php echo esc_html( number_format_i18n( $totals['draft'] ) ); ?></strong>Drafts</div>
