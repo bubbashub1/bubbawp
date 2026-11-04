@@ -55,7 +55,7 @@ final class BH_Leader_Venues_3 {
             } else { echo 'Read-only'; }
             echo '</td></tr>';
         }
-        if ( ! $rows ) { echo '<tr><td colspan="3">No venues assigned.</td></tr>'; }
+        if ( ! $rows ) { echo '<tr><td colspan="3">No venues assigned yet. Search for an existing venue below to get started.</td></tr>'; }
         echo '</tbody></table>';
         if ( $activity['status'] !== 'draft' ) { echo '<p>Only draft activities can change venue assignments.</p></div>'; return; }
         $term = substr( sanitize_text_field( wp_unslash( $_GET['venue_search'] ?? '' ) ), 0, 100 );
