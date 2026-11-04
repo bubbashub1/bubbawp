@@ -28,14 +28,14 @@ final class BH_Family_Read_Model_3 {
         $native = $wpdb->prefix . 'bh_family_profiles';
         if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($native))) === $native) {
             $records = $wpdb->get_results($wpdb->prepare(
-                "SELECT id, profile_type, display_name, profile_date FROM `{$native}` WHERE user_id = %d AND profile_type IN ('child','bump') ORDER BY id ASC LIMIT 70",
+                "SELECT id, profile_type, display_name, profile_date, gender FROM `{$native}` WHERE user_id = %d AND profile_type IN ('child','bump') ORDER BY id ASC LIMIT 70",
                 get_current_user_id()
             ), ARRAY_A);
             if (!is_array($records)) return new WP_Error('family_native_profiles_failed', 'Unable to load family profiles');
             $result = array('children'=>array(), 'bumps'=>array());
             foreach ($records as $record) {
                 if ($record['profile_type'] === 'child' && count($result['children']) < 50) {
-                    $result['children'][] = array('id'=>(int)$record['id'], 'name'=>$record['display_name'], 'date_of_birth'=>$record['profile_date']);
+                    $result['children'][] = array('id'=>(int)$record['id'], 'name'=>$record['display_name'], 'date_of_birth'=>$record['profile_date'], 'gender'=>isset($record['gender']) ? $record['gender'] : '');
                 } elseif ($record['profile_type'] === 'bump' && count($result['bumps']) < 20) {
                     $result['bumps'][] = array('id'=>(int)$record['id'], 'nickname'=>$record['display_name'], 'due_date'=>$record['profile_date']);
                 }
