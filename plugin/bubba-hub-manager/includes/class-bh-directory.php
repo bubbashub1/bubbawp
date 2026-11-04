@@ -31,6 +31,11 @@ final class BH_Directory_3 {
         $search = isset( $_GET['bh_search'] ) && is_string( $_GET['bh_search'] ) ? substr( sanitize_text_field( wp_unslash( $_GET['bh_search'] ) ), 0, 100 ) : '';
         $category = isset( $_GET['bh_category'] ) && is_string( $_GET['bh_category'] ) ? substr( sanitize_text_field( wp_unslash( $_GET['bh_category'] ) ), 0, 150 ) : '';
         $town = isset( $_GET['bh_town'] ) && is_string( $_GET['bh_town'] ) ? substr( sanitize_text_field( wp_unslash( $_GET['bh_town'] ) ), 0, 120 ) : '';
+        $geo_lat = isset( $_GET['bh_lat'] ) && is_scalar( $_GET['bh_lat'] ) && is_numeric( $_GET['bh_lat'] ) ? (float) $_GET['bh_lat'] : null;
+        $geo_lng = isset( $_GET['bh_lng'] ) && is_scalar( $_GET['bh_lng'] ) && is_numeric( $_GET['bh_lng'] ) ? (float) $_GET['bh_lng'] : null;
+        $geo_valid = $geo_lat !== null && $geo_lng !== null && is_finite( $geo_lat ) && is_finite( $geo_lng ) && abs( $geo_lat ) <= 90 && abs( $geo_lng ) <= 180;
+        $radius = isset( $_GET['bh_radius'] ) && is_scalar( $_GET['bh_radius'] ) ? absint( $_GET['bh_radius'] ) : 10;
+        if ( ! in_array( $radius, array( 5, 10, 20, 50 ), true ) ) { $radius = 10; }
         $free = isset( $_GET['bh_free'] ) && (string) $_GET['bh_free'] === '1';
         $page = min( 100, max( 1, absint( $_GET['bh_page'] ?? 1 ) ) );
         $conditions = array( "a.status IN ('published','publish')" );
@@ -57,6 +62,14 @@ final class BH_Directory_3 {
         if ( $postcode !== '' ) {
             $conditions[] = 'EXISTS (SELECT 1 FROM `' . $links . '` ap INNER JOIN `' . $venues . '` vp ON vp.id=ap.venue_id WHERE ap.activity_id=a.id AND vp.postcode LIKE %s)';
             $params[] = $wpdb->esc_like( $postcode ) . '%';
+        }
+        if ( $geo_valid ) {
+            // Coarse bounding box first, then exact great-circle distance. Coordinates are request-only.
+            $lat_delta = $radius / 69.0;
+            $lng_delta = $radius / max( 0.01, 69.0 * cos( deg2rad( $geo_lat ) ) );
+            $distance = '(3958.7613 * 2 * ASIN(SQRT(POW(SIN(RADIANS(vn.latitude - %f) / 2),2) + COS(RADIANS(%f)) * COS(RADIANS(vn.latitude)) * POW(SIN(RADIANS(vn.longitude - %f) / 2),2))))';
+            $conditions[] = 'EXISTS (SELECT 1 FROM `' . $links . '` an INNER JOIN `' . $venues . '` vn ON vn.id=an.venue_id WHERE an.activity_id=a.id AND vn.latitude BETWEEN %f AND %f AND vn.longitude BETWEEN %f AND %f AND ' . $distance . ' <= %f)';
+            array_push( $params, max( -90, $geo_lat - $lat_delta ), min( 90, $geo_lat + $lat_delta ), max( -180, $geo_lng - $lng_delta ), min( 180, $geo_lng + $lng_delta ), $geo_lat, $geo_lat, $geo_lng, $radius );
         }
         $where = implode( ' AND ', $conditions );
         $sql = "SELECT a.id,a.title,a.slug,a.description,a.category,a.price_from,a.is_free,o.name AS organiser,
@@ -119,7 +132,13 @@ final class BH_Directory_3 {
         if ( $show( 'near_me' ) ) { echo '<label><span>Postcode</span><input type="search" name="bh_postcode" placeholder="Postcode prefix" value="' . esc_attr( $postcode ) . '"></label>'; }
         if ( $show( 'free' ) ) { echo '<label class="bh3-check"><input type="checkbox" name="bh_free" value="1" ' . checked( $free, true, false ) . '> Free only</label>'; }
         if ( $show( 'term_time' ) ) { echo '<label class="bh3-check"><input type="checkbox" name="bh_term" value="1" ' . checked( $term, true, false ) . '> Term time</label>'; }
-        echo '<div class="bh3-search-actions"><button type="submit">Find activities</button><a href="' . esc_url( remove_query_arg( array( 'bh_search', 'bh_category', 'bh_town', 'bh_region', 'bh_age', 'bh_day', 'bh_postcode', 'bh_free', 'bh_term', 'bh_page' ) ) ) . '">Clear filters</a></div></form>';
+        if ( $show( 'near_me' ) ) {
+            echo '<label><span>Within</span><select name="bh_radius">';
+            foreach ( array( 5, 10, 20, 50 ) as $miles ) { echo '<option value="' . esc_attr( $miles ) . '" ' . selected( $radius, $miles, false ) . '>' . esc_html( $miles ) . ' miles</option>'; }
+            echo '</select></label><div class="bh3-search-actions"><button type="button" class="bh3-locate" data-bh3-locate>Use my location</button><span class="bh3-location-status" role="status" aria-live="polite"></span></div>';
+            if ( $geo_valid ) { echo '<input type="hidden" name="bh_lat" value="' . esc_attr( (string) $geo_lat ) . '"><input type="hidden" name="bh_lng" value="' . esc_attr( (string) $geo_lng ) . '">'; }
+        }
+        echo '<div class="bh3-search-actions"><button type="submit">Find activities</button><a href="' . esc_url( remove_query_arg( array( 'bh_search', 'bh_category', 'bh_town', 'bh_region', 'bh_age', 'bh_day', 'bh_postcode', 'bh_free', 'bh_term', 'bh_radius', 'bh_lat', 'bh_lng', 'bh_page' ) ) ) . '">Clear filters</a></div></form>';
         echo '<section aria-label="Activity locations"><h3>Activities on the map</h3>';
         if ( $map_points ) {
             $map_id = 'bh3-map-' . wp_unique_id();
@@ -136,6 +155,7 @@ final class BH_Directory_3 {
             wp_add_inline_script( 'bh3-leaflet', '(function(){const cfg=' . wp_json_encode( $payload, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ) . ';function init(){const el=document.getElementById(cfg.id);if(!el||!window.L)return;const map=L.map(el,{scrollWheelZoom:false}).setView(cfg.center,cfg.zoom);L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"&copy; OpenStreetMap contributors"}).addTo(map);const bounds=[];cfg.points.forEach(p=>{const marker=L.marker([p.lat,p.lng]).addTo(map);const wrap=document.createElement("div");const title=document.createElement("strong");title.textContent=p.title;const desc=document.createElement("p");desc.textContent=[p.venue,p.town].filter(Boolean).join(", ");wrap.append(title,desc);marker.bindPopup(wrap);bounds.push([p.lat,p.lng])});if(bounds.length)map.fitBounds(bounds,{padding:[25,25],maxZoom:cfg.zoom});setTimeout(()=>map.invalidateSize(),100)}if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init()})();', 'after' );
         } else { echo '<p class="bh3-map-message">No mapped venues for the activities on this page. Listings are available below.</p>'; }
         echo '<p class="bh3-map-message">Map data © OpenStreetMap contributors. Use the list below for full activity details.</p></section>';
+        echo '<script>(function(){document.querySelectorAll(".bh3-real-directory [data-bh3-locate]").forEach(function(button){button.addEventListener("click",function(){const form=button.closest("form"),status=form.querySelector(".bh3-location-status");if(!navigator.geolocation){status.textContent="Location is not supported by this browser.";return;}status.textContent="Requesting your location…";button.disabled=true;navigator.geolocation.getCurrentPosition(function(pos){["bh_lat","bh_lng"].forEach(function(name){let field=form.querySelector("[name="+name+"]");if(!field){field=document.createElement("input");field.type="hidden";field.name=name;form.appendChild(field);}field.value=name==="bh_lat"?pos.coords.latitude:pos.coords.longitude;});status.textContent="Location found. Searching nearby activities…";form.submit();},function(){status.textContent="Location unavailable or permission denied. Try a postcode instead.";button.disabled=false;},{enableHighAccuracy:false,timeout:12000,maximumAge:300000});});});})();</script>';
         echo '<div class="bh3-cards">';
         foreach ( $rows as $row ) {
             $detail_page = get_page_by_path( 'activity-preview' );
