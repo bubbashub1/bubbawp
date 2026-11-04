@@ -6,6 +6,8 @@ final class BH_Workstream_Settings_3 {
     public static function register() {
         add_menu_page('Family Hub settings', 'Family Hub', 'manage_options', 'bh3-family-settings', array(__CLASS__, 'family'), 'dashicons-groups', 27);
         add_menu_page('Leader Portal settings', 'Leader Portal', 'manage_options', 'bh3-leader-settings', array(__CLASS__, 'leader'), 'dashicons-businessperson', 28);
+        add_menu_page('Support & Help', 'Support & Help', 'manage_options', 'bh3-support-help', array(__CLASS__, 'support'), 'dashicons-sos', 29);
+        add_menu_page('Team', 'Team', 'manage_options', 'bh3-team', array(__CLASS__, 'team'), 'dashicons-groups', 30);
     }
 
     private static function header($title, $description) {
@@ -23,6 +25,20 @@ final class BH_Workstream_Settings_3 {
     private static function footer() { echo '</div><p>These diagnostics do not enable modules, change user roles, install tables or modify family records.</p></div>'; }
     private static function staging() {
         return strtolower((string) wp_parse_url(home_url(), PHP_URL_HOST)) === 'staging.bubbahub.co.uk';
+    }
+    public static function support() {
+        self::header('Support & Help', 'Administration overview for family support, website help and resources. The full support system is not yet migrated.');
+        self::card('Family support', 'Guides and resources for parents and carers are planned. No live content management is enabled here yet.');
+        self::card('Website support', 'Help articles, contact requests and FAQs will be integrated after workflow and permissions testing.');
+        self::card('Resource library', 'Resource management and blog publishing remain pending integration.');
+        self::footer();
+    }
+    public static function team() {
+        self::header('Team', 'Administration overview for volunteers and area coordinators. No volunteer permissions are changed here.');
+        self::card('Volunteers', 'Volunteer registration and assignments are pending migration and testing.');
+        self::card('Area coordinators', 'Regional ownership and assignment controls will require permission and audit checks.');
+        self::card('Team communications', 'Team messaging and notifications are not yet integrated.');
+        self::footer();
     }
     public static function family() {
         self::header('Family Hub settings', 'Current implementation and safety gates. This is a read-only administration screen.');
