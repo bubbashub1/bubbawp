@@ -40,6 +40,13 @@ final class BH_Directory_3 {
         $search = isset( $_GET['bh_search'] ) && is_string( $_GET['bh_search'] ) ? substr( sanitize_text_field( wp_unslash( $_GET['bh_search'] ) ), 0, 100 ) : '';
         $category = isset( $_GET['bh_category'] ) && is_string( $_GET['bh_category'] ) ? substr( sanitize_text_field( wp_unslash( $_GET['bh_category'] ) ), 0, 150 ) : '';
         $town = isset( $_GET['bh_town'] ) && is_string( $_GET['bh_town'] ) ? substr( sanitize_text_field( wp_unslash( $_GET['bh_town'] ) ), 0, 120 ) : '';
+        $sort = isset( $_GET['bh_sort'] ) && is_scalar( $_GET['bh_sort'] ) ? sanitize_key( wp_unslash( $_GET['bh_sort'] ) ) : 'title';
+        if ( ! in_array( $sort, array( 'title', 'town', 'newest' ), true ) ) { $sort = 'title'; }
+        $geo_lat = isset( $_GET['bh_lat'] ) && is_scalar( $_GET['bh_lat'] ) && is_numeric( $_GET['bh_lat'] ) ? (float) $_GET['bh_lat'] : null;
+        $geo_lng = isset( $_GET['bh_lng'] ) && is_scalar( $_GET['bh_lng'] ) && is_numeric( $_GET['bh_lng'] ) ? (float) $_GET['bh_lng'] : null;
+        $geo_valid = $geo_lat !== null && $geo_lng !== null && is_finite( $geo_lat ) && is_finite( $geo_lng ) && abs( $geo_lat ) <= 90 && abs( $geo_lng ) <= 180;
+        $radius = isset( $_GET['bh_radius'] ) && is_scalar( $_GET['bh_radius'] ) ? absint( $_GET['bh_radius'] ) : 10;
+        if ( ! in_array( $radius, array( 5, 10, 20, 50 ), true ) ) { $radius = 10; }
         $free = isset( $_GET['bh_free'] ) && (string) $_GET['bh_free'] === '1';
         $page = min( 100, max( 1, absint( $_GET['bh_page'] ?? 1 ) ) );
         $conditions = array( "a.status IN ('published','publish')" );
@@ -67,11 +74,20 @@ final class BH_Directory_3 {
             $conditions[] = 'EXISTS (SELECT 1 FROM `' . $links . '` ap INNER JOIN `' . $venues . '` vp ON vp.id=ap.venue_id WHERE ap.activity_id=a.id AND vp.postcode LIKE %s)';
             $params[] = $wpdb->esc_like( $postcode ) . '%';
         }
+        if ( $geo_valid ) {
+            // Coarse bounding box first, then exact great-circle distance. Coordinates are request-only.
+            $lat_delta = $radius / 69.0;
+            $lng_delta = $radius / max( 0.01, 69.0 * cos( deg2rad( $geo_lat ) ) );
+            $distance = '(3958.7613 * 2 * ASIN(SQRT(POW(SIN(RADIANS(vn.latitude - %f) / 2),2) + COS(RADIANS(%f)) * COS(RADIANS(vn.latitude)) * POW(SIN(RADIANS(vn.longitude - %f) / 2),2))))';
+            $conditions[] = 'EXISTS (SELECT 1 FROM `' . $links . '` an INNER JOIN `' . $venues . '` vn ON vn.id=an.venue_id WHERE an.activity_id=a.id AND vn.latitude BETWEEN %f AND %f AND vn.longitude BETWEEN %f AND %f AND ' . $distance . ' <= %f)';
+            array_push( $params, max( -90, $geo_lat - $lat_delta ), min( 90, $geo_lat + $lat_delta ), max( -180, $geo_lng - $lng_delta ), min( 180, $geo_lng + $lng_delta ), $geo_lat, $geo_lat, $geo_lng, $radius );
+        }
         $where = implode( ' AND ', $conditions );
+        $order = $sort === 'newest' ? 'a.id DESC' : ( $sort === 'town' ? 'town ASC, a.title ASC' : 'a.title ASC' );
         $sql = "SELECT a.id,a.title,a.slug,a.description,a.category,a.price_from,a.is_free,o.name AS organiser,
             (SELECT v.town FROM `{$links}` av INNER JOIN `{$venues}` v ON v.id=av.venue_id WHERE av.activity_id=a.id ORDER BY v.name LIMIT 1) AS town
             FROM `{$activities}` a LEFT JOIN `{$organisers}` o ON o.id=a.organiser_id
-            WHERE {$where} ORDER BY a.title ASC LIMIT 13 OFFSET " . ( ( $page - 1 ) * 12 );
+            WHERE {$where} ORDER BY {$order} LIMIT 13 OFFSET " . ( ( $page - 1 ) * 12 );
         $rows = $wpdb->get_results( $params ? $wpdb->prepare( $sql, $params ) : $sql, ARRAY_A );
         if ( ! is_array( $rows ) ) { return '<p>Unable to load the directory.</p>'; }
         $more = count( $rows ) > 12;
@@ -137,7 +153,14 @@ final class BH_Directory_3 {
         if ( $show( 'near_me' ) ) { echo '<label><span>Postcode</span><input type="search" name="bh_postcode" placeholder="Postcode prefix" value="' . esc_attr( $postcode ) . '"></label>'; }
         if ( $show( 'free' ) ) { echo '<label class="bh3-check"><input type="checkbox" name="bh_free" value="1" ' . checked( $free, true, false ) . '> Free only</label>'; }
         if ( $show( 'term_time' ) ) { echo '<label class="bh3-check"><input type="checkbox" name="bh_term" value="1" ' . checked( $term, true, false ) . '> Term time</label>'; }
-        echo '<div class="bh3-search-actions"><button type="submit">Find activities</button><a href="' . esc_url( remove_query_arg( array( 'bh_search', 'bh_category', 'bh_town', 'bh_region', 'bh_age', 'bh_day', 'bh_postcode', 'bh_free', 'bh_term', 'bh_page' ) ) ) . '">Clear filters</a></div></form>';
+        echo '<label><span>Sort activities</span><select name="bh_sort"><option value="title" ' . selected( $sort, 'title', false ) . '>Name A–Z</option><option value="town" ' . selected( $sort, 'town', false ) . '>Town A–Z</option><option value="newest" ' . selected( $sort, 'newest', false ) . '>Recently added</option></select></label>';
+        if ( $show( 'near_me' ) ) {
+            echo '<label><span>Within</span><select name="bh_radius">';
+            foreach ( array( 5, 10, 20, 50 ) as $miles ) { echo '<option value="' . esc_attr( $miles ) . '" ' . selected( $radius, $miles, false ) . '>' . esc_html( $miles ) . ' miles</option>'; }
+            echo '</select></label><div class="bh3-search-actions"><button type="button" class="bh3-locate" data-bh3-locate>Use my location</button><span class="bh3-location-status" role="status" aria-live="polite"></span></div>';
+            if ( $geo_valid ) { echo '<input type="hidden" name="bh_lat" value="' . esc_attr( (string) $geo_lat ) . '"><input type="hidden" name="bh_lng" value="' . esc_attr( (string) $geo_lng ) . '">'; }
+        }
+        echo '<div class="bh3-search-actions"><button type="submit">Find activities</button><a href="' . esc_url( remove_query_arg( array( 'bh_search', 'bh_category', 'bh_town', 'bh_region', 'bh_age', 'bh_day', 'bh_postcode', 'bh_free', 'bh_term', 'bh_sort', 'bh_radius', 'bh_lat', 'bh_lng', 'bh_page' ) ) ) . '">Clear filters</a></div></form>';
         if ( $map_points ) { echo '<div class="bh3-view-toggle" role="group" aria-label="Directory view"><button type="button" data-bh3-view="both" aria-pressed="true">Map &amp; list</button><button type="button" data-bh3-view="map" aria-pressed="false">Map only</button><button type="button" data-bh3-view="list" aria-pressed="false">List only</button></div>'; }
         echo '<section class="bh3-map-section" aria-label="Activity locations"><h3>Activities on the map</h3>';
         if ( $map_points ) {
