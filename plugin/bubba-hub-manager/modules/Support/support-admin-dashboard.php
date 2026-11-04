@@ -35,7 +35,7 @@ function bh_support_dashboard_render(): void {
         ]],
     ]);
     $pending = (int) $posts->found_posts;
-    $forms = array_values(array_unique(array_filter(array_map('absint', (array) get_option('bh_support_fluent_form_ids', [])))));
+    $forms = array_values(array_unique(array_filter(array_map('absint', (array) get_option('bh_support_fluent_form_ids', [4])))));
     $counts = ['new' => 0, 'in_progress' => 0, 'resolved' => 0];
     $total = 0;
     $fluent_available = false;
