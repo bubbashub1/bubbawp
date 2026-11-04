@@ -274,7 +274,7 @@ final class BH_Leader_Listing_Wizard_3 {
         }
         if ( $step === 4 ) { update_option( 'bh3_activity_booking_method_' . $id, $method, false ); }
         $next = ( $step < 7 && $intent !== 'submit' ) ? $step + 1 : 7;
-        $url = add_query_arg( array( 'activity_id' => $id, 'step' => $next, 'saved' => 1 ), home_url( '/leader/new/' ) );
+        $url = add_query_arg( array( 'activity_id' => $id, 'step' => $next, 'saved' => 1 ), home_url( '/leader/new-activity/' ) );
         if ( $step === 7 && $intent === 'submit' ) { $url = add_query_arg( 'submitted', 1, home_url( '/leader/' ) ); }
         wp_safe_redirect( $url );
         exit;
