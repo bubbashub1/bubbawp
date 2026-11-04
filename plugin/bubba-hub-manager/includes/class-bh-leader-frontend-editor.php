@@ -58,6 +58,14 @@ final class BH_Leader_Frontend_Editor_3 {
                 <p class="bh-edit-hint">No listing image has been assigned yet.</p>
             <?php endif; ?>
         </section>
+        <form method="post" enctype="multipart/form-data" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+            <input type="hidden" name="action" value="bh3_leader_image_upload">
+            <input type="hidden" name="activity_id" value="<?php echo esc_attr( $id ); ?>">
+            <?php wp_nonce_field( 'bh3_leader_image_' . $id ); ?>
+            <label for="bh-leader-image-file">Upload a JPG, PNG or WebP image (maximum 5 MB)</label>
+            <input id="bh-leader-image-file" name="bh_leader_image" type="file" accept="image/jpeg,image/png,image/webp" required>
+            <button type="submit">Upload listing image</button>
+        </form>
         <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
             <input type="hidden" name="action" value="bh3_leader_frontend_save">
             <input type="hidden" name="activity_id" value="<?php echo esc_attr( $id ); ?>">
