@@ -29,8 +29,11 @@ add_shortcode('bh_support_articles', static function ($atts): string {
     ?>
     <section class="bh-resource-hub bh-article-library" aria-label="<?php esc_attr_e('Family articles', 'bubbahub'); ?>">
       <form method="get" class="bh-resource-filters" role="search">
+        <div class="bh-resource-filter-field">
         <label for="<?php echo esc_attr($instance_id); ?>-search"><?php esc_html_e('Search articles', 'bubbahub'); ?></label>
         <input type="search" id="<?php echo esc_attr($instance_id); ?>-search" name="bh_article_search" value="<?php echo esc_attr($search); ?>">
+        </div>
+        <div class="bh-resource-filter-field">
         <label for="<?php echo esc_attr($instance_id); ?>-topic"><?php esc_html_e('Topic', 'bubbahub'); ?></label>
         <select id="<?php echo esc_attr($instance_id); ?>-topic" name="bh_article_topic">
           <option value=""><?php esc_html_e('All topics', 'bubbahub'); ?></option>
@@ -38,6 +41,7 @@ add_shortcode('bh_support_articles', static function ($atts): string {
             <option value="<?php echo esc_attr($term->slug); ?>" <?php selected($topic, $term->slug); ?>><?php echo esc_html($term->name); ?></option>
           <?php endforeach; endif; ?>
         </select>
+        </div>
         <button type="submit"><?php esc_html_e('Find articles', 'bubbahub'); ?></button>
       </form>
       <div class="bh-resource-grid">
