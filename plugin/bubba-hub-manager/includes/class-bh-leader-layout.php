@@ -11,6 +11,7 @@ final class BH_Leader_Layout_3 {
             'bh_leader_edit_activity' => 'Edit activity',
             'bh_leader_venues' => 'Venues',
             'bh_leader_timetable' => 'Timetable',
+            'bh_leader_business' => 'My Business',
         );
         if ( ! isset( $pages[ $tag ] ) ||
             strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ||
