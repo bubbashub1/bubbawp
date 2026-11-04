@@ -98,12 +98,13 @@ final class BH_Family_Read_Model_3 {
         if (!$ids) return array();
         global $wpdb;
         $table = 'bh_activities';
-        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($table))) !== $table) return array();
+        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($table))) !== $table) return new WP_Error('family_activity_table_unavailable', 'Activity titles table unavailable');
         $placeholders = implode(',', array_fill(0, count($ids), '%d'));
         $sql = "SELECT id,title FROM bh_activities WHERE id IN ({$placeholders})";
         $rows = $wpdb->get_results($wpdb->prepare($sql, $ids), ARRAY_A);
+        if (!is_array($rows)) return new WP_Error('family_activity_titles_failed', 'Unable to load activity titles');
         $titles = array();
-        foreach ((array) $rows as $row) $titles[(int) $row['id']] = (string) $row['title'];
+        foreach ($rows as $row) $titles[(int) $row['id']] = (string) $row['title'];
         return $titles;
     }
 
