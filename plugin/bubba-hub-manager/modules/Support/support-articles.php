@@ -38,6 +38,9 @@ add_shortcode('bh_support_articles', static function ($atts): string {
             <option value="<?php echo esc_attr($term->slug); ?>" <?php selected($topic, $term->slug); ?>><?php echo esc_html($term->name); ?></option>
           <?php endforeach; endif; ?>
         </select>
+        <?php foreach ($_GET as $key => $value) : if (!is_string($key) || !is_scalar($value) || in_array($key, ['bh_article_search', 'bh_article_topic', 'bh_article_page'], true)) continue; ?>
+          <input type="hidden" name="<?php echo esc_attr(sanitize_key($key)); ?>" value="<?php echo esc_attr(sanitize_text_field(wp_unslash((string) $value))); ?>">
+        <?php endforeach; ?>
         <button type="submit"><?php esc_html_e('Find articles', 'bubbahub'); ?></button>
       </form>
       <div class="bh-resource-grid">
