@@ -3,9 +3,10 @@ if (!defined('ABSPATH')) exit;
 /** Staging-only, explicitly opted-in WordPress family profile creation. */
 final class BH_Family_Native_Profiles_3 {
     public static function register() {
-        add_shortcode('bubbahub_family_add_profile',array(__CLASS__,'form'));
+        add_shortcode('bubbahub_family_add_profile',array(__CLASS__,'dashboard'));
         add_action('admin_post_bh3_native_family_profile',array(__CLASS__,'save'));
         add_action('admin_post_bh3_native_family_update',array(__CLASS__,'update'));
+        add_action('admin_post_bh3_native_family_delete',array(__CLASS__,'delete'));
     }
     public static function allowed() {
         return BH_Family_Preferences_3::can_edit()
@@ -53,6 +54,57 @@ final class BH_Family_Native_Profiles_3 {
           </div>
         </div>
         <?php return ob_get_clean();
+    }
+    public static function dashboard() {
+        if (current_user_can('manage_options') && wp_parse_url(home_url(),PHP_URL_HOST)==='staging.bubbahub.co.uk') return self::preview();
+        if (!self::allowed()) return '<p>Sign in with a verified family account to manage your family profiles.</p>';
+        global $wpdb;
+        $table=$wpdb->prefix.'bh_family_profiles';
+        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s',$wpdb->esc_like($table)))!==$table) return '<p>Profile storage is not available.</p>';
+        $records=$wpdb->get_results($wpdb->prepare("SELECT id,profile_type,display_name,profile_date FROM `{$table}` WHERE user_id=%d ORDER BY id DESC LIMIT 70",get_current_user_id()),ARRAY_A);
+        if (!is_array($records)) return '<p>Unable to load profiles.</p>';
+        ob_start(); ?>
+        <div class="bh3-family-profile-preview">
+          <div>
+            <nav aria-label="My Hub sections"><strong>My Hub</strong>
+              <p><a href="<?php echo esc_url(home_url('/family/')); ?>">Overview</a></p>
+              <p><a href="<?php echo esc_url(home_url('/family/profile/')); ?>" aria-current="page">My family</a></p>
+              <p><a href="<?php echo esc_url(home_url('/family/settings/')); ?>">Settings</a></p>
+            </nav>
+            <section><h2>My family</h2>
+              <?php if (isset($_GET['bh3_profile_status']) && $_GET['bh3_profile_status']==='saved') : ?><p role="status">Profile saved.</p><?php endif; ?>
+              <?php foreach (array('child'=>'Children','bump'=>'Pregnancy profiles') as $type=>$heading) : ?>
+                <h3><?php echo esc_html($heading); ?></h3>
+                <?php $found=false; foreach ($records as $record) : if ($record['profile_type']!==$type) continue; $found=true; ?>
+                  <div class="bh3-family-profile-entry">
+                    <?php echo self::edit_form($record); ?>
+                    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" onsubmit="return confirm('Remove this profile? This cannot be undone.');">
+                      <input type="hidden" name="action" value="bh3_native_family_delete">
+                      <input type="hidden" name="profile_id" value="<?php echo esc_attr(absint($record['id'])); ?>">
+                      <?php wp_nonce_field('bh3_native_family_delete_'.absint($record['id'])); ?>
+                      <button type="submit">Remove profile</button>
+                    </form>
+                  </div>
+                <?php endforeach; if (!$found) : ?><p>No profiles added yet.</p><?php endif; ?>
+              <?php endforeach; ?>
+              <h3>Add a family profile</h3><?php echo self::form(); ?>
+            </section>
+          </div>
+        </div>
+        <?php return ob_get_clean();
+    }
+    public static function delete() {
+        if (!self::allowed()) wp_die('Profile removal unavailable.','',array('response'=>403));
+        $id=isset($_POST['profile_id']) && is_scalar($_POST['profile_id']) ? absint($_POST['profile_id']) : 0;
+        $nonce=isset($_POST['_wpnonce']) && is_scalar($_POST['_wpnonce']) ? sanitize_text_field(wp_unslash($_POST['_wpnonce'])) : '';
+        if (!$id || !wp_verify_nonce($nonce,'bh3_native_family_delete_'.$id)) wp_die('Invalid request.','',array('response'=>403));
+        global $wpdb;
+        $table=$wpdb->prefix.'bh_family_profiles';
+        $deleted=$wpdb->delete($table,array('id'=>$id,'user_id'=>get_current_user_id()),array('%d','%d'));
+        if ($deleted===false) wp_die('Unable to remove profile.','',array('response'=>500));
+        if ($deleted===0) wp_die('Profile not found.','',array('response'=>404));
+        wp_safe_redirect(add_query_arg('bh3_profile_status','removed',home_url('/family/profile/')));
+        exit;
     }
     public static function edit_form($record) {
         if (!self::allowed() || !is_array($record) || empty($record['id'])) return '';
