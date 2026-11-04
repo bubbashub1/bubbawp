@@ -49,6 +49,11 @@ final class BH_Family_Hub_3 {
         $profiles = is_array($profiles) && isset($profiles['children'], $profiles['bumps']) && is_array($profiles['children']) && is_array($profiles['bumps']) ? $profiles : array('children' => array(), 'bumps' => array());
         $show_saved = $private_preview && isset($_GET['bh3_show_saved']) && is_scalar($_GET['bh3_show_saved']) && (string) $_GET['bh3_show_saved'] === '1';
         $show_planner = $private_preview && isset($_GET['bh3_show_planner']) && is_scalar($_GET['bh3_show_planner']) && (string) $_GET['bh3_show_planner'] === '1';
+        $planner_filter = isset($_GET['bh3_planner_filter']) && is_scalar($_GET['bh3_planner_filter']) ? sanitize_key(wp_unslash($_GET['bh3_planner_filter'])) : 'all';
+        if (!in_array($planner_filter, array('all', 'to_visit', 'visited'), true)) $planner_filter = 'all';
+        $filtered_planner = array_values(array_filter($planner, static function($item) use ($planner_filter) {
+            return $planner_filter === 'all' || ($planner_filter === 'visited' ? !empty($item['visited']) : empty($item['visited']));
+        }));
         $activity_ids = array_merge($saved, array_column($planner, 'activity_id'));
         $activity_titles = $private_preview ? BH_Family_Read_Model_3::activity_titles($activity_ids) : array();
         if (is_wp_error($activity_titles)) $activity_titles = array();
@@ -120,11 +125,16 @@ final class BH_Family_Hub_3 {
               <article class="bh3-family__card">
                 <h2><?php echo esc_html__('Family planner', 'bubba-hub-manager'); ?></h2>
                 <p class="bh3-family__planner-summary"><?php echo esc_html(sprintf(__('%1$d planned · %2$d visited', 'bubba-hub-manager'), count($planner), $visited_count)); ?></p>
-                <?php if (empty($planner)) : ?>
+                <nav class="bh3-family__filters" aria-label="<?php echo esc_attr__('Filter planner', 'bubba-hub-manager'); ?>">
+                  <?php foreach (array('all' => __('All', 'bubba-hub-manager'), 'to_visit' => __('To visit', 'bubba-hub-manager'), 'visited' => __('Visited', 'bubba-hub-manager')) as $filter_key => $filter_label) : ?>
+                    <a <?php if ($planner_filter === $filter_key) : ?>aria-current="page"<?php endif; ?> href="<?php echo esc_url(add_query_arg(array('bh3_planner_filter' => $filter_key, 'bh3_show_planner' => '0'), $return_url)); ?>"><?php echo esc_html($filter_label); ?></a>
+                  <?php endforeach; ?>
+                </nav>
+                <?php if (empty($filtered_planner)) : ?>
                   <p><?php echo esc_html__('Your planner is empty.', 'bubba-hub-manager'); ?></p>
                 <?php else : ?>
                   <ul class="bh3-family__items">
-                    <?php foreach (array_slice($planner, 0, $show_planner ? 200 : 8) as $item) : ?>
+                    <?php foreach (array_slice($filtered_planner, 0, $show_planner ? 200 : 8) as $item) : ?>
                       <li>
                         <?php $planner_id = absint($item['activity_id'] ?? 0); $planner_label = $activity_titles[$planner_id] ?? sprintf(__('Activity #%d', 'bubba-hub-manager'), $planner_id); ?>
                         <?php if (!empty($activity_links[$planner_id])) : ?><a href="<?php echo esc_url($activity_links[$planner_id]); ?>"><?php echo esc_html($planner_label); ?></a><?php else : ?><?php echo esc_html($planner_label); ?><?php endif; ?>
@@ -143,7 +153,7 @@ final class BH_Family_Hub_3 {
                       </li>
                     <?php endforeach; ?>
                   </ul>
-                  <?php if (count($planner) > 8) : ?><p><a href="<?php echo esc_url(add_query_arg('bh3_show_planner', $show_planner ? '0' : '1', $return_url)); ?>"><?php echo esc_html($show_planner ? __('Show fewer planned activities', 'bubba-hub-manager') : sprintf(__('View all %d planned activities', 'bubba-hub-manager'), count($planner))); ?></a></p><?php endif; ?>
+                  <?php if (count($filtered_planner) > 8) : ?><p><a href="<?php echo esc_url(add_query_arg(array('bh3_show_planner' => $show_planner ? '0' : '1', 'bh3_planner_filter' => $planner_filter), $return_url)); ?>"><?php echo esc_html($show_planner ? __('Show fewer planned activities', 'bubba-hub-manager') : sprintf(__('View all %d matching activities', 'bubba-hub-manager'), count($filtered_planner))); ?></a></p><?php endif; ?>
                 <?php endif; ?>
               </article>
               <article class="bh3-family__card">
