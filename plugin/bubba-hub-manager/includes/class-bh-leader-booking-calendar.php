@@ -19,6 +19,32 @@ final class BH_Leader_Booking_Calendar_3 {
         $args = array($owner, 'scheduled', 'weekly');
         if ($activity_id) { $where .= ' AND a.id=%d'; $args[] = $activity_id; }
         $rows = $wpdb->get_results($wpdb->prepare("SELECT s.id,s.activity_id,s.day_of_week,s.start_time,s.end_time,s.start_date,s.end_date,s.term_time_only,a.title FROM {$wpdb->prefix}sessions s INNER JOIN {$wpdb->prefix}activities a ON a.id=s.activity_id WHERE {$where} ORDER BY s.start_time,a.title LIMIT 300", $args), ARRAY_A);
+        // Query monthly reservation totals once, never once per calendar cell.
+        $reservation_totals = array();
+        $storage_ready = class_exists('BH_Leader_Booking_Storage_3') && BH_Leader_Booking_Storage_3::installed();
+        if ($storage_ready) {
+            $booking_table = BH_Leader_Booking_Storage_3::tables()['reservations'];
+            $exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($booking_table)));
+            if ($exists === $booking_table) {
+                $start = $first->format('Y-m-d') . ' 00:00:00';
+                $end = $first->modify('+1 month')->format('Y-m-d') . ' 00:00:00';
+                $bookings = $wpdb->get_results($wpdb->prepare(
+                    "SELECT session_id,session_starts_at,status,COUNT(*) AS total FROM {$booking_table} WHERE organiser_id=%d AND session_starts_at >= %s AND session_starts_at < %s AND status IN ('pending','confirmed','waitlisted') GROUP BY session_id,session_starts_at,status",
+                    $owner, $start, $end
+                ), ARRAY_A);
+                foreach ((array)$bookings as $booking) {
+                    $key = absint($booking['session_id']) . '|' . substr($booking['session_starts_at'],0,10);
+                    if (!isset($reservation_totals[$key])) { $reservation_totals[$key] = array('pending'=>0,'confirmed'=>0,'waitlisted'=>0); }
+                    $status = $booking['status'];
+                    if (isset($reservation_totals[$key][$status])) { $reservation_totals[$key][$status] += (int)$booking['total']; }
+                }
+            } else { $storage_ready = false; }
+        }
+        $session_capacity = array();
+        foreach ((array)$rows as $row) {
+            $prefs = get_option('bh3_booking_session_' . absint($row['id']), array());
+            $session_capacity[absint($row['id'])] = !empty($prefs['enabled']) ? max(1,absint($prefs['capacity'] ?? 10)) : null;
+        }
         $by_day = array();
         foreach ((array)$rows as $row) { $day = (int)$row['day_of_week']; if ($day >= 1 && $day <= 7) { $by_day[$day][] = $row; } }
         $base = home_url('/leader/bookings/');
@@ -59,6 +85,11 @@ final class BH_Leader_Booking_Calendar_3 {
             foreach (($by_day[(int)$date->format('N')] ?? array()) as $session) {
                 if ((!empty($session['start_date']) && $ymd < $session['start_date']) || (!empty($session['end_date']) && $ymd > $session['end_date'])) { continue; }
                 echo '<span class="bh3-cal-item"><strong>'.esc_html(substr($session['start_time'],0,5)).'</strong> '.esc_html($session['title']);
+                $key = absint($session['id']) . '|' . $ymd;
+                if ($storage_ready && isset($reservation_totals[$key])) {
+                    $total = $reservation_totals[$key];
+                    echo '<small>'.esc_html($total['confirmed']).' confirmed · '.esc_html($total['pending']).' pending</small>';
+                }
                 if (!empty($session['term_time_only'])) { echo '<small>Term time · verify date</small>'; }
                 echo '</span>';
             }
@@ -75,12 +106,19 @@ final class BH_Leader_Booking_Calendar_3 {
                 if (!$shown) { echo '<ul>'; }
                 $shown++;
                 echo '<li><strong>'.esc_html($session['title']).'</strong> · '.esc_html(substr($session['start_time'],0,5).'–'.substr($session['end_time'],0,5));
+                $key = absint($session['id']) . '|' . $selected;
+                if ($storage_ready) {
+                    $total = $reservation_totals[$key] ?? array('confirmed'=>0,'pending'=>0,'waitlisted'=>0);
+                    echo ' <small>· '.esc_html($total['confirmed']).' confirmed, '.esc_html($total['pending']).' pending, '.esc_html($total['waitlisted']).' waiting</small>';
+                    $capacity = $session_capacity[absint($session['id'])] ?? null;
+                    if ($capacity !== null) { echo ' <small>· '.esc_html(max(0,$capacity-$total['confirmed'])).' of '.esc_html($capacity).' places not confirmed</small>'; }
+                } else { echo ' <small>· Booking totals unavailable until setup</small>'; }
                 if (!empty($session['term_time_only'])) { echo ' <small>(term-time date requires verification)</small>'; }
                 echo '</li>';
             }
             if ($shown) { echo '</ul>'; } else { echo '<p>No timetable sessions scheduled for this date.</p>'; }
             ?>
-            <p class="bh3-cal-note">Timetable only. Attendance and reservation counts will appear after the booking workflow is enabled.</p>
+            <p class="bh3-cal-note">Counts reflect stored reservations only, not verified availability. No booking actions are enabled yet.</p>
           </div>
         <?php endif; ?>
         <?php if (!$rows) { echo '<p>No weekly timetable sessions found for this organiser.</p>'; } ?>
