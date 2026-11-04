@@ -86,7 +86,7 @@ final class BH_Directory_3 {
         }
         $where = implode( ' AND ', $conditions );
         $order = $sort === 'newest' ? 'a.id DESC' : ( $sort === 'town' ? 'town ASC, a.title ASC' : 'a.title ASC' );
-        $sql = "SELECT a.id,a.title,a.slug,a.description,a.category,a.age_min_months,a.age_max_months,a.price_from,a.is_free,o.name AS organiser,
+        $sql = "SELECT a.id,a.title,a.slug,a.description,a.category,a.image_path,a.age_min_months,a.age_max_months,a.price_from,a.is_free,o.name AS organiser,
             (SELECT v.town FROM `{$links}` av INNER JOIN `{$venues}` v ON v.id=av.venue_id WHERE av.activity_id=a.id ORDER BY v.name LIMIT 1) AS town
             FROM `{$activities}` a LEFT JOIN `{$organisers}` o ON o.id=a.organiser_id
             WHERE {$where} ORDER BY {$order} LIMIT 13 OFFSET " . ( ( $page - 1 ) * 12 );
@@ -156,7 +156,7 @@ final class BH_Directory_3 {
         .bh3-real-directory.bh3-view-map .bh3-cards,.bh3-real-directory.bh3-view-map .bh3-pages{display:none}
         .bh3-real-directory .bh3-map:focus-visible,.bh3-real-directory button:focus-visible{outline:3px solid #74b38b;outline-offset:3px}
         .bh3-real-directory .bh3-map-card-link{display:inline-block;margin-top:8px;padding:7px 10px;border-radius:7px;border:1px solid #bcd9c5;background:#f4faf6;color:#175c46;font-weight:700;cursor:pointer}
-        .bh3-real-directory article h3{margin:8px 0}.bh3-real-directory .bh3-card-title-link{color:inherit;text-decoration:none}.bh3-real-directory .bh3-card-title-link:hover{text-decoration:underline}.bh3-real-directory .bh3-card-title-link:focus-visible,.bh3-real-directory .bh3-card-cta:focus-visible{outline:3px solid #d59b38;outline-offset:3px}.bh3-real-directory .bh3-card-footer{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-top:14px}.bh3-real-directory .bh3-card-cta{display:inline-flex;align-items:center;gap:5px;background:#175c46;color:#fff;text-decoration:none;border-radius:8px;padding:9px 12px;font-size:13px;font-weight:650}.bh3-real-directory .bh3-card-cta:hover{background:#104632}.bh3-real-directory .bh3-card-sessions{margin:12px 0;font-size:12px;color:#315b46}.bh3-real-directory .bh3-card-session-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.bh3-real-directory .bh3-card-session-list span{border:1px solid #c8ded0;background:#f5faf6;padding:5px 8px;border-radius:7px;white-space:nowrap}
+        .bh3-real-directory article h3{margin:8px 0}.bh3-real-directory .bh3-card-image{width:100%;aspect-ratio:16/10;overflow:hidden;background:#e9f2ec;border-radius:10px;margin-bottom:14px}.bh3-real-directory .bh3-card-image img{display:block;width:100%;height:100%;object-fit:cover}.bh3-real-directory .bh3-card-image-empty{display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#e8f4e9,#cfe6d8);color:#47765e}.bh3-real-directory .bh3-card-image-empty span{font-size:28px;font-weight:800;letter-spacing:-2px;opacity:.55}.bh3-real-directory .bh3-card-title-link{color:inherit;text-decoration:none}.bh3-real-directory .bh3-card-title-link:hover{text-decoration:underline}.bh3-real-directory .bh3-card-title-link:focus-visible,.bh3-real-directory .bh3-card-cta:focus-visible{outline:3px solid #d59b38;outline-offset:3px}.bh3-real-directory .bh3-card-footer{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-top:14px}.bh3-real-directory .bh3-card-cta{display:inline-flex;align-items:center;gap:5px;background:#175c46;color:#fff;text-decoration:none;border-radius:8px;padding:9px 12px;font-size:13px;font-weight:650}.bh3-real-directory .bh3-card-cta:hover{background:#104632}.bh3-real-directory .bh3-card-sessions{margin:12px 0;font-size:12px;color:#315b46}.bh3-real-directory .bh3-card-session-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.bh3-real-directory .bh3-card-session-list span{border:1px solid #c8ded0;background:#f5faf6;padding:5px 8px;border-radius:7px;white-space:nowrap}
         .bh3-real-directory .bh3-card-facts{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}.bh3-real-directory .bh3-card-facts span{display:inline-flex;align-items:center;background:#f0f7f2;border:1px solid #dce9df;border-radius:999px;padding:5px 9px;font-size:12px;color:#315b46}.bh3-real-directory article{min-width:0;overflow-wrap:anywhere}.bh3-real-directory .bh3-meta{color:#50675e;font-size:14px}
         .bh3-real-directory .bh3-pages{display:flex;gap:16px;margin-top:24px}
         .bh3-real-directory .bh3-map{border-radius:14px;overflow:hidden;border:1px solid #d7e3dc;margin:16px 0;z-index:0}
@@ -213,7 +213,15 @@ final class BH_Directory_3 {
             ? get_permalink( $detail_page ) : '';
         foreach ( $rows as $row ) {
             $detail_url = $detail_base_url ? add_query_arg( 'bh_activity', absint( $row['id'] ), $detail_base_url ) : '';
-            echo '<article data-activity-id="' . esc_attr( (string) absint( $row['id'] ) ) . '"><div class="bh3-meta">' . esc_html( (string) $row['category'] ) . '</div><h3>';
+            echo '<article data-activity-id="' . esc_attr( (string) absint( $row['id'] ) ) . '">';
+            $image_url = isset( $row['image_path'] ) ? trim( (string) $row['image_path'] ) : '';
+            $image_scheme = strtolower( (string) wp_parse_url( $image_url, PHP_URL_SCHEME ) );
+            if ( $image_url && in_array( $image_scheme, array( 'http', 'https' ), true ) ) {
+                echo '<div class="bh3-card-image"><img src="' . esc_url( $image_url ) . '" alt="" loading="lazy" decoding="async"></div>';
+            } else {
+                echo '<div class="bh3-card-image bh3-card-image-empty" aria-hidden="true"><span>BH</span></div>';
+            }
+            echo '<div class="bh3-meta">' . esc_html( (string) $row['category'] ) . '</div><h3>';
             if ( $detail_url ) { echo '<a class="bh3-card-title-link" href="' . esc_url( $detail_url ) . '">' . esc_html( $row['title'] ) . '</a>'; }
             else { echo esc_html( $row['title'] ); }
             echo '</h3>';
