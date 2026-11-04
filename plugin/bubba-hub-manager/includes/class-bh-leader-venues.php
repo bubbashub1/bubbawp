@@ -19,6 +19,7 @@ final class BH_Leader_Venues_3 {
     private static function activity( $id ) {
         global $wpdb;
         $table = $wpdb->prefix . 'activities';
+        if ( ! BH_Leader_Access_3::table_exists( 'activities' ) ) { return null; }
         $organiser = BH_Leader_Access_3::organiser_id();
         if ( ! $organiser ) { return null; }
         return $wpdb->get_row( $wpdb->prepare( "SELECT id, title, status FROM `{$table}` WHERE id = %d AND organiser_id = %d AND status = 'draft' LIMIT 1", $id, $organiser ), ARRAY_A );
