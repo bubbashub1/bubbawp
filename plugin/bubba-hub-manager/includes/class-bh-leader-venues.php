@@ -69,7 +69,7 @@ final class BH_Leader_Venues_3 {
             $matches = $wpdb->get_results( $wpdb->prepare(
                 "SELECT id, name, town FROM `{$venues}` WHERE name LIKE %s OR town LIKE %s ORDER BY name LIMIT 30", $like, $like
             ), ARRAY_A );
-            echo '<table class="widefat striped"><thead><tr><th>Venue</th><th>Town</th><th>Action</th></tr></thead><tbody>';
+            echo '<table class="widefat striped bh3-card-table"><thead><tr><th>Venue</th><th>Town</th><th>Action</th></tr></thead><tbody>';
             foreach ( $matches as $row ) {
                 echo '<tr><td data-label="Venue">' . esc_html( $row['name'] ) . '</td><td data-label="Town">' . esc_html( (string) $row['town'] ) . '</td><td data-label="Action">';
                 echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
