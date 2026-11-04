@@ -55,7 +55,13 @@ final class BH_Ask_Support_Inbox_3 {
                       echo '<article style="border:1px solid #dbe5df;border-radius:12px;padding:16px;margin:12px 0">';
                       echo '<p style="font-size:.85rem;color:#52685b">Question #' . esc_html((string) $question['id']) . ' · ' . esc_html($categories[$question['category_slug']] ?? $question['category_slug']) . '</p>';
                       echo '<p style="white-space:pre-wrap">' . esc_html($question['question_text']) . '</p>';
-                      echo '<p style="font-size:.85rem">Replies will be enabled after moderation and notification safeguards are tested.</p>';
+                      echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+                      echo '<input type="hidden" name="action" value="bh3_ask_submit_reply">';
+                      echo '<input type="hidden" name="question_id" value="' . esc_attr((string) $question['id']) . '">';
+                      wp_nonce_field('bh3_ask_reply_' . (int) $question['id']);
+                      echo '<label for="bh3-reply-' . esc_attr((string) $question['id']) . '">Your reply (held for moderation)</label>';
+                      echo '<textarea id="bh3-reply-' . esc_attr((string) $question['id']) . '" name="reply_body" rows="4" minlength="10" maxlength="5000" required style="display:block;width:100%;margin:8px 0"></textarea>';
+                      echo '<button type="submit">Submit reply for review</button></form>';
                       echo '</article>';
                   }
               } else {
