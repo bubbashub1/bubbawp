@@ -43,9 +43,13 @@ final class BH_Activity_Detail_3 {
              WHERE s.activity_id=%d ORDER BY s.day_of_week,s.start_time LIMIT 100", $id
         ), ARRAY_A );
         $days = array( 1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday', 7 => 'Sunday' );
+        $builder = class_exists( 'BH_Directory_Builder_3' ) ? BH_Directory_Builder_3::settings() : array();
+        $sections = isset( $builder['detail_sections'] ) && is_array( $builder['detail_sections'] ) ? $builder['detail_sections'] : array( 'hero', 'overview', 'timetable', 'map', 'contact', 'organiser' );
+        $has = static function( $section ) use ( $sections ) { return in_array( $section, $sections, true ); };
+        $width_class = ( $builder['listing_layout'] ?? 'sidebar' ) === 'full_width' ? ' bh3-detail-full' : '';
         ob_start();
-        echo '<article class="bh3-activity-detail"><style>
-          .bh3-activity-detail{max-width:1050px;margin:0 auto;padding:28px 16px;color:#173c34}
+        echo '<article class="bh3-activity-detail' . esc_attr( $width_class ) . '"><style>
+          .bh3-activity-detail{max-width:1050px;margin:0 auto;padding:28px 16px;color:#173c34}.bh3-activity-detail.bh3-detail-full{max-width:100%}
           .bh3-activity-detail *{box-sizing:border-box}.bh3-activity-detail header{padding:28px;border-radius:18px;background:#e7f3eb}
           .bh3-activity-detail h1{margin:8px 0}.bh3-activity-detail .bh3-chips{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}
           .bh3-activity-detail .bh3-chip{background:#f2f7f4;border:1px solid #d8e6dc;border-radius:24px;padding:8px 13px}
@@ -54,15 +58,18 @@ final class BH_Activity_Detail_3 {
           .bh3-activity-detail .bh3-table-wrap{overflow-x:auto}.bh3-activity-detail table{width:100%;border-collapse:collapse;min-width:550px}
           .bh3-activity-detail th,.bh3-activity-detail td{padding:12px;border-bottom:1px solid #d8e6dc;text-align:left}
           .bh3-activity-detail .bh3-book{display:inline-block;padding:12px 18px;border-radius:10px;background:#175c46;color:#fff;text-decoration:none}
-        </style><header><div>' . esc_html( (string) $activity['category'] ) . '</div><h1>' . esc_html( $activity['title'] ) . '</h1>';
+        </style>';
+        if ( $has( 'hero' ) ) { echo '<header><div>' . esc_html( (string) $activity['category'] ) . '</div><h1>' . esc_html( $activity['title'] ) . '</h1>';
         if ( $activity['organiser_name'] ) { echo '<p>By ' . esc_html( $activity['organiser_name'] ) . '</p>'; }
-        echo '</header><div class="bh3-chips">';
+        echo '</header>'; } else { echo '<h1>' . esc_html( $activity['title'] ) . '</h1>'; }
+        echo '<div class="bh3-chips">';
         echo '<span class="bh3-chip">' . ( (int) $activity['is_free'] ? 'Free' : ( $activity['price_from'] !== null ? 'From £' . esc_html( number_format( (float) $activity['price_from'], 2 ) ) : 'Price on enquiry' ) ) . '</span>';
         if ( $activity['age_min_months'] !== null || $activity['age_max_months'] !== null ) {
             echo '<span class="bh3-chip">Age: ' . esc_html( (string) ( $activity['age_min_months'] ?? '0' ) ) . '–' . esc_html( (string) ( $activity['age_max_months'] ?? 'any' ) ) . ' months</span>';
         }
-        echo '</div><section><h2>About this activity</h2><div>' . wp_kses_post( wpautop( (string) $activity['description'] ) ) . '</div></section>';
-        if ( $venues ) {
+        echo '</div>';
+        if ( $has( 'overview' ) ) { echo '<section><h2>About this activity</h2><div>' . wp_kses_post( wpautop( (string) $activity['description'] ) ) . '</div></section>'; }
+        if ( $venues && $has( 'map' ) ) { // Location cards until the Leaflet map is implemented.
             echo '<section><h2>Locations</h2><div class="bh3-venues">';
             foreach ( $venues as $venue ) {
                 echo '<div class="bh3-venue"><strong>' . esc_html( $venue['name'] ) . '</strong><p>' .
@@ -70,7 +77,7 @@ final class BH_Activity_Detail_3 {
             }
             echo '</div></section>';
         }
-        echo '<section><h2>Weekly timetable</h2>';
+        if ( $has( 'timetable' ) ) { echo '<section><h2>Weekly timetable</h2>';
         if ( $sessions ) {
             echo '<div class="bh3-table-wrap"><table><thead><tr><th>Day</th><th>Time</th><th>Venue</th><th>Details</th></tr></thead><tbody>';
             foreach ( $sessions as $session ) {
@@ -81,12 +88,12 @@ final class BH_Activity_Detail_3 {
             }
             echo '</tbody></table></div>';
         } else { echo '<p>No timetable has been added yet.</p>'; }
-        echo '</section>';
+        echo '</section>'; }
         $booking = (string) $activity['booking_url'];
-        if ( $booking && in_array( strtolower( (string) wp_parse_url( $booking, PHP_URL_SCHEME ) ), array( 'http', 'https' ), true ) ) {
+        if ( $has( 'contact' ) && $booking && in_array( strtolower( (string) wp_parse_url( $booking, PHP_URL_SCHEME ) ), array( 'http', 'https' ), true ) ) {
             echo '<p><a class="bh3-book" href="' . esc_url( $booking ) . '" rel="noopener noreferrer" target="_blank">Book with organiser</a></p>';
         }
-        if ( $activity['organiser_website'] ) {
+        if ( $has( 'organiser' ) && $activity['organiser_website'] ) {
             echo '<p><a href="' . esc_url( $activity['organiser_website'] ) . '" rel="noopener noreferrer" target="_blank">Organiser website</a></p>';
         }
         echo '</article>';
