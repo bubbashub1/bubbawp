@@ -31,6 +31,10 @@ final class BH_Family_Hub_3 {
         // BH_Family_Identity_3 is available for future gated integration.
         $return_url = is_singular() ? get_permalink() : home_url( '/' );
         $login_url = wp_login_url( $return_url );
+        $private_preview = defined('BH3_FAMILY_PRIVATE_PREVIEW') && BH3_FAMILY_PRIVATE_PREVIEW === true && $wp_signed_in && BH_Family_Identity_3::current_legacy_id() > 0;
+        $saved = $private_preview ? BH_Family_Read_Model_3::saved_ids() : array();
+        $planner = $private_preview ? BH_Family_Read_Model_3::planner_items() : array();
+        $profiles = $private_preview ? BH_Family_Read_Model_3::family_profiles() : array();
         $sections = array(
             array( 'My family', 'Family profiles will appear here once account mapping is verified.' ),
             array( 'Saved activities', 'Your favourites will connect to existing activity IDs.' ),
@@ -52,6 +56,12 @@ final class BH_Family_Hub_3 {
             </div>
           <?php else : ?>
             <div class="bh3-family__notice" role="status"><?php echo esc_html__( 'Signed in. Family data remains in preview mode while account compatibility checks are completed.', 'bubba-hub-manager' ); ?></div>
+          <?php endif; ?>
+          <?php if ($private_preview && !is_wp_error($saved) && !is_wp_error($planner) && !is_wp_error($profiles)) : ?>
+            <?php nocache_headers(); ?>
+            <div class="bh3-family__notice" role="status">
+              <?php echo esc_html(sprintf('Your Hub: %d saved activities, %d planned activities, %d child profiles.', count($saved), count($planner), count($profiles['children']))); ?>
+            </div>
           <?php endif; ?>
           <div class="bh3-family__grid">
             <?php foreach ( $sections as $section ) : ?>
