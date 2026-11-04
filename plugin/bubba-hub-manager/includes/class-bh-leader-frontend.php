@@ -38,27 +38,7 @@ final class BH_Leader_Frontend_3 {
         $listings = $wpdb->get_results( $wpdb->prepare( "SELECT id,title,status,category FROM `{$activities}` WHERE {$where} ORDER BY id DESC LIMIT %d OFFSET %d", array_merge( $args, array( 15, ( $page_num - 1 ) * 15 ) ) ), ARRAY_A );
         ob_start();
         ?>
-        <style>
-        .bh-leader-shell{max-width:1180px;margin:32px auto;padding:0 20px;color:#203c31;font-family:inherit}.bh-leader-shell p,.bh-leader-shell a,.bh-leader-shell span,.bh-leader-shell li,.bh-leader-shell input,.bh-leader-shell select,.bh-leader-shell button{font-family:inherit!important;letter-spacing:normal}
-        .bh-leader-shell *{box-sizing:border-box}.bh-leader-head{margin-bottom:26px}
-        .bh-leader-head h1{font-size:clamp(28px,4vw,42px);line-height:1.2;margin:0 0 10px;color:#fff}.bh-leader-head{background:linear-gradient(120deg,#1e5743,#367d5d);border-radius:20px;padding:28px;color:#fff}.bh-leader-head .bh-leader-muted{color:#e6f4eb}
-        .bh-leader-muted{color:#53665e}.bh-leader-stats,.bh-leader-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:20px 0}
-        .bh-leader-stat,.bh-leader-card,.bh-leader-list{background:#fff;border:1px solid #dbe5df;border-radius:16px;padding:22px;box-shadow:0 3px 12px rgba(25,58,40,.04)}
-        .bh-leader-stat strong{display:block;font-size:30px;color:#245e4a}.bh-leader-card h2{font-size:20px;margin:0 0 10px}
-        .bh-leader-card p{line-height:1.55;flex:1}.bh-leader-card{display:flex;flex-direction:column;min-height:180px}.bh-leader-card:hover{box-shadow:0 12px 28px rgba(25,58,40,.10)}.bh-leader-card a{display:inline-block;margin-top:8px;color:#245e4a;font-weight:700;text-decoration:underline}.bh-leader-card a:focus-visible,.bh-leader-shell a:focus-visible{outline:3px solid #245e4a;outline-offset:3px}.bh-leader-nav{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 24px}.bh-leader-nav a{padding:9px 14px;border:1px solid #cbdcd0;border-radius:30px;text-decoration:none;color:#245e4a;font-weight:600;background:#fff}.bh-leader-nav a:hover{background:#eef5ef}.bh-leader-button{display:inline-flex;padding:10px 16px;background:#245e4a;color:#fff!important;border-radius:9px;text-decoration:none!important;font-weight:600}
-        .bh-leader-section-heading{font-size:24px;margin:28px 0 8px}.bh-leader-list{margin:22px 0}.bh-leader-list h2{font-size:22px}.bh-leader-list ul{list-style:none;padding:0;margin:0}
-        .bh-leader-list li{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 0;border-top:1px solid #edf0ed}
-        .bh-leader-status{text-transform:capitalize;color:#245e4a;font-weight:600}
-        .bh-leader-activity-title{min-width:0;flex:1}.bh-leader-activity-title strong{font-size:18px;display:block}.bh-leader-activity-title small{color:#617569;margin-top:5px}
-        .bh-leader-activity-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:flex-end}
-        .bh-leader-activity-actions a{padding:7px 10px;border:1px solid #cbdcd0;border-radius:8px;color:#245e4a;text-decoration:none;font-weight:600;font-size:14px}
-        .bh-leader-activity-actions a:hover{background:#eef5ef}
-        .bh-leader-state{display:inline-block;padding:4px 10px;border-radius:20px;background:#eaf2ec;color:#245e4a;font-size:13px;font-weight:700;text-transform:capitalize}
-        .bh-leader-state--draft{background:#fff4d9;color:#79551c}
-        .bh-leader-state--archived{background:#f1f1f1;color:#555}
-        @media(max-width:760px){.bh-leader-list li{flex-direction:column}.bh-leader-activity-actions{justify-content:flex-start}}.bh-leader-filters{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}.bh-leader-filters input,.bh-leader-filters select{min-height:43px;padding:8px 12px;border:1px solid #cbd8cf;border-radius:9px}.bh-leader-filters input{flex:1;min-width:180px}.bh-leader-filters button{border:0;cursor:pointer}.bh-leader-pagination{display:flex;gap:12px;margin-top:16px}.bh-leader-pagination a{color:#245e4a;font-weight:600}
-        @media(max-width:760px){.bh-leader-stats,.bh-leader-grid{grid-template-columns:1fr}.bh-leader-shell{padding:0 14px;margin:20px auto}.bh-leader-stat,.bh-leader-card{padding:18px}}
-        </style>
+
         <main class="bh-leader-shell">
             <header class="bh-leader-head"><h1>Leader Dashboard</h1><p class="bh-leader-muted">Welcome, <?php echo esc_html( $name ); ?>. Manage your Bubba Hub activities.</p></header>
             <nav class="bh-leader-nav" aria-label="Leader portal navigation"><a href="#my-activities">My Activities</a><a href="<?php echo esc_url( home_url( '/leader/business/' ) ); ?>">My Business</a><a href="#leader-tools">Manage classes</a><a href="#leader-ask-inbox">Ask Support</a></nav>
