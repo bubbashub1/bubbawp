@@ -27,6 +27,7 @@ final class BH_Family_Hub_3 {
         // FluentAuth should establish the standard WordPress session; no plugin-specific hooks assumed.
         // This is an authentication UX gate, NOT permission to access legacy bh_users records.
         $wp_signed_in = is_user_logged_in();
+        $legacy_family_id = $wp_signed_in ? BH_Family_Identity_3::current_legacy_id() : 0;
         $return_url = is_singular() ? get_permalink() : home_url( '/' );
         $login_url = wp_login_url( $return_url );
         $sections = array(
@@ -49,7 +50,7 @@ final class BH_Family_Hub_3 {
               <p><a class="bh3-family__login" href="<?php echo esc_url( $login_url ); ?>"><?php echo esc_html__( 'Sign in', 'bubba-hub-manager' ); ?></a></p>
             </div>
           <?php else : ?>
-            <div class="bh3-family__notice" role="status"><?php echo esc_html__( 'Signed in to WordPress. Family account linking is not yet enabled; no private family data is displayed.', 'bubba-hub-manager' ); ?></div>
+            <div class="bh3-family__notice" role="status"><?php echo esc_html__( 'Signed in. Family data remains in preview mode while account compatibility checks are completed.', 'bubba-hub-manager' ); ?></div>
           <?php endif; ?>
           <div class="bh3-family__grid">
             <?php foreach ( $sections as $section ) : ?>
