@@ -23,26 +23,49 @@ final class BH_Leader_Frontend_Business_3 {
         $profile = self::profile();
         if ( ! $profile ) { return '<p>Please sign in with a linked organiser account to manage your business profile.</p>'; }
         ob_start(); ?>
-        <section class="bh-leader-business">
+        <section class="bh-leader-business" id="bh-business-editor"><style>
+        body:has(#bh-business-editor) .wp-block-post-title{display:none}
+        body:has(#bh-business-editor) .wp-site-blocks main{padding-top:0!important}
+        .bh-leader-business{max-width:1250px!important;margin:0 auto 40px!important;padding:0 20px!important}
+        .bh-business-layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:26px;align-items:start}
+        .bh-business-sidebar{position:sticky;top:110px;display:flex;flex-direction:column;gap:5px;padding:18px;background:#fff;border:1px solid #dbe5df;border-radius:18px}
+        .bh-business-sidebar strong{padding:8px 12px 14px;color:#1e5743;font-size:19px}
+        .bh-business-sidebar a{padding:12px;border-radius:10px;text-decoration:none;color:#294a3b;font-weight:600}
+        .bh-business-sidebar a:hover,.bh-business-sidebar a:focus-visible{background:#e8f3ec}
+        .bh-business-main{min-width:0}.bh-leader-business .bh-business-hero{margin:0 0 18px}
+        .bh-leader-business .bh-business-card{margin:0}.bh-leader-business .bh-business-card h2{scroll-margin-top:100px;margin-top:30px;border-top:1px solid #e2ebe5;padding-top:24px;font-size:23px}
+        .bh-leader-business .bh-business-card h2:first-child{margin-top:0;border:0;padding-top:0}
+        .bh-business-mobile-save{display:none}
+        @media(max-width:850px){.bh-business-layout{grid-template-columns:1fr;gap:12px}.bh-business-sidebar{position:static;flex-direction:row;overflow-x:auto;white-space:nowrap;padding:8px;gap:2px}.bh-business-sidebar strong{display:none}.bh-business-sidebar a{font-size:13px;padding:10px}.bh-business-mobile-save{display:block;position:sticky;bottom:0;z-index:5;background:rgba(255,255,255,.96);border-top:1px solid #dbe5df;padding:10px 16px;margin:12px -20px 0}.bh-business-mobile-save button{width:100%}}
+        </style>
         <style>.bh-leader-business{max-width:900px;margin:32px auto;padding:0 20px;color:#203c31;font-family:inherit}.bh-leader-business *{box-sizing:border-box}.bh-leader-business .bh-business-card{background:#fff;border:1px solid #dbe5df;border-radius:16px;padding:24px;margin:20px 0}.bh-leader-business label{display:block;font-weight:600;margin:16px 0 6px}.bh-leader-business input:not([type=checkbox]),.bh-leader-business textarea,.bh-leader-business select{width:100%;max-width:680px;padding:11px;border:1px solid #b6c8bc;border-radius:9px;font:inherit}.bh-leader-business button{background:#245e4a;color:#fff;border:0;border-radius:9px;padding:12px 20px;font:inherit;font-weight:600;cursor:pointer}.bh-leader-business .bh-business-note{color:#53665e} .bh-leader-business .bh-business-hero{background:linear-gradient(120deg,#1e5743,#367d5d);color:#fff;padding:26px;border-radius:20px;margin:14px 0 24px}.bh-leader-business .bh-business-hero h1{color:#fff;margin:5px 0;font-size:clamp(28px,4vw,38px)}.bh-leader-business .bh-business-hero p{color:#edf7ef;margin:5px 0}.bh-leader-business .bh-business-card{box-shadow:0 8px 24px rgba(25,58,40,.05)}.bh-leader-business input:focus-visible,.bh-leader-business textarea:focus-visible,.bh-leader-business button:focus-visible{outline:3px solid #245e4a;outline-offset:2px}@media(max-width:650px){.bh-leader-business .bh-business-hero{padding:20px}.bh-leader-business .bh-business-card{padding:17px}}</style>
-        <p><a href="<?php echo esc_url( home_url( '/leader/' ) ); ?>">← Leader Dashboard</a> · <a href="<?php echo esc_url( home_url( '/leader/about/' ) ); ?>">Preview storefront</a></p>
+        <div class="bh-business-layout"><aside class="bh-business-sidebar" aria-label="Business profile sections">
+          <strong>My Business</strong>
+          <a href="#bh-business-details">Business details</a>
+          <a href="#bh-business-appearance">Branding</a>
+          <a href="#bh-business-directory">Directory</a>
+          <a href="#bh-business-social">Social links</a>
+          <a href="<?php echo esc_url( home_url( '/leader/about/' ) ); ?>">Preview storefront ↗</a>
+          <a href="<?php echo esc_url( home_url( '/leader/' ) ); ?>">← Dashboard</a>
+        </aside><div class="bh-business-main">
         <header class="bh-business-hero"><p>YOUR ORGANISER PROFILE</p><h1>My Business</h1><p>Make it easy for families to learn about your organisation and get in touch.</p></header>
         <?php if ( isset( $_GET['saved'] ) && $_GET['saved'] === '1' ) : ?><p role="status">Business profile saved successfully.</p><?php endif; ?>
-        <div class="bh-business-card"><form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+        <div class="bh-business-card"><form id="bh-business-profile-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
         <input type="hidden" name="action" value="bh3_leader_business_save">
         <?php wp_nonce_field( 'bh3_leader_business_' . (int) $profile['id'] ); ?>
+        <h2 id="bh-business-details">Business details</h2>
         <label for="bh-business-name">Organiser name</label><input id="bh-business-name" value="<?php echo esc_attr( $profile['name'] ); ?>" readonly aria-describedby="bh-name-note">
         <p id="bh-name-note" class="bh-business-note">To change your registered organiser name, contact the Bubba Hub team.</p>
         <label for="bh-business-email">Public contact email</label><input id="bh-business-email" type="email" name="contact_email" maxlength="254" value="<?php echo esc_attr( $profile['contact_email'] ); ?>">
         <label for="bh-business-url">Website</label><input id="bh-business-url" type="url" name="website_url" maxlength="2048" value="<?php echo esc_attr( $profile['website_url'] ); ?>" placeholder="https://">
         <label for="bh-business-description">About your organisation</label><textarea id="bh-business-description" name="description" rows="8"><?php echo esc_textarea( $profile['description'] ); ?></textarea>
-        <h2>Storefront appearance</h2>
+        <h2 id="bh-business-appearance">Storefront appearance</h2>
         <p class="bh-business-note">Add public images using existing WordPress Media Library image URLs. Your organiser profile remains the single source of truth.</p>
         <?php $extras = get_option( 'bh3_storefront_' . (int) $profile['id'], array() ); ?>
         <label for="bh-business-logo">Logo image URL</label><input id="bh-business-logo" name="logo_url" type="url" maxlength="2048" placeholder="https://" value="<?php echo esc_attr( $extras['logo_url'] ?? '' ); ?>">
         <label for="bh-business-cover">Cover image URL</label><input id="bh-business-cover" name="cover_url" type="url" maxlength="2048" placeholder="https://" value="<?php echo esc_attr( $extras['cover_url'] ?? '' ); ?>">
         <p class="bh-business-note">Or upload an image directly from your device using the separate image uploader below.</p>
-        <h2>Business directory</h2>
+        <h2 id="bh-business-directory">Business directory</h2>
         <p class="bh-business-note">Help families discover your business. Directory publishing will remain disabled until the directory is ready.</p>
         <label for="bh-business-category">Business category</label>
         <select id="bh-business-category" name="business_category">
@@ -52,7 +75,7 @@ final class BH_Leader_Frontend_Business_3 {
         </select>
         <label for="bh-business-area">Areas served</label><input id="bh-business-area" name="areas_served" type="text" maxlength="200" placeholder="e.g. Torbay, Exeter, South Devon" value="<?php echo esc_attr( $extras['areas_served'] ?? '' ); ?>">
         <label><input type="checkbox" name="directory_opt_in" value="1" <?php checked( ! empty( $extras['directory_opt_in'] ) ); ?>> Include my business when the directory launches</label>
-        <h2>Social links</h2>
+        <h2 id="bh-business-social">Social links</h2>
         <label for="bh-business-facebook">Facebook URL</label><input id="bh-business-facebook" name="facebook_url" type="url" maxlength="2048" placeholder="https://" value="<?php echo esc_attr( $extras['facebook_url'] ?? '' ); ?>">
         <label for="bh-business-instagram">Instagram URL</label><input id="bh-business-instagram" name="instagram_url" type="url" maxlength="2048" placeholder="https://" value="<?php echo esc_attr( $extras['instagram_url'] ?? '' ); ?>">
         <p class="bh-business-note">Your account permissions and linked activities will not change.</p>
@@ -90,7 +113,7 @@ final class BH_Leader_Frontend_Business_3 {
             url=URL.createObjectURL(file);preview.src=url;preview.hidden=false;preview.style.display='block';
           });
         })();
-        </script></section>
+        </script></div></div><div class="bh-business-mobile-save"><button type="submit" form="bh-business-profile-form">Save changes</button></div></section>
         <?php return ob_get_clean();
     }
     public static function upload_image() {
