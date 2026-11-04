@@ -29,15 +29,15 @@ final class BH_Family_Native_Profiles_3 {
     /** Layout-only admin preview: never query or write another family's records. */
     public static function preview() {
         ob_start(); ?>
-        <div class="bh3-family-profile-preview" style="max-width:1100px;margin:0 auto;padding:20px">
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px">
-            <nav aria-label="My Hub sections" style="padding:20px;border:1px solid #dce7e1;border-radius:16px">
+        <div class="bh3-family-profile-preview">
+          <div >
+            <nav aria-label="My Hub sections" >
               <strong>My Hub</strong>
               <p><a href="<?php echo esc_url(home_url('/family/')); ?>">Overview</a></p>
               <p><a href="<?php echo esc_url(home_url('/family/profile/')); ?>" aria-current="page">My family</a></p>
               <p><a href="<?php echo esc_url(home_url('/family/settings/')); ?>">Settings</a></p>
             </nav>
-            <section style="padding:20px;border:1px solid #dce7e1;border-radius:16px">
+            <section >
               <h2>My family</h2>
               <p><strong>Administrator preview</strong> — example layout only. No family data is loaded.</p>
               <h3>Children</h3><p>Child profiles will appear here.</p>
