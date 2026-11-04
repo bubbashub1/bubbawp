@@ -110,3 +110,12 @@
 .bh3-family__suggestions-empty{padding:20px;border:1px dashed #d5e3d7;border-radius:12px;margin:15px 0!important}
 @media(max-width:850px){.bh3-family__suggestion-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:550px){.bh3-family__suggestion-grid{grid-template-columns:minmax(0,1fr)}}
+
+/* Dedicated Family Settings page: use full content width, not dashboard columns. */
+.bh3-family__settings-page{width:100%;max-width:none;margin:0 auto;padding:0}
+.bh3-family__settings-page>.bh3-family__grid{display:block!important;width:100%;max-width:none}
+.bh3-family__settings-page .bh3-family__card--preferences{width:100%;max-width:none;box-sizing:border-box;margin:0}
+.bh3-family__settings-page .bh3-family__preferences-form{max-width:none}
+.bh3-family__settings-page>p:first-child{margin:0 0 16px}
+.bh3-family__settings-page .bh3-family__location-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:700px){.bh3-family__settings-page .bh3-family__location-grid{grid-template-columns:1fr}}
