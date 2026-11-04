@@ -90,7 +90,7 @@ final class BH_Leader_Frontend_3 {
                 <p><?php echo esc_html( number_format_i18n( $total_results ) ); ?> matching activities</p>
                 <?php if ( ! $listings ) : ?><p>No matching activities found.</p><?php else : ?>
                 <ul><?php foreach ( $listings as $listing ) : ?>
-                    <li><span><strong><?php echo esc_html( $listing['title'] ); ?></strong><small style="display:block"><?php echo esc_html( $listing['category'] ); ?></small></span><span class="bh-leader-status"><?php echo esc_html( $listing['status'] ); ?><?php if ( $listing['status'] === 'draft' ) : ?> <a href="<?php echo esc_url( add_query_arg( 'activity_id', absint( $listing['id' ] ), home_url( '/leader/edit/' ) ) ); ?>">Edit draft</a><?php endif; ?></span></li>
+                    <li><span><strong><?php echo esc_html( $listing['title'] ); ?></strong><small style="display:block"><?php echo esc_html( $listing['category'] ); ?></small></span><span class="bh-leader-status"><?php echo esc_html( $listing['status'] ); ?><?php if ( $listing['status'] === 'draft' ) : ?> <a href="<?php echo esc_url( add_query_arg( 'activity_id', absint( $listing['id' ] ), home_url( '/leader/edit/' ) ) ); ?>">Edit draft</a> <a href="<?php echo esc_url( add_query_arg( 'activity_id', absint( $listing['id' ] ), home_url( '/leader/timetable/' ) ) ); ?>">Timetable</a><?php endif; ?></span></li>
                 <?php endforeach; ?></ul><?php endif; ?>
                 <?php if ( $page_count > 1 ) : ?>
                     <nav class="bh-leader-pagination" aria-label="Activity pages">
