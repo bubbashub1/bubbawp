@@ -50,13 +50,19 @@ final class BH_Directory_3 {
         .bh3-real-directory article{background:#fff;border:1px solid #d7e3dc;border-radius:14px;padding:20px}
         .bh3-real-directory article h3{margin:8px 0}.bh3-real-directory .bh3-meta{color:#50675e;font-size:14px}
         .bh3-real-directory .bh3-pages{display:flex;gap:16px;margin-top:24px}
+        .bh3-real-directory .bh3-reset{display:inline-flex;align-items:center;padding:12px 8px;color:#175c46;text-decoration:underline}
+        .bh3-real-directory .bh3-results{margin:12px 0 18px;color:#50675e}
         @media(max-width:850px){.bh3-real-directory .bh3-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
         @media(max-width:560px){.bh3-real-directory .bh3-cards{grid-template-columns:1fr}}
         </style><div class="bh3-banner"><h2>Discover activities for your family</h2><p>Baby groups, toddler classes and family activities across Devon &amp; Cornwall.</p></div>';
         echo '<form method="get"><input type="search" name="bh_search" aria-label="Search activities" placeholder="Search activities" value="' . esc_attr( $search ) . '">';
         echo '<input type="search" name="bh_category" aria-label="Category" placeholder="Category" value="' . esc_attr( $category ) . '">';
         echo '<input type="search" name="bh_town" aria-label="Town" placeholder="Town" value="' . esc_attr( $town ) . '">';
-        echo '<label><input type="checkbox" name="bh_free" value="1"' . checked( $free, true, false ) . '> Free only</label><button type="submit">Search</button></form>';
+        echo '<label><input type="checkbox" name="bh_free" value="1"' . checked( $free, true, false ) . '> Free only</label><button type="submit">Search</button>';
+        if ( $search !== '' || $category !== '' || $town !== '' || $free ) {
+            echo '<a class="bh3-reset" href="' . esc_url( remove_query_arg( array( 'bh_search', 'bh_category', 'bh_town', 'bh_free', 'bh_page' ) ) ) . '">Clear filters</a>';
+        }
+        echo '</form><p class="bh3-results" role="status" aria-live="polite">' . esc_html( sprintf( '%d activities shown%s', count( $rows ), $more ? ' · more results available' : '' ) ) . '</p>';
         echo '<div class="bh3-cards">';
         foreach ( $rows as $row ) {
             $detail_page = get_page_by_path( 'activity-preview' );
