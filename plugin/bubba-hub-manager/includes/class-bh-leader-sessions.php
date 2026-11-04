@@ -48,7 +48,7 @@ final class BH_Leader_Sessions_3 {
                 echo '<a class="button button-small" href="' . esc_url( add_query_arg( array( 'page' => 'bh3-leader-sessions', 'activity_id' => $id, 'edit_session' => absint( $row['id'] ) ), admin_url( 'admin.php' ) ) ) . '">Edit</a> ';
                 echo '<form style="display:inline-block;margin:0" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="bh3_leader_delete_session"><input type="hidden" name="activity_id" value="' . esc_attr( (string) $id ) . '"><input type="hidden" name="session_id" value="' . esc_attr( (string) $row['id'] ) . '">';
                 wp_nonce_field( 'bh3_leader_delete_session_' . $id . '_' . $row['id'] );
-                submit_button( 'Remove', 'secondary small', '', false );
+                submit_button( 'Remove', 'secondary small', '', false, array( 'onclick' => "return confirm('Remove this session from the timetable?');" ) );
                 echo '</form>';
             } else { echo 'Read-only'; }
             echo '</td></tr>';
