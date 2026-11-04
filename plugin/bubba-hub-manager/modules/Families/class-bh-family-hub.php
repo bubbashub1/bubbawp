@@ -59,7 +59,11 @@ final class BH_Family_Hub_3 {
         $saved_search = isset($_GET['bh3_saved_search']) && is_scalar($_GET['bh3_saved_search']) ? substr(sanitize_text_field(wp_unslash($_GET['bh3_saved_search'])), 0, 80) : '';
         $activity_ids = array_merge($saved, array_column($planner, 'activity_id'));
         $activity_titles = $private_preview ? BH_Family_Read_Model_3::activity_titles($activity_ids) : array();
-        if (is_wp_error($activity_titles)) $activity_titles = array();
+        if (is_wp_error($activity_titles)) {
+            $family_read_error = true;
+            $activity_titles = array();
+        }
+        $activity_titles = is_array($activity_titles) ? $activity_titles : array();
         $activity_links = $private_preview ? BH_Family_Read_Model_3::activity_links($activity_ids) : array();
         $planner_sort = isset($_GET['bh3_planner_sort']) && is_scalar($_GET['bh3_planner_sort']) ? sanitize_key(wp_unslash($_GET['bh3_planner_sort'])) : 'recent';
         if (!in_array($planner_sort, array('recent', 'name'), true)) $planner_sort = 'recent';
