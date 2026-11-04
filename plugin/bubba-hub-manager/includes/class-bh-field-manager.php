@@ -423,7 +423,7 @@ final class BH_Field_Manager_3 {
                 ++$count;
                 $placement = $placements[ (int) $field['id'] ]['wizard_step'] ?? 'about';
                 $edit_url = add_query_arg( array( 'page' => 'bh3-field-manager', 'edit_field' => absint( $field['id'] ) ), admin_url( 'admin.php' ) );
-                echo '<div class="bh3-builder-item' . ( $field['is_active'] ? '' : ' bh3-fm-disabled' ) . '" draggable="true" tabindex="0" data-field-id="' . esc_attr( (string) $field['id'] ) . '"><span class="bh3-drag-grip" aria-hidden="true">⋮⋮</span><span class="bh3-builder-item-text"><strong>' . esc_html( $field['label'] ) . '</strong><small>' . esc_html( $field['field_type'] . ' · ' . ucfirst( $placement ) ) . '</small></span><a href="' . esc_url( $edit_url ) . '">Edit</a></div>';
+                echo '<div class="bh3-builder-item' . ( $field['is_active'] ? '' : ' bh3-fm-disabled' ) . '" draggable="true" tabindex="0" aria-keyshortcuts="ArrowUp ArrowDown" aria-label="' . esc_attr( sprintf( 'Reorder %s field with up or down arrow keys', $field['label'] ) ) . '" data-field-id="' . esc_attr( (string) $field['id'] ) . '"><span class="bh3-drag-grip" aria-hidden="true">⋮⋮</span><span class="bh3-builder-item-text"><strong>' . esc_html( $field['label'] ) . '</strong><small>' . esc_html( $field['field_type'] . ' · ' . ucfirst( $placement ) ) . '</small></span><a href="' . esc_url( $edit_url ) . '">Edit</a></div>';
             }
             if ( ! $count ) { echo '<p class="bh3-builder-empty">Add a field to start building this group.</p>'; }
             echo '</div>';
