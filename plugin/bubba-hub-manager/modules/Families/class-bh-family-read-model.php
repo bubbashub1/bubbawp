@@ -24,6 +24,24 @@ final class BH_Family_Read_Model_3 {
         $family_id = BH_Family_Identity_3::current_legacy_id();
         if ($family_id < 1) return new WP_Error('family_not_verified', 'Verified family login required');
         global $wpdb;
+        // Prefer the new WP-owned profiles when present. Never mix WP and legacy IDs.
+        $native = $wpdb->prefix . 'bh_family_profiles';
+        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($native))) === $native) {
+            $records = $wpdb->get_results($wpdb->prepare(
+                "SELECT id, profile_type, display_name, profile_date FROM `{$native}` WHERE user_id = %d AND profile_type IN ('child','bump') ORDER BY id ASC LIMIT 70",
+                get_current_user_id()
+            ), ARRAY_A);
+            if (!is_array($records)) return new WP_Error('family_native_profiles_failed', 'Unable to load family profiles');
+            $result = array('children'=>array(), 'bumps'=>array());
+            foreach ($records as $record) {
+                if ($record['profile_type'] === 'child' && count($result['children']) < 50) {
+                    $result['children'][] = array('id'=>(int)$record['id'], 'name'=>$record['display_name'], 'date_of_birth'=>$record['profile_date']);
+                } elseif ($record['profile_type'] === 'bump' && count($result['bumps']) < 20) {
+                    $result['bumps'][] = array('id'=>(int)$record['id'], 'nickname'=>$record['display_name'], 'due_date'=>$record['profile_date']);
+                }
+            }
+            return $result;
+        }
         $out = array('children' => array(), 'bumps' => array());
         $children_table = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', 'bh_children'));
         if ($children_table !== 'bh_children') return new WP_Error('family_children_unavailable', 'Child profiles table unavailable');
