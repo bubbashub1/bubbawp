@@ -29,13 +29,8 @@ final class BH_Portal_Access_3 {
         // Admin-post actions must still reach their own nonce and ownership checks.
         global $pagenow;
         if ( $pagenow === 'admin-post.php' ) { return; }
-        if ( $pagenow === 'admin.php' || $pagenow === 'index.php' || $pagenow === 'profile.php' ||
-             $pagenow === 'users.php' || $pagenow === 'edit.php' || $pagenow === 'post.php' ||
-             $pagenow === 'post-new.php' || $pagenow === 'upload.php' || $pagenow === 'options-general.php' ||
-             $pagenow === 'plugins.php' || $pagenow === 'themes.php' || $pagenow === 'tools.php' ) {
-            wp_safe_redirect( self::destination( wp_get_current_user() ) );
-            exit;
-        }
+        wp_safe_redirect( self::destination( wp_get_current_user() ) );
+        exit;
     }
     public static function admin_bar( $show ) {
         return self::staging() && is_user_logged_in() && ! self::team_member() ? false : $show;
