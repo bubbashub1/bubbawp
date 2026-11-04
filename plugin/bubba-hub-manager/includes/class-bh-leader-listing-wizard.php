@@ -63,6 +63,15 @@ final class BH_Leader_Listing_Wizard_3 {
         echo '</label>';
     }
 
+    private static function select_field( $name, $label, $value, $options, $required = false ) {
+        echo '<label class="bh3-wizard-field"><span>' . esc_html( $label ) . '</span><select name="' . esc_attr( $name ) . '"' . ( $required ? ' required' : '' ) . '>';
+        echo '<option value="">Choose a category</option>';
+        foreach ( (array) $options as $option ) {
+            echo '<option value="' . esc_attr( $option ) . '" ' . selected( $value, $option, false ) . '>' . esc_html( $option ) . '</option>';
+        }
+        echo '</select></label>';
+    }
+
     public static function render() {
         if ( ! self::enabled() ) {
             return '<div class="bh3-wizard-message">Please sign in with your class leader account to create a listing.</div>';
@@ -96,6 +105,9 @@ final class BH_Leader_Listing_Wizard_3 {
         $data = array_merge( $defaults, (array) $record );
         if ( $id ) { $data['booking_method'] = get_option( 'bh3_activity_booking_method_' . $id, $data['booking_method'] ); }
         $step = min( 7, max( 1, absint( $_GET['step'] ?? 1 ) ) );
+        $category_options = $wpdb->get_col( "SELECT DISTINCT category FROM `{$activities}` WHERE category IS NOT NULL AND category <> '' ORDER BY category ASC LIMIT 150" );
+        $category_options = array_values( array_unique( array_filter( array_map( 'sanitize_text_field', (array) $category_options ) ) ) );
+        if ( ! empty( $data['category'] ) && ! in_array( $data['category'], $category_options, true ) ) { $category_options[] = $data['category']; }
         $steps = array( 'Basics', 'About', 'Extra information', 'Schedule & booking', 'Venues', 'Photos & media', 'Review & submit' );
         ob_start();
         ?>
@@ -125,12 +137,14 @@ final class BH_Leader_Listing_Wizard_3 {
             <?php elseif ( $step === 2 ) : ?>
               <h2>Tell families about your activity</h2>
               <?php self::field( 'description', 'Description', $data['description'], 'textarea', 'required' ); ?>
-              <?php self::field( 'category', 'Main category', $data['category'], 'text', 'maxlength="150" placeholder="e.g. Baby & toddler groups"' ); ?>
+              <?php self::select_field( 'category', 'Main category', $data['category'], $category_options, true ); ?>
               <?php self::field( 'tags', 'Additional categories and keywords', $data['tags'], 'text', 'maxlength="1000" placeholder="e.g. baby, toddler, music, stay and play"' ); ?>
             <?php elseif ( $step === 3 ) : ?>
               <h2>Extra information</h2><p class="bh3-wizard-help">Contact details start with your organiser storefront. You can add activity-specific contact details here without changing your main organiser profile.</p>
               <?php self::field( 'age_min_months', 'Minimum age (months)', $data['age_min_months'], 'number', 'min="0" max="216"' ); ?>
               <?php self::field( 'age_max_months', 'Maximum age (months)', $data['age_max_months'], 'number', 'min="0" max="216"' ); ?>
+              <?php self::field( 'price_from', 'Starting price (£)', $data['price_from'], 'number', 'min="0" step="0.01"' ); ?>
+              <label class="bh3-wizard-check"><input type="checkbox" name="is_free" value="1" <?php checked( (int) $data['is_free'], 1 ); ?>> This activity is free</label>
               <?php self::field( 'contact_email', 'Public activity contact email', $data['contact_email'], 'email', 'maxlength="254"' ); ?>
               <?php self::field( 'contact_phone', 'Contact phone (optional)', $data['contact_phone'], 'tel', 'maxlength="100"' ); ?>
               <?php self::field( 'website', 'Activity website', $data['website'], 'url', 'placeholder="https://"' ); ?>
@@ -211,6 +225,11 @@ final class BH_Leader_Listing_Wizard_3 {
         } elseif ( $step === 3 ) {
             $values['age_min_months'] = $min === '' ? null : (int) $min;
             $values['age_max_months'] = $max === '' ? null : (int) $max;
+            $free = ! empty( $_POST['is_free'] ) ? 1 : 0;
+            $price_raw = self::value( 'price_from', 20 );
+            if ( $price_raw !== '' && ( ! preg_match( '/^\\d{1,8}(?:\\.\\d{1,2})?$/', $price_raw ) || (float) $price_raw > 99999999.99 ) ) { wp_die( 'Please enter a valid starting price.', '', array( 'response' => 400 ) ); }
+            $values['is_free'] = $free;
+            $values['price_from'] = $free ? 0 : ( $price_raw === '' ? null : (float) $price_raw );
             $values['contact_email'] = $email;
             $values['contact_phone'] = self::value( 'contact_phone', 100 );
             $website = self::url( 'website' );
