@@ -113,7 +113,7 @@ final class BH_Leader_Sessions_3 {
         }
         if ( ! self::activity( $id ) ) { wp_die( 'Activity ownership changed.', '', array( 'response' => 403 ) ); }
         $table = $wpdb->prefix . 'sessions';
-        $now = current_time( 'mysql', true );
+        $now = current_time( 'mysql' );
         $session_id = absint( $_POST['session_id'] ?? 0 );
         if ( $session_id ) {
             $existing = $wpdb->get_row( $wpdb->prepare( "SELECT id, frequency FROM `{$table}` WHERE id=%d AND activity_id=%d LIMIT 1", $session_id, $id ), ARRAY_A );
