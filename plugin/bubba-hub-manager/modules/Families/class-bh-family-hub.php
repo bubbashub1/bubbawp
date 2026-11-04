@@ -42,6 +42,7 @@ final class BH_Family_Hub_3 {
         $saved = $private_preview ? BH_Family_Read_Model_3::saved_ids() : array();
         $planner = $private_preview ? BH_Family_Read_Model_3::planner_items() : array();
         $profiles = $private_preview ? BH_Family_Read_Model_3::family_profiles() : array();
+        $family_read_error = $private_preview && (is_wp_error($saved) || is_wp_error($planner) || is_wp_error($profiles));
         $saved = is_array($saved) ? $saved : array();
         $planner = is_array($planner) ? $planner : array();
         $planned_ids = array_map('absint', array_column($planner, 'activity_id'));
@@ -102,12 +103,15 @@ final class BH_Family_Hub_3 {
           <?php else : ?>
             <div class="bh3-family__notice" role="status"><?php echo esc_html__( 'Signed in. Family Hub is in preview mode; changes require staging verification.', 'bubba-hub-manager' ); ?></div>
           <?php endif; ?>
-          <?php if ($private_preview && !is_wp_error($saved) && !is_wp_error($planner) && !is_wp_error($profiles)) : ?>
+          <?php if ($family_read_error) : ?>
+            <div class="bh3-family__notice" role="alert"><?php echo esc_html__('Your family information is temporarily unavailable. Please try again later.', 'bubba-hub-manager'); ?></div>
+          <?php endif; ?>
+          <?php if ($private_preview && !$family_read_error) : ?>
             <div class="bh3-family__notice" role="status">
               <?php echo esc_html(sprintf('Your Hub: %d saved activities, %d planned activities, %d child profiles.', count($saved), count($planner), count($profiles['children']))); ?>
             </div>
           <?php endif; ?>
-          <?php if ($private_preview && !is_wp_error($saved) && !is_wp_error($planner) && !is_wp_error($profiles)) : ?>
+          <?php if ($private_preview && !$family_read_error) : ?>
             <div class="bh3-family__grid bh3-family__private" aria-label="<?php echo esc_attr__('Your private family overview', 'bubba-hub-manager'); ?>">
               <article class="bh3-family__card">
                 <h2><?php echo esc_html__('Saved activities', 'bubba-hub-manager'); ?></h2>
