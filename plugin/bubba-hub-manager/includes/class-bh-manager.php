@@ -53,6 +53,7 @@ final class BH_Manager_3 {
         BH_Directory_3::register();
         BH_Activity_Detail_3::register();
         add_action( 'admin_menu', array( __CLASS__, 'register_admin_page' ) );
+        add_action( 'admin_menu', array( __CLASS__, 'register_workstreams_page' ), 30 );
         BH_Activity_Parity_3::register();
         BH_Field_Manager_3::register();
         BH_Directory_Builder_3::register();
@@ -123,6 +124,41 @@ final class BH_Manager_3 {
             'dashicons-location-alt',
             26
         );
+    }
+
+
+    /** Read-only navigation and implementation inventory; no feature activation. */
+    public static function register_workstreams_page() {
+        add_submenu_page(
+            'bubba-hub-3-status',
+            'Workstreams & readiness',
+            'Workstreams',
+            'manage_options',
+            'bh3-workstreams',
+            array( __CLASS__, 'render_workstreams_page' )
+        );
+    }
+
+    public static function render_workstreams_page() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( 'Administrator permission required.', '', array( 'response' => 403 ) );
+        }
+        $items = array(
+            array( 'Directory & Listings', 'Admin screens available', 'Directory Builder, fields, activities, venues and organisers. Test saves on staging.' ),
+            array( 'Family Hub & Planner', 'Staging preview only', 'Family shortcode and adapters exist; private actions require explicit staging flags and verified identity.' ),
+            array( 'Leader Portal', 'Under staging QA', 'Editing, venues and sessions code exists; verify permissions, ownership and forms before rollout.' ),
+            array( 'Support & Resources', 'Not yet integrated', 'Resource and support administration remains on the migration roadmap.' ),
+            array( 'Events & Bookings', 'Not yet integrated', 'Do not assume the legacy booking or Expo system has been migrated.' ),
+            array( 'Newsletters & Emails', 'Not yet integrated', 'Mail templates, logs and opt-in management require implementation and QA.' ),
+        );
+        echo '<div class="wrap"><h1>Workstreams &amp; readiness</h1>';
+        echo '<p>Read-only implementation overview. A workstream listed here is not necessarily enabled or deployed. No feature switches or data are changed by this screen.</p>';
+        echo '<style>.bh3-workstreams{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:16px;max-width:1100px}.bh3-workstreams article{background:#fff;border:1px solid #d6e0db;border-radius:12px;padding:20px;box-sizing:border-box}.bh3-workstreams h2{margin:0 0 10px;font-size:18px}.bh3-workstreams strong{color:#176047}.bh3-workstreams p{line-height:1.5}</style>';
+        echo '<div class="bh3-workstreams">';
+        foreach ( $items as $item ) {
+            echo '<article><h2>' . esc_html( $item[0] ) . '</h2><strong>' . esc_html( $item[1] ) . '</strong><p>' . esc_html( $item[2] ) . '</p></article>';
+        }
+        echo '</div><p><a class="button" href="' . esc_url( admin_url( 'admin.php?page=bubba-hub-3-status' ) ) . '">View system status</a></p></div>';
     }
 
     public static function render_status() {
