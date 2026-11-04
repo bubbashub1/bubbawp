@@ -103,6 +103,32 @@ final class BH_Directory_Builder_3 {
         .bh3-builder .settings-grid label{display:flex;flex-direction:column;gap:7px}.bh3-builder .settings-grid input,.bh3-builder .settings-grid select{width:100%;max-width:100%}
         .bh3-builder .preview{border:1px dashed #a8bbae;border-radius:12px;background:#f5f9f6;padding:20px;margin-top:18px}
         @media(max-width:760px){.bh3-builder .layout{grid-template-columns:1fr}.bh3-builder .nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.bh3-builder .checks,.bh3-builder .settings-grid{grid-template-columns:1fr}}
+        .bh3-builder,.bh3-builder *{box-sizing:border-box}
+        .bh3-builder .layout,.bh3-builder .layout>*,.bh3-builder .panel,.bh3-builder form{min-width:0}
+        .bh3-builder .panel{overflow:visible}
+        .bh3-builder .preview{position:relative;margin:18px 0 0;max-width:100%;overflow-wrap:anywhere}
+        .bh3-builder .panel>p{line-height:1.65}
+        .bh3-builder .panel .button{min-height:42px;display:inline-flex;align-items:center;justify-content:center;white-space:normal;text-align:center;margin:0 6px 8px 0}
+        .bh3-builder .settings-grid input{min-height:44px}
+        .bh3-builder .nav button{min-height:58px}
+        .bh3-builder .panel h2{line-height:1.3}
+        @media(max-width:782px){
+          .bh3-builder{margin:10px 12px 20px 0;max-width:100%}
+          .bh3-builder h1{font-size:26px}
+          .bh3-builder .layout{gap:16px;margin-top:16px}
+          .bh3-builder .nav{gap:10px}
+          .bh3-builder .nav button{padding:14px 12px;min-height:64px}
+          .bh3-builder .panel{padding:20px 16px;margin-bottom:16px;border-radius:14px}
+          .bh3-builder .preview{padding:16px;margin-top:16px}
+          .bh3-builder .settings-grid{gap:18px}
+          .bh3-builder .panel .button{max-width:100%}
+          .bh3-builder .bh3-live-preview{padding:14px}
+        }
+        @media(max-width:420px){
+          .bh3-builder .panel .button{width:100%;margin-right:0}
+          .bh3-builder .nav button{font-size:13px}
+          .bh3-builder .detail-sort .sort-row{padding:10px 8px;gap:6px}
+        }
         </style><h1>Bubba Hub Directory Builder</h1><p class="intro">Configure the listing workflow, activity detail layout, search controls and OpenStreetMap settings. Inspired by Directorist and GeoDirectory, designed for Bubba Hub activities and recurring sessions.</p>';
         if ( isset( $_GET['saved'] ) ) { echo '<div class="notice notice-success"><p>Builder settings saved on staging.</p></div>'; }
         echo '<div class="layout"><nav class="nav" aria-label="Builder sections">';
