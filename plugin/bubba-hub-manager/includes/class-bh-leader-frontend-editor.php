@@ -76,11 +76,13 @@ final class BH_Leader_Frontend_Editor_3 {
                 <input type="hidden" name="activity_id" value="<?php echo esc_attr( $id ); ?>">
                 <?php wp_nonce_field( 'bh3_leader_image_' . $id ); ?>
                 <label for="bh-leader-image-file">Choose a new image</label>
-                <input id="bh-leader-image-file" name="bh_leader_image" type="file" accept="image/jpeg,image/png,image/webp" required>
+                <input id="bh-leader-image-file" name="bh_leader_image" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="bh-image-file-help" required>
+                <p id="bh-image-file-help" class="bh-edit-hint" aria-live="polite">No new image selected.</p>
+                <img id="bh-image-selected-preview" alt="Preview of selected image" hidden style="display:none;max-width:220px;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;margin-top:10px">
                 <button type="submit"><?php echo ! empty( $row['image_id'] ) ? 'Replace image' : 'Upload image'; ?></button>
               </form>
               <?php if ( ! empty( $row['image_id'] ) ) : ?>
-                <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+                <form method="post" onsubmit="return confirm('Remove this image from the listing? The original file will remain in the Media Library.');" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
                   <input type="hidden" name="action" value="bh3_leader_image_remove">
                   <input type="hidden" name="activity_id" value="<?php echo esc_attr( $id ); ?>">
                   <?php wp_nonce_field( 'bh3_leader_remove_image_' . $id ); ?>
@@ -91,6 +93,28 @@ final class BH_Leader_Frontend_Editor_3 {
             </div>
           </div>
         </section>
+        <script>
+        (function(){
+          const field = document.getElementById('bh-leader-image-file');
+          const preview = document.getElementById('bh-image-selected-preview');
+          const help = document.getElementById('bh-image-file-help');
+          if (!field || !preview || !help) return;
+          let objectUrl = null;
+          field.addEventListener('change', function(){
+            if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
+            preview.hidden = true; preview.style.display = 'none'; preview.removeAttribute('src');
+            const file = field.files && field.files[0];
+            if (!file) { help.textContent = 'No new image selected.'; return; }
+            if (!['image/jpeg','image/png','image/webp'].includes(file.type) || file.size > 5242880 || file.size === 0) {
+              help.textContent = 'Please select a JPG, PNG or WebP image under 5 MB.';
+              field.value = ''; return;
+            }
+            help.textContent = file.name + ' (' + (file.size / 1048576).toFixed(1) + ' MB) — preview before uploading';
+            objectUrl = URL.createObjectURL(file);
+            preview.src = objectUrl; preview.hidden = false; preview.style.display = 'block';
+          });
+        })();
+        </script>
         <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
             <input type="hidden" name="action" value="bh3_leader_frontend_save">
             <input type="hidden" name="activity_id" value="<?php echo esc_attr( $id ); ?>">
