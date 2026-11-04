@@ -115,6 +115,7 @@ final class BH_Leader_Venues_3 {
         $links = $wpdb->prefix . 'activity_venues';
         $deleted = $wpdb->delete( $links, array( 'activity_id' => $id, 'venue_id' => $venue_id ), array( '%d', '%d' ) );
         if ( $deleted === false ) { wp_die( 'Unable to remove assignment.', '', array( 'response' => 500 ) ); }
+        if ( $deleted === 0 ) { wp_die( 'Venue assignment not found or already removed.', '', array( 'response' => 404 ) ); }
         self::redirect( $id, 'Venue assignment removed.' );
     }
 }
