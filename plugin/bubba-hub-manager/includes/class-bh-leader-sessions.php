@@ -75,6 +75,7 @@ final class BH_Leader_Sessions_3 {
         foreach ( $assigned as $venue ) { echo '<option value="' . esc_attr( (string) $venue['id'] ) . '"' . selected( (int) ( $editing['venue_id'] ?? 0 ), (int) $venue['id'], false ) . '>' . esc_html( $venue['name'] . ( $venue['town'] ? ' — ' . $venue['town'] : '' ) ) . '</option>'; }
         echo '</select><p><a href="' . esc_url( add_query_arg( array( 'page' => 'bh3-leader-venues', 'activity_id' => $id ), admin_url( 'admin.php' ) ) ) . '">Manage assigned venues</a>.</p></td></tr>';
         echo '<tr><th>First date (optional)</th><td><input type="date" name="start_date" value="' . esc_attr( (string) ( $editing['start_date'] ?? '' ) ) . '"></td></tr><tr><th>Last date (optional)</th><td><input type="date" name="end_date" value="' . esc_attr( (string) ( $editing['end_date'] ?? '' ) ) . '"></td></tr>';
+        echo '<tr><th></th><td><p class="description">Leave both dates blank for an ongoing weekly session. If you enter both dates, the last date must be on or after the first.</p></td></tr>';
         echo '<tr><th>Term time only</th><td><label><input type="checkbox" name="term_time_only" value="1"' . checked( (int) ( $editing['term_time_only'] ?? 0 ), 1, false ) . '> Yes</label></td></tr></tbody></table>';
         submit_button( $editing ? 'Save changes' : 'Add session' );
         if ( $editing ) { echo ' <a class="button" href="' . esc_url( add_query_arg( array( 'page' => 'bh3-leader-sessions', 'activity_id' => $id ), admin_url( 'admin.php' ) ) ) . '">Cancel editing</a>'; }
