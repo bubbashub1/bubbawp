@@ -46,8 +46,6 @@ final class BH_Leader_Frontend_3 {
                 <div class="bh-leader-stat"><strong><?php echo esc_html( number_format_i18n( $totals['draft'] ) ); ?></strong>Drafts</div>
                 <div class="bh-leader-stat"><strong><?php echo esc_html( number_format_i18n( $totals['published'] ) ); ?></strong>Published</div>
             </section>
-            <?php echo do_shortcode('[bh_leader_ask_inbox]'); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-            <?php echo do_shortcode('[bh_leader_ask_support]'); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
             <section class="bh-leader-list" id="my-activities"><h2>My Activities</h2>
                 <p class="bh-leader-muted">Search your listings, then use Edit draft, Timetable or Venues to manage each draft.</p>
                 <form class="bh-leader-filters" method="get" action="<?php echo esc_url( get_permalink() ); ?>">
@@ -89,6 +87,11 @@ final class BH_Leader_Frontend_3 {
                     <?php if ( $page_num < $page_count ) : ?><a href="<?php echo esc_url( add_query_arg( 'bh_leader_page', $page_num + 1 ) . '#my-activities' ); ?>">Next →</a><?php endif; ?>
                     </nav>
                 <?php endif; ?>
+            </section>
+            <section class="bh-leader-support-overview" id="leader-ask-inbox" aria-label="Ask Support">
+                <h2>Family questions &amp; support</h2>
+            <?php echo do_shortcode('[bh_leader_ask_inbox]'); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+            <?php echo do_shortcode('[bh_leader_ask_support]'); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
             </section>
         </main>
         <?php
