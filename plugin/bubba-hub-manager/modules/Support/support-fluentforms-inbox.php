@@ -100,26 +100,46 @@ function bh_support_enquiries_page(): void {
             && $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $submissions_table)) === $submissions_table) {
             $form_id = (int) $wpdb->get_var($wpdb->prepare("SELECT form_id FROM `$submissions_table` WHERE id = %d", $entry_id));
             if (in_array($form_id, $configured, true)) {
-                $previous = $wpdb->get_var($wpdb->prepare(
-                    'SELECT status FROM `' . bh_support_status_table() . '` WHERE entry_id = %d AND form_id = %d',
-                    $entry_id, $form_id
+                // Keep the workflow state and its audit event in the same transaction.
+                // InnoDB is required for rollback; check the storage engine before writing.
+                $status_table_name = bh_support_status_table();
+                $history_table_name = bh_support_history_table();
+                $engines = $wpdb->get_results($wpdb->prepare(
+                    "SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES
+                     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN (%s, %s)",
+                    $status_table_name, $history_table_name
                 ));
-                $previous = $previous ?: 'new';
-                if ($previous !== $status) {
-                    $saved = $wpdb->replace(bh_support_status_table(), [
-                        'entry_id' => $entry_id, 'form_id' => $form_id, 'status' => $status,
-                        'updated_at' => current_time('mysql', true), 'updated_by' => get_current_user_id(),
-                    ], ['%d', '%d', '%s', '%s', '%d']);
-                    if ($saved !== false) {
-                        $logged = $wpdb->insert(bh_support_history_table(), [
+                $transactional = count((array) $engines) === 2;
+                foreach ((array) $engines as $engine) {
+                    if (strtoupper((string) $engine->ENGINE) !== 'INNODB') $transactional = false;
+                }
+                if (!$transactional || $wpdb->query('START TRANSACTION') === false) {
+                    echo '<div class="notice notice-error"><p>' . esc_html__('Workflow changes require InnoDB audit tables. No status change was made.', 'bubbahub') . '</p></div>';
+                } else {
+                    $previous = $wpdb->get_var($wpdb->prepare(
+                        "SELECT status FROM `$status_table_name` WHERE entry_id = %d AND form_id = %d FOR UPDATE",
+                        $entry_id, $form_id
+                    ));
+                    $previous = $previous ?: 'new';
+                    if ($previous === $status) {
+                        $wpdb->query('COMMIT');
+                    } else {
+                        $changed_at = current_time('mysql', true);
+                        $actor = get_current_user_id();
+                        $saved = $wpdb->replace($status_table_name, [
+                            'entry_id' => $entry_id, 'form_id' => $form_id, 'status' => $status,
+                            'updated_at' => $changed_at, 'updated_by' => $actor,
+                        ], ['%d', '%d', '%s', '%s', '%d']);
+                        $logged = $saved === false ? false : $wpdb->insert($history_table_name, [
                             'entry_id' => $entry_id, 'form_id' => $form_id,
                             'old_status' => $previous, 'new_status' => $status,
-                            'changed_at' => current_time('mysql', true), 'changed_by' => get_current_user_id(),
+                            'changed_at' => $changed_at, 'changed_by' => $actor,
                         ], ['%d', '%d', '%s', '%s', '%d']);
-                        if ($logged === false) {
-                            echo '<div class="notice notice-error"><p>' . esc_html__('Status saved, but the activity history could not be recorded. Please contact an administrator.', 'bubbahub') . '</p></div>';
+                        if ($saved === false || $logged === false || $wpdb->query('COMMIT') === false) {
+                            $wpdb->query('ROLLBACK');
+                            echo '<div class="notice notice-error"><p>' . esc_html__('The enquiry update could not be completed. Check the database and try again.', 'bubbahub') . '</p></div>';
                         } else {
-                            echo '<div class="notice notice-success"><p>' . esc_html__('Enquiry status updated.', 'bubbahub') . '</p></div>';
+                            echo '<div class="notice notice-success"><p>' . esc_html__('Enquiry status and activity history updated.', 'bubbahub') . '</p></div>';
                         }
                     }
                 }
