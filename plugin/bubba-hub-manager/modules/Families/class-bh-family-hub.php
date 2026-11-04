@@ -276,6 +276,22 @@ final class BH_Family_Hub_3 {
                   <?php elseif (isset($_GET['bh3_profile_status']) && $_GET['bh3_profile_status'] === 'error') : ?>
                     <p role="alert"><?php echo esc_html__('Profile could not be updated.', 'bubba-hub-manager'); ?></p>
                   <?php endif; ?>
+                  <?php foreach (array('child' => $profiles['children'], 'bump' => $profiles['bumps']) as $date_type => $date_profiles) : ?>
+                    <?php foreach ($date_profiles as $date_profile) : ?>
+                      <?php $date_field = $date_type === 'child' ? 'date_of_birth' : 'due_date'; ?>
+                      <form class="bh3-family__edit" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                        <input type="hidden" name="action" value="bh3_family_profile_date">
+                        <input type="hidden" name="bh3_profile_type" value="<?php echo esc_attr($date_type); ?>">
+                        <input type="hidden" name="bh3_profile_id" value="<?php echo esc_attr(absint($date_profile['id'])); ?>">
+                        <?php wp_nonce_field('bh3_family_profile_edit'); ?>
+                        <label for="bh3-date-<?php echo esc_attr($date_type . '-' . absint($date_profile['id'])); ?>">
+                          <?php echo esc_html(sprintf($date_type === 'child' ? __('Birth date for %s', 'bubba-hub-manager') : __('Due date for %s', 'bubba-hub-manager'), $date_type === 'child' ? $date_profile['name'] : $date_profile['nickname'])); ?>
+                        </label>
+                        <input id="bh3-date-<?php echo esc_attr($date_type . '-' . absint($date_profile['id'])); ?>" name="bh3_profile_date" type="date" required value="<?php echo esc_attr($date_profile[$date_field] ?? ''); ?>">
+                        <button type="submit"><?php echo esc_html__('Save date', 'bubba-hub-manager'); ?></button>
+                      </form>
+                    <?php endforeach; ?>
+                  <?php endforeach; ?>
                   <?php foreach ($profiles['children'] as $child) : ?>
                     <form class="bh3-family__edit" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
                       <input type="hidden" name="action" value="bh3_family_child_name">
