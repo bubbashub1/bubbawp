@@ -69,6 +69,43 @@ final class BH_Family_Hub_3 {
               <?php echo esc_html(sprintf('Your Hub: %d saved activities, %d planned activities, %d child profiles.', count($saved), count($planner), count($profiles['children']))); ?>
             </div>
           <?php endif; ?>
+          <?php if ($private_preview && !is_wp_error($saved) && !is_wp_error($planner) && !is_wp_error($profiles)) : ?>
+            <div class="bh3-family__grid bh3-family__private" aria-label="<?php echo esc_attr__('Your private family overview', 'bubba-hub-manager'); ?>">
+              <article class="bh3-family__card">
+                <h2><?php echo esc_html__('Saved activities', 'bubba-hub-manager'); ?></h2>
+                <?php if (empty($saved)) : ?>
+                  <p><?php echo esc_html__('No saved activities yet.', 'bubba-hub-manager'); ?></p>
+                <?php else : ?>
+                  <ul class="bh3-family__items">
+                    <?php foreach (array_slice($saved, 0, 8) as $activity_id) : ?>
+                      <li><?php echo esc_html(sprintf(__('Activity #%d', 'bubba-hub-manager'), absint($activity_id))); ?></li>
+                    <?php endforeach; ?>
+                  </ul>
+                  <?php if (count($saved) > 8) : ?><p><?php echo esc_html(sprintf(__('%d more saved', 'bubba-hub-manager'), count($saved) - 8)); ?></p><?php endif; ?>
+                <?php endif; ?>
+              </article>
+              <article class="bh3-family__card">
+                <h2><?php echo esc_html__('Family planner', 'bubba-hub-manager'); ?></h2>
+                <?php if (empty($planner)) : ?>
+                  <p><?php echo esc_html__('Your planner is empty.', 'bubba-hub-manager'); ?></p>
+                <?php else : ?>
+                  <ul class="bh3-family__items">
+                    <?php foreach (array_slice($planner, 0, 8) as $item) : ?>
+                      <li>
+                        <?php echo esc_html(sprintf(__('Activity #%d', 'bubba-hub-manager'), absint($item['activity_id'] ?? 0))); ?>
+                        <?php if (!empty($item['visited'])) : ?><span class="bh3-family__status"><?php echo esc_html__('Visited', 'bubba-hub-manager'); ?></span><?php endif; ?>
+                      </li>
+                    <?php endforeach; ?>
+                  </ul>
+                <?php endif; ?>
+              </article>
+              <article class="bh3-family__card">
+                <h2><?php echo esc_html__('My family', 'bubba-hub-manager'); ?></h2>
+                <p><?php echo esc_html(sprintf(__('%1$d child profiles · %2$d pregnancy profiles', 'bubba-hub-manager'), count($profiles['children']), count($profiles['bumps']))); ?></p>
+                <p><?php echo esc_html__('Profile details are hidden in this initial preview.', 'bubba-hub-manager'); ?></p>
+              </article>
+            </div>
+          <?php endif; ?>
           <div class="bh3-family__grid">
             <?php foreach ( $sections as $section ) : ?>
               <article class="bh3-family__card">
