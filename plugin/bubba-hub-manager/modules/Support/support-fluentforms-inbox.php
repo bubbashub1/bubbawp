@@ -124,8 +124,9 @@ function bh_support_enquiries_page(): void {
     }
     global $wpdb;
     $table = $wpdb->prefix . 'fluentform_submissions';
-    // This module is optional: do not query tables unless Fluent Forms is installed.
-    if (!defined('FLUENTFORM') || $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table)) !== $table) {
+    // Fluent Forms versions do not consistently expose the same bootstrap constant.
+    // Verify the submissions table itself before making any queries.
+    if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($table))) !== $table) {
         echo '<div class="notice notice-warning"><p>' . esc_html__('Fluent Forms submissions are not available on this installation.', 'bubbahub') . '</p></div></div>';
         return;
     }
