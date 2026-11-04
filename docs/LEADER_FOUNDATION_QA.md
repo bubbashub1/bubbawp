@@ -31,3 +31,15 @@
 
 ## Merge gate
 Keep the PR in draft until PHP lint, organiser-isolation testing and staging browser checks pass. Merge to main only after these checks; deploy to staging before any production rollout.
+
+## Legacy account-link workflow
+1. On staging, open **Bubba Hub 3.0 → Leader Account Links** as a WordPress administrator.
+2. Independently verify the leader's identity and their right to manage the legacy organiser.
+3. Enter the **WordPress user ID** and the **legacy bh_organisers ID** (these are not interchangeable).
+4. Save and sign in as that leader to view read-only legacy listings.
+5. Set the legacy organiser ID to **0** to revoke the mapping; check that legacy listings disappear.
+6. Verify a non-admin cannot open the linking page or submit the admin-post action.
+7. Verify an invalid organiser ID or missing WordPress user is rejected without modifying existing mappings.
+8. Confirm the server error log records IDs for link changes; do not log names or emails.
+
+Legacy listings intentionally remain read-only. Before enabling edits, review all legacy table fields, claim/approval states, schedule schema, and cancellation audit requirements.
