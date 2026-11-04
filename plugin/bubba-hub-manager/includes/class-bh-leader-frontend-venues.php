@@ -44,21 +44,8 @@ final class BH_Leader_Frontend_Venues_3 {
             ), ARRAY_A );
         }
         ob_start(); ?>
-        <section class="bh-leader-venues" style="max-width:1000px;margin:32px auto;padding:0 18px">
-        <style>
-        .bh-leader-venues{font-family:inherit;color:#203c31;box-sizing:border-box}.bh-leader-venues *{box-sizing:border-box}
-        .bh-leader-venues .bh-vhero{background:linear-gradient(120deg,#1e5a45,#397d61);color:white;padding:26px;border-radius:20px;margin:14px 0 24px}
-        .bh-leader-venues .bh-vhero h1{color:#fff;margin:6px 0;font-size:clamp(25px,4vw,36px)}.bh-leader-venues .bh-vhero p{margin:6px 0;color:#f0f8f3}
-        .bh-leader-venues .bh-vnav{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0}.bh-leader-venues .bh-vnav a{display:inline-block;padding:9px 13px;border:1px solid #c9ded0;border-radius:99px;color:#245e4a;text-decoration:none;font-weight:650;background:#fff}
-        .bh-leader-venues .bh-vpanel{background:#fff;border:1px solid #dbe5df;border-radius:18px;padding:24px;margin:18px 0;box-shadow:0 8px 24px rgba(24,65,44,.05)}
-        .bh-leader-venues .bh-vpanel h2{font-size:22px;margin:0 0 8px}.bh-leader-venues .bh-vrow{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;padding:17px 0;border-top:1px solid #edf1ed}
-        .bh-leader-venues .bh-vrow strong{font-size:17px}.bh-leader-venues .bh-vbutton{background:#245e4a;color:#fff;border:0;border-radius:10px;padding:11px 17px;cursor:pointer;font:inherit;font-weight:650}
-        .bh-leader-venues .bh-vremove{background:#fff;color:#853c3c;border:1px solid #d9bdbd}.bh-leader-venues .bh-vsearch{display:flex;flex-wrap:wrap;align-items:end;gap:12px;margin:16px 0}
-        .bh-leader-venues .bh-vsearch input{padding:12px 14px;border:1px solid #b5c9bc;border-radius:10px;max-width:100%;width:380px;font:inherit}
-        .bh-leader-venues small{display:block;color:#52695d;margin-top:4px}.bh-leader-venues .bh-vnotice{background:#edf7f0;border-left:4px solid #245e4a;padding:12px 16px;border-radius:8px}
-        .bh-leader-venues a:focus-visible,.bh-leader-venues button:focus-visible,.bh-leader-venues input:focus-visible{outline:3px solid #245e4a;outline-offset:2px}
-        @media(max-width:650px){.bh-leader-venues .bh-vpanel{padding:17px}.bh-leader-venues .bh-vhero{padding:20px}.bh-leader-venues .bh-vsearch input{width:100%}.bh-leader-venues .bh-vsearch button{width:100%}}
-        </style>
+        <section class="bh-leader-venues">
+
         
         <header class="bh-vhero"><p>MY VENUES · DRAFT ACTIVITY</p><h1><?php echo esc_html( $activity['title'] ); ?></h1><p>Manage where your sessions take place.</p></header>
         <p>Search existing Bubba Hub venues to avoid duplicates. Venues used by sessions cannot be removed until those sessions are updated.</p>
@@ -78,7 +65,11 @@ final class BH_Leader_Frontend_Venues_3 {
         <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
         <input type="hidden" name="action" value="bh3_frontend_venue_attach"><input type="hidden" name="activity_id" value="<?php echo esc_attr( $id ); ?>"><input type="hidden" name="venue_id" value="<?php echo esc_attr( $venue['id'] ); ?>">
         <?php wp_nonce_field( 'bh3_frontend_venue_' . $id . '_' . $venue['id'] ); ?><button class="bh-vbutton" type="submit">Assign venue</button></form></div><?php endforeach; ?>
-        </div></section>
+        </div>
+        <?php if ( $assigned ) : ?>
+        <div class="bh-venue-next"><a href="<?php echo esc_url( add_query_arg( 'activity_id', $id, home_url( '/leader/timetable/' ) ) ); ?>">Continue to timetable</a></div>
+        <?php endif; ?>
+        </section>
         <?php return ob_get_clean();
     }
     private static function change( $attach ) {
