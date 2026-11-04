@@ -17,10 +17,16 @@ function bh_support_status_table(): string {
     return $wpdb->prefix . 'bh_support_enquiry_status';
 }
 
-add_action('admin_init', static function (): void {
-    // Staging-only explicit opt-in; never create workflow tables on live.
-    if (!current_user_can('manage_options') || strtolower((string) wp_parse_url(home_url(), PHP_URL_HOST)) !== 'staging.bubbahub.co.uk'
-        || get_option('bh_support_status_schema_version') === '2') return;
+add_action('admin_post_bh3_support_install_schema', static function (): void {
+    // Explicit administrator-only schema install, staging only.
+    if (!current_user_can('manage_options')) wp_die('Administrator permission required.', '', ['response' => 403]);
+    check_admin_referer('bh3_support_install_schema');
+    if (strtolower((string) wp_parse_url(home_url(), PHP_URL_HOST)) !== 'staging.bubbahub.co.uk') wp_die('Staging only.', '', ['response' => 403]);
+    if (!isset($_POST['bh3_support_confirm']) || sanitize_text_field(wp_unslash($_POST['bh3_support_confirm'])) !== 'INSTALL') wp_die('Type INSTALL to confirm.', '', ['response' => 400]);
+    if (get_option('bh_support_status_schema_version') === '2') {
+        wp_safe_redirect(admin_url('admin.php?page=bh-support-enquiries&bh3_schema=already'));
+        exit;
+    }
     global $wpdb;
     require_once ABSPATH . 'wp-admin/includes/upgrade.php';
     $table = bh_support_status_table();
@@ -51,6 +57,8 @@ add_action('admin_init', static function (): void {
         && $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $history)) === $history) {
         update_option('bh_support_status_schema_version', '2', false);
     }
+    wp_safe_redirect(admin_url('admin.php?page=bh-support-enquiries&bh3_schema=' . (get_option('bh_support_status_schema_version') === '2' ? 'installed' : 'error')));
+    exit;
 });
 
 add_action('admin_menu', static function (): void {
@@ -112,6 +120,21 @@ function bh_support_enquiries_page(): void {
     }
     $ids = array_values(array_filter(array_map('absint', (array) get_option('bh_support_fluent_form_ids', []))));
     echo '<div class="wrap"><h1>' . esc_html__('Bubba Hub · Support Enquiries', 'bubbahub') . '</h1>';
+    if (get_option('bh_support_status_schema_version') !== '2') {
+        echo '<div class="notice notice-warning"><p>' . esc_html__('Workflow tracking tables have not been installed. Back up staging before proceeding.', 'bubbahub') . '</p></div>';
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+        echo '<input type="hidden" name="action" value="bh3_support_install_schema">';
+        wp_nonce_field('bh3_support_install_schema');
+        echo '<label for="bh3-support-confirm">' . esc_html__('Type INSTALL to create support workflow tables on staging:', 'bubbahub') . '</label> ';
+        echo '<input id="bh3-support-confirm" name="bh3_support_confirm" required autocomplete="off"> ';
+        echo '<button class="button button-secondary" type="submit">' . esc_html__('Install support tables', 'bubbahub') . '</button></form>';
+    }
+    if (isset($_GET['bh3_schema'])) {
+        $schema_result = sanitize_key(wp_unslash($_GET['bh3_schema']));
+        if (in_array($schema_result, ['installed', 'already', 'error'], true)) {
+            echo '<div class="notice ' . ($schema_result === 'error' ? 'notice-error' : 'notice-success') . '"><p>' . esc_html($schema_result === 'installed' ? 'Support workflow tables installed.' : ($schema_result === 'already' ? 'Support workflow tables already installed.' : 'Support workflow installation failed; inspect database logs.')) . '</p></div>';
+        }
+    }
     echo '<p>' . esc_html__('Select the Fluent Forms form IDs used for support enquiries. Entries remain stored in Fluent Forms; this page shows limited metadata only. Open Fluent Forms to view private responses.', 'bubbahub') . '</p>';
     echo '<form method="post">';
     wp_nonce_field('bh_support_form_settings');
