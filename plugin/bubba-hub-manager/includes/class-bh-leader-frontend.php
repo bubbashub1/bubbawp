@@ -46,10 +46,10 @@ final class BH_Leader_Frontend_3 {
         .bh-leader-stat,.bh-leader-card,.bh-leader-list{background:#fff;border:1px solid #dbe5df;border-radius:16px;padding:22px;box-shadow:0 3px 12px rgba(25,58,40,.04)}
         .bh-leader-stat strong{display:block;font-size:30px;color:#245e4a}.bh-leader-card h2{font-size:20px;margin:0 0 10px}
         .bh-leader-card p{line-height:1.55;flex:1}.bh-leader-card{display:flex;flex-direction:column;min-height:180px}.bh-leader-card:hover{box-shadow:0 12px 28px rgba(25,58,40,.10)}.bh-leader-card a{display:inline-block;margin-top:8px;color:#245e4a;font-weight:700;text-decoration:underline}.bh-leader-card a:focus-visible,.bh-leader-shell a:focus-visible{outline:3px solid #245e4a;outline-offset:3px}.bh-leader-nav{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 24px}.bh-leader-nav a{padding:9px 14px;border:1px solid #cbdcd0;border-radius:30px;text-decoration:none;color:#245e4a;font-weight:600;background:#fff}.bh-leader-nav a:hover{background:#eef5ef}.bh-leader-button{display:inline-flex;padding:10px 16px;background:#245e4a;color:#fff!important;border-radius:9px;text-decoration:none!important;font-weight:600}
-        .bh-leader-list{margin:22px 0}.bh-leader-list h2{font-size:22px}.bh-leader-list ul{list-style:none;padding:0;margin:0}
-        .bh-leader-list li{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid #edf0ed}
+        .bh-leader-section-heading{font-size:24px;margin:28px 0 8px}.bh-leader-list{margin:22px 0}.bh-leader-list h2{font-size:22px}.bh-leader-list ul{list-style:none;padding:0;margin:0}
+        .bh-leader-list li{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 0;border-top:1px solid #edf0ed}
         .bh-leader-status{text-transform:capitalize;color:#245e4a;font-weight:600}
-        .bh-leader-activity-title{min-width:0;flex:1}
+        .bh-leader-activity-title{min-width:0;flex:1}.bh-leader-activity-title strong{font-size:18px;display:block}.bh-leader-activity-title small{color:#617569;margin-top:5px}
         .bh-leader-activity-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:flex-end}
         .bh-leader-activity-actions a{padding:7px 10px;border:1px solid #cbdcd0;border-radius:8px;color:#245e4a;text-decoration:none;font-weight:600;font-size:14px}
         .bh-leader-activity-actions a:hover{background:#eef5ef}
@@ -67,7 +67,7 @@ final class BH_Leader_Frontend_3 {
                 <div class="bh-leader-stat"><strong><?php echo esc_html( number_format_i18n( $totals['draft'] ) ); ?></strong>Drafts</div>
                 <div class="bh-leader-stat"><strong><?php echo esc_html( number_format_i18n( $totals['published'] ) ); ?></strong>Published</div>
             </section>
-            <section class="bh-leader-grid" id="leader-tools" aria-label="Leader sections">
+            <h2 class="bh-leader-section-heading">Manage your classes</h2><section class="bh-leader-grid" id="leader-tools" aria-label="Leader sections">
                 <?php
                 $sections = array(
                     array( 'My Activities', 'Search, edit and manage your own draft listings.', '#my-activities', 'View activities' ),
