@@ -35,6 +35,14 @@ final class BH_Leader_Frontend_Business_3 {
         <label for="bh-business-email">Public contact email</label><input id="bh-business-email" type="email" name="contact_email" maxlength="254" value="<?php echo esc_attr( $profile['contact_email'] ); ?>">
         <label for="bh-business-url">Website</label><input id="bh-business-url" type="url" name="website_url" maxlength="2048" value="<?php echo esc_attr( $profile['website_url'] ); ?>" placeholder="https://">
         <label for="bh-business-description">About your organisation</label><textarea id="bh-business-description" name="description" rows="8"><?php echo esc_textarea( $profile['description'] ); ?></textarea>
+        <h2>Storefront appearance</h2>
+        <p class="bh-business-note">Add public images using existing WordPress Media Library image URLs. Your organiser profile remains the single source of truth.</p>
+        <?php $extras = get_option( 'bh3_storefront_' . (int) $profile['id'], array() ); ?>
+        <label for="bh-business-logo">Logo image URL</label><input id="bh-business-logo" name="logo_url" type="url" maxlength="2048" placeholder="https://" value="<?php echo esc_attr( $extras['logo_url'] ?? '' ); ?>">
+        <label for="bh-business-cover">Cover image URL</label><input id="bh-business-cover" name="cover_url" type="url" maxlength="2048" placeholder="https://" value="<?php echo esc_attr( $extras['cover_url'] ?? '' ); ?>">
+        <h2>Social links</h2>
+        <label for="bh-business-facebook">Facebook URL</label><input id="bh-business-facebook" name="facebook_url" type="url" maxlength="2048" placeholder="https://" value="<?php echo esc_attr( $extras['facebook_url'] ?? '' ); ?>">
+        <label for="bh-business-instagram">Instagram URL</label><input id="bh-business-instagram" name="instagram_url" type="url" maxlength="2048" placeholder="https://" value="<?php echo esc_attr( $extras['instagram_url'] ?? '' ); ?>">
         <p class="bh-business-note">Your account permissions and linked activities will not change.</p>
         <button type="submit">Save business profile</button></form></div></section>
         <?php return ob_get_clean();
@@ -50,10 +58,20 @@ final class BH_Leader_Frontend_Business_3 {
         if ( strlen( $email ) > 254 || ( $email !== '' && ! is_email( $email ) ) ||
             strlen( $raw_url ) > 2048 || ( $raw_url !== '' && ( $url === '' || ! in_array( strtolower( (string) wp_parse_url( $url, PHP_URL_SCHEME ) ), array( 'http', 'https' ), true ) ) ) ||
             strlen( $description ) > 20000 ) { wp_die( 'Please check the email, website and description.', '', array( 'response'=>400 ) ); }
+        $extras = array();
+        foreach ( array( 'logo_url', 'cover_url', 'facebook_url', 'instagram_url' ) as $field ) {
+            $raw = trim( (string) wp_unslash( $_POST[ $field ] ?? '' ) );
+            $clean = esc_url_raw( $raw, array( 'http', 'https' ) );
+            if ( strlen( $raw ) > 2048 || ( $raw !== '' && ( ! $clean || ! in_array( strtolower( (string) wp_parse_url( $clean, PHP_URL_SCHEME ) ), array( 'http', 'https' ), true ) ) ) ) {
+                wp_die( 'Please enter valid HTTPS or HTTP storefront URLs.', '', array( 'response' => 400 ) );
+            }
+            $extras[ $field ] = $clean;
+        }
         global $wpdb;
         $table = $wpdb->prefix . 'organisers';
         $result = $wpdb->update( $table, array( 'contact_email'=>$email, 'website_url'=>$url, 'description'=>$description, 'updated_at'=>current_time( 'mysql', true ) ), array( 'id'=>(int) $profile['id'] ) );
         if ( $result === false ) { wp_die( 'Could not save business profile.', '', array( 'response'=>500 ) ); }
+        update_option( 'bh3_storefront_' . (int) $profile['id'], $extras, false );
         wp_safe_redirect( add_query_arg( 'saved', '1', home_url( '/leader/business/' ) ) );
         exit;
     }
