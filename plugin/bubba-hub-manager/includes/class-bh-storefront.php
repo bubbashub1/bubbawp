@@ -24,13 +24,15 @@ final class BH_Storefront_3 {
             "SELECT DISTINCT v.name,v.town FROM `{$venue_table}` v INNER JOIN `{$link_table}` av ON av.venue_id=v.id INNER JOIN `{$activity_table}` a ON a.id=av.activity_id WHERE a.organiser_id=%d AND a.status='published' ORDER BY v.town,v.name LIMIT 30",
             $id
         ), ARRAY_A );
+        $extras = get_option( 'bh3_storefront_' . $id, array() );
+        if ( ! is_array( $extras ) ) { $extras = array(); }
         ob_start(); ?>
         <section class="bh-storefront">
           <style>
           .bh-storefront{max-width:1160px;margin:24px auto;padding:0 20px;color:#203c31;font-family:inherit}.bh-storefront *{box-sizing:border-box}
           .bh-storefront .bh-shero{padding:clamp(24px,5vw,48px);border-radius:24px;background:linear-gradient(120deg,#1c5641,#438566);color:#fff}
           .bh-storefront .bh-shero h1{color:#fff;font-size:clamp(30px,5vw,48px);margin:8px 0}.bh-storefront .bh-shero p{color:#e8f5eb}
-          .bh-storefront .bh-sgrid{display:grid;grid-template-columns:2fr 1fr;gap:22px;margin:22px 0}
+          .bh-storefront .bh-slogo{width:88px;height:88px;object-fit:contain;background:#fff;border-radius:16px;padding:8px;margin-bottom:14px}.bh-storefront .bh-scover{width:100%;max-height:280px;object-fit:cover;border-radius:18px;margin-bottom:16px}.bh-storefront .bh-sgrid{display:grid;grid-template-columns:2fr 1fr;gap:22px;margin:22px 0}
           .bh-storefront .bh-scard{background:#fff;border:1px solid #dbe5df;border-radius:18px;padding:24px;box-shadow:0 8px 24px rgba(20,65,42,.05)}
           .bh-storefront .bh-scard h2{font-size:23px;margin:0 0 16px}.bh-storefront .bh-sactivity{border-top:1px solid #e7eee8;padding:16px 0}
           .bh-storefront .bh-sactivity strong{display:block;font-size:17px}.bh-storefront .bh-sactivity small{color:#567264}
@@ -38,7 +40,8 @@ final class BH_Storefront_3 {
           .bh-storefront a:focus-visible{outline:3px solid #245e4a;outline-offset:3px}
           @media(max-width:720px){.bh-storefront .bh-sgrid{grid-template-columns:1fr}.bh-storefront .bh-scard{padding:18px}}
           </style>
-          <header class="bh-shero"><p>BUBBA HUB · BUSINESS PROFILE</p><h1><?php echo esc_html( $profile['name'] ); ?></h1><p>Discover this organiser's activities and get in touch.</p></header>
+          <?php if ( ! empty( $extras['cover_url'] ) ) : ?><img class="bh-scover" src="<?php echo esc_url( $extras['cover_url'] ); ?>" alt="" loading="lazy"><?php endif; ?>
+          <header class="bh-shero"><?php if ( ! empty( $extras['logo_url'] ) ) : ?><img class="bh-slogo" src="<?php echo esc_url( $extras['logo_url'] ); ?>" alt="<?php echo esc_attr( $profile['name'] ); ?> logo" loading="lazy"><?php endif; ?><p>BUBBA HUB · BUSINESS PROFILE</p><h1><?php echo esc_html( $profile['name'] ); ?></h1><p>Discover this organiser's activities and get in touch.</p></header>
           <div class="bh-sgrid">
             <div class="bh-scard"><h2>About us</h2><?php echo wp_kses_post( wpautop( $profile['description'] ?: 'More information coming soon.' ) ); ?>
               <h2>Our activities</h2>
@@ -49,6 +52,9 @@ final class BH_Storefront_3 {
               <?php if ( $profile['website_url'] ) : ?><a class="bh-slink" href="<?php echo esc_url( $profile['website_url'] ); ?>" rel="noopener noreferrer" target="_blank">Visit website</a><?php endif; ?>
               <?php if ( $profile['contact_email'] ) : ?><a class="bh-slink" href="<?php echo esc_url( 'mailto:' . sanitize_email( $profile['contact_email'] ) ); ?>">Email organiser</a><?php endif; ?>
               <?php if ( ! $profile['website_url'] && ! $profile['contact_email'] ) : ?><p>Contact details are not yet available.</p><?php endif; ?>
+              <?php foreach ( array( 'facebook_url' => 'Facebook', 'instagram_url' => 'Instagram' ) as $field => $label ) : ?>
+                <?php if ( ! empty( $extras[ $field ] ) ) : ?><a class="bh-slink" href="<?php echo esc_url( $extras[ $field ] ); ?>" rel="noopener noreferrer" target="_blank"><?php echo esc_html( $label ); ?></a><?php endif; ?>
+              <?php endforeach; ?>
               <h2>Where to find us</h2>
               <?php if ( ! $locations ) : ?><p>Venue information will appear when activities are published.</p><?php endif; ?>
               <?php foreach ( $locations as $location ) : ?><p><strong><?php echo esc_html( $location["name"] ); ?></strong><?php if ( $location["town"] ) : ?> · <?php echo esc_html( $location["town"] ); ?><?php endif; ?></p><?php endforeach; ?>
