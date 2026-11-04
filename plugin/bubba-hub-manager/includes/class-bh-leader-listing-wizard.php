@@ -203,8 +203,9 @@ final class BH_Leader_Listing_Wizard_3 {
         if ( $min !== '' && ( ! ctype_digit( $min ) || (int) $min > 216 ) ) { wp_die( 'Minimum age must be between 0 and 216 months.', '', array( 'response' => 400 ) ); }
         if ( $max !== '' && ( ! ctype_digit( $max ) || (int) $max > 216 ) ) { wp_die( 'Maximum age must be between 0 and 216 months.', '', array( 'response' => 400 ) ); }
         if ( $min !== '' && $max !== '' && (int) $min > (int) $max ) { wp_die( 'Minimum age cannot exceed maximum age.', '', array( 'response' => 400 ) ); }
-        $email = sanitize_email( self::value( 'contact_email', 254 ) );
-        if ( $email !== '' && ! is_email( $email ) ) { wp_die( 'Please enter a valid activity contact email.', '', array( 'response' => 400 ) ); }
+        $email_raw = self::value( 'contact_email', 254 );
+        $email = $email_raw === '' ? '' : sanitize_email( $email_raw );
+        if ( $email_raw !== '' && ( ! $email || ! is_email( $email ) ) ) { wp_die( 'Please enter a valid activity contact email.', '', array( 'response' => 400 ) ); }
         $method = self::value( 'booking_method', 20 );
         if ( ! in_array( $method, array( 'external', 'enquiry', 'drop_in' ), true ) ) { $method = 'external'; }
         if ( $method === 'enquiry' && ( empty( $organiser['contact_email'] ) || ! is_email( $organiser['contact_email'] ) ) ) { wp_die( 'Add a valid contact email to your organiser storefront before choosing Bubba Hub enquiries.', '', array( 'response' => 400 ) ); }
@@ -241,7 +242,11 @@ final class BH_Leader_Listing_Wizard_3 {
             $values['booking_method'] = $method;
         }
         $columns = self::columns( $table );
-        $required_columns = array( 2 => array( 'tags' ), 3 => array( 'contact_email', 'contact_phone', 'what_to_bring', 'good_to_know' ) );
+        $required_columns = array(
+            1 => array( 'website' ),
+            2 => array( 'tags' ),
+            3 => array( 'age_min_months', 'age_max_months', 'price_from', 'is_free', 'contact_email', 'contact_phone', 'website', 'what_to_bring', 'good_to_know' ),
+        );
         foreach ( $required_columns[$step] ?? array() as $required_column ) {
             if ( ! isset( $columns[$required_column] ) ) { wp_die( 'The listing database needs its activity field migration before this step can save. Please contact Bubba Hub support.', '', array( 'response' => 409 ) ); }
         }
