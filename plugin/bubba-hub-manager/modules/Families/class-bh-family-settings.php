@@ -22,11 +22,31 @@ final class BH_Family_Settings_3 {
         if (!$admin_demo && BH_Family_Identity_3::current_legacy_id() < 1) return '<p>' . esc_html__('A verified family account is required.', 'bubba-hub-manager') . '</p>';
         $verified_family = !$admin_demo;
         $preferences = BH_Family_Preferences_3::read();
+        $account = wp_get_current_user();
         ob_start();
         ?>
         <section class="bh3-family bh3-family__settings-page">
           <p><a href="<?php echo esc_url(home_url('/family/')); ?>">← <?php echo esc_html__('Back to My Hub', 'bubba-hub-manager'); ?></a></p>
           <div class="bh3-family__grid bh3-family__private">
+              <article id="bh3-account" class="bh3-family__card bh3-family__card--account">
+                <div class="bh3-family__section-heading"><div><span class="bh3-family__kicker"><?php echo esc_html__('YOUR ACCOUNT', 'bubba-hub-manager'); ?></span><h2><?php echo esc_html__('My profile', 'bubba-hub-manager'); ?></h2></div></div>
+                <p><?php echo esc_html__('Manage your name here. Your sign-in and security settings remain with your existing account provider.', 'bubba-hub-manager'); ?></p>
+                <?php if (isset($_GET['bh3_profile_status']) && $_GET['bh3_profile_status'] === 'saved') : ?><p role="status"><?php echo esc_html__('Profile updated.', 'bubba-hub-manager'); ?></p><?php elseif (isset($_GET['bh3_profile_status']) && $_GET['bh3_profile_status'] === 'error') : ?><p role="alert"><?php echo esc_html__('Unable to update your profile.', 'bubba-hub-manager'); ?></p><?php endif; ?>
+                <form class="bh3-family__account-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                  <input type="hidden" name="action" value="bh3_family_account">
+                  <?php wp_nonce_field('bh3_family_account'); ?>
+                  <div class="bh3-family__location-grid">
+                    <label><?php echo esc_html__('First name', 'bubba-hub-manager'); ?><input type="text" name="first_name" maxlength="80" value="<?php echo esc_attr($account->first_name); ?>" <?php disabled($admin_demo); ?>></label>
+                    <label><?php echo esc_html__('Last name', 'bubba-hub-manager'); ?><input type="text" name="last_name" maxlength="80" value="<?php echo esc_attr($account->last_name); ?>" <?php disabled($admin_demo); ?>></label>
+                    <label><?php echo esc_html__('Display name', 'bubba-hub-manager'); ?><input type="text" name="display_name" maxlength="80" value="<?php echo esc_attr($account->display_name); ?>" <?php disabled($admin_demo); ?>></label>
+                  </div>
+                  <div class="bh3-family__location-grid">
+                    <label><?php echo esc_html__('Email address', 'bubba-hub-manager'); ?><input type="email" value="<?php echo esc_attr($account->user_email); ?>" readonly aria-describedby="bh3-account-email-help"></label>
+                  </div>
+                  <p id="bh3-account-email-help" class="bh3-family__matching-note"><?php echo esc_html__('Email and password changes are managed through your secure sign-in account.', 'bubba-hub-manager'); ?></p>
+                  <?php if (!$admin_demo) : ?><button type="submit"><?php echo esc_html__('Save profile', 'bubba-hub-manager'); ?></button><?php endif; ?>
+                </form>
+              </article>
               <article id="bh3-preferences" class="bh3-family__card bh3-family__card--preferences">
                 <div class="bh3-family__section-heading"><div><span class="bh3-family__kicker"><?php echo esc_html__('PERSONALISE YOUR HUB', 'bubba-hub-manager'); ?></span><h2><?php echo esc_html__('Family preferences', 'bubba-hub-manager'); ?></h2></div></div>
                 <p><?php echo esc_html__('Choose the activities, days and areas that suit your family. These will help tailor future recommendations.', 'bubba-hub-manager'); ?></p>
