@@ -1,0 +1,81 @@
+<?php
+/** Staging-only owner-scoped front-end draft editor. */
+if ( ! defined( 'ABSPATH' ) ) { exit; }
+final class BH_Leader_Frontend_Editor_3 {
+    private static function enabled() {
+        return strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) === 'staging.bubbahub.co.uk' && is_user_logged_in() && current_user_can( 'read' );
+    }
+    private static function draft( $id ) {
+        if ( ! self::enabled() || ! $id ) { return null; }
+        $organiser = absint( get_user_meta( get_current_user_id(), 'bh3_organiser_id', true ) );
+        if ( ! $organiser ) { return null; }
+        global $wpdb;
+        $table = $wpdb->prefix . 'activities';
+        return $wpdb->get_row( $wpdb->prepare( "SELECT id,title,description,category,age_min_months,age_max_months,price_from,is_free,booking_url FROM `{$table}` WHERE id=%d AND organiser_id=%d AND status='draft' LIMIT 1", $id, $organiser ), ARRAY_A );
+    }
+    public static function register() {
+        add_shortcode( 'bh_leader_edit_activity', array( __CLASS__, 'render' ) );
+        add_action( 'admin_post_bh3_leader_frontend_save', array( __CLASS__, 'save' ) );
+    }
+    public static function render() {
+        if ( ! self::enabled() ) { return '<p>Please sign in to edit your draft activity.</p>'; }
+        $id = absint( $_GET['activity_id'] ?? 0 );
+        $row = self::draft( $id );
+        if ( ! $row ) { return '<p>This draft is unavailable or is not assigned to your organiser.</p>'; }
+        ob_start(); ?>
+        <section class="bh-leader-edit" style="max-width:850px;margin:32px auto;padding:24px;background:#fff;border:1px solid #dbe5df;border-radius:16px">
+        <h1>Edit <?php echo esc_html( $row['title'] ); ?></h1>
+        <p><a href="<?php echo esc_url( home_url( '/leader/' ) ); ?>">← Leader Dashboard</a></p>
+        <?php if ( isset( $_GET['saved'] ) && $_GET['saved'] === '1' ) : ?><p role="status">Draft saved successfully.</p><?php endif; ?>
+        <p>Draft details only. Publishing and deletion remain with the Bubba Hub team.</p>
+        <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+            <input type="hidden" name="action" value="bh3_leader_frontend_save">
+            <input type="hidden" name="activity_id" value="<?php echo esc_attr( $id ); ?>">
+            <?php wp_nonce_field( 'bh3_leader_frontend_' . $id ); ?>
+            <?php foreach ( array( 'title' => 'Activity title', 'category' => 'Category', 'age_min_months' => 'Minimum age (months)', 'age_max_months' => 'Maximum age (months)', 'price_from' => 'Price from (£)', 'booking_url' => 'Booking website' ) as $key => $label ) :
+                $numeric = in_array( $key, array( 'age_min_months', 'age_max_months', 'price_from' ), true );
+                $type = $numeric ? 'number' : ( $key === 'booking_url' ? 'url' : 'text' ); ?>
+                <p><label for="bh-edit-<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $label ); ?></label>
+                <input style="display:block;width:100%;max-width:600px;padding:10px" id="bh-edit-<?php echo esc_attr( $key ); ?>" name="<?php echo esc_attr( $key ); ?>" type="<?php echo esc_attr( $type ); ?>" value="<?php echo esc_attr( (string) ( $row[$key] ?? '' ) ); ?>" <?php if ( $numeric ) : ?>min="0" step="<?php echo $key === 'price_from' ? '0.01' : '1'; ?>"<?php endif; ?> <?php if ( $key === 'title' ) : ?>required<?php endif; ?>></p>
+            <?php endforeach; ?>
+            <p><label for="bh-edit-description">Description</label><textarea id="bh-edit-description" name="description" rows="8" style="display:block;width:100%"><?php echo esc_textarea( $row['description'] ); ?></textarea></p>
+            <p><label><input type="checkbox" name="is_free" value="1" <?php checked( (int) $row['is_free'], 1 ); ?>> This activity is free</label></p>
+            <button type="submit" style="background:#245e4a;color:#fff;border:0;border-radius:8px;padding:12px 20px;cursor:pointer">Save draft</button>
+        </form></section>
+        <?php return ob_get_clean();
+    }
+    public static function save() {
+        if ( ! self::enabled() ) { wp_die( 'Not permitted.', '', array( 'response' => 403 ) ); }
+        $id = absint( $_POST['activity_id'] ?? 0 );
+        check_admin_referer( 'bh3_leader_frontend_' . $id );
+        if ( ! self::draft( $id ) ) { wp_die( 'Draft not found or access denied.', '', array( 'response' => 403 ) ); }
+        $title = sanitize_text_field( wp_unslash( $_POST['title'] ?? '' ) );
+        $category = sanitize_text_field( wp_unslash( $_POST['category'] ?? '' ) );
+        if ( $title === '' || strlen( $title ) > 255 || strlen( $category ) > 150 ) { wp_die( 'Invalid title or category.', '', array( 'response' => 400 ) ); }
+        $ages = array();
+        foreach ( array( 'age_min_months', 'age_max_months' ) as $field ) {
+            $raw = trim( (string) wp_unslash( $_POST[$field] ?? '' ) );
+            $value = $raw === '' ? null : filter_var( $raw, FILTER_VALIDATE_INT );
+            if ( $value !== null && ( $value === false || $value < 0 || $value > 216 ) ) { wp_die( 'Invalid age range.', '', array( 'response' => 400 ) ); }
+            $ages[$field] = $value;
+        }
+        if ( $ages['age_min_months'] !== null && $ages['age_max_months'] !== null && $ages['age_min_months'] > $ages['age_max_months'] ) { wp_die( 'Invalid age order.', '', array( 'response' => 400 ) ); }
+        $free = ! empty( $_POST['is_free'] ) ? 1 : 0;
+        $price = trim( (string) wp_unslash( $_POST['price_from'] ?? '' ) );
+        if ( $price !== '' && ( ! preg_match( '/^\d{1,8}(?:\.\d{1,2})?$/', $price ) || (float) $price > 99999999.99 ) ) { wp_die( 'Invalid price.', '', array( 'response' => 400 ) ); }
+        $raw_url = trim( (string) wp_unslash( $_POST['booking_url'] ?? '' ) );
+        $url = esc_url_raw( $raw_url, array( 'http', 'https' ) );
+        if ( strlen( $raw_url ) > 2048 || ( $raw_url !== '' && ( $url === '' || ! in_array( strtolower( (string) wp_parse_url( $url, PHP_URL_SCHEME ) ), array( 'http', 'https' ), true ) ) ) ) { wp_die( 'Invalid booking URL.', '', array( 'response' => 400 ) ); }
+        global $wpdb;
+        $organiser = absint( get_user_meta( get_current_user_id(), 'bh3_organiser_id', true ) );
+        $result = $wpdb->update( $wpdb->prefix . 'activities', array(
+            'title' => $title, 'category' => $category, 'description' => wp_kses_post( wp_unslash( $_POST['description'] ?? '' ) ),
+            'age_min_months' => $ages['age_min_months'], 'age_max_months' => $ages['age_max_months'],
+            'price_from' => $free ? 0 : ( $price === '' ? null : (float) $price ),
+            'is_free' => $free, 'booking_url' => $url, 'updated_at' => current_time( 'mysql', true )
+        ), array( 'id' => $id, 'organiser_id' => $organiser, 'status' => 'draft' ) );
+        if ( $result === false ) { wp_die( 'Save failed.', '', array( 'response' => 500 ) ); }
+        wp_safe_redirect( add_query_arg( array( 'activity_id' => $id, 'saved' => '1' ), home_url( '/leader/edit/' ) ) );
+        exit;
+    }
+}
