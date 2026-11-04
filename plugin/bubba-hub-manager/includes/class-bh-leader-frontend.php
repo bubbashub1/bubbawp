@@ -77,6 +77,26 @@ final class BH_Leader_Frontend_3 {
                 <div class="bh-leader-stat"><strong><?php echo esc_html( number_format_i18n( $totals['draft'] ) ); ?></strong>Drafts</div>
                 <div class="bh-leader-stat"><strong><?php echo esc_html( number_format_i18n( $totals['published'] ) ); ?></strong>Published</div>
             </section>
+            <section class="bh-leader-action-queue" aria-label="Action queue">
+                <header class="bh-leader-action-queue-head">
+                    <div><h2>Needs your attention</h2><p class="bh-leader-muted">A quick starting point for keeping your listings up to date.</p></div>
+                    <a class="bh-leader-overview-action" href="<?php echo esc_url( home_url( '/leader/statistics/' ) ); ?>">View all checks</a>
+                </header>
+                <?php if ( ! $draft_attention ) : ?>
+                    <p class="bh-leader-action-empty">No draft activities are waiting for review.</p>
+                <?php else : ?>
+                    <ul class="bh-leader-action-items">
+                    <?php foreach ( $draft_attention as $draft ) : ?>
+                        <li><div><strong>Finish your draft</strong><span><?php echo esc_html( $draft['title'] ); ?></span></div>
+                        <a href="<?php echo esc_url( add_query_arg( 'activity_id', absint( $draft['id'] ), home_url( '/leader/edit-activity/' ) ) ); ?>">Continue editing</a></li>
+                    <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
+                <div class="bh-leader-action-create">
+                    <div><strong>Ready to add another class?</strong><p class="bh-leader-muted">Start with the guided listing wizard and review your details before submitting.</p></div>
+                    <a class="bh-leader-primary-action" href="<?php echo esc_url( home_url( '/leader/new/' ) ); ?>">Create a listing</a>
+                </div>
+            </section>
             <section class="bh-leader-overview" aria-label="Your next steps">
                 <header><h2>Your next steps</h2><p class="bh-leader-muted">Everything important, in one place.</p></header>
                 <div class="bh-leader-overview-grid">
