@@ -208,3 +208,9 @@ body .bh3-family__settings-sidebar>a:hover,body .bh3-family__settings-sidebar>a:
 .bh3-family__sidebar-footer{padding:13px 9px 3px;margin-top:8px;border-top:1px solid #e6ede7;font-size:.76rem;color:#78877c}
 .bh3-family__settings-page [id^=bh3-]{scroll-margin-top:32px}
 @media(max-width:850px){body .bh3-family__settings-page .bh3-family__settings-layout{grid-template-columns:1fr!important;gap:15px!important}body .bh3-family__settings-page .bh3-family__settings-sidebar{position:static;flex-direction:row;flex-wrap:wrap;gap:6px;padding:12px}body .bh3-family__settings-page .bh3-family__sidebar-heading{width:100%;padding:4px 8px 9px;margin:0}body .bh3-family__settings-sidebar>a{flex:1 1 auto}body .bh3-family__sidebar-footer{display:none}}
+
+/* Family settings: sidebar + one vertical content column (never split cards). */
+body .bh3-family__settings-page .bh3-family__settings-content > .bh3-family__grid.bh3-family__private{display:flex!important;flex-direction:column!important;flex-wrap:nowrap!important;grid-template-columns:minmax(0,1fr)!important;align-items:stretch!important;gap:22px!important;width:100%!important;max-width:100%!important}
+body .bh3-family__settings-page .bh3-family__settings-content > .bh3-family__grid.bh3-family__private > article{display:block!important;flex:none!important;width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;margin:0!important}
+body .bh3-family__settings-page .bh3-family__settings-content{display:block!important;min-width:0!important}
+@media(max-width:850px){body .bh3-family__settings-page .bh3-family__settings-content > .bh3-family__grid.bh3-family__private{width:100%!important}}
