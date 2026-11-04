@@ -66,7 +66,7 @@ final class BH_Family_Recommendations_3 {
         }
         $town = trim((string)($preferences['town'] ?? ''));
         $postcode = trim((string)($preferences['postcode'] ?? ''));
-        if ($town !== '' || $postcode !== '') {
+        if (!$origin && ($town !== '' || $postcode !== '')) {
             $location = array();
             if ($town !== '') { $location[] = 'v.town LIKE %s'; $params[] = '%' . $wpdb->esc_like($town) . '%'; }
             if ($postcode !== '') { $location[] = 'v.postcode LIKE %s'; $params[] = $wpdb->esc_like($postcode) . '%'; }
