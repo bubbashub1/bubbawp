@@ -24,6 +24,11 @@ final class BH_Family_Hub_3 {
     }
 
     public static function render() {
+        // FluentAuth should establish the standard WordPress session; no plugin-specific hooks assumed.
+        // This is an authentication UX gate, NOT permission to access legacy bh_users records.
+        $wp_signed_in = is_user_logged_in();
+        $return_url = is_singular() ? get_permalink() : home_url( '/' );
+        $login_url = wp_login_url( $return_url );
         $sections = array(
             array( 'My family', 'Family profiles will appear here once account mapping is verified.' ),
             array( 'Saved activities', 'Your favourites will connect to existing activity IDs.' ),
@@ -38,7 +43,14 @@ final class BH_Family_Hub_3 {
             <h1 id="bh3-family-heading"><?php echo esc_html__( 'Your family, all in one place', 'bubba-hub-manager' ); ?></h1>
             <p><?php echo esc_html__( 'Plan days out, keep favourite activities together and make family time easier.', 'bubba-hub-manager' ); ?></p>
           </div>
-          <div class="bh3-family__notice" role="status"><?php echo esc_html__( 'Preview framework — no family information is connected yet.', 'bubba-hub-manager' ); ?></div>
+          <?php if ( ! $wp_signed_in ) : ?>
+            <div class="bh3-family__notice" role="status">
+              <p><?php echo esc_html__( 'Sign in to access your Family Hub. Your existing family data will be connected after account verification.', 'bubba-hub-manager' ); ?></p>
+              <p><a class="bh3-family__login" href="<?php echo esc_url( $login_url ); ?>"><?php echo esc_html__( 'Sign in', 'bubba-hub-manager' ); ?></a></p>
+            </div>
+          <?php else : ?>
+            <div class="bh3-family__notice" role="status"><?php echo esc_html__( 'Signed in to WordPress. Family account linking is not yet enabled; no private family data is displayed.', 'bubba-hub-manager' ); ?></div>
+          <?php endif; ?>
           <div class="bh3-family__grid">
             <?php foreach ( $sections as $section ) : ?>
               <article class="bh3-family__card">
