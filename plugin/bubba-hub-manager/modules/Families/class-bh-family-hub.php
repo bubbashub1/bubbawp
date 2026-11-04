@@ -42,6 +42,9 @@ final class BH_Family_Hub_3 {
         $saved = $private_preview ? BH_Family_Read_Model_3::saved_ids() : array();
         $planner = $private_preview ? BH_Family_Read_Model_3::planner_items() : array();
         $profiles = $private_preview ? BH_Family_Read_Model_3::family_profiles() : array();
+        $activity_ids = array_merge(is_array($saved) ? $saved : array(), is_array($planner) ? array_column($planner, 'activity_id') : array());
+        $activity_titles = $private_preview ? BH_Family_Read_Model_3::activity_titles($activity_ids) : array();
+        if (is_wp_error($activity_titles)) $activity_titles = array();
         $sections = array(
             array( 'My family', 'Family profiles will appear here once account mapping is verified.' ),
             array( 'Saved activities', 'Your favourites will connect to existing activity IDs.' ),
@@ -78,7 +81,7 @@ final class BH_Family_Hub_3 {
                 <?php else : ?>
                   <ul class="bh3-family__items">
                     <?php foreach (array_slice($saved, 0, 8) as $activity_id) : ?>
-                      <li><?php echo esc_html(sprintf(__('Activity #%d', 'bubba-hub-manager'), absint($activity_id))); ?></li>
+                      <li><?php echo esc_html($activity_titles[absint($activity_id)] ?? sprintf(__('Activity #%d', 'bubba-hub-manager'), absint($activity_id))); ?></li>
                     <?php endforeach; ?>
                   </ul>
                   <?php if (count($saved) > 8) : ?><p><?php echo esc_html(sprintf(__('%d more saved', 'bubba-hub-manager'), count($saved) - 8)); ?></p><?php endif; ?>
@@ -92,7 +95,7 @@ final class BH_Family_Hub_3 {
                   <ul class="bh3-family__items">
                     <?php foreach (array_slice($planner, 0, 8) as $item) : ?>
                       <li>
-                        <?php echo esc_html(sprintf(__('Activity #%d', 'bubba-hub-manager'), absint($item['activity_id'] ?? 0))); ?>
+                        <?php echo esc_html($activity_titles[absint($item['activity_id'] ?? 0)] ?? sprintf(__('Activity #%d', 'bubba-hub-manager'), absint($item['activity_id'] ?? 0))); ?>
                         <?php if (!empty($item['visited'])) : ?><span class="bh3-family__status"><?php echo esc_html__('Visited', 'bubba-hub-manager'); ?></span><?php endif; ?>
                       </li>
                     <?php endforeach; ?>
