@@ -207,7 +207,7 @@ function bh_support_enquiries_page(): void {
     }
     $count = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM `$table` s $join WHERE $where", ...$query_params));
     $rows = $wpdb->get_results($wpdb->prepare(
-        "SELECT s.id, s.form_id, s.status, s.created_at FROM `$table` s $join WHERE $where ORDER BY s.id DESC LIMIT %d OFFSET %d",
+        "SELECT s.id, s.form_id, s.status, s.created_at, s.response FROM `$table` s $join WHERE $where ORDER BY s.id DESC LIMIT %d OFFSET %d",
         ...array_merge($query_params, [20, $offset])
     ));
     echo '<form method="get" style="margin:18px 0">';
@@ -228,9 +228,25 @@ function bh_support_enquiries_page(): void {
         $states = $wpdb->get_results($wpdb->prepare("SELECT entry_id, status FROM `$status_table` WHERE entry_id IN ($keys)", ...$entry_ids));
         foreach ((array) $states as $state) $status_map[(int) $state->entry_id] = $state->status;
     }
-    echo '<table class="widefat striped"><thead><tr><th>' . esc_html__('Entry', 'bubbahub') . '</th><th>' . esc_html__('Form', 'bubbahub') . '</th><th>' . esc_html__('Submitted', 'bubbahub') . '</th><th>' . esc_html__('Fluent Forms status', 'bubbahub') . '</th><th>' . esc_html__('Support workflow', 'bubbahub') . '</th></tr></thead><tbody>';
+    echo '<table class="widefat striped"><thead><tr><th>' . esc_html__('Entry', 'bubbahub') . '</th><th>' . esc_html__('Contact', 'bubbahub') . '</th><th>' . esc_html__('Topic & question', 'bubbahub') . '</th><th>' . esc_html__('Submitted', 'bubbahub') . '</th><th>' . esc_html__('Fluent Forms status', 'bubbahub') . '</th><th>' . esc_html__('Support workflow', 'bubbahub') . '</th></tr></thead><tbody>';
     foreach ((array) $rows as $entry) {
-        echo '<tr><td><a href="' . esc_url(add_query_arg(['page' => 'bh-support-enquiries', 'bh_history_entry' => (int) $entry->id], admin_url('admin.php'))) . '">#' . esc_html((string) $entry->id) . '</a></td><td>#' . esc_html((string) $entry->form_id) . '</td><td>' . esc_html((string) $entry->created_at) . '</td><td>' . esc_html((string) $entry->status) . '</td><td>';
+        // Fluent Forms stores submitted values as JSON in response. Render only
+        // the known Form #4 fields, and escape every value; never copy answers.
+        $answers = json_decode((string) ($entry->response ?? ''), true);
+        if (!is_array($answers)) $answers = [];
+        $read_answer = static function (array $data, string $key): string {
+            if (!isset($data[$key]) || !is_scalar($data[$key])) return '';
+            return sanitize_textarea_field((string) $data[$key]);
+        };
+        $name = $read_answer($answers, 'full_name');
+        $email = sanitize_email($read_answer($answers, 'email'));
+        $topic = $read_answer($answers, 'question_topic');
+        $question = $read_answer($answers, 'question');
+        echo '<tr><td><a href="' . esc_url(add_query_arg(['page' => 'bh-support-enquiries', 'bh_history_entry' => (int) $entry->id], admin_url('admin.php'))) . '">#' . esc_html((string) $entry->id) . '</a></td>';
+        echo '<td>' . ($name !== '' ? '<strong>' . esc_html($name) . '</strong><br>' : '') . ($email !== '' ? '<a href="mailto:' . esc_attr($email) . '">' . esc_html($email) . '</a>' : '<span aria-label="No email supplied">—</span>') . '</td>';
+        echo '<td>' . ($topic !== '' ? '<strong>' . esc_html($topic) . '</strong>' : '<span>—</span>');
+        if ($question !== '') echo '<details style="margin-top:6px"><summary>' . esc_html__('Read question', 'bubbahub') . '</summary><p style="white-space:pre-wrap;max-width:460px">' . esc_html($question) . '</p></details>';
+        echo '</td><td>' . esc_html((string) $entry->created_at) . '</td><td>' . esc_html((string) $entry->status) . '</td><td>';
         if (!$status_table_exists) {
             echo esc_html__('Workflow table unavailable', 'bubbahub') . '</td></tr>';
             continue;
@@ -244,7 +260,7 @@ function bh_support_enquiries_page(): void {
         }
         echo '</select> <button class="button" name="bh_support_change_status" value="1">' . esc_html__('Update', 'bubbahub') . '</button></form></td></tr>';
     }
-    if (!$rows) echo '<tr><td colspan="5">' . esc_html__('No entries found.', 'bubbahub') . '</td></tr>';
+    if (!$rows) echo '<tr><td colspan="6">' . esc_html__('No entries found.', 'bubbahub') . '</td></tr>';
     echo '</tbody></table>';
     $pages = (int) ceil($count / 20);
     if ($pages > 1) {
