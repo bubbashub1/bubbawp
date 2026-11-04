@@ -32,22 +32,20 @@ final class BH_Family_Read_Model_3 {
         return $out;
     }
     /**
-     * Resolve activity titles only where the new WordPress ID is identical.
-     * Do not guess legacy-to-new ID mappings or generate public URLs.
+     * Resolve legacy saved/planned activity names from their original ID space.
+     * New WordPress activity IDs are deliberately not assumed to match.
      */
     public static function activity_titles($ids) {
         if (BH_Family_Identity_3::current_legacy_id() < 1) return new WP_Error('family_not_verified', 'Verified family login required');
-        if (!defined('BH3_FAMILY_ACTIVITY_IDS_VERIFIED') || BH3_FAMILY_ACTIVITY_IDS_VERIFIED !== true) return array();
         if (!is_array($ids)) return array();
-        $ids = array_values(array_unique(array_filter(array_map('absint', $ids))));
-        $ids = array_slice($ids, 0, 200);
+        $ids = array_slice(array_values(array_unique(array_filter(array_map('absint', $ids)))), 0, 200);
         if (!$ids) return array();
         global $wpdb;
-        $table = $wpdb->prefix . 'activities';
+        $table = 'bh_activities';
         if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($table))) !== $table) return array();
         $placeholders = implode(',', array_fill(0, count($ids), '%d'));
-        $query = "SELECT id,title FROM `{$table}` WHERE id IN ({$placeholders}) AND status IN ('published','publish')";
-        $rows = $wpdb->get_results($wpdb->prepare($query, $ids), ARRAY_A);
+        $sql = "SELECT id,title FROM bh_activities WHERE id IN ({$placeholders})";
+        $rows = $wpdb->get_results($wpdb->prepare($sql, $ids), ARRAY_A);
         $titles = array();
         foreach ((array) $rows as $row) $titles[(int) $row['id']] = (string) $row['title'];
         return $titles;
