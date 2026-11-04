@@ -39,17 +39,7 @@ final class BH_Business_Directory_3 {
         $categories = array( 'classes' => 'Classes & activities', 'family-services' => 'Family services', 'pregnancy' => 'Pregnancy & postnatal', 'childcare' => 'Childcare & education', 'shops' => 'Shops & gifts', 'venues' => 'Family-friendly venues', 'other' => 'Other family business' );
         ob_start(); ?>
         <section class="bh-business-directory">
-          <style>
-            .bh-business-directory{max-width:1200px;margin:20px auto;padding:0 20px;color:#203c31}.bh-business-directory *{box-sizing:border-box}
-            .bh-business-directory .bh-dir-head{background:linear-gradient(120deg,#1e5743,#408463);color:#fff;border-radius:20px;padding:30px;margin-bottom:20px}
-            .bh-business-directory .bh-dir-head h2{color:#fff;margin:0 0 8px;font-size:clamp(26px,4vw,38px)}.bh-business-directory .bh-dir-head p{color:#e9f6ec;margin:0}
-            .bh-business-directory .bh-dir-controls{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px}.bh-business-directory input,.bh-business-directory select{border:1px solid #b6c8bc;border-radius:10px;padding:12px;font:inherit;min-width:200px;flex:1}
-            .bh-business-directory .bh-dir-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,270px),1fr));gap:18px}
-            .bh-business-directory .bh-dir-card{background:#fff;border:1px solid #dbe5df;border-radius:16px;padding:20px;box-shadow:0 8px 22px rgba(20,65,42,.05)}
-            .bh-business-directory .bh-dir-card img{width:70px;height:70px;object-fit:contain;border-radius:12px;margin-bottom:12px}
-            .bh-business-directory .bh-dir-card h3{font-size:20px;margin:0 0 10px}.bh-business-directory .bh-dir-card p{margin:8px 0;color:#53665e}
-            .bh-business-directory .bh-dir-card button{border:0;background:#245e4a;color:#fff;border-radius:9px;padding:10px 12px;margin:8px 0;cursor:pointer}.bh-business-directory .bh-dir-card a{color:#245e4a;font-weight:700}.bh-business-directory [hidden]{display:none!important}
-          </style>
+
           <header class="bh-dir-head"><h2>Business directory preview</h2><p>Administrator-only staging review of opted-in family businesses. Not publicly published.</p></header>
           <div class="bh-dir-controls">
             <input type="search" class="bh-dir-search" aria-label="Search businesses" placeholder="Search businesses or areas">
