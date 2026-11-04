@@ -28,13 +28,37 @@ final class BH_Family_Actions_3 {
         }
         $family_id = BH_Family_Identity_3::current_legacy_id();
         if ($family_id < 1 || $activity_id < 1) return new WP_Error('family_not_verified', 'Verified family account required.');
-        $tables = array('unsave' => 'bh_saved_activities', 'unplan' => 'bh_planner', 'visited' => 'bh_planner', 'not_visited' => 'bh_planner');
+        $tables = array('unsave' => 'bh_saved_activities', 'unplan' => 'bh_planner', 'visited' => 'bh_planner', 'not_visited' => 'bh_planner', 'plan_saved' => 'bh_planner', 'visit_saved' => 'bh_planner');
         if (!isset($tables[$action])) return new WP_Error('family_unknown_action', 'Unknown action.');
         global $wpdb;
         $table = $tables[$action];
         if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($table))) !== $table) return new WP_Error('family_table_missing', 'Activity records unavailable.');
         $where = array('user_id' => $family_id, 'activity_id' => $activity_id);
-        if ($action === 'unsave' || $action === 'unplan') {
+        if ($action === 'plan_saved' || $action === 'visit_saved') {
+            // Only allow IDs that are already saved by this verified family.
+            if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like('bh_saved_activities'))) !== 'bh_saved_activities') {
+                return new WP_Error('family_saved_missing', 'Saved activities are unavailable.');
+            }
+            $is_saved = $wpdb->get_var($wpdb->prepare('SELECT activity_id FROM bh_saved_activities WHERE user_id = %d AND activity_id = %d LIMIT 1', $family_id, $activity_id));
+            if (!$is_saved) return new WP_Error('family_not_saved', 'Save the activity before adding it to your planner.');
+            // Do not guess whether legacy activity IDs map to new WordPress records.
+            if (!defined('BH3_FAMILY_LEGACY_ACTIVITY_STATUS_VERIFIED') || BH3_FAMILY_LEGACY_ACTIVITY_STATUS_VERIFIED !== true) {
+                return new WP_Error('family_activity_unverified', 'Activity publication status has not been verified.');
+            }
+            $legacy_table = 'bh_activities';
+            if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($legacy_table))) !== $legacy_table) {
+                return new WP_Error('family_activity_table_missing', 'Activity records are unavailable.');
+            }
+            $published = $wpdb->get_var($wpdb->prepare("SELECT id FROM bh_activities WHERE id = %d AND status IN ('published','publish') LIMIT 1", $activity_id));
+            if (!$published) return new WP_Error('family_activity_unpublished', 'This activity is not currently published.');
+            $existing = $wpdb->get_var($wpdb->prepare('SELECT activity_id FROM bh_planner WHERE user_id = %d AND activity_id = %d LIMIT 1', $family_id, $activity_id));
+            if ($existing) {
+                if ($action === 'plan_saved') return true;
+                $result = $wpdb->update('bh_planner', array('visited' => 1), $where, array('%d'), array('%d', '%d'));
+            } else {
+                $result = $wpdb->insert('bh_planner', array('user_id' => $family_id, 'activity_id' => $activity_id, 'visited' => $action === 'visit_saved' ? 1 : 0), array('%d', '%d', '%d'));
+            }
+        } elseif ($action === 'unsave' || $action === 'unplan') {
             $result = $wpdb->delete($table, $where, array('%d', '%d'));
         } else {
             $result = $wpdb->update($table, array('visited' => $action === 'visited' ? 1 : 0), $where, array('%d'), array('%d', '%d'));
