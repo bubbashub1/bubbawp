@@ -48,8 +48,8 @@ final class BH_Leader_Edit_3 {
         $id = absint( $_POST['activity_id'] ?? 0 );
         check_admin_referer( 'bh3_leader_edit_' . $id );
         if ( ! self::owned_draft( $id ) ) { wp_die( 'You cannot edit this activity.', '', array( 'response' => 403 ) ); }
-        $title = sanitize_text_field( wp_unslash( $_POST['title'] ?? '' ) );
-        $category = sanitize_text_field( wp_unslash( $_POST['category'] ?? '' ) );
+        $title = BH_Activity_Fields_3::text( $_POST['title'] ?? '', 255 );
+        $category = BH_Activity_Fields_3::text( $_POST['category'] ?? '', 150 );
         if ( $title === '' || strlen( $title ) > 255 || strlen( $category ) > 150 ) {
             wp_die( 'Invalid title or category.', '', array( 'response' => 400 ) );
         }
