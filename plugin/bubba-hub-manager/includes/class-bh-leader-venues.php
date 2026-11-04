@@ -75,7 +75,7 @@ final class BH_Leader_Venues_3 {
                 echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
                 echo '<input type="hidden" name="action" value="bh3_leader_attach_venue"><input type="hidden" name="activity_id" value="' . esc_attr( (string) $id ) . '"><input type="hidden" name="venue_id" value="' . esc_attr( (string) $row['id'] ) . '">';
                 wp_nonce_field( 'bh3_leader_attach_venue_' . $id . '_' . $row['id'] );
-                submit_button( 'Assign venue', 'secondary small', '', false );
+                submit_button( in_array( (int) $row['id'], array_map( 'intval', array_column( $rows, 'id' ) ), true ) ? 'Already assigned' : 'Assign venue', 'secondary small', '', false, array( 'disabled' => in_array( (int) $row['id'], array_map( 'intval', array_column( $rows, 'id' ) ), true ) ) );
                 echo '</form></td></tr>';
             }
             if ( ! $matches ) { echo '<tr><td colspan="3">No matching venues. Create one in Venues Manager first.</td></tr>'; }
