@@ -25,18 +25,6 @@ final class BH_Leader_Dashboard_3 {
         if ( ! is_user_logged_in() ) {
             return '<p>Please <a href="' . esc_url( wp_login_url( get_permalink() ?: home_url( '/' ) ) ) . '">sign in</a> to manage your activities.</p>';
         }
-        $legacy = BH_Leader_Legacy_3::records( isset( $_GET['bh3_leader_search'] ) ? sanitize_text_field( wp_unslash( $_GET['bh3_leader_search'] ) ) : '' );
-        if ( $legacy['state'] === 'ready' ) {
-            $out = '<section class="bh3-leader" style="max-width:1000px;margin:30px auto;padding:18px"><h1>My Leader Hub</h1><p>Organiser: <strong>' . esc_html( $legacy['name'] ) . '</strong></p><p>Legacy listings are displayed read-only while the WordPress migration is validated.</p>';
-            $out .= '<form method="get">' . ( is_admin() ? '<input type="hidden" name="page" value="bh3-leader-dashboard">' : '' ) . '<label for="bh3-legacy-search">Search activities</label> <input id="bh3-legacy-search" name="bh3_leader_search" type="search" value="' . esc_attr( isset( $_GET['bh3_leader_search'] ) ? sanitize_text_field( wp_unslash( $_GET['bh3_leader_search'] ) ) : '' ) . '"> <button type="submit">Search</button></form>';
-            $out .= '<ul>';
-            foreach ( $legacy['rows'] as $row ) { $out .= '<li><strong>' . esc_html( $row['title'] ) . '</strong> — ' . esc_html( $row['status'] ) . '</li>'; }
-            if ( ! $legacy['rows'] ) { $out .= '<li>No matching activities.</li>'; }
-            return $out . '</ul></section>';
-        }
-        if ( $legacy['state'] === 'invalid' || $legacy['state'] === 'missing' ) {
-            return '<p>The linked legacy organiser or listing tables could not be verified. Please contact an administrator.</p>';
-        }
         $organiser = BH_Leader_Access_3::organiser_id();
         if ( ! $organiser ) { return '<section class="bh3-leader"><h2>Leader Hub</h2><p>No organiser is linked to this account yet. Contact Bubba Hub support to verify your organiser claim.</p></section>'; }
         global $wpdb;
