@@ -8,7 +8,8 @@ final class BH_Family_DB_Setup_3 {
             'profiles'=>$wpdb->prefix.'bh_family_profiles',
             'preferences'=>$wpdb->prefix.'bh_family_preferences',
             'saved'=>$wpdb->prefix.'bh_saved_activities',
-            'planner'=>$wpdb->prefix.'bh_planner'
+            'planner'=>$wpdb->prefix.'bh_planner',
+            'reminders'=>$wpdb->prefix.'bh_family_reminders'
         );
     }
     public static function definitions() {
@@ -25,6 +26,19 @@ final class BH_Family_DB_Setup_3 {
                 updated_at datetime NOT NULL,
                 PRIMARY KEY  (id),
                 KEY user_id (user_id)
+            ) $collate;",
+            'reminders'=>"CREATE TABLE {$t['reminders']} (
+                id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+                user_id bigint(20) unsigned NOT NULL,
+                profile_id bigint(20) unsigned NOT NULL,
+                profile_type varchar(20) NOT NULL,
+                title varchar(160) NOT NULL,
+                reminder_date date NOT NULL,
+                created_at datetime NOT NULL,
+                updated_at datetime NOT NULL,
+                PRIMARY KEY  (id),
+                KEY user_profile (user_id,profile_id),
+                KEY reminder_date (reminder_date)
             ) $collate;",
             'preferences'=>"CREATE TABLE {$t['preferences']} (
                 user_id bigint(20) unsigned NOT NULL,
