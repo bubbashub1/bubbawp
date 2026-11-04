@@ -6,6 +6,9 @@
 defined('ABSPATH') || exit;
 
 add_shortcode('bh_support_hub', static function (): string {
+    // Resolve a real WordPress page instead of linking to a legacy HTML route.
+    $website_help = get_page_by_path('website-help') ?: get_page_by_path('support/website');
+    $website_help_url = $website_help ? get_permalink($website_help) : '';
     ob_start();
     ?>
     <div class="bh-support-landing">
@@ -30,7 +33,11 @@ add_shortcode('bh_support_hub', static function (): string {
       <section id="bh-website-help" class="bh-support-landing__section">
         <h2><?php esc_html_e('Help using Bubba Hub', 'bubbahub'); ?></h2>
         <p><?php esc_html_e('Need help with your account, activities, planner or a class listing?', 'bubbahub'); ?></p>
-        <a class="bh-support-landing__button" href="<?php echo esc_url(home_url('/support/website/')); ?>"><?php esc_html_e('Website help & FAQs', 'bubbahub'); ?></a>
+        <?php if ($website_help_url) : ?>
+          <a class="bh-support-landing__button" href="<?php echo esc_url($website_help_url); ?>"><?php esc_html_e('Website help & FAQs', 'bubbahub'); ?></a>
+        <?php else : ?>
+          <p><?php esc_html_e('For account or website questions, please use the contact details on our website while the help centre is being prepared.', 'bubbahub'); ?></p>
+        <?php endif; ?>
       </section>
       <aside class="bh-support-landing__notice">
         <strong><?php esc_html_e('Important information', 'bubbahub'); ?></strong>
