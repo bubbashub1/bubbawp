@@ -273,6 +273,12 @@ final class BH_Family_Hub_3 {
                 <?php endif; ?>
                 <p class="bh3-family__matching-note"><?php echo esc_html__('Child ages are matched when profiles are available. Travel radius applies only when your postcode can be matched to a unique venue location.', 'bubba-hub-manager'); ?></p>
               </article>
+              <?php if (!$admin_demo && class_exists('BH_Family_Native_Favourites_3') && BH_Family_Native_Favourites_3::allowed()) : ?>
+                <article id="bh3-native-favourites" class="bh3-family__card bh3-family__card--saved">
+                  <?php echo BH_Family_Native_Favourites_3::render(); ?>
+                </article>
+              <?php endif; ?>
+              <?php if (!class_exists('BH_Family_Native_Favourites_3') || !BH_Family_Native_Favourites_3::allowed()) : ?>
               <article id="bh3-saved" class="bh3-family__card bh3-family__card--saved">
                 <h2><?php echo esc_html__('Saved activities', 'bubba-hub-manager'); ?></h2>
                 <?php if (!empty($saved) || $saved_search !== '') : ?>
@@ -326,6 +332,7 @@ final class BH_Family_Hub_3 {
                   <?php if (count($filtered_saved) > 8) : ?><p><a href="<?php echo esc_url(add_query_arg(array('bh3_show_saved' => $show_saved ? '0' : '1', 'bh3_saved_search' => $saved_search, 'bh3_saved_sort' => $saved_sort), $return_url)); ?>"><?php echo esc_html($show_saved ? __('Show fewer favourites', 'bubba-hub-manager') : sprintf(__('View all %d favourites', 'bubba-hub-manager'), count($filtered_saved))); ?></a></p><?php endif; ?>
                 <?php endif; ?>
               </article>
+              <?php endif; ?>
               <article id="bh3-planner" class="bh3-family__card bh3-family__card--planner">
                 <h2><?php echo esc_html__('Family planner', 'bubba-hub-manager'); ?></h2>
                 <p class="bh3-family__planner-summary"><?php echo esc_html(sprintf(__('%1$d planned · %2$d visited', 'bubba-hub-manager'), count($planner), $visited_count)); ?></p>
