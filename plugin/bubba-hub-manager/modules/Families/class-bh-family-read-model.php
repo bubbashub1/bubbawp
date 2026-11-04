@@ -25,12 +25,16 @@ final class BH_Family_Read_Model_3 {
         if ($family_id < 1) return new WP_Error('family_not_verified', 'Verified family login required');
         global $wpdb;
         $out = array('children' => array(), 'bumps' => array());
-        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', 'bh_children')) === 'bh_children') {
+        $children_table = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', 'bh_children'));
+        if ($children_table !== 'bh_children') return new WP_Error('family_children_unavailable', 'Child profiles table unavailable');
+        {
             $rows = $wpdb->get_results($wpdb->prepare('SELECT id, name, date_of_birth FROM bh_children WHERE user_id = %d ORDER BY date_of_birth LIMIT 50', $family_id), ARRAY_A);
             if (!is_array($rows)) return new WP_Error('family_children_query_failed', 'Unable to load child profiles');
             $out['children'] = $rows;
         }
-        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', 'bh_bumps')) === 'bh_bumps') {
+        $bumps_table = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', 'bh_bumps'));
+        if ($bumps_table !== 'bh_bumps') return new WP_Error('family_bumps_unavailable', 'Bump profiles table unavailable');
+        {
             $rows = $wpdb->get_results($wpdb->prepare('SELECT id, nickname, due_date FROM bh_bumps WHERE user_id = %d ORDER BY due_date LIMIT 20', $family_id), ARRAY_A);
             if (!is_array($rows)) return new WP_Error('family_bumps_query_failed', 'Unable to load bump profiles');
             $out['bumps'] = $rows;
