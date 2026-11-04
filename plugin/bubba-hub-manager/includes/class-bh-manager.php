@@ -60,6 +60,8 @@ final class BH_Manager_3 {
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-dashboard.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-layout.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-frontend.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-listing-wizard.php';
+        BH_Leader_Listing_Wizard_3::register();
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-ask-support-optin.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-ask-support-inbox.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-ask-support-storage.php';
