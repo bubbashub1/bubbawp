@@ -429,14 +429,15 @@ final class BH_Field_Manager_3 {
         $placements = self::placements();
         echo '<section class="bh3-fm-card" id="bh3-form-builder"><h2>Visual form builder</h2><p class="description">Drag fields to reorder them within a group, then use Edit to select the wizard section and display settings. For keyboard access, the ↑ and ↓ buttons remain available in the field table above.</p><div class="bh3-builder-grid">';
         foreach ( $groups as $group ) {
-            echo '<div class="bh3-builder-group"><h3>' . esc_html( $group['name'] ) . '</h3><p class="description">' . esc_html( str_replace( ',', ', ', $group['targets'] ) ) . '</p>';
+            $add_url = add_query_arg( array( 'page' => 'bh3-field-manager', 'add_to_group' => absint( $group['id'] ) ), admin_url( 'admin.php' ) ) . '#bh3-field-editor';
+            echo '<div class="bh3-builder-group"><h3>' . esc_html( $group['name'] ) . '</h3><p class="description">' . esc_html( str_replace( ',', ', ', $group['targets'] ) ) . '</p><p><a class="button button-secondary" href="' . esc_url( $add_url ) . '">+ Add field to this group</a></p>';
             echo '<div class="bh3-builder-list" data-group-id="' . esc_attr( (string) $group['id'] ) . '">';
             $count = 0;
             foreach ( $fields as $field ) {
                 if ( (int) $field['group_id'] !== (int) $group['id'] ) { continue; }
                 ++$count;
                 $placement = $placements[ (int) $field['id'] ]['wizard_step'] ?? 'about';
-                $edit_url = add_query_arg( array( 'page' => 'bh3-field-manager', 'edit_field' => absint( $field['id'] ) ), admin_url( 'admin.php' ) );
+                $edit_url = add_query_arg( array( 'page' => 'bh3-field-manager', 'edit_field' => absint( $field['id'] ) ), admin_url( 'admin.php' ) ) . '#bh3-field-editor';
                 echo '<div class="bh3-builder-item' . ( $field['is_active'] ? '' : ' bh3-fm-disabled' ) . '" draggable="true" tabindex="0" data-field-id="' . esc_attr( (string) $field['id'] ) . '"><span class="bh3-drag-grip" aria-hidden="true">⋮⋮</span><span class="bh3-builder-item-text"><strong>' . esc_html( $field['label'] ) . '</strong><small>' . esc_html( $field['field_type'] . ' · ' . ucfirst( $placement ) ) . '</small></span><span class="bh3-item-controls"><form class="bh3-quick-step-form" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="bh3_field_quick_step"><input type="hidden" name="field_id" value="' . esc_attr( (string) $field['id'] ) . '">' . wp_nonce_field( 'bh3_field_quick_step', '_wpnonce', true, false ) . '<select name="wizard_step" aria-label="Wizard section for ' . esc_attr( $field['label'] ) . '">'; foreach ( array( 'basics' => 'Basics', 'about' => 'About', 'pricing' => 'Pricing', 'contact' => 'Contact', 'images' => 'Images', 'locations' => 'Locations' ) as $step_key => $step_label ) { echo '<option value="' . esc_attr( $step_key ) . '" ' . selected( $placement, $step_key, false ) . '>' . esc_html( $step_label ) . '</option>'; } echo '</select><button class="button button-small" type="submit">Move</button></form><button type="button" class="button button-small" data-move-direction="-1" aria-label="Move field up">↑</button><button type="button" class="button button-small" data-move-direction="1" aria-label="Move field down">↓</button><a href="' . esc_url( $edit_url ) . '">Edit</a></span></div>';
             }
             if ( ! $count ) { echo '<p class="bh3-builder-empty">Add a field to start building this group.</p>'; }
@@ -490,6 +491,7 @@ final class BH_Field_Manager_3 {
         $fields = $wpdb->get_results( "SELECT * FROM `{$t['fields']}` ORDER BY group_id,sort_order,id", ARRAY_A );
         $edit_group_id = absint( $_GET['edit_group'] ?? 0 );
         $edit_field_id = absint( $_GET['edit_field'] ?? 0 );
+        $add_to_group = absint( $_GET['add_to_group'] ?? 0 );
         $edit_group = null; $edit_field = null;
         foreach ( $groups as $g ) { if ( (int) $g['id'] === $edit_group_id ) { $edit_group = $g; break; } }
         foreach ( $fields as $f ) { if ( (int) $f['id'] === $edit_field_id ) { $edit_field = $f; break; } }
@@ -517,13 +519,13 @@ final class BH_Field_Manager_3 {
         if ( ! $fields ) { echo '<tr><td colspan="6">No custom fields yet.</td></tr>'; }
         echo '</tbody></table></section>';
         self::render_builder( $groups, $fields );
-        echo '<section class="bh3-fm-card"><h2>' . ( $edit_field ? 'Edit field' : 'Add field to group' ) . '</h2>'; 
+        echo '<section class="bh3-fm-card" id="bh3-field-editor"><h2>' . ( $edit_field ? 'Edit field' : 'Add field to group' ) . '</h2><p class="description">Configure your field here and see its appearance update before saving.</p>'; 
         if ( $groups ) {
             echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="bh3_field_definition_save">';
             wp_nonce_field( 'bh3_field_definition_save' );
             echo '<input type="hidden" name="field_id" value="' . esc_attr( (string) ( $edit_field['id'] ?? 0 ) ) . '">';
             echo '<div class="bh3-fm-grid"><label>Group<select name="group_id">';
-            foreach ( $groups as $group ) { echo '<option value="' . esc_attr( (string) $group['id'] ) . '" ' . selected( (int) ( $edit_field['group_id'] ?? 0 ), (int) $group['id'], false ) . '>' . esc_html( $group['name'] ) . '</option>'; }
+            foreach ( $groups as $group ) { echo '<option value="' . esc_attr( (string) $group['id'] ) . '" ' . selected( (int) ( $edit_field['group_id'] ?? $add_to_group ), (int) $group['id'], false ) . '>' . esc_html( $group['name'] ) . '</option>'; }
             echo '</select></label><label>Label<input id="bh3-field-label" name="label" maxlength="190" required value="' . esc_attr( $edit_field['label'] ?? '' ) . '"></label><label>Unique field key<input id="bh3-field-key" name="field_key" maxlength="100" required value="' . esc_attr( $edit_field['field_key'] ?? '' ) . '"></label></div>';
             echo '<p><label>Field type <select name="field_type">';
             foreach ( array( 'text', 'textarea', 'number', 'checkbox', 'select', 'multiselect', 'date', 'time', 'url', 'email' ) as $type ) { echo '<option value="' . esc_attr( $type ) . '" ' . selected( $edit_field['field_type'] ?? '', $type, false ) . '>' . esc_html( ucfirst( $type ) ) . '</option>'; }
