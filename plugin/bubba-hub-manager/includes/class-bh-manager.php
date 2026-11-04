@@ -28,6 +28,7 @@ final class BH_Manager_3 {
                 'support-articles.php',
                 'support-hub.php',
                 'support-website-help.php',
+                'support-ask-question.php',
                 'support-article-moderation.php',
                 'support-fluentforms-inbox.php',
                 'support-admin-dashboard.php',
@@ -55,6 +56,7 @@ final class BH_Manager_3 {
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-sessions.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-my-listings.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-dashboard.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-layout.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-frontend.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-portal-access.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-edit.php';
@@ -65,7 +67,12 @@ final class BH_Manager_3 {
         require_once BUBBA_HUB_MANAGER_PATH . 'modules/Families/class-bh-family-read-model.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'modules/Families/class-bh-family-profile-editor.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'modules/Families/class-bh-family-actions.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'modules/Families/class-bh-family-preferences.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'modules/Families/class-bh-family-recommendations.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'modules/Families/class-bh-family-settings.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'modules/Families/class-bh-family-hub.php';
+        BH_Family_Preferences_3::register();
+        BH_Family_Settings_3::register();
         BH_Family_Profile_Editor_3::register();
         BH_Family_Actions_3::register();
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-frontend-editor.php';
@@ -83,6 +90,11 @@ final class BH_Manager_3 {
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-booking-storage.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-booking-queue.php';
         BH_Leader_Booking_Queue_3::register();
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-storefront.php';
+        BH_Storefront_3::register();
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-business-directory.php';
+        BH_Business_Directory_3::register();
+        BH_Leader_Layout_3::register();
         BH_Leader_Frontend_3::register();
         BH_Portal_Access_3::register();
         BH_Family_Hub_3::register(); // Preview shortcode only; FEATURE_FAMILY stays disabled.
