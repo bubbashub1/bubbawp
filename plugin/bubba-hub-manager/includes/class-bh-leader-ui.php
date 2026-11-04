@@ -5,7 +5,7 @@ final class BH_Leader_UI_3 {
     public static function enqueue() {
         if ( strtolower( (string ) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) { return; }
         $page = sanitize_key( wp_unslash( $_GET['page'] ?? '' ) );
-        if ( ! in_array( $page, array( 'bh3-my-listings', 'bh3-leader-edit', 'bh3-leader-sessions', 'bh3-leader-venues' ), true ) ) { return; }
+        if ( ! in_array( $page, array( 'bh3-my-listings', 'bh3-leader-dashboard', 'bh3-leader-edit', 'bh3-leader-sessions', 'bh3-leader-venues' ), true ) ) { return; }
         wp_register_style( 'bh3-leader-ui', false, array(), '0.1.0' );
         wp_enqueue_style( 'bh3-leader-ui' );
         wp_add_inline_style( 'bh3-leader-ui', '
