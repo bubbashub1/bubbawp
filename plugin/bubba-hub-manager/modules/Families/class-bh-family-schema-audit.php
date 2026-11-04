@@ -25,7 +25,7 @@ final class BH_Family_Schema_Audit_3 {
             $missing = array_diff($columns,$found);
             $html .= '<tr><td>'.esc_html($table).'</td><td>'.($exists ? 'Yes' : 'Missing').'</td><td>'.esc_html(!$exists ? 'Not checked' : (!$missing ? 'All expected columns present' : 'Missing: '.implode(', ',$missing))).'</td></tr>';
         }
-        $html .= '</tbody></table><p>Legacy identity bridge: '.(function_exists('bh_wp_resolve_legacy_identity') ? 'Installed' : 'Not detected').'.</p><p>Simple Membership and FluentAuth user linking must be tested separately; this report does not verify account identity.</p></section>';
+        $html .= '</tbody></table><p>Legacy identity bridge: '.(function_exists('bh_wp_resolve_legacy_identity') ? 'Installed' : 'Not detected').'.</p><p>The original bridge requires one unique bh_legacy_user_id WordPress user-meta link, an active legacy account, matching email, and a bh_family role. Simple Membership and FluentAuth login linkage must still be verified. This report does not link accounts.</p></section>';
         return $html;
     }
 }
