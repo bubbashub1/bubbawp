@@ -19,6 +19,21 @@ final class BH_Manager_3 {
             return;
         }
         self::$booted = true;
+        // Support is opt-in until compatibility and staging checks pass.
+        // Set BH3_ENABLE_SUPPORT to true in staging wp-config.php to preview.
+        if ( defined( 'BH3_ENABLE_SUPPORT' ) && BH3_ENABLE_SUPPORT === true
+            && strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) === 'staging.bubbahub.co.uk' ) {
+            foreach ( array(
+                'support-resources.php',
+                'support-articles.php',
+                'support-hub.php',
+                'support-article-moderation.php',
+                'support-fluentforms-inbox.php',
+                'support-admin-dashboard.php',
+            ) as $support_module ) {
+                require_once BUBBA_HUB_MANAGER_PATH . 'modules/Support/' . $support_module;
+            }
+        }
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-settings.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-field-manager.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-directory-builder.php';
