@@ -35,6 +35,7 @@ final class BH_Manager_3 {
                 require_once BUBBA_HUB_MANAGER_PATH . 'modules/Support/' . $support_module;
             }
         }
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-csv-preview.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-settings.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-workstream-settings.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-field-manager.php';
@@ -80,6 +81,7 @@ final class BH_Manager_3 {
         BH_Portal_Access_3::register();
         BH_Family_Hub_3::register(); // Preview shortcode only; FEATURE_FAMILY stays disabled.
         BH_Directory_Preview_3::register();
+        add_action( 'admin_menu', array( 'BH_CSV_Preview_3', 'register' ) );
         BH_Directory_3::register();
         BH_Activity_Detail_3::register();
         add_action( 'admin_menu', array( __CLASS__, 'register_admin_page' ) );
