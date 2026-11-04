@@ -105,7 +105,25 @@ final class BH_Family_Hub_3 {
               <article class="bh3-family__card">
                 <h2><?php echo esc_html__('My family', 'bubba-hub-manager'); ?></h2>
                 <p><?php echo esc_html(sprintf(__('%1$d child profiles · %2$d pregnancy profiles', 'bubba-hub-manager'), count($profiles['children']), count($profiles['bumps']))); ?></p>
-                <p><?php echo esc_html__('Profile details are hidden in this initial preview.', 'bubba-hub-manager'); ?></p>
+                <?php if (BH_Family_Profile_Editor_3::enabled()) : ?>
+                  <?php if (isset($_GET['bh3_profile_status']) && $_GET['bh3_profile_status'] === 'saved') : ?>
+                    <p role="status"><?php echo esc_html__('Profile updated.', 'bubba-hub-manager'); ?></p>
+                  <?php elseif (isset($_GET['bh3_profile_status']) && $_GET['bh3_profile_status'] === 'error') : ?>
+                    <p role="alert"><?php echo esc_html__('Profile could not be updated.', 'bubba-hub-manager'); ?></p>
+                  <?php endif; ?>
+                  <?php foreach ($profiles['children'] as $child) : ?>
+                    <form class="bh3-family__edit" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                      <input type="hidden" name="action" value="bh3_family_child_name">
+                      <input type="hidden" name="bh3_child_id" value="<?php echo esc_attr(absint($child['id'])); ?>">
+                      <?php wp_nonce_field('bh3_family_profile_edit'); ?>
+                      <label for="bh3-child-<?php echo esc_attr(absint($child['id'])); ?>"><?php echo esc_html__('Child profile name', 'bubba-hub-manager'); ?></label>
+                      <input id="bh3-child-<?php echo esc_attr(absint($child['id'])); ?>" name="bh3_child_name" type="text" maxlength="100" required value="<?php echo esc_attr($child['name']); ?>">
+                      <button type="submit"><?php echo esc_html__('Save name', 'bubba-hub-manager'); ?></button>
+                    </form>
+                  <?php endforeach; ?>
+                <?php else : ?>
+                  <p><?php echo esc_html__('Profile details are hidden in this initial preview.', 'bubba-hub-manager'); ?></p>
+                <?php endif; ?>
               </article>
             </div>
           <?php endif; ?>
