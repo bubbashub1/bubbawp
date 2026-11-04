@@ -38,6 +38,14 @@ final class BH_Leader_UI_3 {
                 #wpbody-content > .wrap .widefat { display: block; overflow-x: auto; white-space: nowrap; }
                 #wpbody-content > .wrap .bh3-mobile-label { display: inline; font-weight: 600; margin-right: 6px; }
                 #wpbody-content > .wrap .widefat th, #wpbody-content > .wrap .widefat td { padding: 10px; }
+                #wpbody-content > .wrap .bh3-card-table { border: 0; background: transparent; box-shadow: none; overflow: visible; white-space: normal; }
+                #wpbody-content > .wrap .bh3-card-table thead { display: none; }
+                #wpbody-content > .wrap .bh3-card-table tbody, #wpbody-content > .wrap .bh3-card-table tr { display: block; }
+                #wpbody-content > .wrap .bh3-card-table tr { background: #fff; border: 1px solid #dce3e2; border-radius: 12px; margin-bottom: 12px; padding: 8px; }
+                #wpbody-content > .wrap .bh3-card-table td { display: block; border: 0; padding: 7px 10px; white-space: normal; overflow-wrap: anywhere; }
+                #wpbody-content > .wrap .bh3-card-table td + td { border-top: 1px solid #eef1ef; }
+                #wpbody-content > .wrap .bh3-card-table td::before { content: attr(data-label); display: block; font-weight: 650; color: #52665e; font-size: 12px; margin-bottom: 3px; }
+                #wpbody-content > .wrap .bh3-card-table td[data-label=""]::before { display: none; }
             }
         ' );
     }
