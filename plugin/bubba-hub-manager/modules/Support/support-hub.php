@@ -10,7 +10,7 @@ add_shortcode('bh_support_hub', static function (): string {
     $website_help = get_page_by_path('guidance/help') ?: get_page_by_path('website-help') ?: get_page_by_path('support/website');
     $resources_page = get_page_by_path('guidance/resources');
     $blog_page = get_page_by_path('guidance/blog');
-    $question_page = get_page_by_path('guidance/ask-a-question');
+    $question_page = get_page_by_path('guidance/ask');
     $question_url = $question_page && $question_page->post_status === 'publish' ? get_permalink($question_page) : '';
     $resources_url = $resources_page && $resources_page->post_status === 'publish'
         ? get_permalink($resources_page) : '#bh-family-resources';
