@@ -44,8 +44,11 @@ add_shortcode('bh_support_resources', static function ($atts): string {
     ?>
     <section class="bh-resource-hub" aria-label="<?php esc_attr_e('Family resources', 'bubbahub'); ?>">
       <form method="get" class="bh-resource-filters" role="search">
+        <div class="bh-resource-filter-field">
         <label for="<?php echo esc_attr($instance_id); ?>-search"><?php esc_html_e('Search resources', 'bubbahub'); ?></label>
         <input id="<?php echo esc_attr($instance_id); ?>-search" type="search" name="bh_search" value="<?php echo esc_attr($search); ?>" placeholder="<?php esc_attr_e('Search guides and resources', 'bubbahub'); ?>">
+        </div>
+        <div class="bh-resource-filter-field">
         <label for="<?php echo esc_attr($instance_id); ?>-topic"><?php esc_html_e('Topic', 'bubbahub'); ?></label>
         <select id="<?php echo esc_attr($instance_id); ?>-topic" name="bh_topic">
           <option value=""><?php esc_html_e('All topics', 'bubbahub'); ?></option>
@@ -53,6 +56,7 @@ add_shortcode('bh_support_resources', static function ($atts): string {
             <option value="<?php echo esc_attr($term->slug); ?>" <?php selected($topic, $term->slug); ?>><?php echo esc_html($term->name); ?></option>
           <?php endforeach; endif; ?>
         </select>
+        </div>
         <button type="submit"><?php esc_html_e('Find resources', 'bubbahub'); ?></button>
       </form>
       <div class="bh-resource-grid">
@@ -92,7 +96,7 @@ add_action('wp_enqueue_scripts', static function (): void {
     wp_add_inline_style('bh-support-resources', '
       .bh-resource-hub{max-width:1200px;margin:auto;color:#243b30}
       .bh-resource-filters{display:flex;flex-wrap:wrap;align-items:end;gap:12px;margin:24px 0}
-      .bh-resource-filters label{font-weight:700}
+      .bh-resource-filter-field{display:flex;flex-direction:column;gap:6px;min-width:180px;flex:1 1 210px}\n      .bh-resource-filters label{font-weight:700}
       .bh-resource-filters input,.bh-resource-filters select{min-height:44px;padding:10px;border:1px solid #cbded1;border-radius:12px;background:white}
       .bh-resource-filters button{min-height:44px;padding:10px 18px;border:0;border-radius:12px;background:#174b36;color:white;font-weight:700;cursor:pointer}
       .bh-resource-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:18px}
@@ -102,6 +106,6 @@ add_action('wp_enqueue_scripts', static function (): void {
       .bh-resource-card a{color:#174b36}
       .bh-resource-read{font-weight:700}
       .bh-resource-pagination{margin:24px 0;display:flex;gap:12px}
-      @media(max-width:600px){.bh-resource-filters{display:grid}.bh-resource-filters input,.bh-resource-filters select,.bh-resource-filters button{width:100%}}
+      @media(max-width:600px){.bh-resource-filters{display:grid}.bh-resource-filter-field{min-width:0}.bh-resource-filters input,.bh-resource-filters select,.bh-resource-filters button{width:100%}}
     ');
 });
