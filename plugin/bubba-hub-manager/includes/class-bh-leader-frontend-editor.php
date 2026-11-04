@@ -92,6 +92,35 @@ final class BH_Leader_Frontend_Editor_3 {
         </form></section>
         <?php return ob_get_clean();
     }
+    public static function upload_image() {
+        $id = absint( $_POST['activity_id'] ?? 0 );
+        check_admin_referer( 'bh3_leader_image_' . $id );
+        if ( ! self::draft( $id ) ) { wp_die( 'Draft access denied.', '', array( 'response' => 403 ) ); }
+        $file = $_FILES['bh_leader_image'] ?? null;
+        if ( ! is_array( $file ) || (int) ( $file['error'] ?? -1 ) !== UPLOAD_ERR_OK ||
+            (int) ( $file['size'] ?? 0 ) < 1 || (int) $file['size'] > 5242880 ) {
+            wp_die( 'Choose an image under 5 MB.', '', array( 'response' => 400 ) );
+        }
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/media.php';
+        require_once ABSPATH . 'wp-admin/includes/image.php';
+        $image = media_handle_upload( 'bh_leader_image', 0, array(), array(
+            'test_form' => false,
+            'mimes' => array( 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp' ),
+        ) );
+        if ( is_wp_error( $image ) ) { wp_die( 'Image upload failed.', '', array( 'response' => 400 ) ); }
+        global $wpdb;
+        $owner = absint( get_user_meta( get_current_user_id(), 'bh3_organiser_id', true ) );
+        $updated = $wpdb->update( $wpdb->prefix . 'activities',
+            array( 'image_id' => $image, 'updated_at' => current_time( 'mysql', true ) ),
+            array( 'id' => $id, 'organiser_id' => $owner, 'status' => 'draft' ) );
+        if ( $updated !== 1 ) {
+            wp_delete_attachment( $image, true );
+            wp_die( 'Unable to attach image to draft.', '', array( 'response' => 500 ) );
+        }
+        wp_safe_redirect( add_query_arg( array( 'activity_id' => $id, 'saved' => 1 ), home_url( '/leader/edit-activity/' ) ) );
+        exit;
+    }
     public static function save() {
         if ( ! self::enabled() ) { wp_die( 'Not permitted.', '', array( 'response' => 403 ) ); }
         $id = absint( $_POST['activity_id'] ?? 0 );
