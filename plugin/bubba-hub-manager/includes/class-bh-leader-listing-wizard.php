@@ -149,9 +149,10 @@ final class BH_Leader_Listing_Wizard_3 {
               <?php self::field( 'good_to_know', 'Anything else useful to know?', $data['good_to_know'], 'textarea' ); ?>
             <?php elseif ( $step === 4 ) : ?>
               <h2>Schedule &amp; booking</h2><p class="bh3-wizard-help">You can add weekly sessions in My Timetable after saving. Choose how families should contact you or book.</p>
-              <label class="bh3-wizard-field"><span>How do families join?</span><select name="booking_method"><option value="external" <?php selected( $data['booking_method'], 'external' ); ?>>Book through my external booking page</option><option value="enquiry" <?php selected( $data['booking_method'], 'enquiry' ); ?>>Send me an enquiry through Bubba Hub</option><option value="drop_in" <?php selected( $data['booking_method'], 'drop_in' ); ?>>Drop in — no booking needed</option></select></label>
+              <label class="bh3-wizard-field"><span>How do families join?</span><select name="booking_method"><option value="external" <?php selected( $data['booking_method'], 'external' ); ?>>Book through my external booking page</option><?php if ( ! empty( $organiser['contact_email'] ) && is_email( $organiser['contact_email'] ) ) : ?><option value="enquiry" <?php selected( $data['booking_method'], 'enquiry' ); ?>>Send me an enquiry through Bubba Hub</option><?php endif; ?><option value="drop_in" <?php selected( $data['booking_method'], 'drop_in' ); ?>>Drop in — no booking needed</option></select></label>
               <?php self::field( 'booking_url', 'External booking link (if applicable)', $data['booking_url'], 'url', 'placeholder="https://"' ); ?>
-              <p class="bh3-wizard-help">Weekly timetable sessions are managed separately, so you can update times without rebuilding your listing. The enquiry option will only be available to families once the verified leader contact and enquiry form have passed testing.</p>
+              <?php if ( empty( $organiser['contact_email'] ) || ! is_email( $organiser['contact_email'] ) ) : ?><p class="bh3-wizard-help">Your organiser storefront needs a valid contact email before Bubba Hub enquiries can be enabled. You can update it in My Business.</p><?php endif; ?>
+              <p class="bh3-wizard-help">Weekly timetable sessions are managed separately, so you can update times without rebuilding your listing. Add your sessions in the timetable editor.</p>
               <?php if ( $id ) : ?><p><a class="bh3-wizard-link" href="<?php echo esc_url( add_query_arg( 'activity_id', $id, home_url( '/leader/timetable/' ) ) ); ?>">Add or manage sessions</a></p><?php endif; ?>
             <?php elseif ( $step === 5 ) : ?>
               <h2>Venues</h2><p>Save your draft first, then use My Venues to search and assign existing shared venues. You can also suggest a new venue for the Bubba Hub team to review.</p>
@@ -205,6 +206,7 @@ final class BH_Leader_Listing_Wizard_3 {
         $email = sanitize_email( self::value( 'contact_email', 254 ) );
         $method = self::value( 'booking_method', 20 );
         if ( ! in_array( $method, array( 'external', 'enquiry', 'drop_in' ), true ) ) { $method = 'external'; }
+        if ( $method === 'enquiry' && ( empty( $organiser['contact_email'] ) || ! is_email( $organiser['contact_email'] ) ) ) { wp_die( 'Add a valid contact email to your organiser storefront before choosing Bubba Hub enquiries.', '', array( 'response' => 400 ) ); }
         $booking_url = self::url( 'booking_url' );
         if ( $method === 'external' && self::value( 'booking_url', 2048 ) !== '' && ! $booking_url ) { wp_die( 'Please enter a valid booking URL.', '', array( 'response' => 400 ) ); }
         // Persist only this step's fields so later steps cannot erase earlier answers.
