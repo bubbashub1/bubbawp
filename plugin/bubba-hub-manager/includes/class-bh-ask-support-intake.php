@@ -11,6 +11,7 @@ final class BH_Ask_Support_Intake_3 {
         add_action('fluentform/submission_inserted', [__CLASS__, 'capture'], 10, 3);
         add_action('admin_menu', [__CLASS__, 'menu'], 32);
         add_action('admin_post_bh3_ask_reject_question', [__CLASS__, 'reject']);
+        add_action('admin_post_bh3_ask_approve_question', [__CLASS__, 'approve']);
     }
 
     public static function capture($entry_id, $data, $form): void {
@@ -110,6 +111,42 @@ final class BH_Ask_Support_Intake_3 {
         exit;
     }
 
+    /**
+     * Moderators must replace the original with a deliberately redacted version.
+     * Approval never makes the question publicly visible or searchable.
+     */
+    public static function approve(): void {
+        if (!current_user_can('manage_options') ||
+            strtolower((string) wp_parse_url(home_url(), PHP_URL_HOST)) !== 'staging.bubbahub.co.uk') {
+            wp_die('Not authorised.', '', ['response' => 403]);
+        }
+        $id = absint($_POST['question_id'] ?? 0);
+        if (!$id) wp_die('Invalid question.', '', ['response' => 400]);
+        check_admin_referer('bh3_ask_approve_' . $id);
+        if (!BH_Ask_Support_Storage_3::installed()) wp_die('Storage unavailable.', '', ['response' => 503]);
+        if (($_POST['redaction_confirmed'] ?? '') !== '1') wp_die('Confirm privacy review before approving.', '', ['response' => 400]);
+        $reviewed = isset($_POST['reviewed_question']) && is_string($_POST['reviewed_question'])
+            ? trim(sanitize_textarea_field(wp_unslash($_POST['reviewed_question']))) : '';
+        if (strlen($reviewed) < 15 || strlen($reviewed) > 10000) wp_die('Reviewed question must be between 15 and 10000 characters.', '', ['response' => 400]);
+        global $wpdb;
+        $tables = BH_Ask_Support_Storage_3::tables();
+        $question = $wpdb->get_row($wpdb->prepare(
+            "SELECT id,status FROM `{$tables['questions']}` WHERE id=%d LIMIT 1", $id
+        ), ARRAY_A);
+        if (!$question || $question['status'] !== 'pending_review') wp_die('Question is no longer pending.', '', ['response' => 409]);
+        $updated = $wpdb->update($tables['questions'],
+            ['question_text' => $reviewed, 'status' => 'open', 'updated_at' => current_time('mysql', true)],
+            ['id' => $id, 'status' => 'pending_review'],
+            ['%s','%s','%s'], ['%d','%s']);
+        if ($updated !== 1) wp_die('Approval could not be saved.', '', ['response' => 409]);
+        $wpdb->insert($tables['audit'], [
+            'question_id' => $id, 'actor_user_id' => get_current_user_id(),
+            'event' => 'moderator_redacted_and_approved', 'occurred_at' => current_time('mysql', true),
+        ], ['%d','%d','%s','%s']);
+        wp_safe_redirect(admin_url('admin.php?page=bh3-ask-questions&approved=1'));
+        exit;
+    }
+
     public static function render(): void {
         if (!current_user_can('manage_options')) wp_die('Not authorised.', '', ['response' => 403]);
         echo '<div class="wrap"><h1>Ask Support · Moderation queue</h1>';
@@ -132,6 +169,16 @@ final class BH_Ask_Support_Intake_3 {
                 wp_nonce_field('bh3_ask_reject_' . (int) $row['id']);
                 submit_button('Reject', 'secondary small', 'submit', false);
                 echo '</form>';
+                echo '<details><summary>Review and approve for specialists</summary>';
+                echo '<p>Rewrite the question to remove names, locations, contact details, identifiable circumstances and sensitive information. Approval makes this text available only to verified matching specialists, not the public.</p>';
+                echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+                echo '<input type="hidden" name="action" value="bh3_ask_approve_question">';
+                echo '<input type="hidden" name="question_id" value="' . esc_attr((string) $row['id']) . '">';
+                wp_nonce_field('bh3_ask_approve_' . (int) $row['id']);
+                echo '<textarea required minlength="15" maxlength="10000" rows="5" style="width:100%" name="reviewed_question" aria-label="Redacted question"></textarea>';
+                echo '<label><input type="checkbox" name="redaction_confirmed" value="1" required> I have reviewed this text for personal and sensitive details.</label>';
+                submit_button('Approve for matching specialists', 'primary small', 'submit', false);
+                echo '</form></details>';
             } else { echo '&mdash;'; }
             echo '</td></tr>';
         }
