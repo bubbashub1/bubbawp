@@ -62,7 +62,7 @@ add_action('admin_post_bh3_support_install_schema', static function (): void {
         KEY form_id (form_id)
     ) $charset;");
     if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table)) === $table
-        && $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $history)) === $history) {
+        && $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($history))) === $history) {
         update_option('bh_support_status_schema_version', '2', false);
     }
     wp_safe_redirect(admin_url('admin.php?page=bh-support-enquiries&bh3_schema=' . (get_option('bh_support_status_schema_version') === '2' ? 'installed' : 'error')));
@@ -95,9 +95,9 @@ function bh_support_enquiries_page(): void {
         $submissions_table = $wpdb->prefix . 'fluentform_submissions';
         if ($entry_id && in_array($status, $allowed, true) && $configured
             && get_option('bh_support_status_schema_version') === '2'
-            && $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', bh_support_status_table())) === bh_support_status_table()
-            && $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', bh_support_history_table())) === bh_support_history_table()
-            && $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $submissions_table)) === $submissions_table) {
+            && $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like(bh_support_status_table()))) === bh_support_status_table()
+            && $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like(bh_support_history_table()))) === bh_support_history_table()
+            && $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($submissions_table))) === $submissions_table) {
             $form_id = (int) $wpdb->get_var($wpdb->prepare("SELECT form_id FROM `$submissions_table` WHERE id = %d", $entry_id));
             if (in_array($form_id, $configured, true)) {
                 // Keep the workflow state and its audit event in the same transaction.
@@ -192,7 +192,7 @@ function bh_support_enquiries_page(): void {
     $placeholders = implode(',', array_fill(0, count($ids), '%d'));
     $where = "form_id IN ($placeholders)";
     $status_table = bh_support_status_table();
-    $has_workflow = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $status_table)) === $status_table;
+    $has_workflow = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($status_table))) === $status_table;
     if (!$has_workflow) $filter = '';
     $join = $has_workflow ? " LEFT JOIN `$status_table` w ON w.entry_id = s.id AND w.form_id = s.form_id" : '';
     $where = 's.' . $where;
@@ -221,7 +221,7 @@ function bh_support_enquiries_page(): void {
     echo '<p><strong>' . esc_html(sprintf(_n('%d enquiry', '%d enquiries', $count, 'bubbahub'), $count)) . '</strong></p>';
     $status_table = bh_support_status_table();
     $status_map = [];
-    $status_table_exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $status_table)) === $status_table;
+    $status_table_exists = $has_workflow;
     if ($rows && $status_table_exists) {
         $entry_ids = array_map(static function ($row) { return (int) $row->id; }, $rows);
         $keys = implode(',', array_fill(0, count($entry_ids), '%d'));
@@ -255,7 +255,8 @@ function bh_support_enquiries_page(): void {
         echo '</p>';
     }
     $history_entry = isset($_GET['bh_history_entry']) ? absint($_GET['bh_history_entry']) : 0;
-    if ($history_entry && get_option('bh_support_status_schema_version') === '2') {
+    if ($history_entry && get_option('bh_support_status_schema_version') === '2'
+        && $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like(bh_support_history_table()))) === bh_support_history_table()) {
         $entry_form = (int) $wpdb->get_var($wpdb->prepare(
             "SELECT form_id FROM `$table` WHERE id = %d", $history_entry
         ));
