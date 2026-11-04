@@ -31,6 +31,14 @@ final class BH_Storefront_3 {
         ), ARRAY_A );
         $extras = get_option( 'bh3_storefront_' . $id, array() );
         if ( ! is_array( $extras ) ) { $extras = array(); }
+        // Private previews are restricted to the linked organiser and administrators.
+        // Public storefronts require both explicit opt-in and team approval.
+        $viewer_organiser = is_user_logged_in() ? absint( get_user_meta( get_current_user_id(), 'bh3_organiser_id', true ) ) : 0;
+        $can_preview = current_user_can( 'manage_options' ) || ( $viewer_organiser && $viewer_organiser === $id );
+        $is_public = ! empty( $extras['directory_opt_in'] ) && ! empty( $extras['directory_approved'] );
+        if ( ! $can_preview && ! $is_public ) {
+            return '<p>This business storefront is not available yet.</p>';
+        }
         $category_labels = array( 'classes' => 'Classes & activities', 'family-services' => 'Family services', 'pregnancy' => 'Pregnancy & postnatal', 'childcare' => 'Childcare & education', 'shops' => 'Shops & gifts', 'venues' => 'Family-friendly venues', 'other' => 'Other family business' );
         $category = $category_labels[ $extras['business_category'] ?? '' ] ?? '';
         ob_start(); ?>
