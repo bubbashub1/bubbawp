@@ -47,7 +47,7 @@ final class BH_Leader_Frontend_3 {
                 <div class="bh-leader-stat"><strong><?php echo esc_html( number_format_i18n( $totals['published'] ) ); ?></strong>Published</div>
             </section>
             <section class="bh-leader-list" id="my-activities"><h2>My Activities</h2>
-                <p class="bh-leader-muted">Search your listings, then use Edit draft, Timetable or Venues to manage each draft.</p>
+                <p class="bh-leader-muted">Find an activity below to update its details, venues and timetable. Published listings remain read-only until the team enables editing.</p>
                 <form class="bh-leader-filters" method="get" action="<?php echo esc_url( get_permalink() ); ?>">
                     <label class="screen-reader-text" for="bh-leader-search">Search activities</label>
                     <input id="bh-leader-search" type="search" name="bh_leader_search" placeholder="Search activities" value="<?php echo esc_attr( $search ); ?>">
@@ -66,14 +66,12 @@ final class BH_Leader_Frontend_3 {
                     <li>
                       <div class="bh-leader-activity-title">
                         <strong><?php echo esc_html( $listing['title'] ); ?></strong>
-                        <small style="display:block"><?php echo esc_html( $listing['category'] ); ?></small>
+                        <small class="bh-leader-activity-category"><?php echo esc_html( $listing['category'] ); ?></small>
                       </div>
                       <div class="bh-leader-activity-actions">
                         <span class="bh-leader-state bh-leader-state--<?php echo esc_attr( sanitize_html_class( $listing['status'] ) ); ?>"><?php echo esc_html( $listing['status'] ); ?></span>
                         <?php if ( $listing['status'] === 'draft' ) : ?>
-                          <a href="<?php echo esc_url( add_query_arg( 'activity_id', absint( $listing['id'] ), home_url( '/leader/edit-activity/' ) ) ); ?>">Edit</a>
-                          <a href="<?php echo esc_url( add_query_arg( 'activity_id', absint( $listing['id'] ), home_url( '/leader/timetable/' ) ) ); ?>">Timetable</a>
-                          <a href="<?php echo esc_url( add_query_arg( 'activity_id', absint( $listing['id'] ), home_url( '/leader/venues/' ) ) ); ?>">Venues</a>
+                          <a class="bh-leader-primary-action" href="<?php echo esc_url( add_query_arg( 'activity_id', absint( $listing['id'] ), home_url( '/leader/edit-activity/' ) ) ); ?>">Manage activity</a>
                         <?php else : ?>
                           <span class="bh-leader-muted">Contact the team to request changes</span>
                         <?php endif; ?>
