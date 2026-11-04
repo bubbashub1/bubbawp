@@ -22,7 +22,7 @@ final class BH_Directory_3 {
         $search = isset( $_GET['bh_search'] ) && is_string( $_GET['bh_search'] ) ? substr( sanitize_text_field( wp_unslash( $_GET['bh_search'] ) ), 0, 100 ) : '';
         $category = isset( $_GET['bh_category'] ) && is_string( $_GET['bh_category'] ) ? substr( sanitize_text_field( wp_unslash( $_GET['bh_category'] ) ), 0, 150 ) : '';
         $town = isset( $_GET['bh_town'] ) && is_string( $_GET['bh_town'] ) ? substr( sanitize_text_field( wp_unslash( $_GET['bh_town'] ) ), 0, 120 ) : '';
-        $free = isset( $_GET['bh_free'] ) && (string) $_GET['bh_free'] === '1';
+        $free = isset( $_GET['bh_free'] ) && is_string( $_GET['bh_free'] ) && $_GET['bh_free'] === '1';
         $page = min( 100, max( 1, absint( $_GET['bh_page'] ?? 1 ) ) );
         $conditions = array( "a.status IN ('published','publish')" );
         $params = array();
