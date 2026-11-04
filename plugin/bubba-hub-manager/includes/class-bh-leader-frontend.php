@@ -13,7 +13,7 @@ final class BH_Leader_Frontend_3 {
         if ( ! current_user_can( 'read' ) ) { return '<p>Access denied.</p>'; }
         global $wpdb;
         $organiser_id = absint( get_user_meta( get_current_user_id(), 'bh3_organiser_id', true ) );
-        if ( ! $organiser_id ) { return '<div class="bh-leader-shell"><h1>Leader Dashboard</h1><p>Your account has not yet been linked to an organiser. Please contact Bubba Hub support.</p></div>'; }
+        if ( ! $organiser_id ) { return '<div class="bh-leader-shell"><h1>Your Leader Hub</h1><p>Your account has not yet been linked to an organiser. Please contact Bubba Hub support.</p></div>'; }
         $organisers = $wpdb->prefix . 'organisers';
         $activities = $wpdb->prefix . 'activities';
         foreach ( array( $organisers, $activities ) as $table ) {
