@@ -59,7 +59,7 @@ final class BH_Leader_Frontend_Venues_3 {
         .bh-leader-venues a:focus-visible,.bh-leader-venues button:focus-visible,.bh-leader-venues input:focus-visible{outline:3px solid #245e4a;outline-offset:2px}
         @media(max-width:650px){.bh-leader-venues .bh-vpanel{padding:17px}.bh-leader-venues .bh-vhero{padding:20px}.bh-leader-venues .bh-vsearch input{width:100%}.bh-leader-venues .bh-vsearch button{width:100%}}
         </style>
-        <nav class="bh-vnav" aria-label="Activity tools"><a href="<?php echo esc_url( home_url( '/leader/' ) ); ?>">← Dashboard</a><a href="<?php echo esc_url( add_query_arg( 'activity_id', $id, home_url( '/leader/edit-activity/' ) ) ); ?>">Edit activity</a><a href="<?php echo esc_url( add_query_arg( 'activity_id', $id, home_url( '/leader/timetable/' ) ) ); ?>">Timetable</a></nav>
+        
         <header class="bh-vhero"><p>MY VENUES · DRAFT ACTIVITY</p><h1><?php echo esc_html( $activity['title'] ); ?></h1><p>Manage where your sessions take place.</p></header>
         <p>Search existing Bubba Hub venues to avoid duplicates. Venues used by sessions cannot be removed until those sessions are updated.</p>
         <?php if ( isset( $_GET['notice'] ) ) : ?><p class="bh-vnotice" role="status"><?php echo esc_html( sanitize_text_field( wp_unslash( $_GET['notice'] ) ) ); ?></p><?php endif; ?>
