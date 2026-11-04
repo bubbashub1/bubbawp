@@ -57,6 +57,17 @@ final class BH_Family_Settings_3 {
                   <div class="bh3-family__location-grid">
                     <label><?php echo esc_html__('Email address', 'bubba-hub-manager'); ?><input type="email" value="<?php echo esc_attr($account->user_email); ?>" readonly aria-describedby="bh3-account-email-help"></label>
                   </div>
+                  <h3>Additional profile details</h3>
+                  <p>Optional information for your own account. These details are not shared with class leaders.</p>
+                  <div class="bh3-family__location-grid">
+                    <label>Date of birth<input type="date" name="date_of_birth" value="<?php echo esc_attr($details['date_of_birth']); ?>" <?php disabled($admin_demo); ?>></label>
+                    <label>Address line 1<input type="text" name="address_line1" maxlength="160" value="<?php echo esc_attr($details['address_line1']); ?>" <?php disabled($admin_demo); ?>></label>
+                    <label>Address line 2<input type="text" name="address_line2" maxlength="160" value="<?php echo esc_attr($details['address_line2']); ?>" <?php disabled($admin_demo); ?>></label>
+                    <label>Town / city<input type="text" name="city" maxlength="100" value="<?php echo esc_attr($details['city']); ?>" <?php disabled($admin_demo); ?>></label>
+                    <label>County<input type="text" name="county" maxlength="100" value="<?php echo esc_attr($details['county']); ?>" <?php disabled($admin_demo); ?>></label>
+                    <label>Postcode<input type="text" name="postcode" maxlength="20" value="<?php echo esc_attr($details['postcode']); ?>" <?php disabled($admin_demo); ?>></label>
+                    <label>Country<input type="text" name="country" maxlength="80" value="<?php echo esc_attr($details['country']); ?>" <?php disabled($admin_demo); ?>></label>
+                  </div>
                   <p id="bh3-account-email-help" class="bh3-family__matching-note"><?php echo esc_html__('Email and password changes are managed through your secure sign-in account.', 'bubba-hub-manager'); ?></p>
                   <?php if (!$admin_demo) : ?><button type="submit"><?php echo esc_html__('Save profile', 'bubba-hub-manager'); ?></button><?php endif; ?>
                 </form>
