@@ -39,6 +39,7 @@ final class BH_Leader_Sessions_3 {
         echo '<p><a href="' . esc_url( add_query_arg( array( 'page' => 'bh3-leader-edit', 'activity_id' => $id ), admin_url( 'admin.php' ) ) ) . '">← Back to activity</a> · <a href="' . esc_url( add_query_arg( array( 'page' => 'bh3-leader-venues', 'activity_id' => $id ), admin_url( 'admin.php' ) ) ) . '">Manage venues</a></p>';
         if ( isset( $_GET['notice'] ) ) { echo '<div class="notice notice-info"><p>' . esc_html( sanitize_text_field( wp_unslash( $_GET['notice'] ) ) ) . '</p></div>'; }
         echo '<p>Weekly sessions use day and time. Date range is optional. No bookings are created.</p>';
+        echo '<p><a class="button button-primary" href="#bh3-session-form">+ Add weekly session</a></p>';
         echo '<table class="widefat striped bh3-card-table"><thead><tr><th>Day</th><th>Time</th><th>Venue</th><th>Dates</th><th>Term time</th><th>Action</th></tr></thead><tbody>';
         $days = array( 1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday', 7 => 'Sunday' );
         foreach ( $rows as $row ) {
@@ -64,7 +65,7 @@ final class BH_Leader_Sessions_3 {
             }
             if ( ! $editing ) { wp_die( 'Session not found or cannot be edited.', '', array( 'response' => 404 ) ); }
         }
-        echo '<h2>' . ( $editing ? 'Edit weekly session' : 'Add weekly session' ) . '</h2><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="bh3_leader_save_session"><input type="hidden" name="activity_id" value="' . esc_attr( (string) $id ) . '">';
+        echo '<h2 id="bh3-session-form">' . ( $editing ? 'Edit weekly session' : 'Add weekly session' ) . '</h2><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="bh3_leader_save_session"><input type="hidden" name="activity_id" value="' . esc_attr( (string) $id ) . '">';
         if ( $editing ) { echo '<input type="hidden" name="session_id" value="' . esc_attr( (string) $edit_id ) . '">'; }
         wp_nonce_field( 'bh3_leader_save_session_' . $id );
         echo '<table class="form-table"><tbody><tr><th>Day</th><td><select name="day_of_week" required>';
