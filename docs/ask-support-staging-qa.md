@@ -2,6 +2,12 @@
 
 This feature is **not production-ready**. Consolidated PR #117 remains draft until staging verification is complete.
 
+## Verified uploaded Fluent Forms import (4 November 2026)
+
+The user-provided **Bubba Hub – Ask a Question** import has the fields `full_name`, `email`, `question_topic`, `question` and `privacy_consent`. Its topic values are `family_activities_and_listings`, `using_my_hub_or_planner`, `class_leader_or_listing_claim`, `website_problem`, and `general_question`. Its only checkbox consents to Bubba Hub using contact details to respond; it **does not** consent to sharing with specialists. The export has ID 0, so verify the installed form ID in WordPress rather than assuming it is 4.
+
+**Do not map `privacy_consent` to `ask_specialist_consent` or infer `public` visibility.** This form belongs in the private Bubba Hub staff support inbox. Specialist intake remains disabled until a separate explicit sharing choice and compatible category mapping are implemented and tested.
+
 ## Deployment prerequisites
 
 - [ ] Confirm a verified staging database backup.
