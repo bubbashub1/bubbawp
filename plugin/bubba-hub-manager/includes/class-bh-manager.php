@@ -31,6 +31,7 @@ final class BH_Manager_3 {
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-schema.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activity-parity.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activity-create.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activity-fields.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activity-edit.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-venues.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activity-venues.php';
