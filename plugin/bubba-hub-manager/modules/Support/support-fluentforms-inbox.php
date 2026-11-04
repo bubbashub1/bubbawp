@@ -18,7 +18,9 @@ function bh_support_status_table(): string {
 }
 
 add_action('admin_init', static function (): void {
-    if (!current_user_can('manage_options') || get_option('bh_support_status_schema_version') === '2') return;
+    // Staging-only explicit opt-in; never create workflow tables on live.
+    if (!current_user_can('manage_options') || strtolower((string) wp_parse_url(home_url(), PHP_URL_HOST)) !== 'staging.bubbahub.co.uk'
+        || get_option('bh_support_status_schema_version') === '2') return;
     global $wpdb;
     require_once ABSPATH . 'wp-admin/includes/upgrade.php';
     $table = bh_support_status_table();
