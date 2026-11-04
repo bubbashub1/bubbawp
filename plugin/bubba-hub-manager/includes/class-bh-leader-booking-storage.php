@@ -103,12 +103,30 @@ final class BH_Leader_Booking_Storage_3 {
                 return new WP_Error( 'bh_booking_schema', 'Booking table creation could not be verified.' );
             }
         }
+        // Verify the columns required by the leader's confirm/cancel and audit actions.
+        $required = array(
+            'reservations' => array( 'id', 'organiser_id', 'activity_id', 'session_id', 'session_starts_at', 'status', 'updated_at', 'confirmed_at', 'cancelled_at' ),
+            'events' => array( 'reservation_id', 'organiser_id', 'actor_user_id', 'event_type', 'event_detail', 'created_at' ),
+        );
+        foreach ( $required as $kind => $columns ) {
+            $actual = $wpdb->get_col( "SHOW COLUMNS FROM {$tables[$kind]}", 0 );
+            if ( array_diff( $columns, (array) $actual ) ) {
+                return new WP_Error( 'bh_booking_columns', 'Booking table columns could not be verified.' );
+            }
+        }
         update_option( 'bh3_booking_schema_version', self::VERSION, false );
         return true;
     }
 
     public static function installed() {
-        return get_option( 'bh3_booking_schema_version' ) === self::VERSION;
+        if ( get_option( 'bh3_booking_schema_version' ) !== self::VERSION ) { return false; }
+        global $wpdb;
+        foreach ( self::tables() as $table ) {
+            if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ) !== $table ) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /** Leader identity is always derived from authenticated WordPress user meta. */
