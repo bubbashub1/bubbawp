@@ -172,13 +172,19 @@ function bh_support_enquiries_page(): void {
     if (!$has_workflow) $filter = '';
     $join = $has_workflow ? " LEFT JOIN `$status_table` w ON w.entry_id = s.id AND w.form_id = s.form_id" : '';
     $where = 's.' . $where;
+    $query_params = $ids;
     if ($filter !== '' && $has_workflow) {
-        $where .= $filter === 'new' ? " AND (w.status IS NULL OR w.status = 'new')" : " AND w.status = '" . esc_sql($filter) . "'";
+        if ($filter === 'new') {
+            $where .= " AND (w.status IS NULL OR w.status = %s)";
+        } else {
+            $where .= " AND w.status = %s";
+        }
+        $query_params[] = $filter;
     }
-    $count = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM `$table` s $join WHERE $where", ...$ids));
+    $count = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM `$table` s $join WHERE $where", ...$query_params));
     $rows = $wpdb->get_results($wpdb->prepare(
         "SELECT s.id, s.form_id, s.status, s.created_at FROM `$table` s $join WHERE $where ORDER BY s.id DESC LIMIT %d OFFSET %d",
-        ...array_merge($ids, [20, $offset])
+        ...array_merge($query_params, [20, $offset])
     ));
     echo '<form method="get" style="margin:18px 0">';
     echo '<input type="hidden" name="page" value="bh-support-enquiries">';
