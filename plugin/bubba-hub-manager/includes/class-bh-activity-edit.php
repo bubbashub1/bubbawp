@@ -61,8 +61,8 @@ final class BH_Activity_Edit_3 {
         $id = absint( $_POST['activity_id'] ?? 0 );
         check_admin_referer( 'bh3_update_activity_' . $id );
         if ( ! $id || ! self::load( $id ) ) { wp_die( 'Draft activity not found.', '', array( 'response' => 404 ) ); }
-        $title = sanitize_text_field( wp_unslash( $_POST['title'] ?? '' ) );
-        $category = sanitize_text_field( wp_unslash( $_POST['category'] ?? '' ) );
+        $title = BH_Activity_Fields_3::text( $_POST['title'] ?? '', 255 );
+        $category = BH_Activity_Fields_3::text( $_POST['category'] ?? '', 150 );
         if ( $title === '' || strlen( $title ) > 255 || strlen( $category ) > 150 ) { wp_die( 'Invalid title or category.', '', array( 'response' => 400 ) ); }
         $ages = array();
         foreach ( array( 'age_min_months', 'age_max_months' ) as $key ) {
