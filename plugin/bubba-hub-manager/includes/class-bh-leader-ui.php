@@ -28,6 +28,7 @@ final class BH_Leader_UI_3 {
             #wpbody-content > .wrap .form-table .regular-text, #wpbody-content > .wrap .form-table .large-text { width: 100%; max-width: 540px; }
             #wpbody-content > .wrap form[method=get] input[type=search] { min-height: 38px; min-width: min(320px, 100%); border-radius: 7px; }
             #wpbody-content > .wrap .widefat td form { margin: 0; }
+            #wpbody-content > .wrap .bh3-mobile-label { display: none; }
             #wpbody-content > .wrap .widefat .button { white-space: nowrap; }
             #wpbody-content > .wrap .notice { border-radius: 8px; }
             @media (max-width: 782px) {
@@ -35,6 +36,7 @@ final class BH_Leader_UI_3 {
                 #wpbody-content > .wrap .form-table { padding: 10px 14px; }
                 #wpbody-content > .wrap .form-table tr { grid-template-columns: 1fr; gap: 4px; }
                 #wpbody-content > .wrap .widefat { display: block; overflow-x: auto; white-space: nowrap; }
+                #wpbody-content > .wrap .bh3-mobile-label { display: inline; font-weight: 600; margin-right: 6px; }
                 #wpbody-content > .wrap .widefat th, #wpbody-content > .wrap .widefat td { padding: 10px; }
             }
         ' );
