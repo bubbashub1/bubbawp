@@ -26,6 +26,7 @@ final class BH_Family_Actions_3 {
         if (!self::enabled() || !is_user_logged_in() || !wp_verify_nonce($nonce, 'bh3_family_activity_action')) {
             return new WP_Error('family_action_denied', 'Action not permitted.');
         }
+        $activity_id = absint($activity_id);
         $family_id = BH_Family_Identity_3::current_legacy_id();
         if ($family_id < 1 || $activity_id < 1) return new WP_Error('family_not_verified', 'Verified family account required.');
         $tables = array('unsave' => 'bh_saved_activities', 'unplan' => 'bh_planner', 'visited' => 'bh_planner', 'not_visited' => 'bh_planner', 'plan_saved' => 'bh_planner', 'visit_saved' => 'bh_planner');
