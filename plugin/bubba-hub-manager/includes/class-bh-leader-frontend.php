@@ -48,7 +48,15 @@ final class BH_Leader_Frontend_3 {
         .bh-leader-card p{line-height:1.55}.bh-leader-card a{display:inline-block;margin-top:8px;color:#245e4a;font-weight:700;text-decoration:underline}.bh-leader-card a:focus-visible,.bh-leader-shell a:focus-visible{outline:3px solid #245e4a;outline-offset:3px}.bh-leader-nav{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 24px}.bh-leader-nav a{padding:9px 14px;border:1px solid #cbdcd0;border-radius:30px;text-decoration:none;color:#245e4a;font-weight:600;background:#fff}.bh-leader-nav a:hover{background:#eef5ef}.bh-leader-button{display:inline-flex;padding:10px 16px;background:#245e4a;color:#fff!important;border-radius:9px;text-decoration:none!important;font-weight:600}
         .bh-leader-list{margin:22px 0}.bh-leader-list h2{font-size:22px}.bh-leader-list ul{list-style:none;padding:0;margin:0}
         .bh-leader-list li{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid #edf0ed}
-        .bh-leader-status{text-transform:capitalize;color:#245e4a;font-weight:600}.bh-leader-filters{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}.bh-leader-filters input,.bh-leader-filters select{min-height:43px;padding:8px 12px;border:1px solid #cbd8cf;border-radius:9px}.bh-leader-filters input{flex:1;min-width:180px}.bh-leader-filters button{border:0;cursor:pointer}.bh-leader-pagination{display:flex;gap:12px;margin-top:16px}.bh-leader-pagination a{color:#245e4a;font-weight:600}
+        .bh-leader-status{text-transform:capitalize;color:#245e4a;font-weight:600}
+        .bh-leader-activity-title{min-width:0;flex:1}
+        .bh-leader-activity-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:flex-end}
+        .bh-leader-activity-actions a{padding:7px 10px;border:1px solid #cbdcd0;border-radius:8px;color:#245e4a;text-decoration:none;font-weight:600;font-size:14px}
+        .bh-leader-activity-actions a:hover{background:#eef5ef}
+        .bh-leader-state{display:inline-block;padding:4px 10px;border-radius:20px;background:#eaf2ec;color:#245e4a;font-size:13px;font-weight:700;text-transform:capitalize}
+        .bh-leader-state--draft{background:#fff4d9;color:#79551c}
+        .bh-leader-state--archived{background:#f1f1f1;color:#555}
+        @media(max-width:760px){.bh-leader-list li{flex-direction:column}.bh-leader-activity-actions{justify-content:flex-start}}.bh-leader-filters{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}.bh-leader-filters input,.bh-leader-filters select{min-height:43px;padding:8px 12px;border:1px solid #cbd8cf;border-radius:9px}.bh-leader-filters input{flex:1;min-width:180px}.bh-leader-filters button{border:0;cursor:pointer}.bh-leader-pagination{display:flex;gap:12px;margin-top:16px}.bh-leader-pagination a{color:#245e4a;font-weight:600}
         @media(max-width:760px){.bh-leader-stats,.bh-leader-grid{grid-template-columns:1fr}.bh-leader-shell{padding:0 14px;margin:20px auto}.bh-leader-stat,.bh-leader-card{padding:18px}}
         </style>
         <main class="bh-leader-shell">
@@ -93,7 +101,22 @@ final class BH_Leader_Frontend_3 {
                 <p><?php echo esc_html( number_format_i18n( $total_results ) ); ?> matching activities</p>
                 <?php if ( ! $listings ) : ?><p>No matching activities found.</p><?php else : ?>
                 <ul><?php foreach ( $listings as $listing ) : ?>
-                    <li><span><strong><?php echo esc_html( $listing['title'] ); ?></strong><small style="display:block"><?php echo esc_html( $listing['category'] ); ?></small></span><span class="bh-leader-status"><?php echo esc_html( $listing['status'] ); ?><?php if ( $listing['status'] === 'draft' ) : ?> <a href="<?php echo esc_url( add_query_arg( 'activity_id', absint( $listing['id' ] ), home_url( '/leader/edit-activity/' ) ) ); ?>">Edit draft</a> <a href="<?php echo esc_url( add_query_arg( 'activity_id', absint( $listing['id' ] ), home_url( '/leader/timetable/' ) ) ); ?>">Timetable</a> <a href="<?php echo esc_url( add_query_arg( 'activity_id', absint( $listing['id' ] ), home_url( '/leader/venues/' ) ) ); ?>">Venues</a><?php endif; ?></span></li>
+                    <li>
+                      <div class="bh-leader-activity-title">
+                        <strong><?php echo esc_html( $listing['title'] ); ?></strong>
+                        <small style="display:block"><?php echo esc_html( $listing['category'] ); ?></small>
+                      </div>
+                      <div class="bh-leader-activity-actions">
+                        <span class="bh-leader-state bh-leader-state--<?php echo esc_attr( sanitize_html_class( $listing['status'] ) ); ?>"><?php echo esc_html( $listing['status'] ); ?></span>
+                        <?php if ( $listing['status'] === 'draft' ) : ?>
+                          <a href="<?php echo esc_url( add_query_arg( 'activity_id', absint( $listing['id'] ), home_url( '/leader/edit-activity/' ) ) ); ?>">Edit</a>
+                          <a href="<?php echo esc_url( add_query_arg( 'activity_id', absint( $listing['id'] ), home_url( '/leader/timetable/' ) ) ); ?>">Timetable</a>
+                          <a href="<?php echo esc_url( add_query_arg( 'activity_id', absint( $listing['id'] ), home_url( '/leader/venues/' ) ) ); ?>">Venues</a>
+                        <?php else : ?>
+                          <span class="bh-leader-muted">Contact the team to request changes</span>
+                        <?php endif; ?>
+                      </div>
+                    </li>
                 <?php endforeach; ?></ul><?php endif; ?>
                 <?php if ( $page_count > 1 ) : ?>
                     <nav class="bh-leader-pagination" aria-label="Activity pages">
