@@ -10,6 +10,30 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 final class BH_Leader_Booking_Storage_3 {
     public const VERSION = '1.0.0';
 
+    public static function register() {
+        add_action( 'admin_post_bh3_booking_install_schema', array( __CLASS__, 'install_from_admin' ) );
+    }
+
+    public static function install_from_admin() {
+        if ( ! is_user_logged_in() || ! current_user_can( 'manage_options' ) ) {
+            wp_die( 'Administrator permission required.', '', array( 'response' => 403 ) );
+        }
+        check_admin_referer( 'bh3_booking_install_schema' );
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) {
+            wp_die( 'Booking schema installation is staging-only.', '', array( 'response' => 403 ) );
+        }
+        if ( sanitize_text_field( wp_unslash( $_POST['booking_confirm'] ?? '' ) ) !== 'INSTALL' ) {
+            wp_die( 'Type INSTALL to confirm.', '', array( 'response' => 400 ) );
+        }
+        $result = self::install();
+        $url = add_query_arg( array(
+            'booking_tab' => 'setup',
+            'booking_schema_notice' => is_wp_error( $result ) ? 'failed' : 'installed',
+        ), home_url( '/leader/bookings/' ) );
+        wp_safe_redirect( $url );
+        exit;
+    }
+
     public static function tables() {
         global $wpdb;
         return array(
