@@ -252,6 +252,24 @@ final class BH_Family_Hub_3 {
                     </ul>
                   <?php endif; ?>
                 </div>
+                <?php if (BH_Family_Profile_Editor_3::creation_enabled()) : ?>
+                  <div class="bh3-family__create-profiles">
+                    <h3><?php echo esc_html__('Add a family profile', 'bubba-hub-manager'); ?></h3>
+                    <?php foreach (array('child' => array(__('Add child', 'bubba-hub-manager'), __('Child name', 'bubba-hub-manager'), __('Date of birth', 'bubba-hub-manager')), 'bump' => array(__('Add pregnancy', 'bubba-hub-manager'), __('Nickname', 'bubba-hub-manager'), __('Due date', 'bubba-hub-manager'))) as $profile_type => $profile_fields) : ?>
+                      <form class="bh3-family__edit" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                        <h4><?php echo esc_html($profile_fields[0]); ?></h4>
+                        <input type="hidden" name="action" value="bh3_family_create_profile">
+                        <input type="hidden" name="bh3_profile_type" value="<?php echo esc_attr($profile_type); ?>">
+                        <?php wp_nonce_field('bh3_family_profile_create'); ?>
+                        <label for="bh3-create-<?php echo esc_attr($profile_type); ?>-name"><?php echo esc_html($profile_fields[1]); ?></label>
+                        <input id="bh3-create-<?php echo esc_attr($profile_type); ?>-name" name="bh3_profile_name" type="text" maxlength="100" required>
+                        <label for="bh3-create-<?php echo esc_attr($profile_type); ?>-date"><?php echo esc_html($profile_fields[2]); ?></label>
+                        <input id="bh3-create-<?php echo esc_attr($profile_type); ?>-date" name="bh3_profile_date" type="date" required>
+                        <button type="submit"><?php echo esc_html($profile_fields[0]); ?></button>
+                      </form>
+                    <?php endforeach; ?>
+                  </div>
+                <?php endif; ?>
                 <?php if (BH_Family_Profile_Editor_3::enabled()) : ?>
                   <?php if (isset($_GET['bh3_profile_status']) && $_GET['bh3_profile_status'] === 'saved') : ?>
                     <p role="status"><?php echo esc_html__('Profile updated.', 'bubba-hub-manager'); ?></p>
