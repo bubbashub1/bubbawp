@@ -146,7 +146,7 @@ final class BH_Leader_Listing_Wizard_3 {
               <h2>Venues</h2><p>Save your draft first, then use My Venues to search and assign existing shared venues. You can also suggest a new venue for the Bubba Hub team to review.</p>
               <?php if ( $id ) : ?><p><a href="<?php echo esc_url( add_query_arg( 'activity_id', $id, home_url( '/leader/new-venue/' ) ) ); ?>">Suggest a new venue for this activity</a></p><?php else : ?><p>Save your draft to request a new venue.</p><?php endif; ?>
               <p class="bh3-wizard-help">Please don't create a duplicate venue. Search by venue name or town in My Venues.</p>
-              <?php if ( $id ) : ?><p><a class="bh3-wizard-link" href="<?php echo esc_url( add_query_arg( 'activity_id', $id, home_url( '/leader/venues/' ) ) ); ?>">Choose or add venues</a></p><?php endif; ?>
+              <?php if ( $id ) : ?><p><a class="bh3-wizard-link" href="<?php echo esc_url( add_query_arg( 'activity_id', $id, home_url( '/leader/venues/' ) ) ); ?>">Choose an existing venue</a> <a class="bh3-wizard-link" href="<?php echo esc_url( add_query_arg( 'activity_id', $id, home_url( '/leader/new-venue/' ) ) ); ?>">Suggest a new venue</a></p><?php endif; ?>
             <?php elseif ( $step === 6 ) : ?>
               <h2>Photos &amp; media</h2><p>Save your draft first, then add a cover photo and gallery from the listing editor. We keep photos separate from contact and schedule details.</p>
               <p class="bh3-wizard-help">Use images you own or have permission to use. You can add or replace the listing cover image in your activity editor.</p>
