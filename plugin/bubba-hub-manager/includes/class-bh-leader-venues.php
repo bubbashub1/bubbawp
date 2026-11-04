@@ -46,7 +46,7 @@ final class BH_Leader_Venues_3 {
         if ( isset( $_GET['message'] ) ) { echo '<div class="notice notice-info"><p>' . esc_html( sanitize_text_field( wp_unslash( $_GET['message'] ) ) ) . '</p></div>'; }
         echo '<h2>Assigned venues</h2><table class="widefat striped"><thead><tr><th>Venue</th><th>Town</th><th>Action</th></tr></thead><tbody>';
         foreach ( $rows as $row ) {
-            echo '<tr><td>' . esc_html( $row['name'] ) . '</td><td>' . esc_html( (string) $row['town'] ) . '</td><td>';
+            echo '<tr><td data-label="Venue">' . esc_html( $row['name'] ) . '</td><td data-label="Town">' . esc_html( (string) $row['town'] ) . '</td><td data-label="Action">';
             if ( $activity['status'] === 'draft' ) {
                 echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
                 echo '<input type="hidden" name="action" value="bh3_leader_detach_venue"><input type="hidden" name="activity_id" value="' . esc_attr( (string) $id ) . '"><input type="hidden" name="venue_id" value="' . esc_attr( (string) $row['id'] ) . '">';
@@ -71,7 +71,7 @@ final class BH_Leader_Venues_3 {
             ), ARRAY_A );
             echo '<table class="widefat striped"><thead><tr><th>Venue</th><th>Town</th><th>Action</th></tr></thead><tbody>';
             foreach ( $matches as $row ) {
-                echo '<tr><td>' . esc_html( $row['name'] ) . '</td><td>' . esc_html( (string) $row['town'] ) . '</td><td>';
+                echo '<tr><td data-label="Venue">' . esc_html( $row['name'] ) . '</td><td data-label="Town">' . esc_html( (string) $row['town'] ) . '</td><td data-label="Action">';
                 echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
                 echo '<input type="hidden" name="action" value="bh3_leader_attach_venue"><input type="hidden" name="activity_id" value="' . esc_attr( (string) $id ) . '"><input type="hidden" name="venue_id" value="' . esc_attr( (string) $row['id'] ) . '">';
                 wp_nonce_field( 'bh3_leader_attach_venue_' . $id . '_' . $row['id'] );
