@@ -42,10 +42,10 @@ final class BH_Family_Hub_3 {
         $saved = $private_preview ? BH_Family_Read_Model_3::saved_ids() : array();
         $planner = $private_preview ? BH_Family_Read_Model_3::planner_items() : array();
         $profiles = $private_preview ? BH_Family_Read_Model_3::family_profiles() : array();
-        $planned_ids = is_array($planner) ? array_map('absint', array_column($planner, 'activity_id')) : array();
-        $visited_count = count(array_filter($planner, static function($item) { return !empty($item['visited']); }));
         $saved = is_array($saved) ? $saved : array();
         $planner = is_array($planner) ? $planner : array();
+        $planned_ids = array_map('absint', array_column($planner, 'activity_id'));
+        $visited_count = count(array_filter($planner, static function($item) { return !empty($item['visited']); }));
         $profiles = is_array($profiles) && isset($profiles['children'], $profiles['bumps']) && is_array($profiles['children']) && is_array($profiles['bumps']) ? $profiles : array('children' => array(), 'bumps' => array());
         $activity_ids = array_merge($saved, array_column($planner, 'activity_id'));
         $activity_titles = $private_preview ? BH_Family_Read_Model_3::activity_titles($activity_ids) : array();
