@@ -57,6 +57,7 @@ final class BH_Leader_Frontend_Business_3 {
         <label for="bh-business-instagram">Instagram URL</label><input id="bh-business-instagram" name="instagram_url" type="url" maxlength="2048" placeholder="https://" value="<?php echo esc_attr( $extras['instagram_url'] ?? '' ); ?>">
         <p class="bh-business-note">Your account permissions and linked activities will not change.</p>
         <button type="submit">Save business profile</button></form>
+        <?php if ( isset( $_GET['image_saved'] ) ) : ?><p role="status">Storefront image uploaded successfully.</p><?php endif; ?>
         <div class="bh-business-upload">
           <h2>Upload branding</h2>
           <p class="bh-business-note">JPG, PNG or WebP, maximum 5 MB. Uploading a new image replaces the corresponding storefront image, not the original Media Library file.</p>
@@ -66,10 +67,30 @@ final class BH_Leader_Frontend_Business_3 {
             <label for="bh-branding-type">Image type</label>
             <select id="bh-branding-type" name="image_type"><option value="logo_url">Business logo</option><option value="cover_url">Cover photo</option></select>
             <label for="bh-branding-file">Choose image</label>
-            <input id="bh-branding-file" type="file" name="branding_image" accept="image/jpeg,image/png,image/webp" required>
+            <input id="bh-branding-file" type="file" name="branding_image" accept="image/jpeg,image/png,image/webp" aria-describedby="bh-branding-feedback" required>
+            <p id="bh-branding-feedback" class="bh-business-note" aria-live="polite">No image selected.</p>
+            <img id="bh-branding-preview" alt="Selected branding image preview" hidden style="display:none;width:180px;max-height:180px;object-fit:contain;border-radius:12px;border:1px solid #dbe5df;padding:8px">
             <p><button type="submit">Upload image</button></p>
           </form>
-        </div></div></section>
+        </div></div>
+        <script>
+        (function(){
+          const input=document.getElementById('bh-branding-file'),preview=document.getElementById('bh-branding-preview'),feedback=document.getElementById('bh-branding-feedback');
+          if(!input||!preview||!feedback)return;
+          let url;
+          input.addEventListener('change',function(){
+            if(url){URL.revokeObjectURL(url);url=null;}
+            preview.hidden=true;preview.style.display='none';preview.removeAttribute('src');
+            const file=input.files&&input.files[0];
+            if(!file){feedback.textContent='No image selected.';return;}
+            if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size<1||file.size>5242880){
+              input.value='';feedback.textContent='Please choose a JPG, PNG or WebP under 5 MB.';return;
+            }
+            feedback.textContent=file.name+' ('+(file.size/1048576).toFixed(1)+' MB)';
+            url=URL.createObjectURL(file);preview.src=url;preview.hidden=false;preview.style.display='block';
+          });
+        })();
+        </script></section>
         <?php return ob_get_clean();
     }
     public static function upload_image() {
