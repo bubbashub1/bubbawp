@@ -49,7 +49,7 @@ final class BH_Leader_Dashboard_3 {
         $out .= '<section class="bh3-leader"><h1>My Leader Hub</h1><p class="bh3-sub">' . esc_html( $organiser_name ) . ' · Manage your Bubba Hub activity listings and weekly schedules.</p>';
         if ( isset( $_GET['closed'] ) ) { $out .= '<p role="status">Listing unpublished. It is now a draft.</p>'; }
         $out .= '<div class="bh3-grid"><div class="bh3-tile"><strong>My Activities</strong><p>Search and edit your listings.</p></div><div class="bh3-tile"><strong>Schedules</strong><p>Update weekly session times.</p></div><div class="bh3-tile"><strong>My Venues</strong><p>Link existing venue records.</p></div></div>';
-        $out .= '<div class="bh3-panel"><h2>Your activities</h2><form method="get">' . ( is_admin() ? '<input type="hidden" name="page" value="bh3-leader-dashboard">' : '' ) . '<label for="bh3-leader-search">Search activities</label><p><input id="bh3-leader-search" type="search" name="bh3_leader_search" value="' . esc_attr( $search ) . '" placeholder="Activity name"> <label for="bh3-leader-status">Status</label> <select id="bh3-leader-status" name="bh3_leader_status"><option value="all"' . selected( $status, 'all', false ) . '>All</option><option value="draft"' . selected( $status, 'draft', false ) . '>Draft</option><option value="published"' . selected( $status, 'published', false ) . '>Published</option></select> <button type="submit">Filter</button></p></form><ul class="bh3-list">';
+        $out .= '<div class="bh3-panel"><h2>Your activities</h2><p class="bh3-sub">Showing ' . esc_html( (string) count( $rows ) ) . ' matching activities (up to 100).</p><form method="get">' . ( is_admin() ? '<input type="hidden" name="page" value="bh3-leader-dashboard">' : '' ) . '<label for="bh3-leader-search">Search activities</label><p><input id="bh3-leader-search" type="search" name="bh3_leader_search" value="' . esc_attr( $search ) . '" placeholder="Activity name"> <label for="bh3-leader-status">Status</label> <select id="bh3-leader-status" name="bh3_leader_status"><option value="all"' . selected( $status, 'all', false ) . '>All</option><option value="draft"' . selected( $status, 'draft', false ) . '>Draft</option><option value="published"' . selected( $status, 'published', false ) . '>Published</option></select> <button type="submit">Filter</button></p></form><ul class="bh3-list">';
         foreach ( $rows as $row ) {
             $id = absint( $row['id'] );
             $out .= '<li><strong>' . esc_html( $row['title'] ) . '</strong><span class="bh3-state">' . esc_html( ucfirst( $row['status'] ) ) . '</span><div>';
@@ -68,7 +68,7 @@ final class BH_Leader_Dashboard_3 {
             }
             $out .= '</div></li>';
         }
-        if ( ! $rows ) { $out .= '<li>No matching activities found for your linked organiser.</li>'; }
+        if ( ! $rows ) { $out .= '<li>No matching activities found. Try clearing the search or selecting All statuses.</li>'; }
         $out .= '</ul></div><p class="bh3-sub">Staging preview · No bookings or changes are made from this overview.</p></section>';
         return $out;
     }
