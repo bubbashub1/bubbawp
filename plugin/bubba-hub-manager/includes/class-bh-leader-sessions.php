@@ -83,6 +83,9 @@ final class BH_Leader_Sessions_3 {
         if ( ! self::allowed() ) { wp_die( 'Not permitted.', '', array( 'response' => 403 ) ); }
         $id = absint( $_POST['activity_id'] ?? 0 );
         check_admin_referer( 'bh3_leader_save_session_' . $id );
+        foreach ( array( 'sessions', 'venues', 'activity_venues' ) as $required ) {
+            if ( ! BH_Leader_Access_3::table_exists( $required ) ) { wp_die( 'Session tables unavailable.', '', array( 'response' => 503 ) ); }
+        }
         $activity = self::activity( $id );
         if ( ! $activity || $activity['status'] !== 'draft' ) { wp_die( 'Draft activity required.', '', array( 'response' => 409 ) ); }
         $day = filter_var( wp_unslash( $_POST['day_of_week'] ?? '' ), FILTER_VALIDATE_INT );
@@ -137,6 +140,9 @@ final class BH_Leader_Sessions_3 {
         $id = absint( $_POST['activity_id'] ?? 0 );
         $session_id = absint( $_POST['session_id'] ?? 0 );
         check_admin_referer( 'bh3_leader_delete_session_' . $id . '_' . $session_id );
+        foreach ( array( 'sessions', 'venues', 'activity_venues' ) as $required ) {
+            if ( ! BH_Leader_Access_3::table_exists( $required ) ) { wp_die( 'Session tables unavailable.', '', array( 'response' => 503 ) ); }
+        }
         $activity = self::activity( $id );
         if ( ! $activity || $activity['status'] !== 'draft' ) { wp_die( 'Draft activity required.', '', array( 'response' => 409 ) ); }
         global $wpdb;
