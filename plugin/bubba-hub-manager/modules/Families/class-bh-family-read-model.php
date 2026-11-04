@@ -7,18 +7,18 @@ final class BH_Family_Read_Model_3 {
         if ($family_id < 1) return new WP_Error('family_not_verified', 'Verified family login required');
         global $wpdb;
         $table = 'bh_saved_activities';
-        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table)) !== $table) return array();
+        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table)) !== $table) return new WP_Error('family_saved_unavailable', 'Saved activities table unavailable');
         $rows = $wpdb->get_col($wpdb->prepare('SELECT activity_id FROM bh_saved_activities WHERE user_id = %d ORDER BY created_at DESC LIMIT 200', $family_id));
-        return is_array($rows) ? array_map('absint', $rows) : array();
+        return is_array($rows) ? array_map('absint', $rows) : new WP_Error('family_saved_query_failed', 'Unable to load saved activities');
     }
 
     public static function planner_items() {
         $family_id = BH_Family_Identity_3::current_legacy_id();
         if ($family_id < 1) return new WP_Error('family_not_verified', 'Verified family login required');
         global $wpdb;
-        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', 'bh_planner')) !== 'bh_planner') return array();
+        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', 'bh_planner')) !== 'bh_planner') return new WP_Error('family_planner_unavailable', 'Planner table unavailable');
         $rows = $wpdb->get_results($wpdb->prepare('SELECT activity_id, visited FROM bh_planner WHERE user_id = %d ORDER BY created_at DESC LIMIT 200', $family_id), ARRAY_A);
-        return is_array($rows) ? $rows : array();
+        return is_array($rows) ? $rows : new WP_Error('family_planner_query_failed', 'Unable to load planner');
     }
     public static function family_profiles() {
         $family_id = BH_Family_Identity_3::current_legacy_id();
@@ -27,11 +27,13 @@ final class BH_Family_Read_Model_3 {
         $out = array('children' => array(), 'bumps' => array());
         if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', 'bh_children')) === 'bh_children') {
             $rows = $wpdb->get_results($wpdb->prepare('SELECT id, name, date_of_birth FROM bh_children WHERE user_id = %d ORDER BY date_of_birth LIMIT 50', $family_id), ARRAY_A);
-            $out['children'] = is_array($rows) ? $rows : array();
+            if (!is_array($rows)) return new WP_Error('family_children_query_failed', 'Unable to load child profiles');
+            $out['children'] = $rows;
         }
         if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', 'bh_bumps')) === 'bh_bumps') {
             $rows = $wpdb->get_results($wpdb->prepare('SELECT id, nickname, due_date FROM bh_bumps WHERE user_id = %d ORDER BY due_date LIMIT 20', $family_id), ARRAY_A);
-            $out['bumps'] = is_array($rows) ? $rows : array();
+            if (!is_array($rows)) return new WP_Error('family_bumps_query_failed', 'Unable to load bump profiles');
+            $out['bumps'] = $rows;
         }
         return $out;
     }
