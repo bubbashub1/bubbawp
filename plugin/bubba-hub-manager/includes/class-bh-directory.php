@@ -48,6 +48,7 @@ final class BH_Directory_3 {
         $radius = isset( $_GET['bh_radius'] ) && is_scalar( $_GET['bh_radius'] ) ? absint( $_GET['bh_radius'] ) : 10;
         if ( ! in_array( $radius, array( 5, 10, 20, 50 ), true ) ) { $radius = 10; }
         $free = isset( $_GET['bh_free'] ) && (string) $_GET['bh_free'] === '1';
+        $max_price = isset( $_GET['bh_max_price'] ) && is_scalar( $_GET['bh_max_price'] ) && in_array( (string) $_GET['bh_max_price'], array( '5', '10', '20', '50' ), true ) ? absint( $_GET['bh_max_price'] ) : 0;
         $page = min( 100, max( 1, absint( $_GET['bh_page'] ?? 1 ) ) );
         $conditions = array( "a.status IN ('published','publish')" );
         $params = array();
@@ -55,6 +56,7 @@ final class BH_Directory_3 {
         if ( $category !== '' ) { $conditions[] = 'a.category = %s'; $params[] = $category; }
         if ( $town !== '' ) { $conditions[] = 'EXISTS (SELECT 1 FROM `' . $links . '` av2 INNER JOIN `' . $venues . '` v2 ON v2.id = av2.venue_id WHERE av2.activity_id = a.id AND v2.town LIKE %s)'; $params[] = '%' . $wpdb->esc_like( $town ) . '%'; }
         if ( $free ) { $conditions[] = 'a.is_free = 1'; }
+        if ( $max_price && ! $free ) { $conditions[] = '(a.is_free = 1 OR (a.price_from IS NOT NULL AND a.price_from <= %d))'; $params[] = $max_price; }
         if ( $age !== null ) {
             $conditions[] = '(a.age_min_months IS NULL OR a.age_min_months <= %d) AND (a.age_max_months IS NULL OR a.age_max_months >= %d)';
             $params[] = $age; $params[] = $age;
@@ -142,6 +144,7 @@ final class BH_Directory_3 {
         echo '<form class="bh3-search-form" method="get" aria-label="Filter activities">';
         if ( $show( 'keyword' ) ) { echo '<label><span>Search</span><input type="search" name="bh_search" placeholder="Class or activity" value="' . esc_attr( $search ) . '"></label>'; }
         if ( $show( 'category' ) ) { echo '<label><span>Category</span><input type="search" name="bh_category" placeholder="e.g. Swimming" value="' . esc_attr( $category ) . '"></label>'; }
+        if ( $show( 'price' ) ) { echo '<label><span>Maximum price</span><select name="bh_max_price"><option value="">Any price</option>'; foreach ( array( 5, 10, 20, 50 ) as $limit ) { echo '<option value="' . esc_attr( (string) $limit ) . '" ' . selected( $max_price, $limit, false ) . '>Up to £' . esc_html( (string) $limit ) . '</option>'; } echo '</select></label>'; }
         if ( $show( 'town' ) ) { echo '<label><span>Town</span><input type="search" name="bh_town" placeholder="Town" value="' . esc_attr( $town ) . '"></label>'; }
         if ( $show( 'region' ) ) { echo '<label><span>Region</span><select name="bh_region"><option value="">All regions</option>';
             foreach ( array( 'Devon', 'Cornwall' ) as $choice ) { echo '<option value="' . esc_attr( $choice ) . '" ' . selected( $region, $choice, false ) . '>' . esc_html( $choice ) . '</option>'; }
