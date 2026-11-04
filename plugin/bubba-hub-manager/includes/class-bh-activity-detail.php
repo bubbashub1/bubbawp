@@ -61,7 +61,7 @@ final class BH_Activity_Detail_3 {
         </style>';
         if ( $has( 'hero' ) ) { echo '<header><div>' . esc_html( (string) $activity['category'] ) . '</div><h1>' . esc_html( $activity['title'] ) . '</h1>';
         if ( $activity['organiser_name'] ) { echo '<p>By ' . esc_html( $activity['organiser_name'] ) . '</p>'; }
-        echo '</header>'; }
+        echo '</header>'; } else { echo '<h1>' . esc_html( $activity['title'] ) . '</h1>'; }
         echo '<div class="bh3-chips">';
         echo '<span class="bh3-chip">' . ( (int) $activity['is_free'] ? 'Free' : ( $activity['price_from'] !== null ? 'From £' . esc_html( number_format( (float) $activity['price_from'], 2 ) ) : 'Price on enquiry' ) ) . '</span>';
         if ( $activity['age_min_months'] !== null || $activity['age_max_months'] !== null ) {
@@ -69,7 +69,7 @@ final class BH_Activity_Detail_3 {
         }
         echo '</div>';
         if ( $has( 'overview' ) ) { echo '<section><h2>About this activity</h2><div>' . wp_kses_post( wpautop( (string) $activity['description'] ) ) . '</div></section>'; }
-        if ( $venues && $has( 'map' ) ) {
+        if ( $venues && $has( 'map' ) ) { // Location cards until the Leaflet map is implemented.
             echo '<section><h2>Locations</h2><div class="bh3-venues">';
             foreach ( $venues as $venue ) {
                 echo '<div class="bh3-venue"><strong>' . esc_html( $venue['name'] ) . '</strong><p>' .
