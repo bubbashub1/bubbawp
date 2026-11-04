@@ -18,6 +18,7 @@ final class BH_Directory_Builder_3 {
             'map_height' => 420,
             'listing_layout' => 'sidebar',
             'detail_sections' => array( 'hero', 'overview', 'timetable', 'map', 'contact', 'organiser' ),
+            'detail_order' => array( 'hero', 'overview', 'timetable', 'map', 'contact', 'organiser', 'gallery', 'accessibility' ),
             'search_fields' => array( 'keyword', 'category', 'age', 'day', 'price', 'region', 'town' ),
         );
     }
@@ -38,6 +39,10 @@ final class BH_Directory_Builder_3 {
         check_admin_referer( 'bh3_directory_builder_save' );
         $defaults = self::defaults();
         $detail = array_values( array_intersect( array( 'hero', 'overview', 'timetable', 'map', 'contact', 'organiser', 'gallery', 'accessibility' ), array_map( 'sanitize_key', (array) wp_unslash( $_POST['detail_sections'] ?? array() ) ) ) );
+        $allowed_sections = array( 'hero', 'overview', 'timetable', 'map', 'contact', 'organiser', 'gallery', 'accessibility' );
+        $raw_order = isset( $_POST['detail_order'] ) && is_scalar( $_POST['detail_order'] ) ? explode( ',', sanitize_text_field( wp_unslash( $_POST['detail_order'] ) ) ) : array();
+        $order = array_values( array_unique( array_intersect( $raw_order, $allowed_sections ) ) );
+        $order = array_merge( $order, array_values( array_diff( $allowed_sections, $order ) ) );
         $search = array_values( array_intersect( array( 'keyword', 'category', 'age', 'day', 'region', 'town', 'free', 'term_time', 'near_me' ), array_map( 'sanitize_key', (array) wp_unslash( $_POST['search_fields'] ?? array() ) ) ) );
         $lat = filter_var( wp_unslash( $_POST['map_lat'] ?? '' ), FILTER_VALIDATE_FLOAT );
         $lng = filter_var( wp_unslash( $_POST['map_lng'] ?? '' ), FILTER_VALIDATE_FLOAT );
@@ -53,6 +58,7 @@ final class BH_Directory_Builder_3 {
             'map_height' => min( 750, max( 240, absint( $_POST['map_height'] ?? $defaults['map_height'] ) ) ),
             'listing_layout' => in_array( $layout, array( 'sidebar', 'full_width' ), true ) ? $layout : 'sidebar',
             'detail_sections' => $detail,
+            'detail_order' => $order,
             'search_fields' => $search,
         );
         update_option( self::OPTION, $settings, false );
@@ -75,6 +81,7 @@ final class BH_Directory_Builder_3 {
         .bh3-builder .checks label:hover{background:#f0f8f2;border-color:#8db49b}
         .bh3-builder .settings-grid{margin-top:20px}
         .bh3-builder .settings-grid label{font-weight:600}
+        .bh3-builder .detail-sort{display:flex;flex-direction:column;gap:9px;margin:18px 0}.bh3-builder .detail-sort .sort-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border:1px solid #d9e5dc;background:#fff;border-radius:10px}.bh3-builder .detail-sort .sort-row[draggable=true]{cursor:grab}.bh3-builder .detail-sort .sort-row.dragging{opacity:.5}.bh3-builder .detail-sort .sort-row .sort-name{flex:1;font-weight:650}.bh3-builder .detail-sort .sort-row button{min-width:34px;min-height:34px;border:1px solid #d4e0d7;background:#f7faf8;border-radius:7px;cursor:pointer}.bh3-builder .detail-sort .sort-row button:focus-visible{outline:3px solid #7cbf95;outline-offset:2px}
         .bh3-builder .button-primary{background:#176345;border-color:#176345}
         .bh3-builder .button-primary:hover{background:#104b35;border-color:#104b35}.bh3-builder .intro{color:#596b60;max-width:850px}
         .bh3-builder .layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:20px;margin-top:22px}
@@ -100,7 +107,13 @@ final class BH_Directory_Builder_3 {
         foreach ( array( 'hero' => 'Hero and images', 'overview' => 'Overview', 'timetable' => 'Weekly timetable', 'map' => 'Map and directions', 'contact' => 'Contact and booking', 'organiser' => 'Organiser profile', 'gallery' => 'Photo gallery', 'accessibility' => 'Accessibility' ) as $key => $label ) {
             echo '<label><input type="checkbox" name="detail_sections[]" value="' . esc_attr( $key ) . '" ' . checked( in_array( $key, $s['detail_sections'], true ), true, false ) . '>' . esc_html( $label ) . '</label>';
         }
-        echo '</div><div class="settings-grid"><label>Page width<select name="listing_layout"><option value="sidebar" ' . selected( $s['listing_layout'], 'sidebar', false ) . '>Content with sidebar</option><option value="full_width" ' . selected( $s['listing_layout'], 'full_width', false ) . '>Full width</option></select></label></div></section>';
+        echo '</div><h3>Section order</h3><p>Drag sections to reorder, or use the up/down buttons for keyboard and touch accessibility.</p><div class="detail-sort" id="bh3-detail-sort">';
+        $names = array( 'hero' => 'Hero and images', 'overview' => 'Overview', 'timetable' => 'Weekly timetable', 'map' => 'Locations', 'contact' => 'Contact and booking', 'organiser' => 'Organiser', 'gallery' => 'Photo gallery', 'accessibility' => 'Accessibility' );
+        $order = array_values( array_unique( array_merge( array_intersect( (array) ( $s['detail_order'] ?? array() ), array_keys( $names ) ), array_keys( $names ) ) ) );
+        foreach ( $order as $key ) {
+            echo '<div class="sort-row" draggable="true" data-sort-key="' . esc_attr( $key ) . '"><span aria-hidden="true">☰</span><span class="sort-name">' . esc_html( $names[ $key ] ) . '</span><button type="button" data-move="-1" aria-label="Move ' . esc_attr( $names[ $key ] ) . ' up">↑</button><button type="button" data-move="1" aria-label="Move ' . esc_attr( $names[ $key ] ) . ' down">↓</button></div>';
+        }
+        echo '</div><input type="hidden" name="detail_order" id="bh3-detail-order" value="' . esc_attr( implode( ',', $order ) ) . '"><div class="settings-grid"><label>Page width<select name="listing_layout"><option value="sidebar" ' . selected( $s['listing_layout'], 'sidebar', false ) . '>Content with sidebar</option><option value="full_width" ' . selected( $s['listing_layout'], 'full_width', false ) . '>Full width</option></select></label></div></section>';
         echo '<section class="panel" data-builder-panel="search" hidden><h2>Directory search builder</h2><p>Choose the filters shown on the staging directory. Changes take effect after saving. Postcode searches match postcode prefixes; distance-based Near Me search is a separate upcoming feature.</p><div class="checks">';
         foreach ( array( 'keyword' => 'Keyword', 'category' => 'Category', 'age' => 'Child age', 'day' => 'Day of week', 'region' => 'Region', 'town' => 'Town', 'free' => 'Free only', 'term_time' => 'Term time', 'near_me' => 'Near me / postcode' ) as $key => $label ) {
             echo '<label><input type="checkbox" name="search_fields[]" value="' . esc_attr( $key ) . '" ' . checked( in_array( $key, $s['search_fields'], true ), true, false ) . '>' . esc_html( $label ) . '</label>';
@@ -112,6 +125,6 @@ final class BH_Directory_Builder_3 {
         }
         echo '</div><div class="preview"><strong>Map implementation</strong><p>Leaflet markers for activity venues, clustering for dense results, postcode and browser geolocation search, accessible map/list switching, and attribution: © OpenStreetMap contributors.</p></div></section>';
         echo '<p><button class="button button-primary button-large" type="submit">Save builder settings</button></p></form></div>';
-        echo '<script>(function(){const root=document.querySelector(".bh3-builder");if(!root)return;const tabs=[...root.querySelectorAll("[data-builder-tab]")],panels=[...root.querySelectorAll("[data-builder-panel]")];tabs.forEach(tab=>tab.addEventListener("click",()=>{tabs.forEach(t=>t.setAttribute("aria-selected",t===tab?"true":"false"));panels.forEach(p=>p.hidden=p.dataset.builderPanel!==tab.dataset.builderTab)}));})();</script></div>';
+        echo '<script>(function(){const root=document.querySelector(".bh3-builder");if(!root)return;const tabs=[...root.querySelectorAll("[data-builder-tab]")],panels=[...root.querySelectorAll("[data-builder-panel]")];tabs.forEach(tab=>tab.addEventListener("click",()=>{tabs.forEach(t=>t.setAttribute("aria-selected",t===tab?"true":"false"));panels.forEach(p=>p.hidden=p.dataset.builderPanel!==tab.dataset.builderTab)}));const list=root.querySelector("#bh3-detail-sort"),input=root.querySelector("#bh3-detail-order");if(list&&input){const sync=()=>{input.value=[...list.children].map(el=>el.dataset.sortKey).join(",")};list.addEventListener("click",e=>{const button=e.target.closest("button[data-move]");if(!button)return;const row=button.closest(".sort-row"),delta=Number(button.dataset.move),other=delta<0?row.previousElementSibling:row.nextElementSibling;if(!other)return;if(delta<0)list.insertBefore(row,other);else list.insertBefore(other,row);sync();button.focus()});let dragged=null;list.addEventListener("dragstart",e=>{dragged=e.target.closest(".sort-row");if(dragged){dragged.classList.add("dragging");e.dataTransfer.effectAllowed="move"}});list.addEventListener("dragover",e=>{if(!dragged)return;const over=e.target.closest(".sort-row");if(!over||over===dragged)return;e.preventDefault();const after=e.clientY>over.getBoundingClientRect().top+over.offsetHeight/2;list.insertBefore(dragged,after?over.nextSibling:over)});list.addEventListener("drop",e=>{if(dragged){e.preventDefault();sync()}});list.addEventListener("dragend",()=>{if(dragged)dragged.classList.remove("dragging");dragged=null;sync()})}})();</script></div>';
     }
 }
