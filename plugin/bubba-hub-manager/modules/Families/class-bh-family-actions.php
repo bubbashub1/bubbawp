@@ -7,6 +7,17 @@ final class BH_Family_Actions_3 {
             && defined('BH3_FAMILY_ACTIONS') && BH3_FAMILY_ACTIONS === true
             && defined('BH3_FAMILY_PRIVATE_PREVIEW') && BH3_FAMILY_PRIVATE_PREVIEW === true;
     }
+    /** Fail closed if a staging table lacks the composite key used for duplicate prevention. */
+    private static function has_composite_key($table) {
+        global $wpdb;
+        if (!in_array($table, array('bh_planner', 'bh_saved_activities'), true)) return false;
+        $indexes = $wpdb->get_results("SHOW INDEX FROM `{$table}` WHERE Key_name = 'PRIMARY'", ARRAY_A);
+        if (!is_array($indexes)) return false;
+        $columns = array();
+        foreach ($indexes as $index) $columns[(int) $index['Seq_in_index']] = (string) $index['Column_name'];
+        ksort($columns);
+        return array_values($columns) === array('user_id', 'activity_id');
+    }
     public static function register() {
         add_action('admin_post_bh3_family_activity_action', array(__CLASS__, 'handle'));
     }
@@ -35,6 +46,9 @@ final class BH_Family_Actions_3 {
         $table = $tables[$action];
         if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($table))) !== $table) return new WP_Error('family_table_missing', 'Activity records unavailable.');
         $where = array('user_id' => $family_id, 'activity_id' => $activity_id);
+        if (in_array($action, array('plan_saved', 'visit_saved'), true) && (!self::has_composite_key('bh_planner') || !self::has_composite_key('bh_saved_activities'))) {
+            return new WP_Error('family_schema_mismatch', 'Planner schema verification failed.');
+        }
         if ($action === 'plan_saved' || $action === 'visit_saved') {
             // Only allow IDs that are already saved by this verified family.
             if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like('bh_saved_activities'))) !== 'bh_saved_activities') {
