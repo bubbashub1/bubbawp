@@ -51,7 +51,7 @@ final class BH_Leader_Venues_3 {
                 echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
                 echo '<input type="hidden" name="action" value="bh3_leader_detach_venue"><input type="hidden" name="activity_id" value="' . esc_attr( (string) $id ) . '"><input type="hidden" name="venue_id" value="' . esc_attr( (string) $row['id'] ) . '">';
                 wp_nonce_field( 'bh3_leader_detach_venue_' . $id . '_' . $row['id'] );
-                submit_button( 'Remove assignment', 'secondary small', '', false );
+                submit_button( 'Remove assignment', 'secondary small', '', false, array( 'onclick' => "return confirm('Remove this venue assignment?');" ) );
                 echo '</form>';
             } else { echo 'Read-only'; }
             echo '</td></tr>';
