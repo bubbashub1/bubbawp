@@ -139,6 +139,10 @@ final class BH_Ask_Support_Storage_3 {
         $t = self::tables();
         $organiser_id = absint(get_user_meta($user_id, 'bh3_organiser_id', true));
         if (!$organiser_id) return false;
+        // A stale or deleted organiser association must not preserve specialist access.
+        $organisers = $wpdb->prefix . 'organisers';
+        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($organisers))) !== $organisers) return false;
+        if (!(int) $wpdb->get_var($wpdb->prepare("SELECT id FROM `{$organisers}` WHERE id=%d LIMIT 1", $organiser_id))) return false;
         $prefs = (array) get_user_meta($user_id, 'bh3_ask_support_preferences', true);
         if (empty($prefs['opted_in'])) return false;
         $category = $wpdb->get_var($wpdb->prepare("SELECT category_slug FROM `{$t['questions']}` WHERE id=%d AND status='open' LIMIT 1", $question_id));
