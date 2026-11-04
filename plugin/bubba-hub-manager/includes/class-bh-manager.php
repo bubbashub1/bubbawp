@@ -97,6 +97,20 @@ final class BH_Manager_3 {
         BH_Leader_Frontend_Venues_3::register();
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-frontend-business.php';
         BH_Leader_Frontend_Business_3::register();
+        // Staging-only booking dashboard.
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-bookings.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-booking-storage.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-booking-setup.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-booking-queue.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-booking-calendar.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-booking-dashboard.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-booking-actions.php';
+        BH_Leader_Bookings_3::register();
+        BH_Leader_Booking_Setup_3::register();
+        BH_Leader_Booking_Queue_3::register();
+        BH_Leader_Booking_Calendar_3::register();
+        BH_Leader_Booking_Dashboard_3::register();
+        BH_Leader_Booking_Actions_3::register();
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-storefront.php';
         BH_Storefront_3::register();
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-business-directory.php';
