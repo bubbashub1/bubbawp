@@ -24,7 +24,18 @@ final class BH_Leader_Frontend_3 {
         $counts = $wpdb->get_results( $wpdb->prepare( "SELECT status,COUNT(*) AS total FROM `{$activities}` WHERE organiser_id=%d GROUP BY status", $organiser_id ), ARRAY_A );
         $totals = array( 'all' => 0, 'draft' => 0, 'published' => 0 );
         foreach ( $counts as $row ) { $totals['all'] += (int) $row['total']; if ( isset( $totals[$row['status']] ) ) { $totals[$row['status']] = (int) $row['total']; } }
-        $listings = $wpdb->get_results( $wpdb->prepare( "SELECT title,status,category FROM `{$activities}` WHERE organiser_id=%d ORDER BY id DESC LIMIT 10", $organiser_id ), ARRAY_A );
+        $search = sanitize_text_field( wp_unslash( $_GET['bh_leader_search'] ?? '' ) );
+        $filter = sanitize_key( wp_unslash( $_GET['bh_leader_status'] ?? '' ) );
+        if ( ! in_array( $filter, array( '', 'draft', 'published', 'pending', 'archived' ), true ) ) { $filter = ''; }
+        $where = 'organiser_id=%d';
+        $args = array( $organiser_id );
+        if ( $search !== '' ) { $where .= ' AND title LIKE %s'; $args[] = '%' . $wpdb->esc_like( $search ) . '%'; }
+        if ( $filter !== '' ) { $where .= ' AND status=%s'; $args[] = $filter; }
+        $page_num = max( 1, absint( $_GET['bh_leader_page'] ?? 1 ) );
+        $total_results = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM `{$activities}` WHERE {$where}", $args ) );
+        $page_count = max( 1, (int) ceil( $total_results / 15 ) );
+        $page_num = min( $page_num, $page_count );
+        $listings = $wpdb->get_results( $wpdb->prepare( "SELECT id,title,status,category FROM `{$activities}` WHERE {$where} ORDER BY id DESC LIMIT %d OFFSET %d", array_merge( $args, array( 15, ( $page_num - 1 ) * 15 ) ) ), ARRAY_A );
         ob_start();
         ?>
         <style>
@@ -37,7 +48,7 @@ final class BH_Leader_Frontend_3 {
         .bh-leader-card p{line-height:1.55}.bh-leader-button{display:inline-flex;padding:10px 16px;background:#245e4a;color:#fff!important;border-radius:9px;text-decoration:none!important;font-weight:600}
         .bh-leader-list{margin:22px 0}.bh-leader-list h2{font-size:22px}.bh-leader-list ul{list-style:none;padding:0;margin:0}
         .bh-leader-list li{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid #edf0ed}
-        .bh-leader-status{text-transform:capitalize;color:#245e4a;font-weight:600}
+        .bh-leader-status{text-transform:capitalize;color:#245e4a;font-weight:600}.bh-leader-filters{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}.bh-leader-filters input,.bh-leader-filters select{min-height:43px;padding:8px 12px;border:1px solid #cbd8cf;border-radius:9px}.bh-leader-filters input{flex:1;min-width:180px}.bh-leader-filters button{border:0;cursor:pointer}.bh-leader-pagination{display:flex;gap:12px;margin-top:16px}.bh-leader-pagination a{color:#245e4a;font-weight:600}
         @media(max-width:760px){.bh-leader-stats,.bh-leader-grid{grid-template-columns:1fr}.bh-leader-shell{padding:0 14px;margin:20px auto}.bh-leader-stat,.bh-leader-card{padding:18px}}
         </style>
         <main class="bh-leader-shell">
@@ -62,11 +73,32 @@ final class BH_Leader_Frontend_3 {
                 }
                 ?>
             </section>
-            <section class="bh-leader-list"><h2>Recent activities</h2>
-                <?php if ( ! $listings ) : ?><p>No activities linked to your organiser yet.</p><?php else : ?>
+            <section class="bh-leader-list" id="my-activities"><h2>My Activities</h2>
+                <p class="bh-leader-muted">Search your own listings. Editing will be available here once the front-end editor passes testing.</p>
+                <form class="bh-leader-filters" method="get" action="<?php echo esc_url( get_permalink() ); ?>">
+                    <label class="screen-reader-text" for="bh-leader-search">Search activities</label>
+                    <input id="bh-leader-search" type="search" name="bh_leader_search" placeholder="Search activities" value="<?php echo esc_attr( $search ); ?>">
+                    <label class="screen-reader-text" for="bh-leader-status-filter">Status</label>
+                    <select id="bh-leader-status-filter" name="bh_leader_status">
+                    <?php foreach ( array( '' => 'All statuses', 'draft' => 'Draft', 'published' => 'Published', 'pending' => 'Pending', 'archived' => 'Archived' ) as $value => $label ) : ?>
+                        <option value="<?php echo esc_attr( $value ); ?>" <?php selected( $filter, $value ); ?>><?php echo esc_html( $label ); ?></option>
+                    <?php endforeach; ?>
+                    </select>
+                    <button class="bh-leader-button" type="submit">Search</button>
+                    <a href="<?php echo esc_url( get_permalink() . '#my-activities' ); ?>">Clear</a>
+                </form>
+                <p><?php echo esc_html( number_format_i18n( $total_results ) ); ?> matching activities</p>
+                <?php if ( ! $listings ) : ?><p>No matching activities found.</p><?php else : ?>
                 <ul><?php foreach ( $listings as $listing ) : ?>
-                    <li><span><?php echo esc_html( $listing['title'] ); ?></span><span class="bh-leader-status"><?php echo esc_html( $listing['status'] ); ?></span></li>
+                    <li><span><strong><?php echo esc_html( $listing['title'] ); ?></strong><small style="display:block"><?php echo esc_html( $listing['category'] ); ?></small></span><span class="bh-leader-status"><?php echo esc_html( $listing['status'] ); ?></span></li>
                 <?php endforeach; ?></ul><?php endif; ?>
+                <?php if ( $page_count > 1 ) : ?>
+                    <nav class="bh-leader-pagination" aria-label="Activity pages">
+                    <?php if ( $page_num > 1 ) : ?><a href="<?php echo esc_url( add_query_arg( 'bh_leader_page', $page_num - 1 ) . '#my-activities' ); ?>">← Previous</a><?php endif; ?>
+                    <span>Page <?php echo esc_html( $page_num ); ?> of <?php echo esc_html( $page_count ); ?></span>
+                    <?php if ( $page_num < $page_count ) : ?><a href="<?php echo esc_url( add_query_arg( 'bh_leader_page', $page_num + 1 ) . '#my-activities' ); ?>">Next →</a><?php endif; ?>
+                    </nav>
+                <?php endif; ?>
             </section>
         </main>
         <?php
