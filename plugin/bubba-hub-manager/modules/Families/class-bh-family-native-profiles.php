@@ -4,6 +4,8 @@ if (!defined('ABSPATH')) exit;
 final class BH_Family_Native_Profiles_3 {
     public static function register() {
         add_shortcode('bubbahub_family_add_profile',array(__CLASS__,'dashboard'));
+        add_shortcode('bubbahub_family_profile',array(__CLASS__,'dashboard'));
+        add_shortcode('bubbahub_family_profiles',array(__CLASS__,'dashboard'));
         add_action('admin_post_bh3_native_family_profile',array(__CLASS__,'save'));
         add_action('admin_post_bh3_native_family_update',array(__CLASS__,'update'));
         add_action('admin_post_bh3_native_family_delete',array(__CLASS__,'delete'));
