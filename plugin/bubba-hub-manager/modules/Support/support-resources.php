@@ -38,14 +38,16 @@ add_shortcode('bh_support_resources', static function ($atts): string {
     }
     $query = new WP_Query($args);
     $topics = get_terms(['taxonomy' => 'bh_support_topic', 'hide_empty' => true]);
+    // Shortcodes may appear more than once on a page; keep label targets unique.
+    $instance_id = wp_unique_id('bh-resource-');
     ob_start();
     ?>
     <section class="bh-resource-hub" aria-label="<?php esc_attr_e('Family resources', 'bubbahub'); ?>">
       <form method="get" class="bh-resource-filters" role="search">
-        <label for="bh-resource-search"><?php esc_html_e('Search resources', 'bubbahub'); ?></label>
-        <input id="bh-resource-search" type="search" name="bh_search" value="<?php echo esc_attr($search); ?>" placeholder="<?php esc_attr_e('Search guides and resources', 'bubbahub'); ?>">
-        <label for="bh-resource-topic"><?php esc_html_e('Topic', 'bubbahub'); ?></label>
-        <select id="bh-resource-topic" name="bh_topic">
+        <label for="<?php echo esc_attr($instance_id); ?>-search"><?php esc_html_e('Search resources', 'bubbahub'); ?></label>
+        <input id="<?php echo esc_attr($instance_id); ?>-search" type="search" name="bh_search" value="<?php echo esc_attr($search); ?>" placeholder="<?php esc_attr_e('Search guides and resources', 'bubbahub'); ?>">
+        <label for="<?php echo esc_attr($instance_id); ?>-topic"><?php esc_html_e('Topic', 'bubbahub'); ?></label>
+        <select id="<?php echo esc_attr($instance_id); ?>-topic" name="bh_topic">
           <option value=""><?php esc_html_e('All topics', 'bubbahub'); ?></option>
           <?php if (!is_wp_error($topics)) : foreach ($topics as $term) : ?>
             <option value="<?php echo esc_attr($term->slug); ?>" <?php selected($topic, $term->slug); ?>><?php echo esc_html($term->name); ?></option>
