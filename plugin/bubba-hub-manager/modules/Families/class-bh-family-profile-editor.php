@@ -83,7 +83,7 @@ final class BH_Family_Profile_Editor_3 {
         }
         $today = current_time('Y-m-d');
         if ($type === 'child' && $date > $today) return new WP_Error('family_date_future', 'Birth date cannot be in the future.');
-        if ($type === 'bump' && ($date < gmdate('Y-m-d', strtotime($today . ' - 300 days')) || $date > gmdate('Y-m-d', strtotime($today . ' + 600 days')))) {
+        if ($type === 'bump' && ($date < wp_date('Y-m-d', strtotime($today . ' - 300 days'), wp_timezone()) || $date > wp_date('Y-m-d', strtotime($today . ' + 600 days'), wp_timezone()))) {
             return new WP_Error('family_date_range', 'Due date outside the supported range.');
         }
         global $wpdb;
@@ -137,7 +137,7 @@ final class BH_Family_Profile_Editor_3 {
         }
         $today = current_time('Y-m-d');
         if ($type === 'child' && $date > $today) return new WP_Error('family_future_birth', 'Birth date cannot be in the future.');
-        if ($type === 'bump' && ($date < gmdate('Y-m-d', strtotime($today . ' - 300 days')) || $date > gmdate('Y-m-d', strtotime($today . ' + 600 days')))) {
+        if ($type === 'bump' && ($date < wp_date('Y-m-d', strtotime($today . ' - 300 days'), wp_timezone()) || $date > wp_date('Y-m-d', strtotime($today . ' + 600 days'), wp_timezone()))) {
             return new WP_Error('family_due_date_range', 'Due date is outside the supported range.');
         }
         global $wpdb;
