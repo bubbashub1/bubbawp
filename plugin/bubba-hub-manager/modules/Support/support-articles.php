@@ -49,6 +49,14 @@ add_shortcode('bh_support_articles', static function ($atts): string {
           <article class="bh-resource-card">
             <?php if (has_post_thumbnail()) : ?><a href="<?php echo esc_url(get_permalink()); ?>"><?php the_post_thumbnail('medium_large', ['loading' => 'lazy']); ?></a><?php endif; ?>
             <p class="bh-article-byline"><?php echo esc_html(get_the_date()); ?></p>
+            <?php $card_topics = get_the_terms(get_the_ID(), 'bh_support_topic'); ?>
+            <?php if ($card_topics && !is_wp_error($card_topics)) : ?>
+              <div class="bh-resource-card__topics" aria-label="<?php esc_attr_e('Topics', 'bubbahub'); ?>">
+                <?php foreach (array_slice($card_topics, 0, 3) as $card_topic) : ?>
+                  <span class="bh-resource-card__topic"><?php echo esc_html($card_topic->name); ?></span>
+                <?php endforeach; ?>
+              </div>
+            <?php endif; ?>
             <h2><a href="<?php echo esc_url(get_permalink()); ?>"><?php echo esc_html(get_the_title()); ?></a></h2>
             <p><?php echo esc_html(wp_trim_words(get_the_excerpt(), 28)); ?></p>
             <a class="bh-resource-read" href="<?php echo esc_url(get_permalink()); ?>"><?php esc_html_e('Read article', 'bubbahub'); ?></a>
