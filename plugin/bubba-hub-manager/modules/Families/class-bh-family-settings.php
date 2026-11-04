@@ -121,6 +121,26 @@ final class BH_Family_Settings_3 {
                   <?php if (!$admin_demo) : ?><button type="submit"><?php echo esc_html__('Save notification choices', 'bubba-hub-manager'); ?></button><?php endif; ?>
                 </form>
               </article>
+              <article id="bh3-privacy" class="bh3-family__card bh3-family__card--notifications">
+                <h2>Privacy &amp; consent</h2>
+                <p>Manage optional uses of your information. Essential account messages and data needed for requested services are separate.</p>
+                <?php if (isset($_GET['bh3_privacy_saved']) && !$admin_demo) : ?><p role="status">Privacy choices saved.</p><?php endif; ?>
+                <form class="bh3-family__notification-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                  <input type="hidden" name="action" value="bh3_family_privacy">
+                  <?php wp_nonce_field('bh3_family_privacy'); ?>
+                  <div class="bh3-family__notification-list">
+                    <?php foreach (BH_Family_Privacy_3::choices() as $key => $details) : ?>
+                      <label class="bh3-family__notification-option">
+                        <input type="checkbox" name="<?php echo esc_attr($key); ?>" value="1" <?php checked($privacy[$key]); ?> <?php disabled($admin_demo); ?>>
+                        <span><strong><?php echo esc_html($details[0]); ?></strong><small><?php echo esc_html($details[1]); ?></small></span>
+                      </label>
+                    <?php endforeach; ?>
+                  </div>
+                  <p>These choices are stored locally; connections to existing services are not enabled yet.</p>
+                  <?php if (!$admin_demo) : ?><button type="submit">Save privacy choices</button><?php endif; ?>
+                </form>
+                <p>For data corrections or removal requests: <a href="mailto:contact@bubbahub.co.uk">contact@bubbahub.co.uk</a></p>
+              </article>
           </div>
             </div>
           </div>
