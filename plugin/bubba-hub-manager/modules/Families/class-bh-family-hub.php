@@ -81,7 +81,18 @@ final class BH_Family_Hub_3 {
                 <?php else : ?>
                   <ul class="bh3-family__items">
                     <?php foreach (array_slice($saved, 0, 8) as $activity_id) : ?>
-                      <li><?php echo esc_html($activity_titles[absint($activity_id)] ?? sprintf(__('Activity #%d', 'bubba-hub-manager'), absint($activity_id))); ?></li>
+                      <li>
+                        <span><?php echo esc_html($activity_titles[absint($activity_id)] ?? sprintf(__('Activity #%d', 'bubba-hub-manager'), absint($activity_id))); ?></span>
+                        <?php if (BH_Family_Actions_3::enabled()) : ?>
+                          <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                            <input type="hidden" name="action" value="bh3_family_activity_action">
+                            <input type="hidden" name="bh3_action" value="unsave">
+                            <input type="hidden" name="bh3_activity_id" value="<?php echo esc_attr(absint($activity_id)); ?>">
+                            <?php wp_nonce_field('bh3_family_activity_action'); ?>
+                            <button type="submit" class="bh3-family__action"><?php echo esc_html__('Remove', 'bubba-hub-manager'); ?></button>
+                          </form>
+                        <?php endif; ?>
+                      </li>
                     <?php endforeach; ?>
                   </ul>
                   <?php if (count($saved) > 8) : ?><p><?php echo esc_html(sprintf(__('%d more saved', 'bubba-hub-manager'), count($saved) - 8)); ?></p><?php endif; ?>
@@ -126,6 +137,9 @@ final class BH_Family_Hub_3 {
                 <?php endif; ?>
               </article>
             </div>
+          <?php endif; ?>
+          <?php if ($private_preview && BH_Family_Actions_3::enabled() && isset($_GET['bh3_activity_status'])) : ?>
+            <p class="bh3-family__notice" role="status"><?php echo esc_html($_GET['bh3_activity_status'] === 'saved' ? __('Activity updated.', 'bubba-hub-manager') : __('Activity could not be updated.', 'bubba-hub-manager')); ?></p>
           <?php endif; ?>
           <div class="bh3-family__grid">
             <?php foreach ( $sections as $section ) : ?>
