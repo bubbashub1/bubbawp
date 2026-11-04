@@ -28,6 +28,16 @@ final class BH_Family_Settings_3 {
         ?>
         <section class="bh3-family bh3-family__settings-page">
           <p><a href="<?php echo esc_url(home_url('/family/')); ?>">← <?php echo esc_html__('Back to My Hub', 'bubba-hub-manager'); ?></a></p>
+          <div class="bh3-family__settings-layout">
+            <nav class="bh3-family__settings-sidebar" aria-label="<?php echo esc_attr__('Family settings navigation', 'bubba-hub-manager'); ?>">
+              <div class="bh3-family__sidebar-heading"><span class="bh3-family__kicker"><?php echo esc_html__('MY HUB', 'bubba-hub-manager'); ?></span><strong><?php echo esc_html__('Family settings', 'bubba-hub-manager'); ?></strong></div>
+              <a href="<?php echo esc_url(home_url('/family/')); ?>"><span aria-hidden="true">⌂</span><?php echo esc_html__('Dashboard', 'bubba-hub-manager'); ?></a>
+              <a href="#bh3-account"><span aria-hidden="true">◯</span><?php echo esc_html__('My profile', 'bubba-hub-manager'); ?></a>
+              <a href="#bh3-preferences"><span aria-hidden="true">☷</span><?php echo esc_html__('Family preferences', 'bubba-hub-manager'); ?></a>
+              <a href="#bh3-notifications"><span aria-hidden="true">♧</span><?php echo esc_html__('Notifications', 'bubba-hub-manager'); ?></a>
+              <div class="bh3-family__sidebar-footer"><?php echo esc_html__('More family settings coming soon', 'bubba-hub-manager'); ?></div>
+            </nav>
+            <div class="bh3-family__settings-content">
           <div class="bh3-family__grid bh3-family__private">
               <article id="bh3-account" class="bh3-family__card bh3-family__card--account">
                 <div class="bh3-family__section-heading"><div><span class="bh3-family__kicker"><?php echo esc_html__('YOUR ACCOUNT', 'bubba-hub-manager'); ?></span><h2><?php echo esc_html__('My profile', 'bubba-hub-manager'); ?></h2></div></div>
@@ -109,6 +119,8 @@ final class BH_Family_Settings_3 {
                   <?php if (!$admin_demo) : ?><button type="submit"><?php echo esc_html__('Save notification choices', 'bubba-hub-manager'); ?></button><?php endif; ?>
                 </form>
               </article>
+          </div>
+            </div>
           </div>
         </section>
         <?php
