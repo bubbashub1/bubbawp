@@ -22,7 +22,7 @@ final class BH_Family_Profile_Editor_3 {
             return new WP_Error('family_not_verified', 'Verified family account required.');
         }
         $name = sanitize_text_field($name);
-        if ($name === '' || mb_strlen($name) > 100) {
+        if ($name === '' || (function_exists('mb_strlen') ? mb_strlen($name) : strlen($name)) > 100) {
             return new WP_Error('family_invalid_name', 'Enter a name of 1 to 100 characters.');
         }
         global $wpdb;
