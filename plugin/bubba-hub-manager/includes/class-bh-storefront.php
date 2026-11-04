@@ -17,6 +17,13 @@ final class BH_Storefront_3 {
         $profile = $wpdb->get_row( $wpdb->prepare( "SELECT id,name,description,website_url,contact_email FROM `{$table}` WHERE id=%d LIMIT 1", $id ), ARRAY_A );
         if ( ! $profile ) { return '<p>Business profile not found.</p>'; }
         $activities = $wpdb->get_results( $wpdb->prepare( "SELECT id,title,category FROM `{$activity_table}` WHERE organiser_id=%d AND status='published' ORDER BY title LIMIT 30", $id ), ARRAY_A );
+        // Public locations are derived only from published activity assignments.
+        $venue_table = $wpdb->prefix . 'venues';
+        $link_table = $wpdb->prefix . 'activity_venues';
+        $locations = $wpdb->get_results( $wpdb->prepare(
+            "SELECT DISTINCT v.name,v.town FROM `{$venue_table}` v INNER JOIN `{$link_table}` av ON av.venue_id=v.id INNER JOIN `{$activity_table}` a ON a.id=av.activity_id WHERE a.organiser_id=%d AND a.status='published' ORDER BY v.town,v.name LIMIT 30",
+            $id
+        ), ARRAY_A );
         ob_start(); ?>
         <section class="bh-storefront">
           <style>
@@ -42,6 +49,9 @@ final class BH_Storefront_3 {
               <?php if ( $profile['website_url'] ) : ?><a class="bh-slink" href="<?php echo esc_url( $profile['website_url'] ); ?>" rel="noopener noreferrer" target="_blank">Visit website</a><?php endif; ?>
               <?php if ( $profile['contact_email'] ) : ?><a class="bh-slink" href="<?php echo esc_url( 'mailto:' . sanitize_email( $profile['contact_email'] ) ); ?>">Email organiser</a><?php endif; ?>
               <?php if ( ! $profile['website_url'] && ! $profile['contact_email'] ) : ?><p>Contact details are not yet available.</p><?php endif; ?>
+              <h2>Where to find us</h2>
+              <?php if ( ! $locations ) : ?><p>Venue information will appear when activities are published.</p><?php endif; ?>
+              <?php foreach ( $locations as $location ) : ?><p><strong><?php echo esc_html( $location["name"] ); ?></strong><?php if ( $location["town"] ) : ?> · <?php echo esc_html( $location["town"] ); ?><?php endif; ?></p><?php endforeach; ?>
             </aside>
           </div>
         </section>
