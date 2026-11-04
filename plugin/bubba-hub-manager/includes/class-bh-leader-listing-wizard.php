@@ -204,6 +204,7 @@ final class BH_Leader_Listing_Wizard_3 {
         if ( $max !== '' && ( ! ctype_digit( $max ) || (int) $max > 216 ) ) { wp_die( 'Maximum age must be between 0 and 216 months.', '', array( 'response' => 400 ) ); }
         if ( $min !== '' && $max !== '' && (int) $min > (int) $max ) { wp_die( 'Minimum age cannot exceed maximum age.', '', array( 'response' => 400 ) ); }
         $email = sanitize_email( self::value( 'contact_email', 254 ) );
+        if ( $email !== '' && ! is_email( $email ) ) { wp_die( 'Please enter a valid activity contact email.', '', array( 'response' => 400 ) ); }
         $method = self::value( 'booking_method', 20 );
         if ( ! in_array( $method, array( 'external', 'enquiry', 'drop_in' ), true ) ) { $method = 'external'; }
         if ( $method === 'enquiry' && ( empty( $organiser['contact_email'] ) || ! is_email( $organiser['contact_email'] ) ) ) { wp_die( 'Add a valid contact email to your organiser storefront before choosing Bubba Hub enquiries.', '', array( 'response' => 400 ) ); }
