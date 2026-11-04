@@ -4,11 +4,38 @@ if (!defined('ABSPATH')) exit;
 final class BH_Family_Native_Favourites_3 {
     public static function register() {
         add_shortcode('bubbahub_family_favourites',array(__CLASS__,'render'));
+        add_shortcode('bubbahub_save_activity',array(__CLASS__,'save_button'));
         add_action('admin_post_bh3_native_favourite',array(__CLASS__,'handle'));
     }
     public static function allowed() {
         return BH_Family_Preferences_3::can_edit()
             && defined('BH3_FAMILY_NATIVE_FAVOURITES') && BH3_FAMILY_NATIVE_FAVOURITES === true;
+    }
+    /** Activity page control; requires an explicit WP-native activity ID. */
+    public static function save_button($atts = array()) {
+        if (!self::allowed()) return '';
+        $atts=shortcode_atts(array('id'=>0),$atts,'bubbahub_save_activity');
+        $id=absint($atts['id']);
+        if (!$id) return '';
+        global $wpdb;
+        $activities=$wpdb->prefix.'activities';
+        $saved=$wpdb->prefix.'bh_saved_activities';
+        foreach (array($activities,$saved) as $table) {
+            if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s',$wpdb->esc_like($table)))!==$table) return '';
+        }
+        $published=$wpdb->get_var($wpdb->prepare("SELECT id FROM `{$activities}` WHERE id=%d AND status IN ('published','publish') LIMIT 1",$id));
+        if (!$published) return '';
+        $existing=$wpdb->get_var($wpdb->prepare("SELECT id FROM `{$saved}` WHERE user_id=%d AND activity_id=%d LIMIT 1",get_current_user_id(),$id));
+        $operation=$existing?'remove':'add';
+        ob_start(); ?>
+        <form class="bh3-family-save-control" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+          <input type="hidden" name="action" value="bh3_native_favourite">
+          <input type="hidden" name="activity_id" value="<?php echo esc_attr($id); ?>">
+          <input type="hidden" name="operation" value="<?php echo esc_attr($operation); ?>">
+          <?php wp_nonce_field('bh3_native_favourite_'.$id); ?>
+          <button type="submit" aria-pressed="<?php echo $existing?'true':'false'; ?>"><?php echo esc_html($existing?'Remove from favourites':'Save activity'); ?></button>
+        </form>
+        <?php return ob_get_clean();
     }
     public static function render() {
         if (current_user_can('manage_options')) return '<p>Administrator preview: family favourites are private.</p>';
