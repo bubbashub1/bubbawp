@@ -150,6 +150,7 @@ final class BH_Leader_Sessions_3 {
         $table = $wpdb->prefix . 'sessions';
         $deleted = $wpdb->delete( $table, array( 'id' => $session_id, 'activity_id' => $id ), array( '%d', '%d' ) );
         if ( $deleted === false ) { wp_die( 'Unable to remove session.', '', array( 'response' => 500 ) ); }
+        if ( $deleted === 0 ) { wp_die( 'Session was not found or already removed.', '', array( 'response' => 404 ) ); }
         self::redirect( $id, 'Session removed.' );
     }
 }
