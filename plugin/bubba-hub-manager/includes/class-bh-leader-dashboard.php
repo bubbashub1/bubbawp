@@ -44,6 +44,7 @@ final class BH_Leader_Dashboard_3 {
         $base = admin_url( 'admin.php' );
         $out = '<style>.bh3-leader{max-width:1100px;margin:24px auto;color:#263b33;font-family:inherit}.bh3-leader h1{font-size:clamp(25px,4vw,36px);margin:0 0 8px}.bh3-leader .bh3-sub{color:#52665e}.bh3-leader .bh3-panel{background:#fff;border:1px solid #dce8e0;border-radius:16px;padding:20px;margin:20px 0;box-shadow:0 4px 18px rgba(20,60,40,.05)}.bh3-leader .bh3-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.bh3-leader .bh3-tile{padding:18px;border:1px solid #dce8e0;border-radius:12px;background:#f7faf8}.bh3-leader .bh3-btn{display:inline-block;padding:9px 13px;border-radius:9px;background:#245e4a;color:white;text-decoration:none;margin:3px}.bh3-leader .bh3-btn:focus,.bh3-leader .bh3-btn:hover{background:#174331;color:#fff}.bh3-leader input[type=search]{width:min(100%,360px);padding:10px;border:1px solid #c7d8cd;border-radius:8px}.bh3-leader .bh3-list{list-style:none;margin:0;padding:0}.bh3-leader .bh3-list li{padding:14px 0;border-bottom:1px solid #e7eee9}.bh3-leader .bh3-list li:last-child{border:0}.bh3-leader .bh3-state{display:inline-block;margin-left:8px;color:#52665e;font-size:13px}@media(max-width:600px){.bh3-leader .bh3-panel{padding:14px}.bh3-leader .bh3-btn{margin:5px 4px 0 0}}</style>';
         $out .= '<section class="bh3-leader"><h1>My Leader Hub</h1><p class="bh3-sub">' . esc_html( $organiser_name ) . ' · Manage your Bubba Hub activity listings and weekly schedules.</p>';
+        if ( isset( $_GET['closed'] ) ) { $out .= '<p role="status">Listing unpublished. It is now a draft.</p>'; }
         $out .= '<div class="bh3-grid"><div class="bh3-tile"><strong>My Activities</strong><p>Search and edit your listings.</p></div><div class="bh3-tile"><strong>Schedules</strong><p>Update weekly session times.</p></div><div class="bh3-tile"><strong>My Venues</strong><p>Link existing venue records.</p></div></div>';
         $out .= '<div class="bh3-panel"><h2>Your activities</h2><form method="get">' . ( is_admin() ? '<input type="hidden" name="page" value="bh3-leader-dashboard">' : '' ) . '<label for="bh3-leader-search">Search activities</label><p><input id="bh3-leader-search" type="search" name="bh3_leader_search" value="' . esc_attr( $search ) . '" placeholder="Activity name"> <button type="submit">Search</button></p></form><ul class="bh3-list">';
         foreach ( $rows as $row ) {
@@ -53,8 +54,14 @@ final class BH_Leader_Dashboard_3 {
                 foreach ( array( 'bh3-leader-edit' => 'Edit', 'bh3-leader-sessions' => 'Schedule', 'bh3-leader-venues' => 'Venues' ) as $page => $label ) {
                     $out .= '<a class="bh3-btn" href="' . esc_url( add_query_arg( array( 'page' => $page, 'activity_id' => $id ), $base ) ) . '">' . esc_html( $label ) . '</a>';
                 }
+            } elseif ( $row['status'] === 'published' ) {
+                $out .= '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+                $out .= '<input type="hidden" name="action" value="bh3_leader_close"><input type="hidden" name="activity_id" value="' . esc_attr( (string) $id ) . '">';
+                $out .= wp_nonce_field( 'bh3_close_' . $id, '_wpnonce', true, false );
+                $out .= '<label><input type="checkbox" name="confirm_close" value="yes" required> Confirm unpublish</label> ';
+                $out .= '<button class="bh3-btn" type="submit">Close listing</button></form>';
             } else {
-                $out .= '<p class="bh3-sub">Published listing changes are not enabled in this staging editor yet.</p>';
+                $out .= '<p class="bh3-sub">This listing is not editable in the staging leader dashboard.</p>';
             }
             $out .= '</div></li>';
         }
