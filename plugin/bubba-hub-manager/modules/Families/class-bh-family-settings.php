@@ -96,11 +96,16 @@ final class BH_Family_Settings_3 {
                   </fieldset>
                   <fieldset><legend><?php echo esc_html__('Where would you like to explore?', 'bubba-hub-manager'); ?></legend>
                     <div class="bh3-family__location-grid">
+                      <label>Preferred region<select name="region" <?php disabled($admin_demo); ?>><option value="">Any region</option><?php foreach (array('Devon','Cornwall') as $region) : ?><option value="<?php echo esc_attr($region); ?>" <?php selected($preferences['region'],$region); ?>><?php echo esc_html($region); ?></option><?php endforeach; ?></select></label>
                       <label><?php echo esc_html__('Town or area', 'bubba-hub-manager'); ?><input type="text" name="town" maxlength="80" value="<?php echo esc_attr($preferences['town']); ?>" placeholder="<?php echo esc_attr__('e.g. Torquay', 'bubba-hub-manager'); ?>" <?php disabled($admin_demo); ?>></label>
                       <label><?php echo esc_html__('Postcode (optional)', 'bubba-hub-manager'); ?><input type="text" name="postcode" maxlength="9" value="<?php echo esc_attr($preferences['postcode']); ?>" placeholder="<?php echo esc_attr__('e.g. TQ2', 'bubba-hub-manager'); ?>" <?php disabled($admin_demo); ?>></label>
                       <label><?php echo esc_html__('Travel distance', 'bubba-hub-manager'); ?><select name="radius" <?php disabled($admin_demo); ?>><?php foreach (array(5,10,15,25,50) as $miles) : ?><option value="<?php echo esc_attr($miles); ?>" <?php selected((int)$preferences['radius'], $miles); ?>><?php echo esc_html(sprintf(__('%d miles', 'bubba-hub-manager'), $miles)); ?></option><?php endforeach; ?></select></label>
                     </div>
                   </fieldset>
+                  <div class="bh3-family__location-grid">
+                    <label>Maximum session price (£, optional)<input type="number" name="max_price" min="0" max="10000" step="0.01" value="<?php echo esc_attr($preferences['max_price'] === null ? '' : $preferences['max_price']); ?>" placeholder="No maximum" <?php disabled($admin_demo); ?>></label>
+                  </div>
+                  <?php if (isset($_GET['bh3_preferences_error'])) : ?><p role="alert">Please enter a valid maximum price.</p><?php endif; ?>
                   <div class="bh3-family__choice-grid">
                     <label><input type="checkbox" name="free_only" value="1" <?php checked($preferences['free_only']); ?> <?php disabled($admin_demo); ?>><span><?php echo esc_html__('Free activities only', 'bubba-hub-manager'); ?></span></label>
                     <label><input type="checkbox" name="term_time" value="1" <?php checked($preferences['term_time']); ?> <?php disabled($admin_demo); ?>><span><?php echo esc_html__('Term-time activities', 'bubba-hub-manager'); ?></span></label>
