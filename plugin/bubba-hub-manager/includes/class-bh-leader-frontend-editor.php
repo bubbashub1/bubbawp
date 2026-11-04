@@ -75,7 +75,7 @@ final class BH_Leader_Frontend_Editor_3 {
             'is_free' => $free, 'booking_url' => $url, 'updated_at' => current_time( 'mysql', true )
         ), array( 'id' => $id, 'organiser_id' => $organiser, 'status' => 'draft' ) );
         if ( $result === false ) { wp_die( 'Save failed.', '', array( 'response' => 500 ) ); }
-        wp_safe_redirect( add_query_arg( array( 'activity_id' => $id, 'saved' => '1' ), home_url( '/leader/edit/' ) ) );
+        wp_safe_redirect( add_query_arg( array( 'activity_id' => $id, 'saved' => '1' ), home_url( '/leader/edit-activity/' ) ) );
         exit;
     }
 }
