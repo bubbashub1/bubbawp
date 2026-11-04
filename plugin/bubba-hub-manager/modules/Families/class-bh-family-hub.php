@@ -50,6 +50,7 @@ final class BH_Family_Hub_3 {
         $activity_ids = array_merge($saved, array_column($planner, 'activity_id'));
         $activity_titles = $private_preview ? BH_Family_Read_Model_3::activity_titles($activity_ids) : array();
         if (is_wp_error($activity_titles)) $activity_titles = array();
+        $activity_links = $private_preview ? BH_Family_Read_Model_3::activity_links($activity_ids) : array();
         $sections = array(
             array( 'My family', 'Family profiles will appear here once account mapping is verified.' ),
             array( 'Saved activities', 'Your favourites will connect to existing activity IDs.' ),
@@ -87,7 +88,7 @@ final class BH_Family_Hub_3 {
                   <ul class="bh3-family__items">
                     <?php foreach (array_slice($saved, 0, 8) as $activity_id) : ?>
                       <li>
-                        <span><?php echo esc_html($activity_titles[absint($activity_id)] ?? sprintf(__('Activity #%d', 'bubba-hub-manager'), absint($activity_id))); ?></span>
+                        <span><?php $saved_label = $activity_titles[absint($activity_id)] ?? sprintf(__('Activity #%d', 'bubba-hub-manager'), absint($activity_id)); ?><?php if (!empty($activity_links[absint($activity_id)])) : ?><a href="<?php echo esc_url($activity_links[absint($activity_id)]); ?>"><?php echo esc_html($saved_label); ?></a><?php else : ?><?php echo esc_html($saved_label); ?><?php endif; ?></span>
                         <?php if (BH_Family_Actions_3::enabled()) : ?>
                           <?php foreach (array('plan_saved' => __('Add to planner', 'bubba-hub-manager'), 'visit_saved' => __('Mark visited', 'bubba-hub-manager')) as $add_action => $add_label) : ?>
                             <?php if ($add_action !== 'plan_saved' || !in_array(absint($activity_id), $planned_ids, true)) : ?>
@@ -123,7 +124,8 @@ final class BH_Family_Hub_3 {
                   <ul class="bh3-family__items">
                     <?php foreach (array_slice($planner, 0, 8) as $item) : ?>
                       <li>
-                        <?php echo esc_html($activity_titles[absint($item['activity_id'] ?? 0)] ?? sprintf(__('Activity #%d', 'bubba-hub-manager'), absint($item['activity_id'] ?? 0))); ?>
+                        <?php $planner_id = absint($item['activity_id'] ?? 0); $planner_label = $activity_titles[$planner_id] ?? sprintf(__('Activity #%d', 'bubba-hub-manager'), $planner_id); ?>
+                        <?php if (!empty($activity_links[$planner_id])) : ?><a href="<?php echo esc_url($activity_links[$planner_id]); ?>"><?php echo esc_html($planner_label); ?></a><?php else : ?><?php echo esc_html($planner_label); ?><?php endif; ?>
                         <span class="bh3-family__status"><?php echo esc_html(!empty($item['visited']) ? __('Visited', 'bubba-hub-manager') : __('Not visited yet', 'bubba-hub-manager')); ?></span>
                         <?php if (BH_Family_Actions_3::enabled()) : ?>
                           <?php foreach (array((!empty($item['visited']) ? 'not_visited' : 'visited') => (!empty($item['visited']) ? __('Mark not visited', 'bubba-hub-manager') : __('Mark visited', 'bubba-hub-manager')), 'unplan' => __('Remove', 'bubba-hub-manager')) as $action_key => $action_label) : ?>
