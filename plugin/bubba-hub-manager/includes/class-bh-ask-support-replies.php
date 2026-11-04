@@ -23,7 +23,7 @@ final class BH_Ask_Support_Replies_3 {
         }
         $body = isset($_POST['reply_body']) && is_string($_POST['reply_body'])
             ? trim(sanitize_textarea_field(wp_unslash($_POST['reply_body']))) : '';
-        if (mb_strlen($body) < 10 || mb_strlen($body) > 5000) wp_die('Reply must be 10–5000 characters.', '', ['response' => 400]);
+        if (strlen($body) < 10 || strlen($body) > 5000) wp_die('Reply must be 10–5000 characters.', '', ['response' => 400]);
         global $wpdb;
         $tables = BH_Ask_Support_Storage_3::tables();
         $ok = $wpdb->insert($tables['replies'], [
@@ -59,13 +59,15 @@ final class BH_Ask_Support_Replies_3 {
         foreach ($rows as $row) {
             echo '<tr><td>#' . esc_html((string) $row['question_id']) . '</td><td>' . esc_html((string) $row['author_user_id']) . '</td><td>' . esc_html($row['body']) . '</td><td>' . esc_html($row['moderation_status']) . '</td><td>';
             if ($row['moderation_status'] === 'pending_review') {
-                foreach (['approved' => 'Approve (hold)', 'rejected' => 'Reject'] as $decision => $label) {
-                    echo '<form method="post" style="display:inline-block;margin-right:8px" action="' . esc_url(admin_url('admin-post.php')) . '">';
-                    echo '<input type="hidden" name="action" value="bh3_ask_review_reply"><input type="hidden" name="reply_id" value="' . esc_attr((string) $row['id']) . '"><input type="hidden" name="decision" value="' . esc_attr($decision) . '">';
-                    wp_nonce_field('bh3_ask_review_reply_' . (int) $row['id']);
-                    submit_button($label, 'secondary small', 'submit', false);
-                    echo '</form>';
-                }
+                echo '<form method="post" style="margin-bottom:10px" action="' . esc_url(admin_url('admin-post.php')) . '">';
+                echo '<input type="hidden" name="action" value="bh3_ask_review_reply"><input type="hidden" name="reply_id" value="' . esc_attr((string) $row['id']) . '">';
+                echo '<label for="bh3-reviewed-reply-' . esc_attr((string) $row['id']) . '"><strong>Reviewed reply (remove personal details before approval)</strong></label>';
+                echo '<textarea id="bh3-reviewed-reply-' . esc_attr((string) $row['id']) . '" name="reviewed_body" rows="5" maxlength="5000" style="width:100%" required>' . esc_textarea($row['body']) . '</textarea>';
+                echo '<p><label><input type="checkbox" name="privacy_reviewed" value="1" required> I have reviewed this text for privacy and safeguarding.</label></p>';
+                wp_nonce_field('bh3_ask_review_reply_' . (int) $row['id']);
+                echo '<button type="submit" class="button button-primary" name="decision" value="approved">Approve reviewed text</button> ';
+                echo '<button type="submit" class="button" name="decision" value="rejected" formnovalidate>Reject reply</button>';
+                echo '</form>';
             }
             echo '</td></tr>';
         }
@@ -84,7 +86,17 @@ final class BH_Ask_Support_Replies_3 {
         $tables = BH_Ask_Support_Storage_3::tables();
         $reply = $wpdb->get_row($wpdb->prepare("SELECT question_id FROM `{$tables['replies']}` WHERE id=%d AND moderation_status='pending_review'", $id), ARRAY_A);
         if (!$reply) wp_die('Reply is no longer pending.', '', ['response' => 409]);
-        $ok = $wpdb->update($tables['replies'], ['moderation_status' => $decision], ['id' => $id, 'moderation_status' => 'pending_review'], ['%s'], ['%d','%s']);
+        $changes = ['moderation_status' => $decision];
+        $formats = ['%s'];
+        if ($decision === 'approved') {
+            if (($_POST['privacy_reviewed'] ?? '') !== '1') wp_die('Privacy review confirmation required.', '', ['response' => 400]);
+            $reviewed = isset($_POST['reviewed_body']) && is_string($_POST['reviewed_body'])
+                ? trim(sanitize_textarea_field(wp_unslash($_POST['reviewed_body']))) : '';
+            if (strlen($reviewed) < 10 || strlen($reviewed) > 5000) wp_die('Reviewed reply must be 10–5000 characters.', '', ['response' => 400]);
+            $changes['body'] = $reviewed;
+            $formats[] = '%s';
+        }
+        $ok = $wpdb->update($tables['replies'], $changes, ['id' => $id, 'moderation_status' => 'pending_review'], $formats, ['%d','%s']);
         if ($ok !== 1) wp_die('Review could not be saved.', '', ['response' => 409]);
         $wpdb->insert($tables['audit'], [
             'question_id' => (int) $reply['question_id'], 'actor_user_id' => get_current_user_id(),
