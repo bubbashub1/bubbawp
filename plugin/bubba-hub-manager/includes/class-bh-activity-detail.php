@@ -33,7 +33,7 @@ final class BH_Activity_Detail_3 {
         ), ARRAY_A );
         if ( ! $activity ) { return '<p>Activity not found or not published.</p>'; }
         $venues = $wpdb->get_results( $wpdb->prepare(
-            "SELECT v.id,v.name,v.address_line1,v.town,v.postcode,v.region FROM `{$av}` av
+            "SELECT v.id,v.name,v.address_line1,v.town,v.postcode,v.region,v.latitude,v.longitude FROM `{$av}` av
              INNER JOIN `{$v}` v ON v.id=av.venue_id WHERE av.activity_id=%d ORDER BY v.name ASC LIMIT 50", $id
         ), ARRAY_A );
         $sessions = $wpdb->get_results( $wpdb->prepare(
@@ -57,7 +57,7 @@ final class BH_Activity_Detail_3 {
           .bh3-activity-detail h1{margin:8px 0}.bh3-activity-detail .bh3-chips{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}
           .bh3-activity-detail .bh3-chip{background:#f2f7f4;border:1px solid #d8e6dc;border-radius:24px;padding:8px 13px}
           .bh3-activity-detail section{margin:26px 0}.bh3-activity-detail .bh3-venues{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
-          .bh3-activity-detail .bh3-venue{padding:18px;border:1px solid #d8e6dc;border-radius:12px}
+          .bh3-activity-detail .bh3-venue{padding:18px;border:1px solid #d8e6dc;border-radius:12px}.bh3-activity-detail .bh3-location-map{height:390px;border-radius:12px;border:1px solid #d8e6dc;margin:16px 0;z-index:0}
           .bh3-activity-detail .bh3-table-wrap{overflow-x:auto}.bh3-activity-detail table{width:100%;border-collapse:collapse;min-width:550px}
           .bh3-activity-detail th,.bh3-activity-detail td{padding:12px;border-bottom:1px solid #d8e6dc;text-align:left}
           .bh3-activity-detail .bh3-book{display:inline-block;padding:12px 18px;border-radius:10px;background:#175c46;color:#fff;text-decoration:none}
@@ -78,7 +78,25 @@ final class BH_Activity_Detail_3 {
                 echo '<div class="bh3-venue"><strong>' . esc_html( $venue['name'] ) . '</strong><p>' .
                     esc_html( implode( ', ', array_filter( array( $venue['address_line1'], $venue['town'], $venue['postcode'] ) ) ) ) . '</p></div>';
             }
-            echo '</div></section>';
+            echo '</div>';
+            $points = array();
+            foreach ( $venues as $venue ) {
+                if ( $venue['latitude'] === null || $venue['longitude'] === null ) { continue; }
+                $lat = (float) $venue['latitude']; $lng = (float) $venue['longitude'];
+                if ( $lat < -90 || $lat > 90 || $lng < -180 || $lng > 180 ) { continue; }
+                $points[] = array( 'lat' => $lat, 'lng' => $lng, 'name' => (string) $venue['name'], 'town' => (string) $venue['town'] );
+            }
+            if ( $points ) {
+                $map_id = 'bh3-activity-map-' . wp_unique_id();
+                $height = min( 750, max( 240, (int) ( $builder['map_height'] ?? 390 ) ) );
+                echo '<div id="' . esc_attr( $map_id ) . '" class="bh3-location-map" style="height:' . esc_attr( $height ) . 'px" role="region" aria-label="Activity venue map"></div>';
+                echo '<p><small>Map data © OpenStreetMap contributors</small></p>';
+                wp_enqueue_style( 'bh3-leaflet', 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css', array(), '1.9.4' );
+                wp_enqueue_script( 'bh3-leaflet', 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js', array(), '1.9.4', true );
+                $payload = array( 'id' => $map_id, 'points' => $points, 'zoom' => min( 18, max( 3, (int) ( $builder['map_zoom'] ?? 11 ) ) ) );
+                wp_add_inline_script( 'bh3-leaflet', '(function(){const c=' . wp_json_encode( $payload, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ) . ';function init(){const el=document.getElementById(c.id);if(!el||!window.L)return;const map=L.map(el,{scrollWheelZoom:false});L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"&copy; OpenStreetMap contributors"}).addTo(map);const bounds=[];c.points.forEach(p=>{const marker=L.marker([p.lat,p.lng]).addTo(map),box=document.createElement("div"),title=document.createElement("strong"),town=document.createElement("p");title.textContent=p.name;town.textContent=p.town;box.append(title,town);marker.bindPopup(box);bounds.push([p.lat,p.lng])});map.fitBounds(bounds,{padding:[30,30],maxZoom:c.zoom});setTimeout(()=>map.invalidateSize(),100)}if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init()})();', 'after' );
+            }
+            echo '</section>';
         }
         if ( $has( 'timetable' ) ) { echo '<section' . $order_style( 'timetable' ) . '><h2>Weekly timetable</h2>';
         if ( $sessions ) {
