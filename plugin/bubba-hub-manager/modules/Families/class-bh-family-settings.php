@@ -23,6 +23,7 @@ final class BH_Family_Settings_3 {
         $verified_family = !$admin_demo;
         $preferences = BH_Family_Preferences_3::read();
         $account = wp_get_current_user();
+        $details = BH_Family_Account_3::details();
         $notifications = BH_Family_Notifications_3::read();
         $privacy = BH_Family_Privacy_3::read();
         ob_start();
