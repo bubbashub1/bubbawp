@@ -42,14 +42,14 @@ final class BH_Membership_Registration_3 {
                     <thead>
                         <tr class="bh-membership-group-row">
                             <th class="bh-membership-corner" scope="col"></th>
-                            <th class="bh-membership-group bh-membership-family-group" colspan="2" scope="colgroup">Family</th>
-                            <th class="bh-membership-group bh-membership-leader-group" colspan="2" scope="colgroup">Leader</th>
+                            <th class="bh-membership-group bh-membership-free-group" colspan="2" scope="colgroup">Free</th>
+                            <th class="bh-membership-group bh-membership-pro-group" colspan="2" scope="colgroup">Pro</th>
                         </tr>
                         <tr class="bh-membership-plan-row">
                             <th class="bh-membership-feature-heading" scope="col">Membership</th>
-                            <th scope="col">Free</th>
+                            <th scope="col">Family</th>
+                            <th scope="col">Leader</th>
                             <th scope="col" class="bh-membership-pro-heading">Family Pro</th>
-                            <th scope="col">Free</th>
                             <th scope="col" class="bh-membership-pro-heading">Leader Pro</th>
                         </tr>
                     </thead>
@@ -57,12 +57,13 @@ final class BH_Membership_Registration_3 {
                         <tr class="bh-membership-price-row">
                             <th scope="row">Annual price</th>
                             <td><strong>£0</strong><span class="bh-membership-period">Always free</span></td>
-                            <td class="bh-membership-pro-cell"><strong>£20</strong><span class="bh-membership-period">Per year</span></td>
                             <td><strong>£0</strong><span class="bh-membership-period">Always free</span></td>
+                            <td class="bh-membership-pro-cell"><strong>£20</strong><span class="bh-membership-period">Per year</span></td>
                             <td class="bh-membership-pro-cell"><strong>£70</strong><span class="bh-membership-period">Per year</span></td>
                         </tr>
                         <tr class="bh-membership-action-row">
                             <th scope="row">Get started</th>
+                            <td><a class="bh-membership-choose bh-membership-choose-free" href="<?php echo $free_url; ?>">Join free</a></td>
                             <td><a class="bh-membership-choose bh-membership-choose-free" href="<?php echo $free_url; ?>">Join free</a></td>
                             <td class="bh-membership-pro-cell">
                                 <?php
@@ -73,7 +74,6 @@ final class BH_Membership_Registration_3 {
                                 }
                                 ?>
                             </td>
-                            <td><a class="bh-membership-choose bh-membership-choose-free" href="<?php echo $free_url; ?>">Join free</a></td>
                             <td class="bh-membership-pro-cell">
                                 <?php
                                 if ( $swpm_ready && $leader_button_id ) {
@@ -94,8 +94,8 @@ final class BH_Membership_Registration_3 {
                             ?>
                             <tr class="bh-membership-benefit-placeholder" aria-hidden="true">
                                 <th scope="row"></th>
-                                <td></td><td class="bh-membership-pro-cell"></td>
-                                <td></td><td class="bh-membership-pro-cell"></td>
+                                <td></td><td></td>
+                                <td class="bh-membership-pro-cell"></td><td class="bh-membership-pro-cell"></td>
                             </tr>
                         <?php endfor; ?>
                     </tbody>
