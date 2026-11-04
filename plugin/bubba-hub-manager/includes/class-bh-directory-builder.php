@@ -43,7 +43,7 @@ final class BH_Directory_Builder_3 {
         $raw_order = isset( $_POST['detail_order'] ) && is_scalar( $_POST['detail_order'] ) ? explode( ',', sanitize_text_field( wp_unslash( $_POST['detail_order'] ) ) ) : array();
         $order = array_values( array_unique( array_intersect( $raw_order, $allowed_sections ) ) );
         $order = array_merge( $order, array_values( array_diff( $allowed_sections, $order ) ) );
-        $search = array_values( array_intersect( array( 'keyword', 'category', 'age', 'day', 'region', 'town', 'free', 'term_time', 'near_me' ), array_map( 'sanitize_key', (array) wp_unslash( $_POST['search_fields'] ?? array() ) ) ) );
+        $search = array_values( array_intersect( array( 'keyword', 'category', 'age', 'day', 'region', 'town', 'price', 'free', 'term_time', 'near_me' ), array_map( 'sanitize_key', (array) wp_unslash( $_POST['search_fields'] ?? array() ) ) ) );
         $lat = filter_var( wp_unslash( $_POST['map_lat'] ?? '' ), FILTER_VALIDATE_FLOAT );
         $lng = filter_var( wp_unslash( $_POST['map_lng'] ?? '' ), FILTER_VALIDATE_FLOAT );
         if ( $lat === false || $lng === false || $lat < -90 || $lat > 90 || $lng < -180 || $lng > 180 ) {
@@ -208,8 +208,8 @@ final class BH_Directory_Builder_3 {
             echo '<div class="bh3-preview-section" data-preview-key="' . esc_attr( $key ) . '"><strong>' . esc_html( $names[ $key ] ) . '</strong>' . esc_html( $hint[ $key ] ) . '</div>';
         }
         echo '</div><p class="bh3-preview-caption">Schematic preview. Uses sample labels, not a real activity. Gallery and accessibility blocks are not yet rendered on public pages.</p></div><input type="hidden" name="detail_order" id="bh3-detail-order" value="' . esc_attr( implode( ',', $order ) ) . '"><div class="settings-grid"><label>Page width<select name="listing_layout"><option value="sidebar" ' . selected( $s['listing_layout'], 'sidebar', false ) . '>Content with sidebar</option><option value="full_width" ' . selected( $s['listing_layout'], 'full_width', false ) . '>Full width</option></select></label></div></section>';
-        echo '<section class="panel" data-builder-panel="search" hidden><h2>Directory search builder</h2><p>Choose the filters shown on the staging directory. Changes take effect after saving. Postcode searches match postcode prefixes; distance-based Near Me search is a separate upcoming feature.</p><div class="checks">';
-        foreach ( array( 'keyword' => 'Keyword', 'category' => 'Category', 'age' => 'Child age', 'day' => 'Day of week', 'region' => 'Region', 'town' => 'Town', 'free' => 'Free only', 'term_time' => 'Term time', 'near_me' => 'Near me / postcode' ) as $key => $label ) {
+        echo '<section class="panel" data-builder-panel="search" hidden><h2>Directory search builder</h2><p>Choose the filters shown on the staging directory. Changes take effect after saving. Price filters use the starting price; Near Me supports a distance radius when location is available.</p><div class="checks">';
+        foreach ( array( 'keyword' => 'Keyword', 'category' => 'Category', 'age' => 'Child age', 'day' => 'Day of week', 'region' => 'Region', 'town' => 'Town', 'price' => 'Maximum price', 'free' => 'Free only', 'term_time' => 'Term time', 'near_me' => 'Near me / postcode' ) as $key => $label ) {
             echo '<label><input type="checkbox" name="search_fields[]" value="' . esc_attr( $key ) . '" ' . checked( in_array( $key, $s['search_fields'], true ), true, false ) . '>' . esc_html( $label ) . '</label>';
         }
         echo '</div></section>';
