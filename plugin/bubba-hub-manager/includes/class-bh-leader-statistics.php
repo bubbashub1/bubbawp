@@ -32,6 +32,27 @@ final class BH_Leader_Statistics_3 {
         $recent = $wpdb->get_results( $wpdb->prepare(
             "SELECT id,title,status,category,description,age_min_months,age_max_months,price_from,is_free,booking_url,image_id FROM `{$activities}` WHERE organiser_id=%d ORDER BY id DESC LIMIT 8", $organiser_id
         ), ARRAY_A );
+        // Only inspect venue/session relationships when the schema is present.
+        $links_table = $wpdb->prefix . 'activity_venues';
+        $sessions_table = $wpdb->prefix . 'sessions';
+        $links_ready = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $links_table ) ) ) === $links_table;
+        $sessions_ready = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $sessions_table ) ) ) === $sessions_table;
+        $venue_counts = array(); $session_counts = array();
+        $recent_ids = array_map( 'absint', array_column( (array) $recent, 'id' ) );
+        if ( $recent_ids && $links_ready ) {
+            $placeholders = implode( ',', array_fill( 0, count( $recent_ids ), '%d' ) );
+            $rows = $wpdb->get_results( $wpdb->prepare(
+                "SELECT activity_id,COUNT(*) AS total FROM `{$links_table}` WHERE activity_id IN ({$placeholders}) GROUP BY activity_id", $recent_ids
+            ), ARRAY_A );
+            foreach ( (array) $rows as $row ) $venue_counts[ (int) $row['activity_id'] ] = (int) $row['total'];
+        }
+        if ( $recent_ids && $sessions_ready ) {
+            $placeholders = implode( ',', array_fill( 0, count( $recent_ids ), '%d' ) );
+            $rows = $wpdb->get_results( $wpdb->prepare(
+                "SELECT activity_id,COUNT(*) AS total FROM `{$sessions_table}` WHERE activity_id IN ({$placeholders}) GROUP BY activity_id", $recent_ids
+            ), ARRAY_A );
+            foreach ( (array) $rows as $row ) $session_counts[ (int) $row['activity_id'] ] = (int) $row['total'];
+        }
         // A short, actionable checklist, not an invented engagement metric.
         // Only fields supported by the current draft editor are assessed.
         $checks = array(
@@ -52,7 +73,10 @@ final class BH_Leader_Statistics_3 {
             if ( ! (int) $item['is_free'] && ( $item['price_from'] === null || $item['price_from'] === '' ) ) $missing[] = $checks['price'];
             if ( ! absint( $item['image_id'] ) ) $missing[] = $checks['image'];
             // External booking is optional, so never count it as incomplete.
-            $improvements[] = array( 'id' => absint( $item['id'] ), 'title' => $item['title'], 'missing' => $missing );
+            $activity_id = absint( $item['id'] );
+            if ( $links_ready && empty( $venue_counts[ $activity_id ] ) ) $missing[] = 'Assign a venue';
+            if ( $sessions_ready && empty( $session_counts[ $activity_id ] ) ) $missing[] = 'Add a timetable session';
+            $improvements[] = array( 'id' => $activity_id, 'title' => $item['title'], 'missing' => $missing );
         }
         ob_start(); ?>
         <section class="bh-leader-statistics">
@@ -92,12 +116,16 @@ final class BH_Leader_Statistics_3 {
                       <small><?php echo esc_html( implode( ' · ', $entry['missing'] ) ); ?></small>
                     <?php endif; ?>
                   </div>
-                  <a href="<?php echo esc_url( add_query_arg( 'activity_id', $entry['id'], home_url( '/leader/edit-activity/' ) ) ); ?>">Improve listing</a>
+                  <div class="bh-leader-completeness-actions">
+                    <a href="<?php echo esc_url( add_query_arg( 'activity_id', $entry['id'], home_url( '/leader/edit-activity/' ) ) ); ?>">Details</a>
+                    <a href="<?php echo esc_url( add_query_arg( 'activity_id', $entry['id'], home_url( '/leader/venues/' ) ) ); ?>">Venues</a>
+                    <a href="<?php echo esc_url( add_query_arg( 'activity_id', $entry['id'], home_url( '/leader/timetable/' ) ) ); ?>">Timetable</a>
+                  </div>
                 </li>
               <?php endforeach; ?>
               </ul>
             <?php endif; ?>
-            <p class="bh-leader-statistics-note">This checklist covers only the latest eight activities and does not assess venue or timetable completeness.</p>
+            <p class="bh-leader-statistics-note">This checklist covers only the latest eight activities. Venue and timetable checks are shown when their tables are available; it does not assess schedule quality or availability.</p>
           </div>
           <p class="bh-leader-statistics-note">Activity views, saves, bookings and revenue are not shown until their data sources have been verified. No tracking is enabled by this page.</p>
         </section>
