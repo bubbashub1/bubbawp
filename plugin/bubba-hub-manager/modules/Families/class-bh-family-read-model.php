@@ -36,6 +36,44 @@ final class BH_Family_Read_Model_3 {
         return $out;
     }
     /**
+     * Link only when an exact legacy slug matches one published WordPress activity.
+     * No assumptions about numeric IDs and no links to drafts.
+     */
+    public static function activity_links($ids) {
+        if (BH_Family_Identity_3::current_legacy_id() < 1) return array();
+        if (!defined('BH3_FAMILY_ACTIVITY_LINKS') || BH3_FAMILY_ACTIVITY_LINKS !== true) return array();
+        if (wp_parse_url(home_url(), PHP_URL_HOST) !== 'staging.bubbahub.co.uk') return array();
+        $ids = is_array($ids) ? array_slice(array_values(array_unique(array_filter(array_map('absint', $ids)))), 0, 200) : array();
+        if (!$ids) return array();
+        global $wpdb;
+        $new_table = $wpdb->prefix . 'activities';
+        foreach (array('bh_activities', $new_table) as $table) {
+            if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($table))) !== $table) return array();
+        }
+        $placeholders = implode(',', array_fill(0, count($ids), '%d'));
+        $sql = "SELECT id, slug FROM bh_activities WHERE id IN ({$placeholders}) AND status = 'published'";
+        $legacy = $wpdb->get_results($wpdb->prepare($sql, $ids), ARRAY_A);
+        if (!is_array($legacy) || !$legacy) return array();
+        $slugs = array_values(array_unique(array_filter(array_map(static function($row) {
+            return isset($row['slug']) ? (string) $row['slug'] : '';
+        }, $legacy))));
+        if (!$slugs) return array();
+        $slug_placeholders = implode(',', array_fill(0, count($slugs), '%s'));
+        $sql = "SELECT slug, COUNT(*) AS matches FROM `{$new_table}` WHERE slug IN ({$slug_placeholders}) AND status IN ('published','publish') GROUP BY slug";
+        $matches = $wpdb->get_results($wpdb->prepare($sql, $slugs), ARRAY_A);
+        $unique = array();
+        foreach ((array) $matches as $row) if ((int) $row['matches'] === 1) $unique[(string) $row['slug']] = true;
+        $links = array();
+        foreach ($legacy as $row) {
+            $slug = (string) $row['slug'];
+            if (!empty($unique[$slug]) && sanitize_title($slug) === $slug) {
+                $links[(int) $row['id']] = home_url('/activity/' . rawurlencode($slug) . '/');
+            }
+        }
+        return $links;
+    }
+
+    /**
      * Resolve legacy saved/planned activity names from their original ID space.
      * New WordPress activity IDs are deliberately not assumed to match.
      */
