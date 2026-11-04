@@ -26,15 +26,39 @@ final class BH_My_Listings_3 {
         if ( ! $name ) { echo '<p>Linked organiser was not found. Contact an administrator.</p></div>'; return; }
         echo '<p>Organiser: <strong>' . esc_html( $name ) . '</strong></p>';
         echo '<p>Edit your own draft listings. Publishing and deletion remain administrator-controlled.</p>';
-        $rows = $wpdb->get_results( $wpdb->prepare(
-            "SELECT id, title, status, category FROM `{$activities}` WHERE organiser_id = %d ORDER BY id DESC LIMIT 100", $organiser_id
-        ), ARRAY_A );
+        $search = sanitize_text_field( wp_unslash( $_GET['s'] ?? '' ) );
+        $status = sanitize_key( wp_unslash( $_GET['listing_status'] ?? '' ) );
+        if ( ! in_array( $status, array( '', 'draft', 'published', 'pending', 'archived' ), true ) ) { $status = ''; }
+        $page_num = max( 1, absint( $_GET['paged'] ?? 1 ) );
+        $where = 'organiser_id = %d';
+        $args = array( $organiser_id );
+        if ( $search !== '' ) { $where .= ' AND title LIKE %s'; $args[] = '%' . $wpdb->esc_like( $search ) . '%'; }
+        if ( $status !== '' ) { $where .= ' AND status = %s'; $args[] = $status; }
+        $total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM `{$activities}` WHERE {$where}", $args ) );
+        $pages = max( 1, (int) ceil( $total / 20 ) );
+        $page_num = min( $page_num, $pages );
+        $rows = $wpdb->get_results( $wpdb->prepare( "SELECT id,title,status,category FROM `{$activities}` WHERE {$where} ORDER BY id DESC LIMIT %d OFFSET %d", array_merge( $args, array( 20, ( $page_num - 1 ) * 20 ) ) ), ARRAY_A );
+        echo '<form method="get" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:18px 0"><input type="hidden" name="page" value="bh3-my-listings">';
+        echo '<label class="screen-reader-text" for="bh3-listing-search">Search activities</label><input id="bh3-listing-search" type="search" name="s" placeholder="Search my activities" value="' . esc_attr( $search ) . '">';
+        echo '<label class="screen-reader-text" for="bh3-listing-status">Listing status</label><select id="bh3-listing-status" name="listing_status">';
+        foreach ( array( '' => 'All statuses', 'draft' => 'Draft', 'published' => 'Published', 'pending' => 'Pending', 'archived' => 'Archived' ) as $value => $label ) {
+            echo '<option value="' . esc_attr( $value ) . '"' . selected( $status, $value, false ) . '>' . esc_html( $label ) . '</option>';
+        }
+        echo '</select><button class="button button-primary" type="submit">Filter listings</button> <a class="button" href="' . esc_url( admin_url( 'admin.php?page=bh3-my-listings' ) ) . '">Clear</a></form>';
+        echo '<p aria-live="polite">' . esc_html( number_format_i18n( $total ) ) . ' matching activities</p>';
         echo '<table class="widefat striped"><thead><tr><th>Activity</th><th>Category</th><th>Status</th><th>Action</th></tr></thead><tbody>';
         foreach ( $rows as $row ) {
             echo '<tr><td>' . esc_html( $row['title'] ) . '</td><td>' . esc_html( (string) $row['category'] ) .
                 '</td><td><span class="bh3-status">' . esc_html( $row['status'] ) . '</span></td><td>' . ( $row['status'] === 'draft' ? '<a class="button" href="' . esc_url( add_query_arg( array( 'page' => 'bh3-leader-edit', 'activity_id' => absint( $row['id'] ) ), admin_url( 'admin.php' ) ) ) . '">Edit</a>' : 'View only' ) . '</td></tr>';
         }
-        if ( ! $rows ) { echo '<tr><td colspan="4">No activities assigned to this organiser.</td></tr>'; }
-        echo '</tbody></table></div>';
+        if ( ! $rows ) { echo '<tr><td colspan="4">No matching activities.</td></tr>'; }
+        echo '</tbody></table>';
+        if ( $pages > 1 ) {
+            echo '<nav aria-label="Listing pages" style="margin:18px 0">';
+            echo wp_kses_post( paginate_links( array( 'base' => add_query_arg( array( 'page' => 'bh3-my-listings', 's' => $search, 'listing_status' => $status, 'paged' => '%#%' ), admin_url( 'admin.php' ) ), 'format' => '', 'current' => $page_num, 'total' => $pages, 'prev_text' => '← Previous', 'next_text' => 'Next →' ) ) );
+            echo '</nav>';
+        }
+        echo '</div>';
+
     }
 }
