@@ -65,7 +65,7 @@ final class BH_Activity_Detail_3 {
         if ( $has( 'hero' ) ) { echo '<header' . $order_style( 'hero' ) . '><div>' . esc_html( (string) $activity['category'] ) . '</div><h1>' . esc_html( $activity['title'] ) . '</h1>';
         if ( $activity['organiser_name'] ) { echo '<p>By ' . esc_html( $activity['organiser_name'] ) . '</p>'; }
         echo '</header>'; } else { echo '<h1>' . esc_html( $activity['title'] ) . '</h1>'; }
-        echo '<div class="bh3-chips" style="order:0">';
+        echo '<div class="bh3-chips" style="order:1.5">';
         echo '<span class="bh3-chip">' . ( (int) $activity['is_free'] ? 'Free' : ( $activity['price_from'] !== null ? 'From £' . esc_html( number_format( (float) $activity['price_from'], 2 ) ) : 'Price on enquiry' ) ) . '</span>';
         if ( $activity['age_min_months'] !== null || $activity['age_max_months'] !== null ) {
             echo '<span class="bh3-chip">Age: ' . esc_html( (string) ( $activity['age_min_months'] ?? '0' ) ) . '–' . esc_html( (string) ( $activity['age_max_months'] ?? 'any' ) ) . ' months</span>';
