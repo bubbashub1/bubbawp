@@ -4,8 +4,8 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 final class BH_Workstream_Settings_3 {
     public static function register() {
-        add_submenu_page('bubba-hub-3-status', 'Family Hub settings', 'Family Hub', 'manage_options', 'bh3-family-settings', array(__CLASS__, 'family'));
-        add_submenu_page('bubba-hub-3-status', 'Leader Portal settings', 'Leader Portal', 'manage_options', 'bh3-leader-settings', array(__CLASS__, 'leader'));
+        add_menu_page('Family Hub settings', 'Family Hub', 'manage_options', 'bh3-family-settings', array(__CLASS__, 'family'), 'dashicons-groups', 27);
+        add_menu_page('Leader Portal settings', 'Leader Portal', 'manage_options', 'bh3-leader-settings', array(__CLASS__, 'leader'), 'dashicons-businessperson', 28);
     }
 
     private static function header($title, $description) {
