@@ -17,6 +17,7 @@ final class BH_Leader_Frontend_Editor_3 {
         add_shortcode( 'bh_leader_edit_activity', array( __CLASS__, 'render' ) );
         add_action( 'admin_post_bh3_leader_frontend_save', array( __CLASS__, 'save' ) );
         add_action( 'admin_post_bh3_leader_image_upload', array( __CLASS__, 'upload_image' ) );
+        add_action( 'admin_post_bh3_leader_image_remove', array( __CLASS__, 'remove_image' ) );
     }
     public static function render() {
         if ( ! self::enabled() ) { return '<p>Please sign in to edit your draft activity.</p>'; }
@@ -39,7 +40,15 @@ final class BH_Leader_Frontend_Editor_3 {
         .bh-leader-edit input:not([type=checkbox]),.bh-leader-edit textarea{width:100%;max-width:680px;padding:11px;border:1px solid #b8c9bd;border-radius:9px;font:inherit}
         .bh-leader-edit input:focus-visible,.bh-leader-edit textarea:focus-visible,.bh-leader-edit a:focus-visible,.bh-leader-edit button:focus-visible{outline:3px solid #245e4a;outline-offset:2px}
         .bh-leader-edit .bh-edit-success{padding:12px 16px;border-left:4px solid #245e4a;background:#f0f6f0}
-        .bh-leader-edit .bh-edit-hint{font-size:.92em;color:#53665e}
+.bh-leader-edit .bh-edit-hint{font-size:.92em;color:#53665e}
+        .bh-leader-edit .bh-image-card{padding:18px;border:1px solid #dbe5df;border-radius:14px;background:#f8fbf9;margin:20px 0}
+        .bh-leader-edit .bh-image-layout{display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr);gap:20px;align-items:start}
+        .bh-leader-edit .bh-image-thumb{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;background:#e7eee9}
+        .bh-leader-edit .bh-image-card form{margin:0 0 12px}
+        .bh-leader-edit .bh-image-card input[type=file]{font-size:14px;max-width:100%}
+        .bh-leader-edit .bh-image-card button{background:#245e4a;color:#fff;border:0;border-radius:9px;padding:10px 16px;cursor:pointer;font:inherit;font-weight:600;margin-top:10px}
+        .bh-leader-edit .bh-image-card .bh-image-remove{background:#fff;color:#7a2f2f;border:1px solid #cbaaaa}
+        @media(max-width:650px){.bh-leader-edit .bh-image-layout{grid-template-columns:1fr}.bh-leader-edit .bh-image-thumb{max-width:260px}}
         @media(max-width:650px){.bh-leader-edit{padding:18px!important;margin:16px auto!important}}
         </style>
         <h1>Edit <?php echo esc_html( $row['title'] ); ?></h1>
@@ -50,22 +59,38 @@ final class BH_Leader_Frontend_Editor_3 {
         </nav>
         <?php if ( isset( $_GET['saved'] ) && $_GET['saved'] === '1' ) : ?><p class="bh-edit-success" role="status">Draft saved successfully.</p><?php endif; ?>
         <p>Draft details only. Publishing and deletion remain with the Bubba Hub team.</p>
-        <section class="bh-edit-image-preview" aria-label="Current listing image">
-            <h2>Listing image</h2>
-            <?php if ( ! empty( $row['image_id'] ) && wp_attachment_is_image( absint( $row['image_id'] ) ) ) : ?>
-                <?php echo wp_get_attachment_image( absint( $row['image_id'] ), 'medium_large', false, array( 'style' => 'max-width:100%;height:auto;border-radius:10px' ) ); ?>
-            <?php else : ?>
-                <p class="bh-edit-hint">No listing image has been assigned yet.</p>
-            <?php endif; ?>
+        <section class="bh-image-card" aria-label="Listing image">
+          <h2>Listing image</h2>
+          <?php if ( isset( $_GET['image_saved'] ) ) : ?><p class="bh-edit-success" role="status">Listing image updated.</p><?php endif; ?>
+          <?php if ( isset( $_GET['image_removed'] ) ) : ?><p class="bh-edit-success" role="status">Listing image removed.</p><?php endif; ?>
+          <div class="bh-image-layout">
+            <div>
+              <?php if ( ! empty( $row['image_id'] ) && wp_attachment_is_image( absint( $row['image_id'] ) ) ) : ?>
+                <?php echo wp_get_attachment_image( absint( $row['image_id'] ), 'medium', false, array( 'class' => 'bh-image-thumb', 'alt' => 'Current listing image' ) ); ?>
+              <?php else : ?><div class="bh-image-thumb" role="img" aria-label="No listing image"></div><?php endif; ?>
+            </div>
+            <div>
+              <p class="bh-edit-hint">Choose a clear photo for your activity. JPG, PNG or WebP, maximum 5 MB.</p>
+              <form method="post" enctype="multipart/form-data" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+                <input type="hidden" name="action" value="bh3_leader_image_upload">
+                <input type="hidden" name="activity_id" value="<?php echo esc_attr( $id ); ?>">
+                <?php wp_nonce_field( 'bh3_leader_image_' . $id ); ?>
+                <label for="bh-leader-image-file">Choose a new image</label>
+                <input id="bh-leader-image-file" name="bh_leader_image" type="file" accept="image/jpeg,image/png,image/webp" required>
+                <button type="submit"><?php echo ! empty( $row['image_id'] ) ? 'Replace image' : 'Upload image'; ?></button>
+              </form>
+              <?php if ( ! empty( $row['image_id'] ) ) : ?>
+                <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+                  <input type="hidden" name="action" value="bh3_leader_image_remove">
+                  <input type="hidden" name="activity_id" value="<?php echo esc_attr( $id ); ?>">
+                  <?php wp_nonce_field( 'bh3_leader_remove_image_' . $id ); ?>
+                  <button class="bh-image-remove" type="submit">Remove from listing</button>
+                </form>
+              <?php endif; ?>
+              <p class="bh-edit-hint">Replacing or removing an image does not delete older photos from the Media Library.</p>
+            </div>
+          </div>
         </section>
-        <form method="post" enctype="multipart/form-data" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-            <input type="hidden" name="action" value="bh3_leader_image_upload">
-            <input type="hidden" name="activity_id" value="<?php echo esc_attr( $id ); ?>">
-            <?php wp_nonce_field( 'bh3_leader_image_' . $id ); ?>
-            <label for="bh-leader-image-file">Upload a JPG, PNG or WebP image (maximum 5 MB)</label>
-            <input id="bh-leader-image-file" name="bh_leader_image" type="file" accept="image/jpeg,image/png,image/webp" required>
-            <button type="submit">Upload listing image</button>
-        </form>
         <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
             <input type="hidden" name="action" value="bh3_leader_frontend_save">
             <input type="hidden" name="activity_id" value="<?php echo esc_attr( $id ); ?>">
@@ -91,6 +116,20 @@ final class BH_Leader_Frontend_Editor_3 {
             <button type="submit" style="background:#245e4a;color:#fff;border:0;border-radius:8px;padding:12px 20px;cursor:pointer">Save draft</button>
         </form></section>
         <?php return ob_get_clean();
+    }
+    public static function remove_image() {
+        $id = absint( $_POST['activity_id'] ?? 0 );
+        check_admin_referer( 'bh3_leader_remove_image_' . $id );
+        if ( ! self::draft( $id ) ) { wp_die( 'Draft access denied.', '', array( 'response' => 403 ) ); }
+        global $wpdb;
+        $owner = absint( get_user_meta( get_current_user_id(), 'bh3_organiser_id', true ) );
+        $result = $wpdb->update( $wpdb->prefix . 'activities',
+            array( 'image_id' => null, 'updated_at' => current_time( 'mysql', true ) ),
+            array( 'id' => $id, 'organiser_id' => $owner, 'status' => 'draft' ),
+            array( '%d', '%s' ), array( '%d', '%d', '%s' ) );
+        if ( $result === false ) { wp_die( 'Could not remove listing image.', '', array( 'response' => 500 ) ); }
+        wp_safe_redirect( add_query_arg( array( 'activity_id' => $id, 'image_removed' => 1 ), home_url( '/leader/edit-activity/' ) ) );
+        exit;
     }
     public static function upload_image() {
         $id = absint( $_POST['activity_id'] ?? 0 );
@@ -118,7 +157,7 @@ final class BH_Leader_Frontend_Editor_3 {
             wp_delete_attachment( $image, true );
             wp_die( 'Unable to attach image to draft.', '', array( 'response' => 500 ) );
         }
-        wp_safe_redirect( add_query_arg( array( 'activity_id' => $id, 'saved' => 1 ), home_url( '/leader/edit-activity/' ) ) );
+        wp_safe_redirect( add_query_arg( array( 'activity_id' => $id, 'image_saved' => 1 ), home_url( '/leader/edit-activity/' ) ) );
         exit;
     }
     public static function save() {
