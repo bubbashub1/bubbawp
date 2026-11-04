@@ -9,6 +9,8 @@ final class BH_Family_Native_Profiles_3 {
         add_action('admin_post_bh3_native_family_profile',array(__CLASS__,'save'));
         add_action('admin_post_bh3_native_family_update',array(__CLASS__,'update'));
         add_action('admin_post_bh3_native_family_delete',array(__CLASS__,'delete'));
+        add_action('admin_post_bh3_family_reminder_save',array(__CLASS__,'save_reminder'));
+        add_action('admin_post_bh3_family_reminder_delete',array(__CLASS__,'delete_reminder'));
         add_filter('the_content',array(__CLASS__,'replace_family_profile_page'),30);
         add_action('admin_init',array(__CLASS__,'maybe_add_gender_column'));
     }
@@ -92,7 +94,7 @@ final class BH_Family_Native_Profiles_3 {
         $records=$wpdb->get_results($wpdb->prepare("SELECT id,profile_type,display_name,profile_date,gender FROM `{$table}` WHERE user_id=%d ORDER BY id DESC LIMIT 70",get_current_user_id()),ARRAY_A);
         if (!is_array($records)) return '<p>Unable to load profiles.</p>';
         ob_start(); ?>
-        <style>.bh3-family-profile-manager{display:block;width:100%;max-width:100%;min-width:0}.bh3-family-profile-manager>div{display:grid;grid-template-columns:minmax(190px,230px) minmax(0,1fr);gap:26px;align-items:start;width:100%;min-width:0}.bh3-family-profile-manager>div>section{min-width:0;width:100%;box-sizing:border-box}.bh3-family-profile-manager>div>nav{min-width:0;box-sizing:border-box}.bh3-family-profile-manager nav,.bh3-family-profile-manager section{background:#fff;border:1px solid #dce8e1;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(22,62,51,.05)}.bh3-family-profile-manager nav a{display:block;padding:10px 12px;border-radius:10px;color:#245b49;text-decoration:none}.bh3-family-profile-manager nav a[aria-current=page]{background:#e8f2ed;font-weight:600}.bh3-family-profile-manager h2,.bh3-family-profile-manager h3{color:#174f40}.bh3-family-profile-manager .bh3-family-profile-entry{padding:16px;margin:12px 0;border:1px solid #e0e9e3;border-radius:14px;background:#fbfdfb}.bh3-family-profile-manager form.bh3-family-profile-add{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding:20px;border:1px solid #dce8e1;border-radius:16px;background:#fbfdfb}.bh3-family-profile-manager form p{margin:0;min-width:0}.bh3-family-profile-manager label{display:flex;flex-direction:column;gap:7px;font-weight:600;color:#244b40}.bh3-family-profile-manager input,.bh3-family-profile-manager select{width:100%;min-height:46px;padding:10px 12px;border:1px solid #b8cec1;border-radius:10px;background:#fff;font:inherit;box-sizing:border-box}.bh3-family-profile-manager button{border:0;border-radius:10px;background:#205b49;color:#fff;padding:12px 18px;font:inherit;font-weight:600;cursor:pointer;min-height:46px;margin-top:8px}.bh3-family-profile-manager .bh3-family__edit button{align-self:end}.bh3-family-profile-manager .bh3-family-profile-entry>form:not(.bh3-family__edit){margin-top:12px}.bh3-family-profile-manager .bh3-family-profile-entry>form:not(.bh3-family__edit) button{margin-top:0}.bh3-family-profile-manager .bh3-family-profile-add-top{margin:0 0 28px;padding:18px 20px;border:1px solid #dce8e1;border-radius:16px;background:#fbfdfb}.bh3-family-profile-manager .bh3-family-profile-add-top h3{margin-top:0}.bh3-family-profile-manager .bh3-family-profile-entry .bh3-family__edit{row-gap:16px}.bh3-family-profile-manager .bh3-family-profile-add p:last-child{grid-column:1/-1}.bh3-family-profile-manager .bh3-family__edit{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:end}@media(max-width:720px){.bh3-family-profile-manager>div{grid-template-columns:1fr}.bh3-family-profile-manager form.bh3-family-profile-add,.bh3-family-profile-manager .bh3-family__edit{grid-template-columns:1fr}.bh3-family-profile-manager .bh3-family-profile-add p:last-child{grid-column:auto}}</style>
+        <style>.bh3-profile-reminders{margin:12px 0 4px;padding:12px;border-radius:12px}.bh3-profile-reminders--school{background:#e8f2ec;color:#205b49}.bh3-profile-reminders--pregnancy{background:#fff0df;color:#86552f}.bh3-profile-reminder{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid currentColor}.bh3-profile-reminder span{font-size:13px;opacity:.85}.bh3-profile-reminder button{background:transparent!important;color:inherit!important;padding:2px 8px!important;min-height:30px!important}.bh3-profile-reminder-add{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:10px;align-items:end;margin-top:10px}.bh3-profile-reminder-add label{font-size:12px}.bh3-profile-reminder-add button{white-space:nowrap}.bh3-profile-reminder-add input{min-width:0}@media(max-width:720px){.bh3-profile-reminder-add{grid-template-columns:1fr}.bh3-profile-reminder-add button{width:100%}}</style><style>.bh3-family-profile-manager{display:block;width:100%;max-width:100%;min-width:0}.bh3-family-profile-manager>div{display:grid;grid-template-columns:minmax(190px,230px) minmax(0,1fr);gap:26px;align-items:start;width:100%;min-width:0}.bh3-family-profile-manager>div>section{min-width:0;width:100%;box-sizing:border-box}.bh3-family-profile-manager>div>nav{min-width:0;box-sizing:border-box}.bh3-family-profile-manager nav,.bh3-family-profile-manager section{background:#fff;border:1px solid #dce8e1;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(22,62,51,.05)}.bh3-family-profile-manager nav a{display:block;padding:10px 12px;border-radius:10px;color:#245b49;text-decoration:none}.bh3-family-profile-manager nav a[aria-current=page]{background:#e8f2ed;font-weight:600}.bh3-family-profile-manager h2,.bh3-family-profile-manager h3{color:#174f40}.bh3-family-profile-manager .bh3-family-profile-entry{padding:16px;margin:12px 0;border:1px solid #e0e9e3;border-radius:14px;background:#fbfdfb}.bh3-family-profile-manager form.bh3-family-profile-add{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding:20px;border:1px solid #dce8e1;border-radius:16px;background:#fbfdfb}.bh3-family-profile-manager form p{margin:0;min-width:0}.bh3-family-profile-manager label{display:flex;flex-direction:column;gap:7px;font-weight:600;color:#244b40}.bh3-family-profile-manager input,.bh3-family-profile-manager select{width:100%;min-height:46px;padding:10px 12px;border:1px solid #b8cec1;border-radius:10px;background:#fff;font:inherit;box-sizing:border-box}.bh3-family-profile-manager button{border:0;border-radius:10px;background:#205b49;color:#fff;padding:12px 18px;font:inherit;font-weight:600;cursor:pointer;min-height:46px;margin-top:8px}.bh3-family-profile-manager .bh3-family__edit button{align-self:end}.bh3-family-profile-manager .bh3-family-profile-entry>form:not(.bh3-family__edit){margin-top:12px}.bh3-family-profile-manager .bh3-family-profile-entry>form:not(.bh3-family__edit) button{margin-top:0}.bh3-family-profile-manager .bh3-family-profile-add-top{margin:0 0 28px;padding:18px 20px;border:1px solid #dce8e1;border-radius:16px;background:#fbfdfb}.bh3-family-profile-manager .bh3-family-profile-add-top h3{margin-top:0}.bh3-family-profile-manager .bh3-family-profile-entry .bh3-family__edit{row-gap:16px}.bh3-family-profile-manager .bh3-family-profile-add p:last-child{grid-column:1/-1}.bh3-family-profile-manager .bh3-family__edit{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:end}@media(max-width:720px){.bh3-family-profile-manager>div{grid-template-columns:1fr}.bh3-family-profile-manager form.bh3-family-profile-add,.bh3-family-profile-manager .bh3-family__edit{grid-template-columns:1fr}.bh3-family-profile-manager .bh3-family-profile-add p:last-child{grid-column:auto}}</style>
         <div class="bh3-family-profile-preview bh3-family-profile-manager">
           <div>
             <nav aria-label="My Hub sections"><strong>My Hub</strong>
@@ -122,6 +124,72 @@ final class BH_Family_Native_Profiles_3 {
           </div>
         </div>
         <?php return ob_get_clean();
+    }
+    /** Render profile-specific school or pregnancy reminders. */
+    public static function render_reminders($profile_id,$profile_type) {
+        if (!self::allowed()) return '';
+        global $wpdb;
+        $table=$wpdb->prefix.'bh_family_reminders';
+        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s',$wpdb->esc_like($table)))!==$table) return '<p class="bh3-reminder-note">Reminders will be available after the family database is updated.</p>';
+        $profile_id=absint($profile_id); $user_id=get_current_user_id();
+        $rows=$wpdb->get_results($wpdb->prepare("SELECT id,title,reminder_date FROM `{$table}` WHERE user_id=%d AND profile_id=%d AND profile_type=%s ORDER BY reminder_date ASC LIMIT 30",$user_id,$profile_id,$profile_type),ARRAY_A);
+        $kind=$profile_type==='child'?'school':'pregnancy';
+        $default=$profile_type==='child'?'Primary School Application':'Antenatal class reminder';
+        ob_start(); ?>
+        <div class="bh3-profile-reminders bh3-profile-reminders--<?php echo esc_attr($kind); ?>">
+          <?php if ($rows) : ?><div class="bh3-profile-reminder-list">
+            <?php foreach ($rows as $row) :
+              $date=DateTimeImmutable::createFromFormat('!Y-m-d',$row['reminder_date'],wp_timezone());
+              $today=new DateTimeImmutable('today',wp_timezone());
+              $days=$date?(int)$today->diff($date)->format('%r%a'):0;
+              $countdown=!$date?'':($days<0?abs($days).'d overdue':($days===0?'Due today':($days>=365?intdiv($days,365).'y '.($days%365).'d left':($days>=30?intdiv($days,30).'m '.($days%30).'d left':$days.'d left')));
+            ?>
+              <div class="bh3-profile-reminder">
+                <div><strong><?php echo esc_html(($kind==='school'?'🏫 ':'🤰 ').$row['title']); ?></strong><br><span><?php echo esc_html($countdown.' ('.wp_date(get_option('date_format'),$date?$date->getTimestamp():time()).')'); ?></span></div>
+                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" onsubmit="return confirm('Remove this reminder?');">
+                  <input type="hidden" name="action" value="bh3_family_reminder_delete"><input type="hidden" name="reminder_id" value="<?php echo esc_attr(absint($row['id'])); ?>">
+                  <?php wp_nonce_field('bh3_family_reminder_delete_'.absint($row['id'])); ?><button type="submit" aria-label="Remove reminder">×</button>
+                </form>
+              </div>
+            <?php endforeach; ?>
+          </div><?php endif; ?>
+          <form class="bh3-profile-reminder-add" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+            <input type="hidden" name="action" value="bh3_family_reminder_save"><input type="hidden" name="profile_id" value="<?php echo esc_attr($profile_id); ?>"><input type="hidden" name="profile_type" value="<?php echo esc_attr($profile_type); ?>">
+            <?php wp_nonce_field('bh3_family_reminder_save_'.$profile_id); ?>
+            <label><?php echo esc_html($profile_type==='child'?'School milestone':'Pregnancy reminder'); ?><input name="title" maxlength="160" required value="<?php echo esc_attr($rows?'':$default); ?>" placeholder="<?php echo esc_attr($default); ?>"></label>
+            <label>Deadline or date<input type="date" name="reminder_date" required></label>
+            <button type="submit">+ Add reminder</button>
+          </form>
+        </div>
+        <?php return ob_get_clean();
+    }
+    public static function save_reminder() {
+        if (!self::allowed()) wp_die('Reminders unavailable.','',array('response'=>403));
+        $id=isset($_POST['profile_id'])?absint($_POST['profile_id']):0;
+        $type=isset($_POST['profile_type'])?sanitize_key(wp_unslash($_POST['profile_type'])):'';
+        if (!$id || !in_array($type,array('child','bump'),true)) wp_die('Invalid profile.','',array('response'=>400));
+        check_admin_referer('bh3_family_reminder_save_'.$id);
+        global $wpdb; $profiles=$wpdb->prefix.'bh_family_profiles'; $table=$wpdb->prefix.'bh_family_reminders';
+        $owns=$wpdb->get_var($wpdb->prepare("SELECT id FROM `{$profiles}` WHERE id=%d AND user_id=%d AND profile_type=%s",$id,get_current_user_id(),$type));
+        if (!$owns) wp_die('Profile not found.','',array('response'=>404));
+        $title=isset($_POST['title'])?sanitize_text_field(wp_unslash($_POST['title'])):'';
+        $date=isset($_POST['reminder_date'])?sanitize_text_field(wp_unslash($_POST['reminder_date'])):'';
+        $parsed=DateTimeImmutable::createFromFormat('!Y-m-d',$date,wp_timezone());
+        if (!$title || strlen($title)>160 || !$parsed || $parsed->format('Y-m-d')!==$date) wp_die('Enter a reminder title and valid date.','',array('response'=>400));
+        $count=(int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM `{$table}` WHERE user_id=%d AND profile_id=%d",get_current_user_id(),$id));
+        if ($count>=30) wp_die('This profile has reached its reminder limit.','',array('response'=>400));
+        $now=current_time('mysql');
+        if ($wpdb->insert($table,array('user_id'=>get_current_user_id(),'profile_id'=>$id,'profile_type'=>$type,'title'=>$title,'reminder_date'=>$date,'created_at'=>$now,'updated_at'=>$now),array('%d','%d','%s','%s','%s','%s','%s'))===false) wp_die('Unable to save reminder.','',array('response'=>500));
+        wp_safe_redirect(home_url('/family/')); exit;
+    }
+    public static function delete_reminder() {
+        if (!self::allowed()) wp_die('Reminders unavailable.','',array('response'=>403));
+        $id=isset($_POST['reminder_id'])?absint($_POST['reminder_id']):0;
+        check_admin_referer('bh3_family_reminder_delete_'.$id);
+        global $wpdb; $table=$wpdb->prefix.'bh_family_reminders';
+        $deleted=$wpdb->delete($table,array('id'=>$id,'user_id'=>get_current_user_id()),array('%d','%d'));
+        if ($deleted===false) wp_die('Unable to remove reminder.','',array('response'=>500));
+        wp_safe_redirect(home_url('/family/')); exit;
     }
     public static function delete() {
         if (!self::allowed()) wp_die('Profile removal unavailable.','',array('response'=>403));
