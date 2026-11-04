@@ -30,8 +30,30 @@ final class BH_Leader_Statistics_3 {
             if ( $row['status'] === 'draft' ) $drafts += $n;
         }
         $recent = $wpdb->get_results( $wpdb->prepare(
-            "SELECT id,title,status,category FROM `{$activities}` WHERE organiser_id=%d ORDER BY id DESC LIMIT 8", $organiser_id
+            "SELECT id,title,status,category,description,age_min_months,age_max_months,price_from,is_free,booking_url,image_id FROM `{$activities}` WHERE organiser_id=%d ORDER BY id DESC LIMIT 8", $organiser_id
         ), ARRAY_A );
+        // A short, actionable checklist, not an invented engagement metric.
+        // Only fields supported by the current draft editor are assessed.
+        $checks = array(
+            'description' => 'Add a description',
+            'category' => 'Choose a category',
+            'age' => 'Set an age range',
+            'price' => 'Add a price or mark as free',
+            'image' => 'Add a listing image',
+            'booking' => 'Add a booking link (if required)',
+        );
+        $improvements = array();
+        foreach ( (array) $recent as $item ) {
+            if ( $item['status'] !== 'draft' ) continue;
+            $missing = array();
+            if ( trim( (string) $item['description'] ) === '' ) $missing[] = $checks['description'];
+            if ( trim( (string) $item['category'] ) === '' ) $missing[] = $checks['category'];
+            if ( $item['age_min_months'] === null && $item['age_max_months'] === null ) $missing[] = $checks['age'];
+            if ( ! (int) $item['is_free'] && ( $item['price_from'] === null || $item['price_from'] === '' ) ) $missing[] = $checks['price'];
+            if ( ! absint( $item['image_id'] ) ) $missing[] = $checks['image'];
+            // External booking is optional, so never count it as incomplete.
+            $improvements[] = array( 'id' => absint( $item['id'] ), 'title' => $item['title'], 'missing' => $missing );
+        }
         ob_start(); ?>
         <section class="bh-leader-statistics">
           <header class="bh-leader-statistics-hero"><p>LEADER HUB</p><h1>Your statistics</h1><p>A quick overview of your listings, without extra admin.</p></header>
@@ -52,6 +74,30 @@ final class BH_Leader_Statistics_3 {
               </li><?php endforeach; ?>
             </ul><?php endif; ?>
             <a class="bh-leader-statistics-action" href="<?php echo esc_url( home_url( '/leader/' ) . '#my-activities' ); ?>">View all activities</a>
+          </div>
+          <div class="bh-leader-statistics-panel bh-leader-completeness">
+            <h2>Listing improvements</h2>
+            <p>Check the latest draft activities for missing essentials. Booking links are optional.</p>
+            <?php if ( ! $improvements ) : ?>
+              <p>No recent drafts need checking.</p>
+            <?php else : ?>
+              <ul>
+              <?php foreach ( $improvements as $entry ) : ?>
+                <li>
+                  <div>
+                    <strong><?php echo esc_html( $entry['title'] ); ?></strong>
+                    <?php if ( ! $entry['missing'] ) : ?>
+                      <small>All checked essentials are present.</small>
+                    <?php else : ?>
+                      <small><?php echo esc_html( implode( ' · ', $entry['missing'] ) ); ?></small>
+                    <?php endif; ?>
+                  </div>
+                  <a href="<?php echo esc_url( add_query_arg( 'activity_id', $entry['id'], home_url( '/leader/edit-activity/' ) ) ); ?>">Improve listing</a>
+                </li>
+              <?php endforeach; ?>
+              </ul>
+            <?php endif; ?>
+            <p class="bh-leader-statistics-note">This checklist covers only the latest eight activities and does not assess venue or timetable completeness.</p>
           </div>
           <p class="bh-leader-statistics-note">Activity views, saves, bookings and revenue are not shown until their data sources have been verified. No tracking is enabled by this page.</p>
         </section>
