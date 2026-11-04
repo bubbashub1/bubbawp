@@ -54,10 +54,15 @@ final class BH_Family_Hub_3 {
         $filtered_planner = array_values(array_filter($planner, static function($item) use ($planner_filter) {
             return $planner_filter === 'all' || ($planner_filter === 'visited' ? !empty($item['visited']) : empty($item['visited']));
         }));
+        $saved_search = isset($_GET['bh3_saved_search']) && is_scalar($_GET['bh3_saved_search']) ? substr(sanitize_text_field(wp_unslash($_GET['bh3_saved_search'])), 0, 80) : '';
         $activity_ids = array_merge($saved, array_column($planner, 'activity_id'));
         $activity_titles = $private_preview ? BH_Family_Read_Model_3::activity_titles($activity_ids) : array();
         if (is_wp_error($activity_titles)) $activity_titles = array();
         $activity_links = $private_preview ? BH_Family_Read_Model_3::activity_links($activity_ids) : array();
+        $filtered_saved = $saved_search === '' ? $saved : array_values(array_filter($saved, static function($id) use ($activity_titles, $saved_search) {
+            $title = $activity_titles[absint($id)] ?? '';
+            return $title !== '' && stripos($title, $saved_search) !== false;
+        }));
         $sections = array(
             array( 'My family', 'Family profiles will appear here once account mapping is verified.' ),
             array( 'Saved activities', 'Your favourites will connect to existing activity IDs.' ),
@@ -89,11 +94,17 @@ final class BH_Family_Hub_3 {
             <div class="bh3-family__grid bh3-family__private" aria-label="<?php echo esc_attr__('Your private family overview', 'bubba-hub-manager'); ?>">
               <article class="bh3-family__card">
                 <h2><?php echo esc_html__('Saved activities', 'bubba-hub-manager'); ?></h2>
-                <?php if (empty($saved)) : ?>
+                <form class="bh3-family__search" method="get" action="<?php echo esc_url($return_url); ?>">
+                  <label for="bh3-saved-search"><?php echo esc_html__('Search saved activities', 'bubba-hub-manager'); ?></label>
+                  <input id="bh3-saved-search" type="search" name="bh3_saved_search" maxlength="80" value="<?php echo esc_attr($saved_search); ?>" placeholder="<?php echo esc_attr__('Activity name', 'bubba-hub-manager'); ?>">
+                  <button type="submit"><?php echo esc_html__('Search', 'bubba-hub-manager'); ?></button>
+                  <?php if ($saved_search !== '') : ?><a href="<?php echo esc_url($return_url); ?>"><?php echo esc_html__('Clear', 'bubba-hub-manager'); ?></a><?php endif; ?>
+                </form>
+                <?php if (empty($filtered_saved)) : ?>
                   <p><?php echo esc_html__('No saved activities yet.', 'bubba-hub-manager'); ?></p>
                 <?php else : ?>
                   <ul class="bh3-family__items">
-                    <?php foreach (array_slice($saved, 0, $show_saved ? 200 : 8) as $activity_id) : ?>
+                    <?php foreach (array_slice($filtered_saved, 0, $show_saved ? 200 : 8) as $activity_id) : ?>
                       <li>
                         <span><?php $saved_label = $activity_titles[absint($activity_id)] ?? sprintf(__('Activity #%d', 'bubba-hub-manager'), absint($activity_id)); ?><?php if (!empty($activity_links[absint($activity_id)])) : ?><a href="<?php echo esc_url($activity_links[absint($activity_id)]); ?>"><?php echo esc_html($saved_label); ?></a><?php else : ?><?php echo esc_html($saved_label); ?><?php endif; ?></span>
                         <?php if (BH_Family_Actions_3::enabled()) : ?>
@@ -119,7 +130,7 @@ final class BH_Family_Hub_3 {
                       </li>
                     <?php endforeach; ?>
                   </ul>
-                  <?php if (count($saved) > 8) : ?><p><a href="<?php echo esc_url(add_query_arg('bh3_show_saved', $show_saved ? '0' : '1', $return_url)); ?>"><?php echo esc_html($show_saved ? __('Show fewer favourites', 'bubba-hub-manager') : sprintf(__('View all %d favourites', 'bubba-hub-manager'), count($saved))); ?></a></p><?php endif; ?>
+                  <?php if (count($filtered_saved) > 8) : ?><p><a href="<?php echo esc_url(add_query_arg('bh3_show_saved', $show_saved ? '0' : '1', $return_url)); ?>"><?php echo esc_html($show_saved ? __('Show fewer favourites', 'bubba-hub-manager') : sprintf(__('View all %d favourites', 'bubba-hub-manager'), count($filtered_saved))); ?></a></p><?php endif; ?>
                 <?php endif; ?>
               </article>
               <article class="bh3-family__card">
