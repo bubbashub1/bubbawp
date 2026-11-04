@@ -47,7 +47,7 @@ final class BH_Membership_Registration_3 {
                     <ul>
                         <li>Family-focused membership</li>
                         <li>Keep your family account in one place</li>
-                        <li>Access to the Family Pro membership benefits</li>
+                        <li>Family Pro membership benefits</li>
                     </ul>
                     <div class="bh-membership-action">
                         <?php
@@ -70,7 +70,7 @@ final class BH_Membership_Registration_3 {
                     <ul>
                         <li>Leader Pro membership</li>
                         <li>Tools and benefits for your organiser account</li>
-                        <li>Access to the Leader Pro membership benefits</li>
+                        <li>Leader Pro membership benefits</li>
                     </ul>
                     <div class="bh-membership-action">
                         <?php
@@ -93,8 +93,8 @@ final class BH_Membership_Registration_3 {
                 <a class="bh-membership-free-link" href="<?php echo $free_url; ?>">Explore free registration</a>
             </div>
 
-            <p class="bh-membership-login">Already have an account? <a href="<?php echo esc_url( home_url( '/membership-login/' ) ); ?>">Log in</a>.</p>
-            <p class="bh-membership-terms">Membership renewals, cancellations and payment terms will be explained before checkout. Please read the <a href="<?php echo esc_url( home_url( '/legal/membership-terms/' ) ); ?>">Membership Terms</a>.</p>
+            <p class="bh-membership-login">Already have an account? <a href="<?php echo esc_url( home_url( '/auth/' ) ); ?>">Log in</a>.</p>
+            <p class="bh-membership-terms">Full payment, renewal and cancellation information will be shown before you complete checkout.</p>
         </section>
         <?php
         return (string) ob_get_clean();
