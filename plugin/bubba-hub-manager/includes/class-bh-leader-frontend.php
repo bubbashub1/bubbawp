@@ -94,7 +94,7 @@ final class BH_Leader_Frontend_3 {
                 <?php endif; ?>
                 <div class="bh-leader-action-create">
                     <div><strong>Ready to add another class?</strong><p class="bh-leader-muted">Start with the guided listing wizard and review your details before submitting.</p></div>
-                    <a class="bh-leader-primary-action" href="<?php echo esc_url( home_url( '/leader/new/' ) ); ?>">Create a listing</a>
+                    <a class="bh-leader-primary-action" href="<?php echo esc_url( home_url( '/leader/new-activity/' ) ); ?>">Create a listing</a>
                 </div>
             </section>
             <section class="bh-leader-overview" aria-label="Your next steps">
