@@ -4,6 +4,24 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 final class BH_Business_Directory_3 {
     public static function register() {
         add_shortcode( 'bh_business_directory', array( __CLASS__, 'render' ) );
+        add_action( 'admin_post_bh3_directory_approve', array( __CLASS__, 'approve' ) );
+    }
+    public static function approve() {
+        if ( ! current_user_can( 'manage_options' ) || strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) { wp_die( 'Administrator access required.', '', array( 'response' => 403 ) ); }
+        $id = absint( $_POST['business_id'] ?? 0 );
+        check_admin_referer( 'bh3_directory_approve_' . $id );
+        global $wpdb;
+        $table = $wpdb->prefix . 'organisers';
+        if ( ! $id || ! $wpdb->get_var( $wpdb->prepare( "SELECT id FROM `{$table}` WHERE id=%d", $id ) ) ) { wp_die( 'Business not found.', '', array( 'response' => 404 ) ); }
+        $key = 'bh3_storefront_' . $id;
+        $extras = get_option( $key, array() );
+        if ( ! is_array( $extras ) || empty( $extras['directory_opt_in'] ) ) { wp_die( 'Business has not opted in.', '', array( 'response' => 400 ) ); }
+        $extras['directory_approved'] = ! empty( $_POST['approved'] ) ? 1 : 0;
+        $extras['directory_reviewed_at'] = current_time( 'mysql', true );
+        $extras['directory_reviewed_by'] = get_current_user_id();
+        update_option( $key, $extras, false );
+        wp_safe_redirect( add_query_arg( 'directory_reviewed', 1, home_url( '/businesses/' ) ) );
+        exit;
     }
     public static function render() {
         if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) { return ''; }
