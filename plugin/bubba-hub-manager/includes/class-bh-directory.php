@@ -14,7 +14,7 @@ final class BH_Directory_3 {
         $organisers = $wpdb->prefix . 'organisers';
         $links = $wpdb->prefix . 'activity_venues';
         $venues = $wpdb->prefix . 'venues';
-        foreach ( array( $activities, $organisers, $links, $venues ) as $table ) {
+        foreach ( array( $activities, $organisers, $links, $venues, $wpdb->prefix . 'sessions' ) as $table ) {
             if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ) !== $table ) {
                 return '<p>Directory tables are not ready on staging.</p>';
             }
