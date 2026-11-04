@@ -38,11 +38,16 @@ final class BH_Family_Hub_3 {
         // BH_Family_Identity_3 is available for future gated integration.
         $return_url = is_singular() ? get_permalink() : home_url( '/' );
         $login_url = wp_login_url( $return_url );
-        $private_preview = defined('BH3_FAMILY_PRIVATE_PREVIEW') && BH3_FAMILY_PRIVATE_PREVIEW === true && $wp_signed_in && BH_Family_Identity_3::current_legacy_id() > 0;
-        $saved = $private_preview ? BH_Family_Read_Model_3::saved_ids() : array();
-        $planner = $private_preview ? BH_Family_Read_Model_3::planner_items() : array();
-        $profiles = $private_preview ? BH_Family_Read_Model_3::family_profiles() : array();
-        $family_read_error = $private_preview && (is_wp_error($saved) || is_wp_error($planner) || is_wp_error($profiles));
+        $preview_enabled = defined('BH3_FAMILY_PRIVATE_PREVIEW') && BH3_FAMILY_PRIVATE_PREVIEW === true;
+        // Admins can inspect the complete front-end layout without impersonating a family
+        // or reading or changing any real family records.
+        $admin_demo = $preview_enabled && $wp_signed_in && current_user_can('manage_options');
+        $verified_family = $preview_enabled && $wp_signed_in && !$admin_demo && BH_Family_Identity_3::current_legacy_id() > 0;
+        $private_preview = $admin_demo || $verified_family;
+        $saved = $verified_family ? BH_Family_Read_Model_3::saved_ids() : array();
+        $planner = $verified_family ? BH_Family_Read_Model_3::planner_items() : array();
+        $profiles = $verified_family ? BH_Family_Read_Model_3::family_profiles() : array();
+        $family_read_error = $verified_family && (is_wp_error($saved) || is_wp_error($planner) || is_wp_error($profiles));
         $saved = is_array($saved) ? $saved : array();
         $planner = is_array($planner) ? $planner : array();
         $planned_ids = array_map('absint', array_column($planner, 'activity_id'));
@@ -58,13 +63,13 @@ final class BH_Family_Hub_3 {
         }));
         $saved_search = isset($_GET['bh3_saved_search']) && is_scalar($_GET['bh3_saved_search']) ? substr(sanitize_text_field(wp_unslash($_GET['bh3_saved_search'])), 0, 80) : '';
         $activity_ids = array_merge($saved, array_column($planner, 'activity_id'));
-        $activity_titles = $private_preview ? BH_Family_Read_Model_3::activity_titles($activity_ids) : array();
+        $activity_titles = $verified_family ? BH_Family_Read_Model_3::activity_titles($activity_ids) : array();
         if (is_wp_error($activity_titles)) {
             $family_read_error = true;
             $activity_titles = array();
         }
         $activity_titles = is_array($activity_titles) ? $activity_titles : array();
-        $activity_links = $private_preview ? BH_Family_Read_Model_3::activity_links($activity_ids) : array();
+        $activity_links = $verified_family ? BH_Family_Read_Model_3::activity_links($activity_ids) : array();
         $planner_sort = isset($_GET['bh3_planner_sort']) && is_scalar($_GET['bh3_planner_sort']) ? sanitize_key(wp_unslash($_GET['bh3_planner_sort'])) : 'recent';
         if (!in_array($planner_sort, array('recent', 'name'), true)) $planner_sort = 'recent';
         if ($planner_sort === 'name') usort($filtered_planner, static function($a, $b) use ($activity_titles) {
@@ -107,6 +112,9 @@ final class BH_Family_Hub_3 {
           <?php else : ?>
             <div class="bh3-family__notice" role="status"><?php echo esc_html__( 'Signed in. Family Hub is in preview mode; changes require staging verification.', 'bubba-hub-manager' ); ?></div>
           <?php endif; ?>
+          <?php if ($admin_demo) : ?>
+            <div class="bh3-family__notice" role="status"><strong><?php echo esc_html__('Administrator layout preview', 'bubba-hub-manager'); ?></strong> — <?php echo esc_html__('No family account is linked. This is a read-only preview with empty sections; profile changes and activity actions are disabled.', 'bubba-hub-manager'); ?></div>
+          <?php endif; ?>
           <?php if ($family_read_error) : ?>
             <div class="bh3-family__notice" role="alert"><?php echo esc_html__('Your family information is temporarily unavailable. Please try again later.', 'bubba-hub-manager'); ?></div>
           <?php endif; ?>
@@ -142,7 +150,7 @@ final class BH_Family_Hub_3 {
                     <?php foreach (array_slice($filtered_saved, 0, $show_saved ? 200 : 8) as $activity_id) : ?>
                       <li>
                         <span><?php $saved_label = $activity_titles[absint($activity_id)] ?? sprintf(__('Activity #%d', 'bubba-hub-manager'), absint($activity_id)); ?><?php if (!empty($activity_links[absint($activity_id)])) : ?><a href="<?php echo esc_url($activity_links[absint($activity_id)]); ?>"><?php echo esc_html($saved_label); ?></a><?php else : ?><?php echo esc_html($saved_label); ?><?php endif; ?></span>
-                        <?php if (BH_Family_Actions_3::enabled()) : ?>
+                        <?php if (!$admin_demo && BH_Family_Actions_3::enabled()) : ?>
                           <?php foreach (array('plan_saved' => __('Add to planner', 'bubba-hub-manager'), 'visit_saved' => __('Mark visited', 'bubba-hub-manager')) as $add_action => $add_label) : ?>
                             <?php if ($add_action !== 'plan_saved' || !in_array(absint($activity_id), $planned_ids, true)) : ?>
                               <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
@@ -208,7 +216,7 @@ final class BH_Family_Hub_3 {
                         <?php $planner_id = absint($item['activity_id'] ?? 0); $planner_label = $activity_titles[$planner_id] ?? sprintf(__('Activity #%d', 'bubba-hub-manager'), $planner_id); ?>
                         <?php if (!empty($activity_links[$planner_id])) : ?><a href="<?php echo esc_url($activity_links[$planner_id]); ?>"><?php echo esc_html($planner_label); ?></a><?php else : ?><?php echo esc_html($planner_label); ?><?php endif; ?>
                         <span class="bh3-family__status"><?php echo esc_html(!empty($item['visited']) ? __('Visited', 'bubba-hub-manager') : __('Not visited yet', 'bubba-hub-manager')); ?></span>
-                        <?php if (BH_Family_Actions_3::enabled()) : ?>
+                        <?php if (!$admin_demo && BH_Family_Actions_3::enabled()) : ?>
                           <?php foreach (array((!empty($item['visited']) ? 'not_visited' : 'visited') => (!empty($item['visited']) ? __('Mark not visited', 'bubba-hub-manager') : __('Mark visited', 'bubba-hub-manager')), 'unplan' => __('Remove', 'bubba-hub-manager')) as $action_key => $action_label) : ?>
                             <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
                               <input type="hidden" name="action" value="bh3_family_activity_action">
@@ -252,7 +260,7 @@ final class BH_Family_Hub_3 {
                     </ul>
                   <?php endif; ?>
                 </div>
-                <?php if (BH_Family_Profile_Editor_3::creation_enabled()) : ?>
+                <?php if (!$admin_demo && BH_Family_Profile_Editor_3::creation_enabled()) : ?>
                   <div class="bh3-family__create-profiles">
                     <h3><?php echo esc_html__('Add a family profile', 'bubba-hub-manager'); ?></h3>
                     <?php foreach (array('child' => array(__('Add child', 'bubba-hub-manager'), __('Child name', 'bubba-hub-manager'), __('Date of birth', 'bubba-hub-manager')), 'bump' => array(__('Add pregnancy', 'bubba-hub-manager'), __('Nickname', 'bubba-hub-manager'), __('Due date', 'bubba-hub-manager'))) as $profile_type => $profile_fields) : ?>
@@ -270,7 +278,7 @@ final class BH_Family_Hub_3 {
                     <?php endforeach; ?>
                   </div>
                 <?php endif; ?>
-                <?php if (BH_Family_Profile_Editor_3::enabled()) : ?>
+                <?php if (!$admin_demo && BH_Family_Profile_Editor_3::enabled()) : ?>
                   <?php if (isset($_GET['bh3_profile_status']) && $_GET['bh3_profile_status'] === 'saved') : ?>
                     <p role="status"><?php echo esc_html__('Profile updated.', 'bubba-hub-manager'); ?></p>
                   <?php elseif (isset($_GET['bh3_profile_status']) && $_GET['bh3_profile_status'] === 'error') : ?>
@@ -318,7 +326,7 @@ final class BH_Family_Hub_3 {
               </article>
             </div>
           <?php endif; ?>
-          <?php if ($private_preview && BH_Family_Actions_3::enabled() && isset($_GET['bh3_activity_status'])) : ?>
+          <?php if ($verified_family && BH_Family_Actions_3::enabled() && isset($_GET['bh3_activity_status'])) : ?>
             <p class="bh3-family__notice" role="status"><?php echo esc_html($_GET['bh3_activity_status'] === 'saved' ? __('Activity updated.', 'bubba-hub-manager') : __('Activity could not be updated.', 'bubba-hub-manager')); ?></p>
           <?php endif; ?>
           <div class="bh3-family__grid">
