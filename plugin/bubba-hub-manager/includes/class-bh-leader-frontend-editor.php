@@ -47,7 +47,16 @@ final class BH_Leader_Frontend_Editor_3 {
         .bh-leader-edit .bh-image-card form{margin:0 0 12px}
         .bh-leader-edit .bh-image-card input[type=file]{font-size:14px;max-width:100%}
         .bh-leader-edit .bh-image-card button{background:#245e4a;color:#fff;border:0;border-radius:9px;padding:10px 16px;cursor:pointer;font:inherit;font-weight:600;margin-top:10px}
-        .bh-leader-edit .bh-image-card .bh-image-remove{background:#fff;color:#7a2f2f;border:1px solid #cbaaaa}
+.bh-leader-edit .bh-image-card .bh-image-remove{background:#fff;color:#7a2f2f;border:1px solid #cbaaaa}
+        .bh-leader-edit .bh-editor-section{border:1px solid #dbe5df;border-radius:14px;padding:20px;margin:20px 0;background:#fff}
+        .bh-leader-edit .bh-editor-section h2{margin:0 0 6px;font-size:21px}
+        .bh-leader-edit .bh-editor-section>p{margin:12px 0}
+        .bh-leader-edit .bh-editor-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}
+        .bh-leader-edit .bh-editor-grid>p{min-width:0}
+        .bh-leader-edit .bh-editor-section select{width:100%;max-width:680px;border:1px solid #b8c9bd;border-radius:9px;padding:11px;font:inherit}
+        .bh-leader-edit .bh-editor-save{position:sticky;bottom:0;background:#f8fbf9;border:1px solid #dbe5df;padding:14px 18px;border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:2}
+        .bh-leader-edit .bh-editor-save button{background:#245e4a;color:#fff;border:0;border-radius:9px;padding:12px 20px;font:inherit;font-weight:700;cursor:pointer}
+        @media(max-width:650px){.bh-leader-edit .bh-editor-grid{grid-template-columns:1fr}.bh-leader-edit .bh-editor-section{padding:16px}.bh-leader-edit .bh-editor-save{flex-wrap:wrap}}
         @media(max-width:650px){.bh-leader-edit .bh-image-layout{grid-template-columns:1fr}.bh-leader-edit .bh-image-thumb{max-width:260px}}
         @media(max-width:650px){.bh-leader-edit{padding:18px!important;margin:16px auto!important}}
         </style>
@@ -119,25 +128,50 @@ final class BH_Leader_Frontend_Editor_3 {
             <input type="hidden" name="action" value="bh3_leader_frontend_save">
             <input type="hidden" name="activity_id" value="<?php echo esc_attr( $id ); ?>">
             <?php wp_nonce_field( 'bh3_leader_frontend_' . $id ); ?>
-            <?php foreach ( array( 'title' => 'Activity title', 'category' => 'Category', 'age_min_months' => 'Minimum age (months)', 'age_max_months' => 'Maximum age (months)', 'price_from' => 'Price from (£)', 'booking_url' => 'Booking website' ) as $key => $label ) :
-                $numeric = in_array( $key, array( 'age_min_months', 'age_max_months', 'price_from' ), true );
-                $type = $numeric ? 'number' : ( $key === 'booking_url' ? 'url' : 'text' ); ?>
-                <p><label for="bh-edit-<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $label ); ?></label>
-                <?php if ( $key === 'category' ) : ?>
-                <select id="bh-edit-category" name="category" style="display:block;width:100%;max-width:680px;padding:11px;border:1px solid #b8c9bd;border-radius:9px;font:inherit">
-                    <option value="">Choose a category</option>
-                    <?php foreach ( $categories as $option ) : ?><option value="<?php echo esc_attr( $option ); ?>" <?php selected( $row['category'], $option ); ?>><?php echo esc_html( $option ); ?></option><?php endforeach; ?>
-                </select>
-                <small class="bh-edit-hint">Choose an existing Bubba Hub category. Contact the team if a new one is needed.</small>
-                <?php else : ?>
-                <input style="display:block;width:100%;max-width:600px;padding:10px" id="bh-edit-<?php echo esc_attr( $key ); ?>" name="<?php echo esc_attr( $key ); ?>" type="<?php echo esc_attr( $type ); ?>" value="<?php echo esc_attr( (string) ( $row[$key] ?? '' ) ); ?>" <?php if ( $numeric ) : ?>min="0" step="<?php echo $key === 'price_from' ? '0.01' : '1'; ?>"<?php endif; ?> <?php if ( $key === 'title' ) : ?>required<?php endif; ?>>
-                <?php endif; ?></p>
-            <?php endforeach; ?>
-            <p class="bh-edit-hint">Age ranges are entered in months. Use 0 for newborns. The booking link must begin with https:// or http://.</p>
-            <p><label for="bh-edit-description">Description</label><textarea id="bh-edit-description" name="description" rows="8" style="display:block;width:100%"><?php echo esc_textarea( $row['description'] ); ?></textarea></p>
-            <p><label><input type="checkbox" name="is_free" value="1" <?php checked( (int) $row['is_free'], 1 ); ?>> This activity is free</label></p>
-            <p class="bh-edit-hint">Ticking Free will save the starting price as £0. Changes remain in draft until approved for publishing.</p>
-            <button type="submit" style="background:#245e4a;color:#fff;border:0;border-radius:8px;padding:12px 20px;cursor:pointer">Save draft</button>
+            <section class="bh-editor-section" aria-labelledby="bh-details-title">
+              <h2 id="bh-details-title">Activity details</h2>
+              <p class="bh-edit-hint">Start with the name and category families will search for.</p>
+              <p><label for="bh-edit-title">Activity title</label><input id="bh-edit-title" name="title" type="text" maxlength="255" required value="<?php echo esc_attr( $row['title'] ); ?>"></p>
+              <p><label for="bh-edit-category">Category</label>
+              <select id="bh-edit-category" name="category">
+                <option value="">Choose a category</option>
+                <?php foreach ( $categories as $option ) : ?><option value="<?php echo esc_attr( $option ); ?>" <?php selected( $row['category'], $option ); ?>><?php echo esc_html( $option ); ?></option><?php endforeach; ?>
+              </select></p>
+              <p class="bh-edit-hint">Can't find the right category? Contact the Bubba Hub team.</p>
+            </section>
+            <section class="bh-editor-section" aria-labelledby="bh-description-title">
+              <h2 id="bh-description-title">About the activity</h2>
+              <p class="bh-edit-hint">Tell families what to expect, what to bring and who the activity is for.</p>
+              <label for="bh-edit-description">Description</label>
+              <textarea id="bh-edit-description" name="description" rows="8"><?php echo esc_textarea( $row['description'] ); ?></textarea>
+            </section>
+            <section class="bh-editor-section" aria-labelledby="bh-pricing-title">
+              <h2 id="bh-pricing-title">Age range &amp; pricing</h2>
+              <div class="bh-editor-grid">
+                <p><label for="bh-edit-age-min">Minimum age (months)</label><input id="bh-edit-age-min" name="age_min_months" type="number" min="0" max="216" step="1" value="<?php echo esc_attr( (string) $row['age_min_months'] ); ?>"></p>
+                <p><label for="bh-edit-age-max">Maximum age (months)</label><input id="bh-edit-age-max" name="age_max_months" type="number" min="0" max="216" step="1" value="<?php echo esc_attr( (string) $row['age_max_months'] ); ?>"></p>
+              </div>
+              <p class="bh-edit-hint">Use 0 months for newborns.</p>
+              <p><label><input id="bh-edit-free" type="checkbox" name="is_free" value="1" <?php checked( (int) $row['is_free'], 1 ); ?>> This activity is free</label></p>
+              <p><label for="bh-edit-price">Starting price (£)</label><input id="bh-edit-price" name="price_from" type="number" min="0" step="0.01" value="<?php echo esc_attr( (string) $row['price_from'] ); ?>" <?php disabled( (int) $row['is_free'], 1 ); ?>></p>
+            </section>
+            <section class="bh-editor-section" aria-labelledby="bh-booking-title">
+              <h2 id="bh-booking-title">Booking information</h2>
+              <p class="bh-edit-hint">Optional: link to the booking page families should use.</p>
+              <p><label for="bh-edit-booking">Booking website</label><input id="bh-edit-booking" name="booking_url" type="url" placeholder="https://" value="<?php echo esc_attr( $row['booking_url'] ); ?>"></p>
+            </section>
+            <div class="bh-editor-save"><span class="bh-edit-hint">Only this draft will be updated.</span><button type="submit">Save draft changes</button></div>
+            <script>
+            (function(){
+              const free = document.getElementById('bh-edit-free');
+              const price = document.getElementById('bh-edit-price');
+              if (!free || !price) return;
+              free.addEventListener('change', function(){
+                price.disabled = free.checked;
+                if (free.checked) price.value = '0';
+              });
+            })();
+            </script>
         </form></section>
         <?php return ob_get_clean();
     }
