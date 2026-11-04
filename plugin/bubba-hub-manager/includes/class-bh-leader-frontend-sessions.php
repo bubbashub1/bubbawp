@@ -62,7 +62,7 @@ final class BH_Leader_Frontend_Sessions_3 {
         .bh-leader-timetable a:focus-visible,.bh-leader-timetable button:focus-visible,.bh-leader-timetable input:focus-visible,.bh-leader-timetable select:focus-visible{outline:3px solid #245e4a;outline-offset:2px}
         @media(max-width:650px){.bh-leader-timetable{padding:12px!important}.bh-leader-timetable .bh-panel{padding:17px}.bh-leader-timetable .bh-session-grid{grid-template-columns:1fr}.bh-leader-timetable .bh-thero{padding:20px}}
         </style>
-        <nav class="bh-tnav" aria-label="Activity tools"><a href="<?php echo esc_url( home_url( '/leader/' ) ); ?>">← Dashboard</a><a href="<?php echo esc_url( add_query_arg( 'activity_id', $id, home_url( '/leader/edit-activity/' ) ) ); ?>">Edit activity</a><a href="<?php echo esc_url( add_query_arg( 'activity_id', $id, home_url( '/leader/venues/' ) ) ); ?>">Venues</a></nav>
+        
         <header class="bh-thero"><p>MY TIMETABLE · DRAFT ACTIVITY</p><h1><?php echo esc_html( $activity['title'] ); ?></h1><p>Plan weekly sessions and keep your schedule accurate.</p></header>
         <p class="bh-thint">These are timetable entries, not bookings. Times follow your WordPress site's time format.</p>
         <?php if ( isset( $_GET['notice'] ) ) : ?><p class="bh-tnotice" role="status"><?php echo esc_html( sanitize_text_field( wp_unslash( $_GET['notice'] ) ) ); ?></p><?php endif; ?>
