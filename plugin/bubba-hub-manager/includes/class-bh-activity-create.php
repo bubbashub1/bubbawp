@@ -60,7 +60,7 @@ final class BH_Activity_Create_3 {
         if ( ! current_user_can( 'manage_options' ) ) { wp_die( 'Permission denied.' ); }
         echo '<div class="wrap bh3-wizard"><h1>' . ( ( isset( $_GET['activity_id'] ) && is_scalar( $_GET['activity_id'] ) ? absint( $_GET['activity_id'] ) : 0 ) ? 'Edit draft activity' : 'Add activity' ) . '</h1>';
         if ( ! self::allowed() ) { echo '<p>Activity creation is restricted to staging administrators.</p></div>'; return; }
-        if ( isset( $_GET['created'] ) ) {
+        if ( isset( $_GET['created'] ) && is_scalar( $_GET['created'] ) && absint( $_GET['created'] ) > 0 ) {
             echo '<div class="notice notice-success"><p>Draft created successfully. ID: ' . esc_html( (string) absint( $_GET['created'] ) ) . '</p></div>';
         }
         global $wpdb;
