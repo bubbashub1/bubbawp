@@ -94,6 +94,7 @@ final class BH_Leader_Listing_Wizard_3 {
             'good_to_know' => '', 'booking_method' => 'external', 'image_id' => 0,
         );
         $data = array_merge( $defaults, (array) $record );
+        if ( $id ) { $data['booking_method'] = get_option( 'bh3_activity_booking_method_' . $id, $data['booking_method'] ); }
         $step = min( 7, max( 1, absint( $_GET['step'] ?? 1 ) ) );
         $steps = array( 'Basics', 'About', 'Extra information', 'Schedule & booking', 'Venues', 'Photos & media', 'Review & submit' );
         ob_start();
@@ -141,7 +142,8 @@ final class BH_Leader_Listing_Wizard_3 {
               <?php self::field( 'booking_url', 'External booking link (if applicable)', $data['booking_url'], 'url', 'placeholder="https://"' ); ?>
               <p class="bh3-wizard-help">Weekly timetable sessions are managed separately, so you can update times without rebuilding your listing. The enquiry option will only be available to families once the verified leader contact and enquiry form have passed testing.</p>
             <?php elseif ( $step === 5 ) : ?>
-              <h2>Venues</h2><p>Save your draft first, then use My Venues to search and assign existing shared venues. New venue requests will be added here once the approval workflow is enabled.</p>
+              <h2>Venues</h2><p>Save your draft first, then use My Venues to search and assign existing shared venues. You can also suggest a new venue for the Bubba Hub team to review.</p>
+              <?php if ( $id ) : ?><p><a href="<?php echo esc_url( add_query_arg( 'activity_id', $id, home_url( '/leader/new-venue/' ) ) ); ?>">Suggest a new venue for this activity</a></p><?php else : ?><p>Save your draft to request a new venue.</p><?php endif; ?>
               <p class="bh3-wizard-help">Please don't create a duplicate venue. Search by venue name or town in My Venues.</p>
             <?php elseif ( $step === 6 ) : ?>
               <h2>Photos &amp; media</h2><p>Save your draft first, then add a cover photo and gallery from the listing editor. We keep photos separate from contact and schedule details.</p>
@@ -241,6 +243,7 @@ final class BH_Leader_Listing_Wizard_3 {
             if ( $wpdb->insert( $table, $data ) === false ) { wp_die( 'Could not create your listing draft.', '', array( 'response' => 500 ) ); }
             $id = (int) $wpdb->insert_id;
         }
+        if ( $step === 4 ) { update_option( 'bh3_activity_booking_method_' . $id, $method, false ); }
         $next = ( $step < 7 && $intent !== 'submit' ) ? $step + 1 : 7;
         $url = add_query_arg( array( 'activity_id' => $id, 'step' => $next, 'saved' => 1 ), home_url( '/leader/new/' ) );
         if ( $step === 7 && $intent === 'submit' ) { $url = add_query_arg( 'submitted', 1, home_url( '/leader/' ) ); }
