@@ -9,6 +9,11 @@ final class BH_Storefront_3 {
         if ( strtolower( (string ) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) { return ''; }
         $atts = shortcode_atts( array( 'id' => 0 ), $atts, 'bh_business_storefront' );
         $id = absint( $atts['id'] );
+        if ( ! $id && isset( $_GET['business_id'] ) ) {
+            $candidate = absint( wp_unslash( $_GET['business_id'] ) );
+            $directory_data = get_option( 'bh3_storefront_' . $candidate, array() );
+            if ( $candidate && is_array( $directory_data ) && ! empty( $directory_data['directory_opt_in'] ) ) { $id = $candidate; }
+        }
         if ( ! $id && is_user_logged_in() ) { $id = absint( get_user_meta( get_current_user_id(), 'bh3_organiser_id', true ) ); }
         if ( ! $id ) { return '<p>Select a business profile, or sign in with a linked organiser account.</p>'; }
         global $wpdb;
