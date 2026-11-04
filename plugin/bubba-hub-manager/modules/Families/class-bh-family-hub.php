@@ -43,6 +43,7 @@ final class BH_Family_Hub_3 {
         $planner = $private_preview ? BH_Family_Read_Model_3::planner_items() : array();
         $profiles = $private_preview ? BH_Family_Read_Model_3::family_profiles() : array();
         $planned_ids = is_array($planner) ? array_map('absint', array_column($planner, 'activity_id')) : array();
+        $visited_count = count(array_filter($planner, static function($item) { return !empty($item['visited']); }));
         $saved = is_array($saved) ? $saved : array();
         $planner = is_array($planner) ? $planner : array();
         $profiles = is_array($profiles) && isset($profiles['children'], $profiles['bumps']) && is_array($profiles['children']) && is_array($profiles['bumps']) ? $profiles : array('children' => array(), 'bumps' => array());
@@ -115,6 +116,7 @@ final class BH_Family_Hub_3 {
               </article>
               <article class="bh3-family__card">
                 <h2><?php echo esc_html__('Family planner', 'bubba-hub-manager'); ?></h2>
+                <p class="bh3-family__planner-summary"><?php echo esc_html(sprintf(__('%1$d planned · %2$d visited', 'bubba-hub-manager'), count($planner), $visited_count)); ?></p>
                 <?php if (empty($planner)) : ?>
                   <p><?php echo esc_html__('Your planner is empty.', 'bubba-hub-manager'); ?></p>
                 <?php else : ?>
@@ -122,9 +124,9 @@ final class BH_Family_Hub_3 {
                     <?php foreach (array_slice($planner, 0, 8) as $item) : ?>
                       <li>
                         <?php echo esc_html($activity_titles[absint($item['activity_id'] ?? 0)] ?? sprintf(__('Activity #%d', 'bubba-hub-manager'), absint($item['activity_id'] ?? 0))); ?>
-                        <?php if (!empty($item['visited'])) : ?><span class="bh3-family__status"><?php echo esc_html__('Visited', 'bubba-hub-manager'); ?></span><?php endif; ?>
+                        <span class="bh3-family__status"><?php echo esc_html(!empty($item['visited']) ? __('Visited', 'bubba-hub-manager') : __('Not visited yet', 'bubba-hub-manager')); ?></span>
                         <?php if (BH_Family_Actions_3::enabled()) : ?>
-                          <?php foreach (array('visited' => __('Visited', 'bubba-hub-manager'), 'not_visited' => __('Not visited', 'bubba-hub-manager'), 'unplan' => __('Remove', 'bubba-hub-manager')) as $action_key => $action_label) : ?>
+                          <?php foreach (array((!empty($item['visited']) ? 'not_visited' : 'visited') => (!empty($item['visited']) ? __('Mark not visited', 'bubba-hub-manager') : __('Mark visited', 'bubba-hub-manager')), 'unplan' => __('Remove', 'bubba-hub-manager')) as $action_key => $action_label) : ?>
                             <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
                               <input type="hidden" name="action" value="bh3_family_activity_action">
                               <input type="hidden" name="bh3_action" value="<?php echo esc_attr($action_key); ?>">
