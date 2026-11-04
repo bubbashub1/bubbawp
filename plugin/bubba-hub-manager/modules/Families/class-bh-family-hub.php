@@ -130,7 +130,7 @@ final class BH_Family_Hub_3 {
             <nav class="bh3-family__quick-nav" aria-label="<?php echo esc_attr__('Family Hub sections', 'bubba-hub-manager'); ?>">
               <a href="#bh3-my-family"><?php echo esc_html__('My family', 'bubba-hub-manager'); ?></a>
               <a href="#bh3-saved"><?php echo esc_html__('Favourites', 'bubba-hub-manager'); ?></a>
-              <a href="#bh3-preferences"><?php echo esc_html__('Preferences', 'bubba-hub-manager'); ?></a>
+              <a href="<?php echo esc_url(home_url('/family/settings/')); ?>"><?php echo esc_html__('Settings', 'bubba-hub-manager'); ?></a>
               <a href="#bh3-suggestions"><?php echo esc_html__('Suggested', 'bubba-hub-manager'); ?></a>
               <a href="#bh3-planner"><?php echo esc_html__('Planner', 'bubba-hub-manager'); ?></a>
             </nav>
@@ -234,42 +234,6 @@ final class BH_Family_Hub_3 {
           <div class="bh3-family__grid">
             <?php foreach ( $sections as $section ) : ?>
               <?php if ($private_preview && in_array($section[0], array('My family', 'Saved activities', 'Family planner'), true)) continue; ?>
-              <article id="bh3-preferences" class="bh3-family__card bh3-family__card--preferences">
-                <div class="bh3-family__section-heading"><div><span class="bh3-family__kicker"><?php echo esc_html__('PERSONALISE YOUR HUB', 'bubba-hub-manager'); ?></span><h2><?php echo esc_html__('Family preferences', 'bubba-hub-manager'); ?></h2></div></div>
-                <p><?php echo esc_html__('Choose the activities, days and areas that suit your family. These will help tailor future recommendations.', 'bubba-hub-manager'); ?></p>
-                <?php if ($admin_demo) : ?><p class="bh3-family__preview-note"><?php echo esc_html__('Administrator preview: explore the options below. Saving is available to verified family accounts.', 'bubba-hub-manager'); ?></p><?php endif; ?>
-                <?php if ($verified_family && isset($_GET['bh3_preferences_saved'])) : ?><p role="status"><?php echo esc_html__('Preferences saved.', 'bubba-hub-manager'); ?></p><?php endif; ?>
-                <form class="bh3-family__preferences-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-                  <input type="hidden" name="action" value="bh3_family_preferences">
-                  <?php wp_nonce_field('bh3_family_preferences'); ?>
-                  <fieldset><legend><?php echo esc_html__('What interests your family?', 'bubba-hub-manager'); ?></legend>
-                    <div class="bh3-family__choice-grid">
-                      <?php foreach (BH_Family_Preferences_3::interests() as $key => $label) : ?>
-                        <label><input type="checkbox" name="interests[]" value="<?php echo esc_attr($key); ?>" <?php checked(in_array($key, $preferences['interests'], true)); ?> <?php disabled($admin_demo); ?>><span><?php echo esc_html($label); ?></span></label>
-                      <?php endforeach; ?>
-                    </div>
-                  </fieldset>
-                  <fieldset><legend><?php echo esc_html__('Which days work best?', 'bubba-hub-manager'); ?></legend>
-                    <div class="bh3-family__choice-grid bh3-family__choice-grid--days">
-                      <?php foreach (BH_Family_Preferences_3::days() as $key => $label) : ?>
-                        <label><input type="checkbox" name="days[]" value="<?php echo esc_attr($key); ?>" <?php checked(in_array($key, $preferences['days'], true)); ?> <?php disabled($admin_demo); ?>><span><?php echo esc_html($label); ?></span></label>
-                      <?php endforeach; ?>
-                    </div>
-                  </fieldset>
-                  <fieldset><legend><?php echo esc_html__('Where would you like to explore?', 'bubba-hub-manager'); ?></legend>
-                    <div class="bh3-family__location-grid">
-                      <label><?php echo esc_html__('Town or area', 'bubba-hub-manager'); ?><input type="text" name="town" maxlength="80" value="<?php echo esc_attr($preferences['town']); ?>" placeholder="<?php echo esc_attr__('e.g. Torquay', 'bubba-hub-manager'); ?>" <?php disabled($admin_demo); ?>></label>
-                      <label><?php echo esc_html__('Postcode (optional)', 'bubba-hub-manager'); ?><input type="text" name="postcode" maxlength="9" value="<?php echo esc_attr($preferences['postcode']); ?>" placeholder="<?php echo esc_attr__('e.g. TQ2', 'bubba-hub-manager'); ?>" <?php disabled($admin_demo); ?>></label>
-                      <label><?php echo esc_html__('Travel distance', 'bubba-hub-manager'); ?><select name="radius" <?php disabled($admin_demo); ?>><?php foreach (array(5,10,15,25,50) as $miles) : ?><option value="<?php echo esc_attr($miles); ?>" <?php selected((int)$preferences['radius'], $miles); ?>><?php echo esc_html(sprintf(__('%d miles', 'bubba-hub-manager'), $miles)); ?></option><?php endforeach; ?></select></label>
-                    </div>
-                  </fieldset>
-                  <div class="bh3-family__choice-grid">
-                    <label><input type="checkbox" name="free_only" value="1" <?php checked($preferences['free_only']); ?> <?php disabled($admin_demo); ?>><span><?php echo esc_html__('Free activities only', 'bubba-hub-manager'); ?></span></label>
-                    <label><input type="checkbox" name="term_time" value="1" <?php checked($preferences['term_time']); ?> <?php disabled($admin_demo); ?>><span><?php echo esc_html__('Term-time activities', 'bubba-hub-manager'); ?></span></label>
-                  </div>
-                  <?php if (!$admin_demo) : ?><button type="submit"><?php echo esc_html__('Save my preferences', 'bubba-hub-manager'); ?></button><?php endif; ?>
-                </form>
-              </article>
               <article id="bh3-suggestions" class="bh3-family__card bh3-family__card--suggestions">
                 <div class="bh3-family__section-heading"><div><span class="bh3-family__kicker"><?php echo esc_html__('DISCOVER', 'bubba-hub-manager'); ?></span><h2><?php echo esc_html__('Suggested activities for your family', 'bubba-hub-manager'); ?></h2></div></div>
                 <p><?php echo esc_html__('Published activities matched against your chosen interests, days and area.', 'bubba-hub-manager'); ?></p>
