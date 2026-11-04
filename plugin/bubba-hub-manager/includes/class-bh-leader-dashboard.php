@@ -70,7 +70,7 @@ final class BH_Leader_Dashboard_3 {
             $out .= '</div></li>';
         }
         if ( ! $rows ) { $out .= '<li>No matching activities found. Try clearing the search or selecting All statuses.</li>'; }
-        $out .= '</ul></div><p class="bh3-sub">Staging preview · No bookings or changes are made from this overview.</p></section>';
+        $out .= '</ul></div><p class="bh3-sub">Staging preview · Draft edits and unpublishing are enabled. Booking management is not enabled.</p></section>';
         return $out;
     }
 }
