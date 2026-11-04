@@ -62,19 +62,6 @@ final class BH_Family_Native_Profiles_3 {
         </div>
         <?php return ob_get_clean();
     }
-    /** Add only the missing gender column; preserve the installed table definition and records. */
-    public static function maybe_upgrade_schema() {
-        if (!current_user_can('manage_options') || wp_parse_url(home_url(),PHP_URL_HOST)!=='staging.bubbahub.co.uk') return;
-        global $wpdb;
-        $table=$wpdb->prefix.'bh_family_profiles';
-        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s',$wpdb->esc_like($table)))!==$table) return;
-        $columns=$wpdb->get_col("SHOW COLUMNS FROM `{$table}`",0);
-        if (!is_array($columns) || !in_array('gender',$columns,true)) {
-            $wpdb->query("ALTER TABLE `{$table}` ADD COLUMN gender varchar(40) NOT NULL DEFAULT ''");
-        }
-        $columns=$wpdb->get_col("SHOW COLUMNS FROM `{$table}`",0);
-        if (is_array($columns) && in_array('gender',$columns,true)) update_option('bh3_family_profiles_gender_schema','1',false);
-    }
     public static function dashboard() {
         if (!self::allowed()) return '<p>Please sign in to manage your family profiles. Profile editing is currently available on the staging site only.</p>';
         global $wpdb;
