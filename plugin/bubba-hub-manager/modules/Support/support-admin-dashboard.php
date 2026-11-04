@@ -43,15 +43,15 @@ function bh_support_dashboard_render(): void {
     global $wpdb;
     $submission_table = $wpdb->prefix . 'fluentform_submissions';
     $workflow_table = $wpdb->prefix . 'bh_support_enquiry_status';
-    if ($forms && defined('FLUENTFORM') &&
-        $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $submission_table)) === $submission_table) {
+    if ($forms &&
+        $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($submission_table))) === $submission_table) {
         $fluent_available = true;
         $placeholders = implode(',', array_fill(0, count($forms), '%d'));
         $total = (int) $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(*) FROM `$submission_table` WHERE form_id IN ($placeholders)", ...$forms
         ));
         $counts['new'] = $total;
-        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $workflow_table)) === $workflow_table) {
+        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($workflow_table))) === $workflow_table) {
             $rows = $wpdb->get_results($wpdb->prepare(
                 "SELECT w.status, COUNT(*) AS qty
                  FROM `$workflow_table` w
