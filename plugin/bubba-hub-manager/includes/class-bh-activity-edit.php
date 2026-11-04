@@ -66,15 +66,19 @@ final class BH_Activity_Edit_3 {
         if ( $title === '' || strlen( $title ) > 255 || strlen( $category ) > 150 ) { wp_die( 'Invalid title or category.', '', array( 'response' => 400 ) ); }
         $ages = array();
         foreach ( array( 'age_min_months', 'age_max_months' ) as $key ) {
-            $raw = (string) wp_unslash( $_POST[$key] ?? '' );
-            $age = $raw === '' ? null : filter_var( $raw, FILTER_VALIDATE_INT );
-            if ( $age !== null && ( $age === false || $age < 0 || $age > 216 ) ) { wp_die( 'Invalid age range.', '', array( 'response' => 400 ) ); }
-            $ages[$key] = $age;
+            $ages[$key] = BH_Activity_Fields_3::age( $_POST[$key] ?? '' );
+            if ( is_wp_error( $ages[$key] ) ) {
+                wp_die( $ages[$key]->get_error_message(), '', array( 'response' => 400 ) );
+            }
         }
-        if ( $ages['age_min_months'] !== null && $ages['age_max_months'] !== null && $ages['age_min_months'] > $ages['age_max_months'] ) { wp_die( 'Minimum age exceeds maximum age.', '', array( 'response' => 400 ) ); }
+        if ( null !== $ages['age_min_months'] && null !== $ages['age_max_months'] && $ages['age_min_months'] > $ages['age_max_months'] ) {
+            wp_die( 'Minimum age exceeds maximum age.', '', array( 'response' => 400 ) );
+        }
         $free = ! empty( $_POST['is_free'] ) ? 1 : 0;
-        $raw_price = trim( (string) wp_unslash( $_POST['price_from'] ?? '' ) );
-        if ( $raw_price !== '' && ( ! is_numeric( $raw_price ) || (float) $raw_price < 0 || (float) $raw_price > 99999999 ) ) { wp_die( 'Invalid price.', '', array( 'response' => 400 ) ); }
+        $price = BH_Activity_Fields_3::price( $_POST['price_from'] ?? '' );
+        if ( is_wp_error( $price ) ) {
+            wp_die( $price->get_error_message(), '', array( 'response' => 400 ) );
+        }
         $url = esc_url_raw( wp_unslash( $_POST['booking_url'] ?? '' ) );
         if ( strlen( $url ) > 2048 || ( $url && ! in_array( strtolower( (string) wp_parse_url( $url, PHP_URL_SCHEME ) ), array( 'http', 'https' ), true ) ) ) { wp_die( 'Invalid URL.', '', array( 'response' => 400 ) ); }
         global $wpdb;
@@ -89,7 +93,7 @@ final class BH_Activity_Edit_3 {
             'organiser_id' => $org_id ?: null,
             'title' => $title, 'description' => wp_kses_post( wp_unslash( $_POST['description'] ?? '' ) ),
             'category' => $category, 'age_min_months' => $ages['age_min_months'],
-            'age_max_months' => $ages['age_max_months'], 'price_from' => $free ? 0 : ( $raw_price === '' ? null : round( (float) $raw_price, 2 ) ),
+            'age_max_months' => $ages['age_max_months'], 'price_from' => $free ? 0 : $price,
             'is_free' => $free, 'booking_url' => $url, 'updated_at' => current_time( 'mysql', true )
         );
         $table = $wpdb->prefix . 'activities';
