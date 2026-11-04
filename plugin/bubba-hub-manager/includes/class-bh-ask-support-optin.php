@@ -46,7 +46,6 @@ final class BH_Ask_Support_Optin_3 {
         $user_id = get_current_user_id();
         $organiser_id = self::linked_organiser();
         $requested = $enabled && count($selected) > 0;
-        $previous = (array) get_user_meta($user_id, 'bh3_ask_support_preferences', true);
         $next = [
             'opted_in' => $requested,
             'categories' => $selected,
@@ -58,7 +57,7 @@ final class BH_Ask_Support_Optin_3 {
             // Revoke removed categories and organiser transfers before creating new requests.
             // A previously approved category never survives a withdrawal.
             $existing = $wpdb->get_results($wpdb->prepare(
-                "SELECT id,organiser_id,category_slug,opted_in,approval_status FROM \`{$table}\` WHERE user_id=%d",
+                "SELECT id,organiser_id,category_slug,opted_in,approval_status FROM `{$table}` WHERE user_id=%d",
                 $user_id
             ), ARRAY_A);
             if (!is_array($existing)) wp_die('Unable to load specialist preferences.', '', ['response' => 503]);
