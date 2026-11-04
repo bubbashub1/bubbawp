@@ -52,7 +52,7 @@ final class BH_Directory_3 {
         $page = min( 100, max( 1, absint( $_GET['bh_page'] ?? 1 ) ) );
         $conditions = array( "a.status IN ('published','publish')" );
         $params = array();
-        if ( $search !== '' ) { $conditions[] = 'a.title LIKE %s'; $params[] = '%' . $wpdb->esc_like( $search ) . '%'; }
+        if ( $search !== '' ) { $conditions[] = '(a.title LIKE %s OR a.description LIKE %s OR EXISTS (SELECT 1 FROM `' . $organisers . '` os WHERE os.id = a.organiser_id AND os.name LIKE %s))'; $pattern = '%' . $wpdb->esc_like( $search ) . '%'; $params[] = $pattern; $params[] = $pattern; $params[] = $pattern; }
         if ( $category !== '' ) { $conditions[] = 'a.category = %s'; $params[] = $category; }
         if ( $town !== '' ) { $conditions[] = 'EXISTS (SELECT 1 FROM `' . $links . '` av2 INNER JOIN `' . $venues . '` v2 ON v2.id = av2.venue_id WHERE av2.activity_id = a.id AND v2.town LIKE %s)'; $params[] = '%' . $wpdb->esc_like( $town ) . '%'; }
         if ( $free ) { $conditions[] = 'a.is_free = 1'; }
@@ -142,7 +142,7 @@ final class BH_Directory_3 {
         @media(max-width:560px){.bh3-real-directory .bh3-cards{grid-template-columns:1fr}}
         </style><div class="bh3-banner"><h2>Discover activities for your family</h2><p>Baby groups, toddler classes and family activities across Devon &amp; Cornwall.</p></div>';
         echo '<form class="bh3-search-form" method="get" aria-label="Filter activities">';
-        if ( $show( 'keyword' ) ) { echo '<label><span>Search</span><input type="search" name="bh_search" placeholder="Class or activity" value="' . esc_attr( $search ) . '"></label>'; }
+        if ( $show( 'keyword' ) ) { echo '<label><span>Search</span><input type="search" name="bh_search" placeholder="Activity, organiser or keyword" value="' . esc_attr( $search ) . '"></label>'; }
         if ( $show( 'category' ) ) { echo '<label><span>Category</span><input type="search" name="bh_category" placeholder="e.g. Swimming" value="' . esc_attr( $category ) . '"></label>'; }
         if ( $show( 'price' ) ) { echo '<label><span>Maximum price</span><select name="bh_max_price"><option value="">Any price</option>'; foreach ( array( 5, 10, 20, 50 ) as $limit ) { echo '<option value="' . esc_attr( (string) $limit ) . '" ' . selected( $max_price, $limit, false ) . '>Up to £' . esc_html( (string) $limit ) . '</option>'; } echo '</select></label>'; }
         if ( $show( 'town' ) ) { echo '<label><span>Town</span><input type="search" name="bh_town" placeholder="Town" value="' . esc_attr( $town ) . '"></label>'; }
@@ -163,7 +163,7 @@ final class BH_Directory_3 {
             echo '</select></label><div class="bh3-search-actions"><button type="button" class="bh3-locate" data-bh3-locate>Use my location</button><span class="bh3-location-status" role="status" aria-live="polite"></span></div>';
             if ( $geo_valid ) { echo '<input type="hidden" name="bh_lat" value="' . esc_attr( (string) $geo_lat ) . '"><input type="hidden" name="bh_lng" value="' . esc_attr( (string) $geo_lng ) . '">'; }
         }
-        echo '<div class="bh3-search-actions"><button type="submit">Find activities</button><a href="' . esc_url( remove_query_arg( array( 'bh_search', 'bh_category', 'bh_town', 'bh_region', 'bh_age', 'bh_day', 'bh_postcode', 'bh_free', 'bh_term', 'bh_sort', 'bh_radius', 'bh_lat', 'bh_lng', 'bh_page' ) ) ) . '">Clear filters</a></div></form>';
+        echo '<div class="bh3-search-actions"><button type="submit">Find activities</button><a href="' . esc_url( remove_query_arg( array( 'bh_search', 'bh_category', 'bh_town', 'bh_region', 'bh_age', 'bh_day', 'bh_postcode', 'bh_free', 'bh_max_price', 'bh_term', 'bh_sort', 'bh_radius', 'bh_lat', 'bh_lng', 'bh_page' ) ) ) . '">Clear filters</a></div></form>';
         if ( $map_points ) { echo '<div class="bh3-view-toggle" role="group" aria-label="Directory view"><button type="button" data-bh3-view="both" aria-pressed="true">Map &amp; list</button><button type="button" data-bh3-view="map" aria-pressed="false">Map only</button><button type="button" data-bh3-view="list" aria-pressed="false">List only</button></div>'; }
         echo '<section class="bh3-map-section" aria-label="Activity locations"><h3>Activities on the map</h3>';
         if ( $map_points ) {
