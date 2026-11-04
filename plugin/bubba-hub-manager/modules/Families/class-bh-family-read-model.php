@@ -63,10 +63,18 @@ final class BH_Family_Read_Model_3 {
         $matches = $wpdb->get_results($wpdb->prepare($sql, $slugs), ARRAY_A);
         $unique = array();
         foreach ((array) $matches as $row) if ((int) $row['matches'] === 1) $unique[(string) $row['slug']] = true;
+        // A slug shared by multiple published legacy activities is ambiguous,
+        // even if the new WordPress table has only one matching record.
+        $legacy_slug_placeholders = implode(',', array_fill(0, count($slugs), '%s'));
+        $legacy_sql = "SELECT slug, COUNT(*) AS matches FROM bh_activities WHERE slug IN ({$legacy_slug_placeholders}) AND status = 'published' GROUP BY slug";
+        $legacy_counts = $wpdb->get_results($wpdb->prepare($legacy_sql, $slugs), ARRAY_A);
+        if (!is_array($legacy_counts)) return array();
+        $legacy_unique = array();
+        foreach ($legacy_counts as $row) if ((int) $row['matches'] === 1) $legacy_unique[(string) $row['slug']] = true;
         $links = array();
         foreach ($legacy as $row) {
             $slug = (string) $row['slug'];
-            if (!empty($unique[$slug]) && sanitize_title($slug) === $slug) {
+            if (!empty($unique[$slug]) && !empty($legacy_unique[$slug]) && sanitize_title($slug) === $slug) {
                 $links[(int) $row['id']] = home_url('/activity/' . rawurlencode($slug) . '/');
             }
         }
