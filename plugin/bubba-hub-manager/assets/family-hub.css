@@ -195,3 +195,16 @@ body .bh3-family__settings-page .bh3-family__notification-option input[type=chec
 .bh3-family__notification-form h3{margin:10px 0 0;color:#234c3b}
 .bh3-family__notification-form>button{align-self:flex-start;min-height:46px;padding:12px 22px;border:0;border-radius:12px;background:#205d46;color:#fff;font:inherit;font-weight:750;cursor:pointer}
 @media(max-width:700px){.bh3-family__notification-list{grid-template-columns:1fr}.bh3-family__notification-form>button{width:100%}}
+
+/* Leader-inspired settings sidebar */
+body .bh3-family__settings-page .bh3-family__settings-layout{display:grid!important;grid-template-columns:235px minmax(0,1fr)!important;gap:24px!important;align-items:start!important;width:100%!important}
+.bh3-family__settings-content{min-width:0;width:100%}
+body .bh3-family__settings-page .bh3-family__settings-sidebar{position:sticky;top:30px;display:flex;flex-direction:column;gap:5px;padding:17px;background:#fff;border:1px solid #e0e8e0;border-radius:17px;box-shadow:0 4px 18px rgba(29,65,46,.04)}
+.bh3-family__sidebar-heading{display:flex;flex-direction:column;gap:8px;padding:5px 9px 16px;margin-bottom:6px;border-bottom:1px solid #e6ede7}
+.bh3-family__sidebar-heading strong{font-size:1.04rem;color:#1d4936}
+body .bh3-family__settings-sidebar>a{display:flex!important;align-items:center!important;gap:12px!important;padding:12px 13px!important;border-radius:10px!important;color:#355745!important;font-weight:650!important;text-decoration:none!important;font-size:.92rem!important}
+body .bh3-family__settings-sidebar>a:hover,body .bh3-family__settings-sidebar>a:focus-visible{background:#e8f3ec!important;color:#1e5c41!important}
+.bh3-family__settings-sidebar>a span{display:inline-flex;width:23px;justify-content:center;font-size:1.12rem}
+.bh3-family__sidebar-footer{padding:13px 9px 3px;margin-top:8px;border-top:1px solid #e6ede7;font-size:.76rem;color:#78877c}
+.bh3-family__settings-page [id^=bh3-]{scroll-margin-top:32px}
+@media(max-width:850px){body .bh3-family__settings-page .bh3-family__settings-layout{grid-template-columns:1fr!important;gap:15px!important}body .bh3-family__settings-page .bh3-family__settings-sidebar{position:static;flex-direction:row;flex-wrap:wrap;gap:6px;padding:12px}body .bh3-family__settings-page .bh3-family__sidebar-heading{width:100%;padding:4px 8px 9px;margin:0}body .bh3-family__settings-sidebar>a{flex:1 1 auto}body .bh3-family__sidebar-footer{display:none}}
