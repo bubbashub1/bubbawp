@@ -46,24 +46,6 @@ final class BH_Leader_Frontend_3 {
                 <div class="bh-leader-stat"><strong><?php echo esc_html( number_format_i18n( $totals['draft'] ) ); ?></strong>Drafts</div>
                 <div class="bh-leader-stat"><strong><?php echo esc_html( number_format_i18n( $totals['published'] ) ); ?></strong>Published</div>
             </section>
-            <h2 class="bh-leader-section-heading">Manage your classes</h2><section class="bh-leader-grid" id="leader-tools" aria-label="Leader sections">
-                <?php
-                $sections = array(
-                    array( 'My Activities', 'Search, edit and manage your own draft listings.', '#my-activities', 'View activities' ),
-                    array( 'My Venues', 'Choose an activity below to assign or remove its venues.', '#my-activities', 'Choose activity' ),
-                    array( 'My Timetables', 'Choose an activity below to edit its weekly sessions.', '#my-activities', 'Choose activity' ),
-                    array( 'Bookings', 'Bookings and enrolments are not yet enabled.', '', '' ),
-                    array( 'My Business', 'Update your public organiser profile and contact details.', home_url( '/leader/business/' ), 'Edit business profile' ),
-                    array( 'Help & Support', 'Find family guidance and website support resources.', home_url( '/guidance/resources/' ), 'View resources' ),
-                    array( 'Ask Support', 'Choose your specialist topics and prepare to answer family questions.', '#leader-ask-inbox', 'Manage Ask Support' ),
-                );
-                foreach ( $sections as $section ) {
-                    echo '<article class="bh-leader-card"><h2>' . esc_html( $section[0] ) . '</h2><p>' . esc_html( $section[1] ) . '</p>';
-                    if ( $section[2] ) { echo '<a href="' . esc_url( $section[2] ) . '">' . esc_html( $section[3] ) . '</a>'; }
-                    echo '</article>';
-                }
-                ?>
-            </section>
             <?php echo do_shortcode('[bh_leader_ask_inbox]'); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
             <?php echo do_shortcode('[bh_leader_ask_support]'); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
             <section class="bh-leader-list" id="my-activities"><h2>My Activities</h2>
