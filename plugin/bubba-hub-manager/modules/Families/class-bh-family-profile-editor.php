@@ -9,6 +9,7 @@ final class BH_Family_Profile_Editor_3 {
         add_action('admin_post_bh3_family_child_name', array(__CLASS__, 'handle_child_name'));
         add_action('admin_post_bh3_family_bump_name', array(__CLASS__, 'handle_bump_name'));
         add_action('admin_post_bh3_family_create_profile', array(__CLASS__, 'handle_create_profile'));
+        add_action('admin_post_bh3_family_profile_date', array(__CLASS__, 'handle_profile_date'));
     }
 
     public static function handle_child_name() {
@@ -50,6 +51,48 @@ final class BH_Family_Profile_Editor_3 {
         if (!$exists) return new WP_Error('family_profile_missing', 'Profile not found.');
         $result = $wpdb->update('bh_bumps', array('nickname' => $name), array('id' => absint($bump_id), 'user_id' => $family_id), array('%s'), array('%d', '%d'));
         return $result === false ? new WP_Error('family_update_failed', 'Could not save profile.') : true;
+    }
+
+    public static function handle_profile_date() {
+        if (!self::enabled() || !is_user_logged_in() || !isset($_POST['_wpnonce'], $_POST['bh3_profile_type'], $_POST['bh3_profile_id'], $_POST['bh3_profile_date'])
+            || !is_scalar($_POST['_wpnonce']) || !is_scalar($_POST['bh3_profile_type']) || !is_scalar($_POST['bh3_profile_id']) || !is_scalar($_POST['bh3_profile_date'])) {
+            wp_die(esc_html__('Profile date editing is unavailable.', 'bubba-hub-manager'), '', array('response' => 403));
+        }
+        $result = self::update_profile_date(
+            sanitize_key(wp_unslash($_POST['bh3_profile_type'])),
+            absint(wp_unslash($_POST['bh3_profile_id'])),
+            sanitize_text_field(wp_unslash($_POST['bh3_profile_date'])),
+            sanitize_text_field(wp_unslash($_POST['_wpnonce']))
+        );
+        wp_safe_redirect(add_query_arg('bh3_profile_status', is_wp_error($result) ? 'error' : 'saved', wp_get_referer() ?: home_url('/')));
+        exit;
+    }
+
+    public static function update_profile_date($type, $id, $date, $nonce) {
+        if (!self::enabled() || !is_user_logged_in() || !wp_verify_nonce($nonce, 'bh3_family_profile_edit')) {
+            return new WP_Error('family_date_denied', 'Profile editing is disabled.');
+        }
+        $family_id = BH_Family_Identity_3::current_legacy_id();
+        $allowed = array('child' => array('bh_children', 'date_of_birth'), 'bump' => array('bh_bumps', 'due_date'));
+        if ($family_id < 1 || $id < 1 || !isset($allowed[$type])) return new WP_Error('family_date_invalid', 'Invalid profile.');
+        $parts = explode('-', $date);
+        if (strlen($date) !== 10 || count($parts) !== 3 || !ctype_digit(str_replace('-', '', $date))
+            || !checkdate((int) $parts[1], (int) $parts[2], (int) $parts[0])
+            || (int) $parts[0] < 1900 || (int) $parts[0] > 2100) {
+            return new WP_Error('family_date_invalid', 'Enter a valid date.');
+        }
+        $today = current_time('Y-m-d');
+        if ($type === 'child' && $date > $today) return new WP_Error('family_date_future', 'Birth date cannot be in the future.');
+        if ($type === 'bump' && ($date < gmdate('Y-m-d', strtotime($today . ' - 300 days')) || $date > gmdate('Y-m-d', strtotime($today . ' + 600 days')))) {
+            return new WP_Error('family_date_range', 'Due date outside the supported range.');
+        }
+        global $wpdb;
+        list($table, $column) = $allowed[$type];
+        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($table))) !== $table) return new WP_Error('family_date_table', 'Profile storage unavailable.');
+        $exists = $wpdb->get_var($wpdb->prepare("SELECT id FROM `{$table}` WHERE id = %d AND user_id = %d LIMIT 1", $id, $family_id));
+        if (!$exists) return new WP_Error('family_date_missing', 'Profile not found.');
+        $result = $wpdb->update($table, array($column => $date), array('id' => $id, 'user_id' => $family_id), array('%s'), array('%d', '%d'));
+        return $result === false ? new WP_Error('family_date_failed', 'Unable to save date.') : true;
     }
 
     /** Separate opt-in: creating records is not enabled by the name-edit flag. */
