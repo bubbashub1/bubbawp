@@ -24,6 +24,7 @@ final class BH_Family_Settings_3 {
         $preferences = BH_Family_Preferences_3::read();
         $account = wp_get_current_user();
         $notifications = BH_Family_Notifications_3::read();
+        $privacy = BH_Family_Privacy_3::read();
         ob_start();
         ?>
         <section class="bh3-family bh3-family__settings-page">
@@ -35,6 +36,7 @@ final class BH_Family_Settings_3 {
               <a href="#bh3-account"><span aria-hidden="true">◯</span><?php echo esc_html__('My profile', 'bubba-hub-manager'); ?></a>
               <a href="#bh3-preferences"><span aria-hidden="true">☷</span><?php echo esc_html__('Family preferences', 'bubba-hub-manager'); ?></a>
               <a href="#bh3-notifications"><span aria-hidden="true">♧</span><?php echo esc_html__('Notifications', 'bubba-hub-manager'); ?></a>
+              <a href="#bh3-privacy">Privacy &amp; consent</a>
               <div class="bh3-family__sidebar-footer"><?php echo esc_html__('More family settings coming soon', 'bubba-hub-manager'); ?></div>
             </nav>
             <div class="bh3-family__settings-content">
