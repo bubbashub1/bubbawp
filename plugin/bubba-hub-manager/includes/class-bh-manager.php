@@ -103,6 +103,8 @@ final class BH_Manager_3 {
         BH_Storefront_3::register();
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-business-directory.php';
         BH_Business_Directory_3::register();
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-bookings.php';
+        BH_Leader_Bookings_3::register();
         BH_Leader_Layout_3::register();
         BH_Leader_Frontend_3::register();
         BH_Portal_Access_3::register();
