@@ -74,6 +74,8 @@ final class BH_Manager_3 {
         require_once BUBBA_HUB_MANAGER_PATH . 'modules/Families/class-bh-family-profile-editor.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'modules/Families/class-bh-family-native-profiles.php';
         BH_Family_Native_Profiles_3::register();
+        require_once BUBBA_HUB_MANAGER_PATH . 'modules/Families/class-bh-family-native-favourites.php';
+        BH_Family_Native_Favourites_3::register();
         require_once BUBBA_HUB_MANAGER_PATH . 'modules/Families/class-bh-family-actions.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'modules/Families/class-bh-family-preferences.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'modules/Families/class-bh-family-recommendations.php';
