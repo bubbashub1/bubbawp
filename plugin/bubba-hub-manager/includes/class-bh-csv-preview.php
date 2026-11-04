@@ -43,6 +43,27 @@ final class BH_CSV_Preview_3 {
         if ( in_array( '', $headers, true ) || count( array_unique( $headers ) ) !== count( $headers ) ) {
             fclose( $handle ); echo '<p>CSV headers must be unique and nonempty.</p></div>'; return;
         }
+        $allowed = array(
+            'activities' => array( 'title', 'slug', 'description', 'status', 'category', 'organiser_id', 'age_min_months', 'age_max_months', 'price_from', 'is_free', 'booking_url', 'image_id' ),
+            'venues' => array( 'name', 'address_line1', 'town', 'postcode', 'region', 'latitude', 'longitude' ),
+            'organisers' => array( 'name', 'slug', 'description', 'website_url', 'contact_email' ),
+            'sessions' => array( 'activity_id', 'venue_id', 'day_of_week', 'start_time', 'end_time', 'start_date', 'end_date', 'frequency', 'term_time_only', 'status' ),
+        );
+        $aliases = array( 'activity_name' => 'title', 'activity_title' => 'title', 'venue_name' => 'name', 'organiser_name' => 'name', 'email' => 'contact_email', 'website' => 'website_url', 'address' => 'address_line1', 'lat' => 'latitude', 'lng' => 'longitude', 'price' => 'price_from' );
+        $mapped = array(); $unmapped = array();
+        foreach ( $headers as $header ) {
+            $key = sanitize_key( str_replace( array( ' ', '-' ), '_', strtolower( $header ) ) );
+            $target = in_array( $key, $allowed[$type], true ) ? $key : ( $aliases[$key] ?? '' );
+            if ( in_array( $target, $allowed[$type], true ) ) { $mapped[$header] = $target; } else { $unmapped[] = $header; }
+        }
+        echo '<h2>Suggested column mapping</h2><table class="widefat striped"><thead><tr><th>CSV column</th><th>BH3 field</th></tr></thead><tbody>';
+        foreach ( $mapped as $source => $target ) { echo '<tr><td>' . esc_html( $source ) . '</td><td>' . esc_html( $target ) . '</td></tr>'; }
+        echo '</tbody></table>';
+        if ( $unmapped ) { echo '<p>Unmapped columns: ' . esc_html( implode( ', ', $unmapped ) ) . '</p>'; }
+        if ( count( array_unique( array_values( $mapped ) ) ) !== count( $mapped ) ) { echo '<p><strong>Warning:</strong> duplicate field mappings detected.</p>'; }
+        $required = $type === 'activities' ? 'title' : ( $type === 'sessions' ? 'activity_id' : 'name' );
+        if ( ! in_array( $required, $mapped, true ) ) { echo '<p><strong>Warning:</strong> required field missing: ' . esc_html( $required ) . '.</p>'; }
+        echo '<p>Suggested mappings only; no changes saved.</p>';
         echo '<h2>' . esc_html( ucfirst( $type ) ) . ' — first 10 rows</h2><div style="overflow-x:auto"><table class="widefat striped"><thead><tr>';
         foreach ( $headers as $header ) { echo '<th>' . esc_html( $header ) . '</th>'; }
         echo '</tr></thead><tbody>';
