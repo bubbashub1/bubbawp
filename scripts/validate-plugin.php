@@ -45,6 +45,14 @@ foreach (glob($root . '/**/*.php') ?: [] as $file) {
             strpos($source, "add_action('admin_post_bh3_ask_install_schema'") !== false) {
             continue;
         }
+        // Leader venue requests are installed only by an explicit staging admin action with a nonce.
+        if ($unsafe === 'dbDelta(' && basename($file) === 'class-bh-leader-venue-requests.php' &&
+            strpos($source, 'public static function install()') !== false &&
+            strpos($source, "check_admin_referer( 'bh3_venue_request_install' )") !== false &&
+            strpos($source, "staging.bubbahub.co.uk") !== false &&
+            strpos($source, "admin_post_bh3_venue_request_install") !== false) {
+            continue;
+        }
         if (strpos($source, $unsafe) !== false) {
             fwrite(STDERR, "Unexpected side-effect API in {$file}: {$unsafe}\n");
             exit(1);
