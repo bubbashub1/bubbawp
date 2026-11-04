@@ -10,8 +10,10 @@ add_shortcode('bh_support_hub', static function (): string {
     $website_help = get_page_by_path('guidance/help') ?: get_page_by_path('website-help') ?: get_page_by_path('support/website');
     $resources_page = get_page_by_path('guidance/resources');
     $blog_page = get_page_by_path('guidance/blog');
-    $resources_url = $resources_page ? get_permalink($resources_page) : '#bh-family-resources';
-    $blog_url = $blog_page ? get_permalink($blog_page) : '#bh-family-articles';
+    $resources_url = $resources_page && $resources_page->post_status === 'publish'
+        ? get_permalink($resources_page) : '#bh-family-resources';
+    $blog_url = $blog_page && $blog_page->post_status === 'publish'
+        ? get_permalink($blog_page) : '#bh-family-articles';
     $website_help_url = $website_help ? get_permalink($website_help) : '';
     ob_start();
     ?>
@@ -29,12 +31,12 @@ add_shortcode('bh_support_hub', static function (): string {
       <section id="bh-family-resources" class="bh-support-landing__section">
         <h2><?php esc_html_e('Family resources', 'bubbahub'); ?></h2>
         <?php echo do_shortcode('[bh_support_resources limit="6"]'); ?>
-        <?php if ($resources_page) : ?><p><a class="bh-support-landing__button" href="<?php echo esc_url($resources_url); ?>"><?php esc_html_e('View all family resources', 'bubbahub'); ?></a></p><?php endif; ?>
+        <?php if ($resources_page && $resources_page->post_status === 'publish') : ?><p><a class="bh-support-landing__button" href="<?php echo esc_url($resources_url); ?>"><?php esc_html_e('View all family resources', 'bubbahub'); ?></a></p><?php endif; ?>
       </section>
       <section id="bh-family-articles" class="bh-support-landing__section">
         <h2><?php esc_html_e('Blogs & articles', 'bubbahub'); ?></h2>
         <?php echo do_shortcode('[bh_support_articles limit="6"]'); ?>
-        <?php if ($blog_page) : ?><p><a class="bh-support-landing__button" href="<?php echo esc_url($blog_url); ?>"><?php esc_html_e('View all blogs & articles', 'bubbahub'); ?></a></p><?php endif; ?>
+        <?php if ($blog_page && $blog_page->post_status === 'publish') : ?><p><a class="bh-support-landing__button" href="<?php echo esc_url($blog_url); ?>"><?php esc_html_e('View all blogs & articles', 'bubbahub'); ?></a></p><?php endif; ?>
       </section>
       <section id="bh-website-help" class="bh-support-landing__section">
         <h2><?php esc_html_e('Help using Bubba Hub', 'bubbahub'); ?></h2>
