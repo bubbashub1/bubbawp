@@ -54,7 +54,13 @@ add_shortcode('bh_support_articles', static function ($atts): string {
             <a class="bh-resource-read" href="<?php echo esc_url(get_permalink()); ?>"><?php esc_html_e('Read article', 'bubbahub'); ?></a>
           </article>
         <?php endwhile; wp_reset_postdata(); else : ?>
-          <p><?php esc_html_e('No articles match your search yet.', 'bubbahub'); ?></p>
+          <div class="bh-resource-empty" role="status">
+            <h3><?php esc_html_e('No articles found', 'bubbahub'); ?></h3>
+            <p><?php esc_html_e('Try another keyword or topic, or browse all articles.', 'bubbahub'); ?></p>
+            <?php if ($search !== '' || $topic !== '') : ?>
+              <a class="bh-resource-reset" href="<?php echo esc_url(remove_query_arg(['bh_article_search', 'bh_article_topic', 'bh_article_page'])); ?>"><?php esc_html_e('Clear filters', 'bubbahub'); ?></a>
+            <?php endif; ?>
+          </div>
         <?php endif; ?>
       </div>
       <?php if ($query->max_num_pages > 1) :
