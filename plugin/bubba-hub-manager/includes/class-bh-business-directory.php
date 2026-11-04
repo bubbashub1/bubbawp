@@ -7,6 +7,8 @@ final class BH_Business_Directory_3 {
     }
     public static function render() {
         if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) { return ''; }
+        // Until approval and publication workflows exist, only team administrators can preview directory opt-ins.
+        if ( ! current_user_can( 'manage_options' ) ) { return '<p>The business directory is coming soon.</p>'; }
         global $wpdb;
         $table = $wpdb->prefix . 'organisers';
         $rows = $wpdb->get_results( "SELECT id,name,description FROM `{$table}` ORDER BY name ASC LIMIT 300", ARRAY_A );
@@ -30,14 +32,14 @@ final class BH_Business_Directory_3 {
             .bh-business-directory .bh-dir-card h3{font-size:20px;margin:0 0 10px}.bh-business-directory .bh-dir-card p{margin:8px 0;color:#53665e}
             .bh-business-directory .bh-dir-card a{color:#245e4a;font-weight:700}.bh-business-directory [hidden]{display:none!important}
           </style>
-          <header class="bh-dir-head"><h2>Discover local businesses</h2><p>Family-focused organisations across Devon &amp; Cornwall.</p></header>
+          <header class="bh-dir-head"><h2>Business directory preview</h2><p>Administrator-only staging review of opted-in family businesses. Not publicly published.</p></header>
           <div class="bh-dir-controls">
             <input type="search" class="bh-dir-search" aria-label="Search businesses" placeholder="Search businesses or areas">
             <select class="bh-dir-category" aria-label="Filter by category"><option value="">All categories</option>
             <?php foreach ( $categories as $value => $label ) : ?><option value="<?php echo esc_attr( $value ); ?>"><?php echo esc_html( $label ); ?></option><?php endforeach; ?>
             </select>
           </div>
-          <p class="bh-dir-count" role="status"><?php echo count( $cards ); ?> businesses</p>
+          <p class="bh-dir-count" role="status"><?php echo count( $cards ); ?> businesses awaiting directory launch</p>
           <div class="bh-dir-grid">
             <?php foreach ( $cards as $card ) : $p = $card['profile']; $e = $card['extras']; ?>
               <article class="bh-dir-card" data-category="<?php echo esc_attr( $e['business_category'] ?? '' ); ?>" data-search="<?php echo esc_attr( strtolower( $p['name'] . ' ' . ( $e['areas_served'] ?? '' ) . ' ' . ( $categories[ $e['business_category'] ?? '' ] ?? '' ) ) ); ?>">
