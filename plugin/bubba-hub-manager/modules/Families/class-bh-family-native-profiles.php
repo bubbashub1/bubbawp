@@ -75,10 +75,10 @@ final class BH_Family_Native_Profiles_3 {
     public static function fluent_form_submission($entry_id,$form_data,$form) {
         $form_id=is_object($form) && isset($form->id) ? absint($form->id) : (is_array($form) && isset($form['id']) ? absint($form['id']) : 0);
         if ($form_id!==5 || !self::allowed() || !is_user_logged_in() || !is_array($form_data)) return;
-        $type=isset($form_data['profile_type']) ? sanitize_key($form_data['profile_type']) : '';
-        $name=isset($form_data['display_name']) ? sanitize_text_field($form_data['display_name']) : '';
-        $date=isset($form_data['profile_date']) ? sanitize_text_field($form_data['profile_date']) : '';
-        $gender=isset($form_data['gender']) ? sanitize_text_field($form_data['gender']) : '';
+        $type=isset($form_data['profile_type']) && is_scalar($form_data['profile_type']) ? sanitize_key($form_data['profile_type']) : '';
+        $name=isset($form_data['display_name']) && is_scalar($form_data['display_name']) ? sanitize_text_field($form_data['display_name']) : '';
+        $date=isset($form_data['profile_date']) && is_scalar($form_data['profile_date']) ? sanitize_text_field($form_data['profile_date']) : '';
+        $gender=isset($form_data['gender']) && is_scalar($form_data['gender']) ? sanitize_text_field($form_data['gender']) : '';
         if (!in_array($type,array('child','bump'),true) || $name==='' || strlen($name)>100) return;
         if ($type==='bump') $gender=''; if (strlen($gender)>40) $gender=substr($gender,0,40);
         $parsed=DateTimeImmutable::createFromFormat('!Y-m-d',$date,wp_timezone());
@@ -180,7 +180,7 @@ final class BH_Family_Native_Profiles_3 {
         $gender=isset($_POST['gender']) && is_scalar($_POST['gender']) ? sanitize_text_field(wp_unslash($_POST['gender'])) : '';
         if (strlen($gender)>40) $gender=substr($gender,0,40);
         if ($record['profile_type']==='bump') $gender='';
-        $result=$wpdb->update($table,array('display_name'=>$name,'profile_date'=>$date,'gender'=>$gender,'updated_at'=>current_time('mysql')),array('id'=>$id,'user_id'=>get_current_user_id()),array('%s','%s','%s'),array('%d','%d'));
+        $result=$wpdb->update($table,array('display_name'=>$name,'profile_date'=>$date,'gender'=>$gender,'updated_at'=>current_time('mysql')),array('id'=>$id,'user_id'=>get_current_user_id()),array('%s','%s','%s','%s'),array('%d','%d'));
         if ($result===false) wp_die('Unable to update profile.','',array('response'=>500));
         wp_safe_redirect(add_query_arg('bh3_profile_status','saved',home_url('/family/profile/')));
         exit;
