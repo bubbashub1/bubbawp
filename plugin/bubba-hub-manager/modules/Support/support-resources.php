@@ -72,7 +72,7 @@ add_shortcode('bh_support_resources', static function ($atts): string {
       <?php if ($query->max_num_pages > 1) :
         $base = remove_query_arg('bh_page');
         echo '<nav class="bh-resource-pagination" aria-label="' . esc_attr__('Resource pages', 'bubbahub') . '">';
-        for ($i = 1; $i <= $query->max_num_pages; $i++) {
+        for ($i = max(1, $page - 2); $i <= min((int) $query->max_num_pages, $page + 2); $i++) {
             $url = add_query_arg('bh_page', $i, $base);
             echo '<a ' . ($i === $page ? 'aria-current="page" ' : '') . 'href="' . esc_url($url) . '">' . esc_html((string) $i) . '</a> ';
         }
