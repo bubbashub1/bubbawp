@@ -1,6 +1,6 @@
 <?php
 /**
- * Bubba Hub public membership pricing and registration page.
+ * Bubba Hub public membership comparison and registration page.
  *
  * Shortcode:
  * [bh_membership_registration family_button_id="123" leader_button_id="456"]
@@ -33,66 +33,76 @@ final class BH_Membership_Registration_3 {
         <section class="bh-membership-page" aria-labelledby="bh-membership-title">
             <header class="bh-membership-intro">
                 <p class="bh-membership-eyebrow">BUBBA HUB MEMBERSHIP</p>
-                <h1 id="bh-membership-title">Find the membership that fits you</h1>
-                <p>Whether you're planning family days out or running local classes, there's a place for you at Bubba Hub.</p>
+                <h1 id="bh-membership-title">Choose the membership that fits you</h1>
+                <p>Whether you're here as a parent or carer, or you're running local classes, there's a place for you at Bubba Hub.</p>
             </header>
 
-            <div class="bh-membership-cards">
-                <article class="bh-membership-card bh-membership-family">
-                    <div class="bh-membership-icon" aria-hidden="true">♡</div>
-                    <p class="bh-membership-audience">FOR PARENTS &amp; CARERS</p>
-                    <h2>Family Pro</h2>
-                    <p class="bh-membership-price"><span>£20</span> <small>/ year</small></p>
-                    <p class="bh-membership-description">Make the most of your family's Bubba Hub experience.</p>
-                    <ul>
-                        <li>Family-focused membership</li>
-                        <li>Keep your family account in one place</li>
-                        <li>Family Pro membership benefits</li>
-                    </ul>
-                    <div class="bh-membership-action">
+            <div class="bh-membership-table-wrap" role="region" aria-label="Membership price comparison" tabindex="0">
+                <table class="bh-membership-comparison">
+                    <thead>
+                        <tr class="bh-membership-group-row">
+                            <th class="bh-membership-corner" scope="col"></th>
+                            <th class="bh-membership-group bh-membership-family-group" colspan="2" scope="colgroup">Family</th>
+                            <th class="bh-membership-group bh-membership-leader-group" colspan="2" scope="colgroup">Leader</th>
+                        </tr>
+                        <tr class="bh-membership-plan-row">
+                            <th class="bh-membership-feature-heading" scope="col">Membership</th>
+                            <th scope="col">Free</th>
+                            <th scope="col" class="bh-membership-pro-heading">Family Pro</th>
+                            <th scope="col">Free</th>
+                            <th scope="col" class="bh-membership-pro-heading">Leader Pro</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="bh-membership-price-row">
+                            <th scope="row">Annual price</th>
+                            <td><strong>£0</strong><span class="bh-membership-period">Always free</span></td>
+                            <td class="bh-membership-pro-cell"><strong>£20</strong><span class="bh-membership-period">Per year</span></td>
+                            <td><strong>£0</strong><span class="bh-membership-period">Always free</span></td>
+                            <td class="bh-membership-pro-cell"><strong>£70</strong><span class="bh-membership-period">Per year</span></td>
+                        </tr>
+                        <tr class="bh-membership-action-row">
+                            <th scope="row">Get started</th>
+                            <td><a class="bh-membership-choose bh-membership-choose-free" href="<?php echo $free_url; ?>">Join free</a></td>
+                            <td class="bh-membership-pro-cell">
+                                <?php
+                                if ( $swpm_ready && $family_button_id ) {
+                                    echo do_shortcode( '[swpm_payment_button id="' . $family_button_id . '"]' );
+                                } else {
+                                    self::render_unconfigured_button( 'Family Pro' );
+                                }
+                                ?>
+                            </td>
+                            <td><a class="bh-membership-choose bh-membership-choose-free" href="<?php echo $free_url; ?>">Join free</a></td>
+                            <td class="bh-membership-pro-cell">
+                                <?php
+                                if ( $swpm_ready && $leader_button_id ) {
+                                    echo do_shortcode( '[swpm_payment_button id="' . $leader_button_id . '"]' );
+                                } else {
+                                    self::render_unconfigured_button( 'Leader Pro' );
+                                }
+                                ?>
+                            </td>
+                        </tr>
                         <?php
-                        if ( $swpm_ready && $family_button_id ) {
-                            echo do_shortcode( '[swpm_payment_button id="' . $family_button_id . '"]' );
-                        } else {
-                            self::render_unconfigured_button( 'Family Pro' );
-                        }
-                        ?>
-                    </div>
-                    <p class="bh-membership-note">Annual membership: £20, billed yearly.</p>
-                </article>
-
-                <article class="bh-membership-card bh-membership-leader">
-                    <div class="bh-membership-icon" aria-hidden="true">✳</div>
-                    <p class="bh-membership-audience">FOR CLASS LEADERS &amp; ORGANISERS</p>
-                    <h2>Leader Pro</h2>
-                    <p class="bh-membership-price"><span>£70</span> <small>/ year</small></p>
-                    <p class="bh-membership-description">More ways to manage and grow your presence on Bubba Hub.</p>
-                    <ul>
-                        <li>Leader Pro membership</li>
-                        <li>Tools and benefits for your organiser account</li>
-                        <li>Leader Pro membership benefits</li>
-                    </ul>
-                    <div class="bh-membership-action">
-                        <?php
-                        if ( $swpm_ready && $leader_button_id ) {
-                            echo do_shortcode( '[swpm_payment_button id="' . $leader_button_id . '"]' );
-                        } else {
-                            self::render_unconfigured_button( 'Leader Pro' );
-                        }
-                        ?>
-                    </div>
-                    <p class="bh-membership-note">Annual membership: £70, billed yearly.</p>
-                </article>
+                        /*
+                         * Reserved comparison rows. Add feature labels and per-plan
+                         * values here when the owner has confirmed the Pro benefits.
+                         * Intentionally no invented feature claims are displayed.
+                         */
+                        for ( $row = 0; $row < 5; $row++ ) :
+                            ?>
+                            <tr class="bh-membership-benefit-placeholder" aria-hidden="true">
+                                <th scope="row"></th>
+                                <td></td><td class="bh-membership-pro-cell"></td>
+                                <td></td><td class="bh-membership-pro-cell"></td>
+                            </tr>
+                        <?php endfor; ?>
+                    </tbody>
+                </table>
             </div>
 
-            <div class="bh-membership-free">
-                <div>
-                    <h2>Just getting started?</h2>
-                    <p>You can still create a free Bubba Hub account. You can explore the platform and upgrade when you're ready.</p>
-                </div>
-                <a class="bh-membership-free-link" href="<?php echo $free_url; ?>">Explore free registration</a>
-            </div>
-
+            <p class="bh-membership-comparison-note">Start with a free account and upgrade whenever you're ready. Pro membership is billed annually.</p>
             <p class="bh-membership-login">Already have an account? <a href="<?php echo esc_url( home_url( '/auth/' ) ); ?>">Log in</a>.</p>
             <p class="bh-membership-terms">Full payment, renewal and cancellation information will be shown before you complete checkout.</p>
         </section>
