@@ -30,36 +30,8 @@ final class BH_Leader_Frontend_Editor_3 {
         $categories = array_values( array_unique( array_filter( array_map( 'sanitize_text_field', (array) $categories ) ) ) );
         if ( $row['category'] && ! in_array( $row['category'], $categories, true ) ) { $categories[] = $row['category']; sort( $categories, SORT_NATURAL | SORT_FLAG_CASE ); }
         ob_start(); ?>
-        <section class="bh-leader-edit" style="max-width:850px;margin:32px auto;padding:24px;background:#fff;border:1px solid #dbe5df;border-radius:16px">
-        <style>
-        .bh-leader-edit{font-family:inherit;color:#203c31;box-sizing:border-box}
-        .bh-leader-edit *{box-sizing:border-box}
-        .bh-leader-edit .bh-edit-links{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 22px}
-        .bh-leader-edit .bh-edit-links a{display:inline-flex;padding:9px 14px;border:1px solid #cadbcf;border-radius:9px;color:#245e4a;text-decoration:none;font-weight:600}
-        .bh-leader-edit label{display:block;font-weight:600;margin-bottom:6px}
-        .bh-leader-edit input:not([type=checkbox]),.bh-leader-edit textarea{width:100%;max-width:680px;padding:11px;border:1px solid #b8c9bd;border-radius:9px;font:inherit}
-        .bh-leader-edit input:focus-visible,.bh-leader-edit textarea:focus-visible,.bh-leader-edit a:focus-visible,.bh-leader-edit button:focus-visible{outline:3px solid #245e4a;outline-offset:2px}
-        .bh-leader-edit .bh-edit-success{padding:12px 16px;border-left:4px solid #245e4a;background:#f0f6f0}
-.bh-leader-edit .bh-edit-hint{font-size:.92em;color:#53665e}
-        .bh-leader-edit .bh-image-card{padding:20px;border:1px solid #dbe5df;border-radius:18px;background:#f8fbf9;margin:20px 0;box-shadow:0 8px 22px rgba(25,58,40,.04)}.bh-leader-edit .bh-image-card h2{font-size:21px;margin:0 0 14px}
-        .bh-leader-edit .bh-image-layout{display:grid;grid-template-columns:minmax(0,240px) minmax(0,1fr);gap:22px;align-items:center}
-        .bh-leader-edit .bh-image-thumb{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;background:#e7eee9}
-        .bh-leader-edit .bh-image-card form{margin:0 0 10px}.bh-leader-edit .bh-image-card form+form{display:inline-block}.bh-leader-edit .bh-image-card .bh-image-controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px}.bh-leader-edit .bh-image-card .bh-image-controls form{margin:0}.bh-leader-edit .bh-image-card .bh-image-controls button{margin-top:0}
-        .bh-leader-edit .bh-image-card input[type=file]{font-size:14px;max-width:100%;background:#fff;border:1px dashed #a6c3af;border-radius:10px;padding:12px}
-        .bh-leader-edit .bh-image-card button{background:#245e4a;color:#fff;border:0;border-radius:9px;padding:10px 16px;cursor:pointer;font:inherit;font-weight:600;margin-top:10px}
-.bh-leader-edit .bh-image-card .bh-image-remove{background:#fff;color:#7a2f2f;border:1px solid #cbaaaa}
-        .bh-leader-edit .bh-editor-section{border:1px solid #dbe5df;border-radius:14px;padding:20px;margin:20px 0;background:#fff}
-        .bh-leader-edit .bh-editor-section h2{margin:0 0 6px;font-size:21px}
-        .bh-leader-edit .bh-editor-section>p{margin:12px 0}
-        .bh-leader-edit .bh-editor-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}
-        .bh-leader-edit .bh-editor-grid>p{min-width:0}
-        .bh-leader-edit .bh-editor-section select{width:100%;max-width:680px;border:1px solid #b8c9bd;border-radius:9px;padding:11px;font:inherit}
-        .bh-leader-edit .bh-editor-save{position:sticky;bottom:0;background:#f8fbf9;border:1px solid #dbe5df;padding:14px 18px;border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:2}
-        .bh-leader-edit .bh-editor-save button{background:#245e4a;color:#fff;border:0;border-radius:9px;padding:12px 20px;font:inherit;font-weight:700;cursor:pointer}
-        @media(max-width:650px){.bh-leader-edit .bh-editor-grid{grid-template-columns:1fr}.bh-leader-edit .bh-editor-section{padding:16px}.bh-leader-edit .bh-editor-save{flex-wrap:wrap}}
-        @media(max-width:650px){.bh-leader-edit .bh-image-layout{grid-template-columns:1fr;gap:12px}.bh-leader-edit .bh-image-thumb{max-width:100%;max-height:240px}.bh-leader-edit .bh-image-card{padding:16px}}
-        @media(max-width:650px){.bh-leader-edit{padding:18px!important;margin:16px auto!important}}
-        </style>
+        <section class="bh-leader-edit">
+
         <h1>Edit <?php echo esc_html( $row['title'] ); ?></h1>
         
         <?php if ( isset( $_GET['saved'] ) && $_GET['saved'] === '1' ) : ?><p class="bh-edit-success" role="status">Draft saved successfully.</p><?php endif; ?>
