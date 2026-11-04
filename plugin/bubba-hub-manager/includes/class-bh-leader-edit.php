@@ -55,20 +55,18 @@ final class BH_Leader_Edit_3 {
         }
         $ages = array();
         foreach ( array( 'age_min_months', 'age_max_months' ) as $key ) {
-            $raw = trim( (string) wp_unslash( $_POST[$key] ?? '' ) );
-            $value = $raw === '' ? null : filter_var( $raw, FILTER_VALIDATE_INT );
-            if ( $value !== null && ( $value === false || $value < 0 || $value > 216 ) ) {
-                wp_die( 'Invalid age range.', '', array( 'response' => 400 ) );
+            $ages[$key] = BH_Activity_Fields_3::age( $_POST[$key] ?? '' );
+            if ( is_wp_error( $ages[$key] ) ) {
+                wp_die( $ages[$key]->get_error_message(), '', array( 'response' => 400 ) );
             }
-            $ages[$key] = $value;
         }
-        if ( $ages['age_min_months'] !== null && $ages['age_max_months'] !== null && $ages['age_min_months'] > $ages['age_max_months'] ) {
+        if ( null !== $ages['age_min_months'] && null !== $ages['age_max_months'] && $ages['age_min_months'] > $ages['age_max_months'] ) {
             wp_die( 'Minimum age exceeds maximum age.', '', array( 'response' => 400 ) );
         }
         $free = ! empty( $_POST['is_free'] ) ? 1 : 0;
-        $price = trim( (string) wp_unslash( $_POST['price_from'] ?? '' ) );
-        if ( $price !== '' && ( ! preg_match( '/^\\d{1,8}(?:\\.\\d{1,2})?$/', $price ) || (float) $price > 99999999.99 ) ) {
-            wp_die( 'Invalid price.', '', array( 'response' => 400 ) );
+        $price = BH_Activity_Fields_3::price( $_POST['price_from'] ?? '' );
+        if ( is_wp_error( $price ) ) {
+            wp_die( $price->get_error_message(), '', array( 'response' => 400 ) );
         }
         $raw_url = trim( (string) wp_unslash( $_POST['booking_url'] ?? '' ) );
         $url = esc_url_raw( $raw_url, array( 'http', 'https' ) );
@@ -81,7 +79,7 @@ final class BH_Leader_Edit_3 {
             'title' => $title, 'category' => $category,
             'description' => wp_kses_post( wp_unslash( $_POST['description'] ?? '' ) ),
             'age_min_months' => $ages['age_min_months'], 'age_max_months' => $ages['age_max_months'],
-            'price_from' => $free ? 0 : ( $price === '' ? null : (float) $price ),
+            'price_from' => $free ? 0 : $price,
             'is_free' => $free, 'booking_url' => $url, 'updated_at' => current_time( 'mysql', true )
         ), array( 'id' => $id, 'organiser_id' => $organiser, 'status' => 'draft' ) );
         if ( $result === false ) { wp_die( 'Save failed.', '', array( 'response' => 500 ) ); }
