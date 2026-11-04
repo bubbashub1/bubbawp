@@ -42,12 +42,63 @@ final class BH_Ask_Support_Optin_3 {
             ? array_map('sanitize_key', wp_unslash($_POST['bh_ask_categories'])) : [];
         $selected = array_values(array_intersect(array_keys(self::categories()), $raw));
         if (!$enabled) $selected = [];
-        // Opt-in is a request, not specialist approval. Never use this alone to grant access.
-        update_user_meta(get_current_user_id(), 'bh3_ask_support_preferences', [
-            'opted_in' => $enabled && count($selected) > 0,
+        // Approval is always a separate administrator action. Never grant it on opt-in.
+        $user_id = get_current_user_id();
+        $organiser_id = self::linked_organiser();
+        $requested = $enabled && count($selected) > 0;
+        $previous = (array) get_user_meta($user_id, 'bh3_ask_support_preferences', true);
+        $next = [
+            'opted_in' => $requested,
             'categories' => $selected,
             'updated_at' => current_time('mysql', true),
-        ]);
+        ];
+        if (BH_Ask_Support_Storage_3::installed()) {
+            global $wpdb;
+            $table = BH_Ask_Support_Storage_3::tables()['specialists'];
+            // Revoke removed categories and organiser transfers before creating new requests.
+            // A previously approved category never survives a withdrawal.
+            $existing = $wpdb->get_results($wpdb->prepare(
+                "SELECT id,organiser_id,category_slug,opted_in,approval_status FROM \`{$table}\` WHERE user_id=%d",
+                $user_id
+            ), ARRAY_A);
+            if (!is_array($existing)) wp_die('Unable to load specialist preferences.', '', ['response' => 503]);
+            foreach ($existing as $row) {
+                $retained = $requested && (int) $row['organiser_id'] === $organiser_id && in_array($row['category_slug'], $selected, true);
+                if (!$retained) {
+                    $ok = $wpdb->update($table,
+                        ['opted_in' => 0, 'approval_status' => 'pending', 'updated_at' => current_time('mysql', true)],
+                        ['id' => (int) $row['id']], ['%d','%s','%s'], ['%d']);
+                    if ($ok === false) wp_die('Unable to revoke specialist access.', '', ['response' => 503]);
+                }
+            }
+            if ($requested) {
+                foreach ($selected as $category) {
+                    $matching = null;
+                    foreach ($existing as $row) {
+                        if ($row['category_slug'] === $category) { $matching = $row; break; }
+                    }
+                    if ($matching && (int) $matching['organiser_id'] === $organiser_id && (int) $matching['opted_in'] === 1) {
+                        // Preserve the approval decision for an unchanged active category.
+                        continue;
+                    }
+                    if ($matching) {
+                        $ok = $wpdb->update($table,
+                            ['organiser_id' => $organiser_id, 'opted_in' => 1, 'approval_status' => 'pending', 'updated_at' => current_time('mysql', true)],
+                            ['id' => (int) $matching['id']], ['%d','%d','%s','%s'], ['%d']);
+                    } else {
+                        $ok = $wpdb->insert($table,
+                            ['organiser_id' => $organiser_id, 'user_id' => $user_id, 'category_slug' => $category,
+                             'opted_in' => 1, 'approval_status' => 'pending', 'updated_at' => current_time('mysql', true)],
+                            ['%d','%d','%s','%d','%s','%s']);
+                    }
+                    if ($ok === false) wp_die('Unable to create specialist approval request.', '', ['response' => 503]);
+                }
+            }
+        } else {
+            // Until schema is installed, preferences remain a non-operational interest list.
+            $next['awaiting_setup'] = true;
+        }
+        update_user_meta($user_id, 'bh3_ask_support_preferences', $next);
         $url = wp_get_referer();
         if (!$url || wp_validate_redirect($url, false) === false) $url = home_url('/leader/');
         wp_safe_redirect(add_query_arg('ask_support_saved', '1', $url));
