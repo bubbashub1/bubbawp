@@ -158,7 +158,6 @@ final class BH_Leader_Listing_Wizard_3 {
               <?php if ( $id ) : ?><p><a class="bh3-wizard-link" href="<?php echo esc_url( add_query_arg( 'activity_id', $id, home_url( '/leader/timetable/' ) ) ); ?>">Add or manage sessions</a></p><?php endif; ?>
             <?php elseif ( $step === 5 ) : ?>
               <h2>Venues</h2><p>Save your draft first, then use My Venues to search and assign existing shared venues. You can also suggest a new venue for the Bubba Hub team to review.</p>
-              <?php if ( $id ) : ?><p><a href="<?php echo esc_url( add_query_arg( 'activity_id', $id, home_url( '/leader/new-venue/' ) ) ); ?>">Suggest a new venue for this activity</a></p><?php else : ?><p>Save your draft to request a new venue.</p><?php endif; ?>
               <p class="bh3-wizard-help">Please don't create a duplicate venue. Search by venue name or town in My Venues.</p>
               <?php if ( $id ) : ?><p><a class="bh3-wizard-link" href="<?php echo esc_url( add_query_arg( 'activity_id', $id, home_url( '/leader/venues/' ) ) ); ?>">Choose an existing venue</a> <a class="bh3-wizard-link" href="<?php echo esc_url( add_query_arg( 'activity_id', $id, home_url( '/leader/new-venue/' ) ) ); ?>">Suggest a new venue</a></p><?php endif; ?>
             <?php elseif ( $step === 6 ) : ?>
@@ -168,7 +167,7 @@ final class BH_Leader_Listing_Wizard_3 {
             <?php else : ?>
               <h2>Review your listing</h2><p>Check the key information before submitting your draft for review.</p>
               <div class="bh3-wizard-review">
-                <?php foreach ( array( 'Activity name'=>'title','Description'=>'description','Category'=>'category','Age from (months)'=>'age_min_months','Age to (months)'=>'age_max_months','Contact email'=>'contact_email','Website'=>'website','Booking method'=>'booking_method','Booking link'=>'booking_url' ) as $label=>$key ) : ?>
+                <?php foreach ( array( 'Activity name'=>'title','Description'=>'description','Category'=>'category','Additional categories / tags'=>'tags','Age from (months)'=>'age_min_months','Age to (months)'=>'age_max_months','Starting price (£)'=>'price_from','Free activity'=>'is_free','Contact email'=>'contact_email','Contact phone'=>'contact_phone','Website'=>'website','Booking method'=>'booking_method','Booking link'=>'booking_url' ) as $label=>$key ) : ?>
                   <div><strong><?php echo esc_html( $label ); ?></strong><?php echo esc_html( (string) ( $data[$key] ?? '' ) ?: 'Not provided' ); ?></div>
                 <?php endforeach; ?>
               </div>
@@ -242,6 +241,10 @@ final class BH_Leader_Listing_Wizard_3 {
             $values['booking_method'] = $method;
         }
         $columns = self::columns( $table );
+        $required_columns = array( 2 => array( 'tags' ), 3 => array( 'contact_email', 'contact_phone', 'what_to_bring', 'good_to_know' ) );
+        foreach ( $required_columns[$step] ?? array() as $required_column ) {
+            if ( ! isset( $columns[$required_column] ) ) { wp_die( 'The listing database needs its activity field migration before this step can save. Please contact Bubba Hub support.', '', array( 'response' => 409 ) ); }
+        }
         $data = array_intersect_key( $values, $columns );
         if ( ! $id && ! isset( $data['title'] ) ) { $data['title'] = 'Untitled listing draft'; }
         if ( ! isset( $columns['organiser_id'], $columns['title'], $columns['status'] ) ) { wp_die( 'The activity table is missing required fields.', '', array( 'response' => 409 ) ); }
