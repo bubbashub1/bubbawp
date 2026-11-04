@@ -44,8 +44,11 @@ add_shortcode('bh_support_resources', static function ($atts): string {
     ?>
     <section class="bh-resource-hub" aria-label="<?php esc_attr_e('Family resources', 'bubbahub'); ?>">
       <form method="get" class="bh-resource-filters" role="search">
+        <div class="bh-resource-filter-field">
         <label for="<?php echo esc_attr($instance_id); ?>-search"><?php esc_html_e('Search resources', 'bubbahub'); ?></label>
         <input id="<?php echo esc_attr($instance_id); ?>-search" type="search" name="bh_search" value="<?php echo esc_attr($search); ?>" placeholder="<?php esc_attr_e('Search guides and resources', 'bubbahub'); ?>">
+        </div>
+        <div class="bh-resource-filter-field">
         <label for="<?php echo esc_attr($instance_id); ?>-topic"><?php esc_html_e('Topic', 'bubbahub'); ?></label>
         <select id="<?php echo esc_attr($instance_id); ?>-topic" name="bh_topic">
           <option value=""><?php esc_html_e('All topics', 'bubbahub'); ?></option>
@@ -53,6 +56,7 @@ add_shortcode('bh_support_resources', static function ($atts): string {
             <option value="<?php echo esc_attr($term->slug); ?>" <?php selected($topic, $term->slug); ?>><?php echo esc_html($term->name); ?></option>
           <?php endforeach; endif; ?>
         </select>
+        </div>
         <button type="submit"><?php esc_html_e('Find resources', 'bubbahub'); ?></button>
       </form>
       <div class="bh-resource-grid">
@@ -61,12 +65,26 @@ add_shortcode('bh_support_resources', static function ($atts): string {
             <?php if (has_post_thumbnail()) : ?>
               <a href="<?php echo esc_url(get_permalink()); ?>"><?php the_post_thumbnail('medium_large', ['loading' => 'lazy']); ?></a>
             <?php endif; ?>
+            <?php $card_topics = get_the_terms(get_the_ID(), 'bh_support_topic'); ?>
+            <?php if ($card_topics && !is_wp_error($card_topics)) : ?>
+              <div class="bh-resource-card__topics" aria-label="<?php esc_attr_e('Topics', 'bubbahub'); ?>">
+                <?php foreach (array_slice($card_topics, 0, 3) as $card_topic) : ?>
+                  <span class="bh-resource-card__topic"><?php echo esc_html($card_topic->name); ?></span>
+                <?php endforeach; ?>
+              </div>
+            <?php endif; ?>
             <h2><a href="<?php echo esc_url(get_permalink()); ?>"><?php echo esc_html(get_the_title()); ?></a></h2>
             <p><?php echo esc_html(wp_trim_words(get_the_excerpt(), 26)); ?></p>
             <a class="bh-resource-read" href="<?php echo esc_url(get_permalink()); ?>"><?php esc_html_e('Read resource', 'bubbahub'); ?></a>
           </article>
         <?php endwhile; wp_reset_postdata(); else : ?>
-          <p><?php esc_html_e('No resources match your search yet.', 'bubbahub'); ?></p>
+          <div class="bh-resource-empty" role="status">
+            <h3><?php esc_html_e('No family resources found', 'bubbahub'); ?></h3>
+            <p><?php esc_html_e('Try a different search or topic, or browse all family resources.', 'bubbahub'); ?></p>
+            <?php if ($search !== '' || $topic !== '') : ?>
+              <a class="bh-resource-reset" href="<?php echo esc_url(remove_query_arg(['bh_search', 'bh_topic', 'bh_page'])); ?>"><?php esc_html_e('Clear filters', 'bubbahub'); ?></a>
+            <?php endif; ?>
+          </div>
         <?php endif; ?>
       </div>
       <?php if ($query->max_num_pages > 1) :
@@ -92,16 +110,25 @@ add_action('wp_enqueue_scripts', static function (): void {
     wp_add_inline_style('bh-support-resources', '
       .bh-resource-hub{max-width:1200px;margin:auto;color:#243b30}
       .bh-resource-filters{display:flex;flex-wrap:wrap;align-items:end;gap:12px;margin:24px 0}
+      .bh-resource-filter-field{display:flex;flex-direction:column;gap:6px;min-width:180px;flex:1 1 210px}
       .bh-resource-filters label{font-weight:700}
       .bh-resource-filters input,.bh-resource-filters select{min-height:44px;padding:10px;border:1px solid #cbded1;border-radius:12px;background:white}
       .bh-resource-filters button{min-height:44px;padding:10px 18px;border:0;border-radius:12px;background:#174b36;color:white;font-weight:700;cursor:pointer}
       .bh-resource-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:18px}
-      .bh-resource-card{padding:20px;border:1px solid #dbe8df;border-radius:18px;background:#f7fbf8;overflow:hidden}
+      .bh-resource-card{display:flex;flex-direction:column;gap:10px;padding:20px;border:1px solid #dbe8df;border-radius:18px;background:#f7fbf8;overflow:hidden}
       .bh-resource-card img{width:100%;height:auto;border-radius:12px}
-      .bh-resource-card h2{font-size:1.2rem;line-height:1.35}
+      .bh-resource-card h2{font-size:1.2rem;line-height:1.35;margin:0}
+      .bh-resource-card p{margin:0 0 8px}
+      .bh-resource-card__topics{display:flex;flex-wrap:wrap;gap:6px}
+      .bh-resource-card__topic{display:inline-block;background:#e5f1e9;color:#174b36;border-radius:999px;padding:4px 10px;font-size:.8rem;font-weight:700}
+      .bh-resource-card .bh-resource-read{margin-top:auto;padding-top:8px}
+      .bh-resource-card a:focus-visible,.bh-resource-filters :focus-visible{outline:3px solid #226a4d;outline-offset:3px}
       .bh-resource-card a{color:#174b36}
       .bh-resource-read{font-weight:700}
+      .bh-resource-empty{grid-column:1/-1;padding:28px;border:1px dashed #bfd7c6;border-radius:18px;background:#f7fbf8}
+      .bh-resource-empty h3{margin:0 0 8px;color:#174b36}
+      .bh-resource-reset{display:inline-block;margin-top:8px;color:#174b36;font-weight:700}
       .bh-resource-pagination{margin:24px 0;display:flex;gap:12px}
-      @media(max-width:600px){.bh-resource-filters{display:grid}.bh-resource-filters input,.bh-resource-filters select,.bh-resource-filters button{width:100%}}
+      @media(max-width:600px){.bh-resource-filters{display:grid}.bh-resource-filter-field{min-width:0}.bh-resource-filters input,.bh-resource-filters select,.bh-resource-filters button{width:100%}}
     ');
 });
