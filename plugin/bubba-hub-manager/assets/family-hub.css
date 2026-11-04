@@ -182,3 +182,16 @@ body .bh3-family__settings-page .bh3-family__choice-grid>label>input:focus-visib
  body .bh3-family__settings-page .bh3-family__choice-grid--days>label{flex:1 1 calc(33.333% - 10px)!important}
  body .bh3-family__settings-page .bh3-family__choice-grid--days>label>span{width:100%!important}
 }
+
+/* Legacy-inspired notification settings, isolated from generic theme forms. */
+body .bh3-family__settings-page .bh3-family__card--notifications{display:block!important;width:100%!important;max-width:none!important;box-sizing:border-box!important;margin:0!important;padding:clamp(20px,3vw,34px)!important}
+.bh3-family__notification-form{display:flex;flex-direction:column;gap:17px;margin-top:20px}
+.bh3-family__notification-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+body .bh3-family__settings-page .bh3-family__notification-option{display:flex!important;align-items:flex-start!important;gap:13px!important;padding:16px!important;border:1px solid #dce8de!important;border-radius:13px!important;background:#fafcf9!important;margin:0!important;cursor:pointer!important}
+body .bh3-family__settings-page .bh3-family__notification-option input[type=checkbox]{flex:none!important;width:19px!important;height:19px!important;margin:3px 0 0!important;accent-color:#236348}
+.bh3-family__notification-option span{display:flex;flex-direction:column;gap:5px;min-width:0}
+.bh3-family__notification-option strong{color:#214a38;font-size:.95rem}
+.bh3-family__notification-option small{font-size:.84rem;color:#60776a;line-height:1.5}
+.bh3-family__notification-form h3{margin:10px 0 0;color:#234c3b}
+.bh3-family__notification-form>button{align-self:flex-start;min-height:46px;padding:12px 22px;border:0;border-radius:12px;background:#205d46;color:#fff;font:inherit;font-weight:750;cursor:pointer}
+@media(max-width:700px){.bh3-family__notification-list{grid-template-columns:1fr}.bh3-family__notification-form>button{width:100%}}
