@@ -43,18 +43,7 @@ final class BH_Storefront_3 {
         $category = $category_labels[ $extras['business_category'] ?? '' ] ?? '';
         ob_start(); ?>
         <section class="bh-storefront">
-          <style>
-          .bh-storefront{max-width:1160px;margin:24px auto;padding:0 20px;color:#203c31;font-family:inherit}.bh-storefront *{box-sizing:border-box}
-          .bh-storefront .bh-shero{padding:clamp(24px,5vw,48px);border-radius:24px;background:linear-gradient(120deg,#1c5641,#438566);color:#fff}
-          .bh-storefront .bh-shero h1{color:#fff;font-size:clamp(30px,5vw,48px);margin:8px 0}.bh-storefront .bh-shero p{color:#e8f5eb}
-          .bh-storefront .bh-smeta{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.bh-storefront .bh-smeta span{padding:7px 12px;border:1px solid rgba(255,255,255,.5);border-radius:30px;background:rgba(255,255,255,.12);color:#fff;font-size:14px}.bh-storefront .bh-slogo{width:88px;height:88px;object-fit:contain;background:#fff;border-radius:16px;padding:8px;margin-bottom:14px}.bh-storefront .bh-scover{width:100%;max-height:280px;object-fit:cover;border-radius:18px;margin-bottom:16px}.bh-storefront .bh-sgrid{display:grid;grid-template-columns:2fr 1fr;gap:22px;margin:22px 0}
-          .bh-storefront .bh-scard{background:#fff;border:1px solid #dbe5df;border-radius:18px;padding:24px;box-shadow:0 8px 24px rgba(20,65,42,.05)}
-          .bh-storefront .bh-scard h2{font-size:23px;margin:0 0 16px}.bh-storefront .bh-sactivity{border-top:1px solid #e7eee8;padding:16px 0}
-          .bh-storefront .bh-sactivity strong{display:block;font-size:17px}.bh-storefront .bh-sactivity small{color:#567264}
-          .bh-storefront .bh-slink{display:inline-block;padding:10px 15px;border-radius:10px;background:#245e4a;color:#fff!important;text-decoration:none;margin:5px 6px 5px 0;overflow-wrap:anywhere}
-          .bh-storefront a:focus-visible{outline:3px solid #245e4a;outline-offset:3px}
-          @media(max-width:720px){.bh-storefront .bh-sgrid{grid-template-columns:1fr}.bh-storefront .bh-scard{padding:18px}}
-          </style>
+
           <?php if ( ! empty( $extras['cover_url'] ) ) : ?><img class="bh-scover" src="<?php echo esc_url( $extras['cover_url'] ); ?>" alt="" loading="lazy"><?php endif; ?>
           <header class="bh-shero"><?php if ( ! empty( $extras['logo_url'] ) ) : ?><img class="bh-slogo" src="<?php echo esc_url( $extras['logo_url'] ); ?>" alt="<?php echo esc_attr( $profile['name'] ); ?> logo" loading="lazy"><?php endif; ?><p>BUBBA HUB · BUSINESS PROFILE</p><h1><?php echo esc_html( $profile['name'] ); ?></h1><p>Discover this organiser's activities and get in touch.</p></header>
           <?php if ( $category || ! empty( $extras['areas_served'] ) ) : ?><div class="bh-smeta" style="margin:14px 0"><?php if ( $category ) : ?><span style="background:#245e4a"><?php echo esc_html( $category ); ?></span><?php endif; ?><?php if ( ! empty( $extras['areas_served'] ) ) : ?><span style="background:#245e4a"><?php echo esc_html( $extras['areas_served'] ); ?></span><?php endif; ?></div><?php endif; ?>
