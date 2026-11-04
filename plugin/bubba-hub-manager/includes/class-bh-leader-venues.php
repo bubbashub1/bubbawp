@@ -44,7 +44,7 @@ final class BH_Leader_Venues_3 {
         echo '<div class="wrap"><h1>Venues for ' . esc_html( $activity['title'] ) . '</h1>';
         echo '<p><a href="' . esc_url( add_query_arg( array( 'page' => 'bh3-leader-edit', 'activity_id' => $id ), admin_url( 'admin.php' ) ) ) . '">← Back to activity</a> · <a href="' . esc_url( add_query_arg( array( 'page' => 'bh3-leader-sessions', 'activity_id' => $id ), admin_url( 'admin.php' ) ) ) . '">Manage timetable</a></p>';
         if ( isset( $_GET['message'] ) ) { echo '<div class="notice notice-info"><p>' . esc_html( sanitize_text_field( wp_unslash( $_GET['message'] ) ) ) . '</p></div>'; }
-        echo '<h2>Assigned venues</h2><table class="widefat striped"><thead><tr><th>Venue</th><th>Town</th><th>Action</th></tr></thead><tbody>';
+        echo '<h2>Assigned venues</h2><table class="widefat striped bh3-card-table"><thead><tr><th>Venue</th><th>Town</th><th>Action</th></tr></thead><tbody>';
         foreach ( $rows as $row ) {
             echo '<tr><td data-label="Venue">' . esc_html( $row['name'] ) . '</td><td data-label="Town">' . esc_html( (string) $row['town'] ) . '</td><td data-label="Action">';
             if ( $activity['status'] === 'draft' ) {
