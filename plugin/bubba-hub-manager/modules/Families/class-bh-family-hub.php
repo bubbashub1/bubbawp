@@ -45,6 +45,7 @@ final class BH_Family_Hub_3 {
         $verified_family = $preview_enabled && $wp_signed_in && !$admin_demo && BH_Family_Identity_3::current_legacy_id() > 0;
         $private_preview = $admin_demo || $verified_family;
         $preferences = BH_Family_Preferences_3::read();
+        $suggestions = $private_preview ? BH_Family_Recommendations_3::fetch($preferences) : array();
         $saved = $verified_family ? BH_Family_Read_Model_3::saved_ids() : array();
         $planner = $verified_family ? BH_Family_Read_Model_3::planner_items() : array();
         $profiles = $verified_family ? BH_Family_Read_Model_3::family_profiles() : array();
@@ -129,6 +130,7 @@ final class BH_Family_Hub_3 {
               <a href="#bh3-my-family"><?php echo esc_html__('My family', 'bubba-hub-manager'); ?></a>
               <a href="#bh3-saved"><?php echo esc_html__('Favourites', 'bubba-hub-manager'); ?></a>
               <a href="#bh3-preferences"><?php echo esc_html__('Preferences', 'bubba-hub-manager'); ?></a>
+              <a href="#bh3-suggestions"><?php echo esc_html__('Suggested', 'bubba-hub-manager'); ?></a>
               <a href="#bh3-planner"><?php echo esc_html__('Planner', 'bubba-hub-manager'); ?></a>
             </nav>
             <div class="bh3-family__grid bh3-family__private" aria-label="<?php echo esc_attr__('Your private family overview', 'bubba-hub-manager'); ?>">
@@ -266,6 +268,27 @@ final class BH_Family_Hub_3 {
                   </div>
                   <?php if (!$admin_demo) : ?><button type="submit"><?php echo esc_html__('Save my preferences', 'bubba-hub-manager'); ?></button><?php endif; ?>
                 </form>
+              </article>
+              <article id="bh3-suggestions" class="bh3-family__card bh3-family__card--suggestions">
+                <div class="bh3-family__section-heading"><div><span class="bh3-family__kicker"><?php echo esc_html__('DISCOVER', 'bubba-hub-manager'); ?></span><h2><?php echo esc_html__('Suggested activities for your family', 'bubba-hub-manager'); ?></h2></div></div>
+                <p><?php echo esc_html__('Published activities matched against your chosen interests, days and area.', 'bubba-hub-manager'); ?></p>
+                <?php if ($admin_demo) : ?><p class="bh3-family__preview-note"><?php echo esc_html__('Admin preview: showing recently published activities without personal preferences.', 'bubba-hub-manager'); ?></p><?php endif; ?>
+                <?php if (empty($suggestions)) : ?>
+                  <p class="bh3-family__suggestions-empty"><?php echo esc_html__('No matching activities yet. Try changing your interests, days or area.', 'bubba-hub-manager'); ?></p>
+                <?php else : ?>
+                  <div class="bh3-family__suggestion-grid">
+                    <?php foreach ($suggestions as $suggestion) : ?>
+                      <article class="bh3-family__suggestion">
+                        <span class="bh3-family__suggestion-category"><?php echo esc_html($suggestion['category'] ?: __('Family activity', 'bubba-hub-manager')); ?></span>
+                        <h3><?php echo esc_html($suggestion['title']); ?></h3>
+                        <?php if (!empty($suggestion['town'])) : ?><p><?php echo esc_html($suggestion['town']); ?></p><?php endif; ?>
+                        <?php if (!empty($suggestion['is_free'])) : ?><span class="bh3-family__free-tag"><?php echo esc_html__('Free', 'bubba-hub-manager'); ?></span><?php endif; ?>
+                        <?php if (!empty($suggestion['slug'])) : ?><a href="<?php echo esc_url(home_url('/activity/' . rawurlencode($suggestion['slug']) . '/')); ?>"><?php echo esc_html__('View activity', 'bubba-hub-manager'); ?> →</a><?php endif; ?>
+                      </article>
+                    <?php endforeach; ?>
+                  </div>
+                <?php endif; ?>
+                <p class="bh3-family__matching-note"><?php echo esc_html__('Distance radius and child-age matching are planned for the next integration stage.', 'bubba-hub-manager'); ?></p>
               </article>
               <article id="bh3-saved" class="bh3-family__card bh3-family__card--saved">
                 <h2><?php echo esc_html__('Saved activities', 'bubba-hub-manager'); ?></h2>
