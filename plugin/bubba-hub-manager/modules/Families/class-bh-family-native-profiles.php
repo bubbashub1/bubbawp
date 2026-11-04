@@ -9,6 +9,14 @@ final class BH_Family_Native_Profiles_3 {
         add_action('admin_post_bh3_native_family_profile',array(__CLASS__,'save'));
         add_action('admin_post_bh3_native_family_update',array(__CLASS__,'update'));
         add_action('admin_post_bh3_native_family_delete',array(__CLASS__,'delete'));
+        add_filter('the_content',array(__CLASS__,'replace_family_profile_page'),30);
+    }
+    /** Render the native manager on the existing /family/profile/ page. */
+    public static function replace_family_profile_page($content) {
+        if (is_admin() || !is_page()) return $content;
+        $page_id=get_queried_object_id();
+        if (!$page_id || get_page_uri($page_id)!=='family/profile') return $content;
+        return self::dashboard();
     }
     public static function allowed() {
         // Native profiles belong to the authenticated WordPress account. They do not
