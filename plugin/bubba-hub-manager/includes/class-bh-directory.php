@@ -48,13 +48,15 @@ final class BH_Directory_3 {
         $radius = isset( $_GET['bh_radius'] ) && is_scalar( $_GET['bh_radius'] ) ? absint( $_GET['bh_radius'] ) : 10;
         if ( ! in_array( $radius, array( 5, 10, 20, 50 ), true ) ) { $radius = 10; }
         $free = isset( $_GET['bh_free'] ) && (string) $_GET['bh_free'] === '1';
+        $max_price = isset( $_GET['bh_max_price'] ) && is_scalar( $_GET['bh_max_price'] ) && in_array( (string) $_GET['bh_max_price'], array( '5', '10', '20', '50' ), true ) ? absint( $_GET['bh_max_price'] ) : 0;
         $page = min( 100, max( 1, absint( $_GET['bh_page'] ?? 1 ) ) );
         $conditions = array( "a.status IN ('published','publish')" );
         $params = array();
-        if ( $search !== '' ) { $conditions[] = 'a.title LIKE %s'; $params[] = '%' . $wpdb->esc_like( $search ) . '%'; }
+        if ( $search !== '' ) { $conditions[] = '(a.title LIKE %s OR a.description LIKE %s OR EXISTS (SELECT 1 FROM `' . $organisers . '` os WHERE os.id = a.organiser_id AND os.name LIKE %s))'; $pattern = '%' . $wpdb->esc_like( $search ) . '%'; $params[] = $pattern; $params[] = $pattern; $params[] = $pattern; }
         if ( $category !== '' ) { $conditions[] = 'a.category = %s'; $params[] = $category; }
         if ( $town !== '' ) { $conditions[] = 'EXISTS (SELECT 1 FROM `' . $links . '` av2 INNER JOIN `' . $venues . '` v2 ON v2.id = av2.venue_id WHERE av2.activity_id = a.id AND v2.town LIKE %s)'; $params[] = '%' . $wpdb->esc_like( $town ) . '%'; }
         if ( $free ) { $conditions[] = 'a.is_free = 1'; }
+        if ( $max_price && ! $free ) { $conditions[] = '(a.is_free = 1 OR (a.price_from IS NOT NULL AND a.price_from <= %d))'; $params[] = $max_price; }
         if ( $age !== null ) {
             $conditions[] = '(a.age_min_months IS NULL OR a.age_min_months <= %d) AND (a.age_max_months IS NULL OR a.age_max_months >= %d)';
             $params[] = $age; $params[] = $age;
@@ -84,7 +86,7 @@ final class BH_Directory_3 {
         }
         $where = implode( ' AND ', $conditions );
         $order = $sort === 'newest' ? 'a.id DESC' : ( $sort === 'town' ? 'town ASC, a.title ASC' : 'a.title ASC' );
-        $sql = "SELECT a.id,a.title,a.slug,a.description,a.category,a.price_from,a.is_free,o.name AS organiser,
+        $sql = "SELECT a.id,a.title,a.slug,a.description,a.category,a.image_path,a.age_min_months,a.age_max_months,a.price_from,a.is_free,o.name AS organiser,
             (SELECT v.town FROM `{$links}` av INNER JOIN `{$venues}` v ON v.id=av.venue_id WHERE av.activity_id=a.id ORDER BY v.name LIMIT 1) AS town
             FROM `{$activities}` a LEFT JOIN `{$organisers}` o ON o.id=a.organiser_id
             WHERE {$where} ORDER BY {$order} LIMIT 13 OFFSET " . ( ( $page - 1 ) * 12 );
@@ -94,6 +96,28 @@ final class BH_Directory_3 {
         $rows = array_slice( $rows, 0, 12 );
         $map_points = array();
         $row_ids = array_map( 'intval', array_column( $rows, 'id' ) );
+        $sessions_by_activity = array();
+        if ( $row_ids ) {
+            $session_ids = implode( ',', array_fill( 0, count( $row_ids ), '%d' ) );
+            $session_table = $wpdb->prefix . 'sessions';
+            $session_sql = "SELECT activity_id,day_of_week,LEFT(start_time,5) AS start_time FROM `{$session_table}`
+                WHERE activity_id IN ({$session_ids}) AND frequency='weekly' AND status='scheduled'
+                AND day_of_week BETWEEN 1 AND 7 AND start_time IS NOT NULL
+                ORDER BY activity_id,day_of_week,start_time LIMIT 1000";
+            foreach ( (array) $wpdb->get_results( $wpdb->prepare( $session_sql, $row_ids ), ARRAY_A ) as $session ) {
+                $activity_id = (int) $session['activity_id'];
+                $day_number = (int) $session['day_of_week'];
+                $time = (string) $session['start_time'];
+                if ( ! preg_match( '/^([01][0-9]|2[0-3]):[0-5][0-9]$/', $time ) ) { continue; }
+                $day_names = array( 1 => 'Mon', 2 => 'Tue', 3 => 'Wed', 4 => 'Thu', 5 => 'Fri', 6 => 'Sat', 7 => 'Sun' );
+                $hour = (int) substr( $time, 0, 2 );
+                $minute = substr( $time, 3, 2 );
+                $display_time = ( $hour % 12 ?: 12 ) . ( $minute === '00' ? '' : ':' . $minute ) . ( $hour >= 12 ? 'pm' : 'am' );
+                $label = $day_names[ $day_number ] . ' ' . $display_time;
+                if ( ! isset( $sessions_by_activity[ $activity_id ] ) ) { $sessions_by_activity[ $activity_id ] = array(); }
+                if ( ! in_array( $label, $sessions_by_activity[ $activity_id ], true ) ) { $sessions_by_activity[ $activity_id ][] = $label; }
+            }
+        }
         if ( $row_ids ) {
             $placeholders = implode( ',', array_fill( 0, count( $row_ids ), '%d' ) );
             $geo_sql = "SELECT av.activity_id,v.name,v.town,v.latitude,v.longitude FROM `{$links}` av
@@ -121,7 +145,7 @@ final class BH_Directory_3 {
         .bh3-real-directory h2{margin:0 0 8px}.bh3-real-directory .bh3-search-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:14px;margin:22px 0;padding:20px;background:#fff;border:1px solid #d7e3dc;border-radius:16px;box-shadow:0 8px 26px rgba(22,66,48,.05)}.bh3-real-directory .bh3-search-form label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:650}.bh3-real-directory .bh3-search-form .bh3-check{flex-direction:row;align-items:center;align-self:end;padding:13px 0}.bh3-real-directory .bh3-search-form .bh3-check input{min-width:auto;flex:none}.bh3-real-directory .bh3-search-form select{width:100%;min-height:45px;border:1px solid #cbd8d0;border-radius:9px}.bh3-real-directory .bh3-search-actions{display:flex;align-items:center;gap:14px;align-self:end}.bh3-real-directory .bh3-search-actions a{white-space:nowrap}
         .bh3-real-directory input{min-width:130px;flex:1;padding:12px;border:1px solid #cbd8d0;border-radius:9px}
         .bh3-real-directory button{background:#175c46;color:white;border:0;border-radius:9px;padding:12px 20px;cursor:pointer}
-        .bh3-real-directory .bh3-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+        .bh3-real-directory .bh3-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
         .bh3-real-directory article{background:#fff;border:1px solid #d7e3dc;border-radius:14px;padding:20px;scroll-margin-top:90px;transition:border-color .2s,box-shadow .2s,background .2s}
         .bh3-real-directory article.bh3-card-active{border-color:#176345;background:#f2f9f4;box-shadow:0 0 0 3px rgba(23,99,69,.16)}
         .bh3-real-directory .bh3-map-note{margin:8px 0 18px;color:#50675e;font-size:14px}
@@ -132,7 +156,8 @@ final class BH_Directory_3 {
         .bh3-real-directory.bh3-view-map .bh3-cards,.bh3-real-directory.bh3-view-map .bh3-pages{display:none}
         .bh3-real-directory .bh3-map:focus-visible,.bh3-real-directory button:focus-visible{outline:3px solid #74b38b;outline-offset:3px}
         .bh3-real-directory .bh3-map-card-link{display:inline-block;margin-top:8px;padding:7px 10px;border-radius:7px;border:1px solid #bcd9c5;background:#f4faf6;color:#175c46;font-weight:700;cursor:pointer}
-        .bh3-real-directory article h3{margin:8px 0}.bh3-real-directory .bh3-meta{color:#50675e;font-size:14px}
+        .bh3-real-directory article h3{margin:8px 0}.bh3-real-directory .bh3-card-image{width:100%;aspect-ratio:16/10;overflow:hidden;background:#e9f2ec;border-radius:10px;margin-bottom:14px}.bh3-real-directory .bh3-card-image img{display:block;width:100%;height:100%;object-fit:cover}.bh3-real-directory .bh3-card-image-empty{display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#e8f4e9,#cfe6d8);color:#47765e}.bh3-real-directory .bh3-card-image-empty span{font-size:28px;font-weight:800;letter-spacing:-2px;opacity:.55}.bh3-real-directory .bh3-card-title-link{color:inherit;text-decoration:none}.bh3-real-directory .bh3-card-title-link:hover{text-decoration:underline}.bh3-real-directory .bh3-card-title-link:focus-visible,.bh3-real-directory .bh3-card-cta:focus-visible{outline:3px solid #d59b38;outline-offset:3px}.bh3-real-directory .bh3-card-footer{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-top:14px}.bh3-real-directory .bh3-card-cta{display:inline-flex;align-items:center;gap:5px;background:#175c46;color:#fff;text-decoration:none;border-radius:8px;padding:9px 12px;font-size:13px;font-weight:650}.bh3-real-directory .bh3-card-cta:hover{background:#104632}.bh3-real-directory .bh3-card-sessions{margin:12px 0;font-size:12px;color:#315b46}.bh3-real-directory .bh3-card-session-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.bh3-real-directory .bh3-card-session-list span{border:1px solid #c8ded0;background:#f5faf6;padding:5px 8px;border-radius:7px;white-space:nowrap}
+        .bh3-real-directory .bh3-card-facts{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}.bh3-real-directory .bh3-card-facts span{display:inline-flex;align-items:center;background:#f0f7f2;border:1px solid #dce9df;border-radius:999px;padding:5px 9px;font-size:12px;color:#315b46}.bh3-real-directory article{min-width:0;overflow-wrap:anywhere}.bh3-real-directory .bh3-cards>article{display:flex;flex-direction:column;min-height:100%;box-shadow:0 3px 12px rgba(23,60,52,.045)}.bh3-real-directory .bh3-cards>article:hover{border-color:#a8cdb5;box-shadow:0 9px 24px rgba(23,60,52,.10)}.bh3-real-directory .bh3-cards>article h3{font-size:18px;line-height:1.3;letter-spacing:-.01em}.bh3-real-directory .bh3-cards>article>p:not(.bh3-meta){font-size:14px;line-height:1.55;color:#39544a}.bh3-real-directory .bh3-cards>article .bh3-card-footer{margin-top:auto;padding-top:16px;border-top:1px solid #e4eee8}.bh3-real-directory .bh3-card-footer>strong{font-size:16px;color:#174d3a}.bh3-real-directory .bh3-card-cta{min-height:42px;justify-content:center}.bh3-real-directory .bh3-cards>article .bh3-card-image{flex-shrink:0}.bh3-real-directory .bh3-meta{color:#50675e;font-size:14px}
         .bh3-real-directory .bh3-pages{display:flex;gap:16px;margin-top:24px}
         .bh3-real-directory .bh3-map{border-radius:14px;overflow:hidden;border:1px solid #d7e3dc;margin:16px 0;z-index:0}
         .bh3-real-directory .bh3-map-message{font-size:14px;color:#50675e}
@@ -140,8 +165,9 @@ final class BH_Directory_3 {
         @media(max-width:560px){.bh3-real-directory .bh3-cards{grid-template-columns:1fr}}
         </style><div class="bh3-banner"><h2>Discover activities for your family</h2><p>Baby groups, toddler classes and family activities across Devon &amp; Cornwall.</p></div>';
         echo '<form class="bh3-search-form" method="get" aria-label="Filter activities">';
-        if ( $show( 'keyword' ) ) { echo '<label><span>Search</span><input type="search" name="bh_search" placeholder="Class or activity" value="' . esc_attr( $search ) . '"></label>'; }
+        if ( $show( 'keyword' ) ) { echo '<label><span>Search</span><input type="search" name="bh_search" placeholder="Activity, organiser or keyword" value="' . esc_attr( $search ) . '"></label>'; }
         if ( $show( 'category' ) ) { echo '<label><span>Category</span><input type="search" name="bh_category" placeholder="e.g. Swimming" value="' . esc_attr( $category ) . '"></label>'; }
+        if ( $show( 'price' ) ) { echo '<label><span>Maximum price</span><select name="bh_max_price"><option value="">Any price</option>'; foreach ( array( 5, 10, 20, 50 ) as $limit ) { echo '<option value="' . esc_attr( (string) $limit ) . '" ' . selected( $max_price, $limit, false ) . '>Up to £' . esc_html( (string) $limit ) . '</option>'; } echo '</select></label>'; }
         if ( $show( 'town' ) ) { echo '<label><span>Town</span><input type="search" name="bh_town" placeholder="Town" value="' . esc_attr( $town ) . '"></label>'; }
         if ( $show( 'region' ) ) { echo '<label><span>Region</span><select name="bh_region"><option value="">All regions</option>';
             foreach ( array( 'Devon', 'Cornwall' ) as $choice ) { echo '<option value="' . esc_attr( $choice ) . '" ' . selected( $region, $choice, false ) . '>' . esc_html( $choice ) . '</option>'; }
@@ -160,7 +186,7 @@ final class BH_Directory_3 {
             echo '</select></label><div class="bh3-search-actions"><button type="button" class="bh3-locate" data-bh3-locate>Use my location</button><span class="bh3-location-status" role="status" aria-live="polite"></span></div>';
             if ( $geo_valid ) { echo '<input type="hidden" name="bh_lat" value="' . esc_attr( (string) $geo_lat ) . '"><input type="hidden" name="bh_lng" value="' . esc_attr( (string) $geo_lng ) . '">'; }
         }
-        echo '<div class="bh3-search-actions"><button type="submit">Find activities</button><a href="' . esc_url( remove_query_arg( array( 'bh_search', 'bh_category', 'bh_town', 'bh_region', 'bh_age', 'bh_day', 'bh_postcode', 'bh_free', 'bh_term', 'bh_sort', 'bh_radius', 'bh_lat', 'bh_lng', 'bh_page' ) ) ) . '">Clear filters</a></div></form>';
+        echo '<div class="bh3-search-actions"><button type="submit">Find activities</button><a href="' . esc_url( remove_query_arg( array( 'bh_search', 'bh_category', 'bh_town', 'bh_region', 'bh_age', 'bh_day', 'bh_postcode', 'bh_free', 'bh_max_price', 'bh_term', 'bh_sort', 'bh_radius', 'bh_lat', 'bh_lng', 'bh_page' ) ) ) . '">Clear filters</a></div></form>';
         if ( $map_points ) { echo '<div class="bh3-view-toggle" role="group" aria-label="Directory view"><button type="button" data-bh3-view="both" aria-pressed="true">Map &amp; list</button><button type="button" data-bh3-view="map" aria-pressed="false">Map only</button><button type="button" data-bh3-view="list" aria-pressed="false">List only</button></div>'; }
         echo '<section class="bh3-map-section" aria-label="Activity locations"><h3>Activities on the map</h3>';
         if ( $map_points ) {
@@ -182,15 +208,44 @@ final class BH_Directory_3 {
         } else { echo '<p class="bh3-map-message">No mapped venues for the activities on this page. Listings are available below.</p>'; }
         echo '<p class="bh3-map-message">Map data © OpenStreetMap contributors. Use the list below for full activity details.</p></section>';
         echo '<p class="bh3-map-note">Select a map pin, then choose “Show listing” to highlight its activity card below.</p><div class="bh3-cards">';
+        $detail_page = get_page_by_path( 'activity-preview' );
+        $detail_base_url = $detail_page && has_shortcode( (string) $detail_page->post_content, 'bubbahub_activity' )
+            ? get_permalink( $detail_page ) : '';
         foreach ( $rows as $row ) {
-            $detail_page = get_page_by_path( 'activity-preview' );
-            $detail_url = $detail_page && has_shortcode( (string) $detail_page->post_content, 'bubbahub_activity' )
-                ? add_query_arg( 'bh_activity', absint( $row['id'] ), get_permalink( $detail_page ) ) : '';
-            echo '<article data-activity-id="' . esc_attr( (string) absint( $row['id'] ) ) . '"><div class="bh3-meta">' . esc_html( (string) $row['category'] ) . '</div><h3>' . esc_html( $row['title'] ) . '</h3>';
-            if ( $detail_url ) { echo '<p><a href="' . esc_url( $detail_url ) . '">View activity details</a></p>'; }
+            $detail_url = $detail_base_url ? add_query_arg( 'bh_activity', absint( $row['id'] ), $detail_base_url ) : '';
+            echo '<article data-activity-id="' . esc_attr( (string) absint( $row['id'] ) ) . '">';
+            $image_url = isset( $row['image_path'] ) ? trim( (string) $row['image_path'] ) : '';
+            $image_scheme = strtolower( (string) wp_parse_url( $image_url, PHP_URL_SCHEME ) );
+            if ( $image_url && in_array( $image_scheme, array( 'http', 'https' ), true ) ) {
+                echo '<div class="bh3-card-image"><img src="' . esc_url( $image_url ) . '" alt="" loading="lazy" decoding="async"></div>';
+            } else {
+                echo '<div class="bh3-card-image bh3-card-image-empty" aria-hidden="true"><span>BH</span></div>';
+            }
+            echo '<div class="bh3-meta">' . esc_html( (string) $row['category'] ) . '</div><h3>';
+            if ( $detail_url ) { echo '<a class="bh3-card-title-link" href="' . esc_url( $detail_url ) . '">' . esc_html( $row['title'] ) . '</a>'; }
+            else { echo esc_html( $row['title'] ); }
+            echo '</h3>';
             echo '<p>' . esc_html( wp_trim_words( wp_strip_all_tags( (string) $row['description'] ), 24 ) ) . '</p>';
-            echo '<p class="bh3-meta">' . esc_html( (string) $row['town'] ) . ( $row['organiser'] ? ' · ' . esc_html( $row['organiser'] ) : '' ) . '</p>';
-            echo '<strong>' . ( (int) $row['is_free'] ? 'Free' : ( $row['price_from'] !== null ? 'From £' . esc_html( number_format( (float) $row['price_from'], 2 ) ) : 'Price on enquiry' ) ) . '</strong></article>';
+            echo '<div class="bh3-card-facts">';
+            if ( $row['town'] ) { echo '<span>📍 ' . esc_html( (string) $row['town'] ) . '</span>'; }
+            if ( $row['age_min_months'] !== null || $row['age_max_months'] !== null ) {
+                $age_min = $row['age_min_months'] !== null ? (int) $row['age_min_months'] : null;
+                $age_max = $row['age_max_months'] !== null ? (int) $row['age_max_months'] : null;
+                $age_label = $age_min !== null && $age_max !== null ? $age_min . '–' . $age_max . ' months' : ( $age_min !== null ? $age_min . '+ months' : 'Up to ' . $age_max . ' months' );
+                echo '<span>Age: ' . esc_html( $age_label ) . '</span>';
+            }
+            echo '</div>';
+            if ( $row['organiser'] ) { echo '<p class="bh3-meta">By ' . esc_html( $row['organiser'] ) . '</p>'; }
+            $session_labels = $sessions_by_activity[ (int) $row['id'] ] ?? array();
+            if ( $session_labels ) {
+                echo '<div class="bh3-card-sessions" aria-label="Weekly session times"><strong>Weekly sessions</strong><div class="bh3-card-session-list">';
+                foreach ( array_slice( $session_labels, 0, 3 ) as $session_label ) { echo '<span>' . esc_html( $session_label ) . '</span>'; }
+                if ( count( $session_labels ) > 3 ) { echo '<span aria-label="' . esc_attr( (string) ( count( $session_labels ) - 3 ) . ' additional weekly session times' ) . '">+' . esc_html( (string) ( count( $session_labels ) - 3 ) ) . ' more</span>'; }
+                echo '</div></div>';
+            }
+            echo '<div class="bh3-card-footer"><strong>' . ( (int) $row['is_free'] ? 'Free' : ( $row['price_from'] !== null ? 'From £' . esc_html( number_format( (float) $row['price_from'], 2 ) ) : 'Price on enquiry' ) ) . '</strong>';
+            if ( $detail_url ) { echo '<a class="bh3-card-cta" href="' . esc_url( $detail_url ) . '">View details <span aria-hidden="true">→</span></a>'; }
+            echo '</div></article>';
         }
         if ( ! $rows ) { echo '<p>No published activities match these filters. Draft listings are not public.</p>'; }
         echo '</div><nav class="bh3-pages" aria-label="Directory pages">';
