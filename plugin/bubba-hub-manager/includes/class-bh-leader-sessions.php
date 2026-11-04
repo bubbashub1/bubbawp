@@ -53,7 +53,7 @@ final class BH_Leader_Sessions_3 {
             } else { echo 'Read-only'; }
             echo '</td></tr>';
         }
-        if ( ! $rows ) { echo '<tr><td colspan="6">No sessions yet.</td></tr>'; }
+        if ( ! $rows ) { echo '<tr><td colspan="6">No sessions yet. Use Add weekly session to create your first timetable entry.</td></tr>'; }
         echo '</tbody></table>';
         if ( $activity['status'] !== 'draft' ) { echo '<p>Only draft activity sessions can be changed.</p></div>'; return; }
         $assigned = $wpdb->get_results( $wpdb->prepare( "SELECT v.id, v.name, v.town FROM `{$venues}` v INNER JOIN `{$links}` av ON av.venue_id=v.id WHERE av.activity_id=%d ORDER BY v.name LIMIT 200", $id ), ARRAY_A );
