@@ -16,6 +16,7 @@ final class BH_Leader_Frontend_Editor_3 {
     public static function register() {
         add_shortcode( 'bh_leader_edit_activity', array( __CLASS__, 'render' ) );
         add_action( 'admin_post_bh3_leader_frontend_save', array( __CLASS__, 'save' ) );
+        add_action( 'admin_post_bh3_leader_image_upload', array( __CLASS__, 'upload_image' ) );
     }
     public static function render() {
         if ( ! self::enabled() ) { return '<p>Please sign in to edit your draft activity.</p>'; }
