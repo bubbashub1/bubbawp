@@ -7,6 +7,7 @@ if (!defined('ABSPATH')) { exit; }
 final class BH_Family_Profile_Editor_3 {
     public static function register() {
         add_action('admin_post_bh3_family_child_name', array(__CLASS__, 'handle_child_name'));
+        add_action('admin_post_bh3_family_bump_name', array(__CLASS__, 'handle_bump_name'));
     }
 
     public static function handle_child_name() {
@@ -20,6 +21,34 @@ final class BH_Family_Profile_Editor_3 {
         $status = is_wp_error($result) ? 'error' : 'saved';
         wp_safe_redirect(add_query_arg('bh3_profile_status', $status, wp_get_referer() ?: home_url('/')));
         exit;
+    }
+
+    public static function handle_bump_name() {
+        if (!self::enabled() || !is_user_logged_in() || !isset($_POST['bh3_bump_id'], $_POST['bh3_bump_name'], $_POST['_wpnonce']) || !is_scalar($_POST['bh3_bump_name'])) {
+            wp_die(esc_html__('Family profile editing is unavailable.', 'bubba-hub-manager'), '', array('response' => 403));
+        }
+        $result = self::update_bump_name(absint(wp_unslash($_POST['bh3_bump_id'])), sanitize_text_field(wp_unslash($_POST['bh3_bump_name'])), sanitize_text_field(wp_unslash($_POST['_wpnonce'])));
+        wp_safe_redirect(add_query_arg('bh3_profile_status', is_wp_error($result) ? 'error' : 'saved', wp_get_referer() ?: home_url('/')));
+        exit;
+    }
+
+    public static function update_bump_name($bump_id, $name, $nonce) {
+        if (!self::enabled() || !is_user_logged_in() || !wp_verify_nonce($nonce, 'bh3_family_profile_edit')) {
+            return new WP_Error('family_edit_denied', 'Profile editing is unavailable.');
+        }
+        $family_id = BH_Family_Identity_3::current_legacy_id();
+        $name = sanitize_text_field($name);
+        if ($family_id < 1 || absint($bump_id) < 1 || $name === '' || (function_exists('mb_strlen') ? mb_strlen($name) : strlen($name)) > 100) {
+            return new WP_Error('family_invalid_profile', 'Enter a valid profile name.');
+        }
+        global $wpdb;
+        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like('bh_bumps'))) !== 'bh_bumps') {
+            return new WP_Error('family_table_missing', 'Pregnancy profiles are unavailable.');
+        }
+        $exists = $wpdb->get_var($wpdb->prepare('SELECT id FROM bh_bumps WHERE id = %d AND user_id = %d LIMIT 1', absint($bump_id), $family_id));
+        if (!$exists) return new WP_Error('family_profile_missing', 'Profile not found.');
+        $result = $wpdb->update('bh_bumps', array('nickname' => $name), array('id' => absint($bump_id), 'user_id' => $family_id), array('%s'), array('%d', '%d'));
+        return $result === false ? new WP_Error('family_update_failed', 'Could not save profile.') : true;
     }
 
     public static function enabled() {
