@@ -43,7 +43,7 @@ final class BH_Family_Hub_3 {
         // or reading or changing any real family records.
         $admin_demo = $preview_enabled && $wp_signed_in && current_user_can('manage_options');
         $verified_family = $preview_enabled && $wp_signed_in && !$admin_demo && BH_Family_Identity_3::current_legacy_id() > 0;
-        $private_preview = $admin_demo || $verified_family;
+        $private_preview = $preview_enabled && $wp_signed_in;
         $preferences = BH_Family_Preferences_3::read();
 
         $saved = $verified_family ? BH_Family_Read_Model_3::saved_ids() : array();
