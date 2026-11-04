@@ -11,7 +11,10 @@ final class BH_Family_Native_Profiles_3 {
             && defined('BH3_FAMILY_NATIVE_PROFILE_WRITES') && BH3_FAMILY_NATIVE_PROFILE_WRITES === true;
     }
     public static function form() {
-        if (!self::allowed()) return '<p>Family profile creation is not yet enabled for this account.</p>';
+        if (!self::allowed()) {
+            if (current_user_can('manage_options') && wp_parse_url(home_url(), PHP_URL_HOST) === 'staging.bubbahub.co.uk') return self::preview();
+            return '<p>Sign in with a verified family account to manage your family profiles.</p>';
+        }
         ob_start(); ?>
         <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
           <input type="hidden" name="action" value="bh3_native_family_profile">
@@ -21,6 +24,33 @@ final class BH_Family_Native_Profiles_3 {
           <p><label>Birth or due date <input type="date" name="profile_date" required></label></p>
           <p><button type="submit">Add family profile</button></p>
         </form>
+        <?php return ob_get_clean();
+    }
+    /** Layout-only admin preview: never query or write another family's records. */
+    public static function preview() {
+        ob_start(); ?>
+        <div class="bh3-family-profile-preview" style="max-width:1100px;margin:0 auto;padding:20px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px">
+            <nav aria-label="My Hub sections" style="padding:20px;border:1px solid #dce7e1;border-radius:16px">
+              <strong>My Hub</strong>
+              <p><a href="<?php echo esc_url(home_url('/family/')); ?>">Overview</a></p>
+              <p><a href="<?php echo esc_url(home_url('/family/profile/')); ?>" aria-current="page">My family</a></p>
+              <p><a href="<?php echo esc_url(home_url('/family/settings/')); ?>">Settings</a></p>
+            </nav>
+            <section style="padding:20px;border:1px solid #dce7e1;border-radius:16px">
+              <h2>My family</h2>
+              <p><strong>Administrator preview</strong> — example layout only. No family data is loaded.</p>
+              <h3>Children</h3><p>Child profiles will appear here.</p>
+              <h3>Pregnancy profiles</h3><p>Pregnancy profiles will appear here.</p>
+              <fieldset disabled><legend>Add a family profile (preview)</legend>
+                <p><label>Profile type <select><option>Child</option><option>Pregnancy</option></select></label></p>
+                <p><label>Name or nickname <input type="text" placeholder="Profile name"></label></p>
+                <p><label>Birth or due date <input type="date"></label></p>
+                <button type="button">Add family profile</button>
+              </fieldset>
+            </section>
+          </div>
+        </div>
         <?php return ob_get_clean();
     }
     public static function save() {
