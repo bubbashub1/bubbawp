@@ -136,6 +136,7 @@ final class BH_Family_Native_Profiles_3 {
         $kind=$profile_type==='child'?'school':'pregnancy';
         $default=$profile_type==='child'?'Primary School Application':'Antenatal class reminder';
         ob_start(); ?>
+        <style>.bh3-profile-reminders{margin:12px 0 4px;padding:12px;border-radius:12px}.bh3-profile-reminders--school{background:#e8f2ec;color:#205b49}.bh3-profile-reminders--pregnancy{background:#fff0df;color:#86552f}.bh3-profile-reminder{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid currentColor}.bh3-profile-reminder span{font-size:13px;opacity:.85}.bh3-profile-reminder button{background:transparent!important;color:inherit!important;padding:2px 8px!important;min-height:30px!important}.bh3-profile-reminder-add{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:10px;align-items:end;margin-top:10px}.bh3-profile-reminder-add label{font-size:12px}.bh3-profile-reminder-add button{white-space:nowrap}.bh3-profile-reminder-add input{min-width:0}@media(max-width:720px){.bh3-profile-reminder-add{grid-template-columns:1fr}.bh3-profile-reminder-add button{width:100%}}</style>
         <div class="bh3-profile-reminders bh3-profile-reminders--<?php echo esc_attr($kind); ?>">
           <?php if ($rows) : ?><div class="bh3-profile-reminder-list">
             <?php foreach ($rows as $row) :
