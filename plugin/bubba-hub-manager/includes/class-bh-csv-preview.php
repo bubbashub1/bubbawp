@@ -64,35 +64,46 @@ final class BH_CSV_Preview_3 {
         $required = $type === 'activities' ? 'title' : ( $type === 'sessions' ? 'activity_id' : 'name' );
         if ( ! in_array( $required, $mapped, true ) ) { echo '<p><strong>Warning:</strong> required field missing: ' . esc_html( $required ) . '.</p>'; }
         echo '<p>Suggested mappings only; no changes saved.</p>';
-        // Read-only duplicate candidates: never treat an ambiguous match as safe to update.
+        // Read-only candidate detection. Similar names never authorise automatic updates.
         global $wpdb;
-        $tables = BH_Schema_3::table_names();
-        $table = $tables[$type] ?? '';
-        $table_exists = $table && $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ) === $table;
+        $table = BH_Schema_3::table_names()[$type] ?? '';
+        $exists = $table && $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ) === $table;
         $identity = $type === 'activities' ? 'slug' : ( $type === 'sessions' ? '' : 'name' );
-        if ( $table_exists && $identity && in_array( $identity, $mapped, true ) ) {
-            $source_column = array_search( $identity, $mapped, true );
-            $source_index = array_search( $source_column, $headers, true );
-            $candidates = array(); $checked = 0;
+        if ( $exists && $identity && in_array( $identity, $mapped, true ) ) {
+            $indices = array();
+            foreach ( $mapped as $source => $target ) { $indices[$target] = array_search( $source, $headers, true ); }
             $quoted = chr(96) . str_replace( chr(96), chr(96) . chr(96), $table ) . chr(96);
+            $candidates = array(); $checked = 0;
             while ( $checked < 100 && ( $record = fgetcsv( $handle, 0, ',', chr(34), '' ) ) !== false ) {
                 if ( count( $record ) !== count( $headers ) ) { continue; }
                 ++$checked;
-                $value = trim( (string) ( $record[$source_index] ?? '' ) );
+                $value = trim( (string) ( $record[$indices[$identity]] ?? '' ) );
                 if ( $value === '' ) { continue; }
-                $matches = $wpdb->get_col( $wpdb->prepare( 'SELECT id FROM ' . $quoted . ' WHERE ' . chr(96) . $identity . chr(96) . ' = %s LIMIT 3', $value ) );
-                if ( $matches ) { $candidates[] = array( $checked, $value, implode( ', ', array_map( 'absint', $matches ) ) ); }
+                $matches = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM ' . $quoted . ' WHERE ' . chr(96) . $identity . chr(96) . ' = %s LIMIT 10', $value ), ARRAY_A );
+                foreach ( $matches as $match ) {
+                    $level = 'Possible match — review manually';
+                    if ( $type === 'activities' ) { $level = 'Exact slug — verify organiser'; }
+                    if ( $type === 'organisers' ) { $level = 'Exact name — verify organisation'; }
+                    if ( $type === 'venues' ) {
+                        $postcode = isset( $indices['postcode'] ) ? trim( (string) ( $record[$indices['postcode']] ?? '' ) ) : '';
+                        $town = isset( $indices['town'] ) ? trim( (string) ( $record[$indices['town']] ?? '' ) ) : '';
+                        if ( $postcode !== '' && strcasecmp( preg_replace( '/\s+/', '', $postcode ), preg_replace( '/\s+/', '', (string) ( $match['postcode'] ?? '' ) ) ) === 0 ) {
+                            $level = 'Name + postcode match — verify address';
+                        } elseif ( $town !== '' && strcasecmp( $town, (string) ( $match['town'] ?? '' ) ) === 0 ) {
+                            $level = 'Name + town match — verify address';
+                        } else { $level = 'Same name, location differs or unknown'; }
+                    }
+                    $candidates[] = array( $checked, $value, absint( $match['id'] ), $level );
+                }
             }
             rewind( $handle ); fgetcsv( $handle, 0, ',', chr(34), '' );
-            echo '<h2>Potential existing records</h2><p>Checked first ' . esc_html( (string) $checked ) . ' valid rows by exact ' . esc_html( $identity ) . ' match. These are candidates, not approved updates.</p>';
+            echo '<h2>Potential duplicates</h2><p>Checked the first ' . esc_html( (string) $checked ) . ' valid rows. Matches are suggestions only; no automatic updates.</p>';
             if ( $candidates ) {
-                echo '<table class="widefat striped"><thead><tr><th>CSV row</th><th>Value</th><th>Existing IDs</th></tr></thead><tbody>';
-                foreach ( $candidates as $item ) { echo '<tr><td>' . esc_html( (string) $item[0] ) . '</td><td>' . esc_html( $item[1] ) . '</td><td>' . esc_html( $item[2] ) . '</td></tr>'; }
-                echo '</tbody></table>';
-            } else { echo '<p>No exact-match candidates in the sampled rows.</p>'; }
-        } else {
-            echo '<p>Duplicate matching unavailable: target table or reliable identity column is missing. No updates are inferred.</p>';
-        }
+                echo '<div style="overflow-x:auto"><table class="widefat striped"><thead><tr><th>CSV row</th><th>CSV value</th><th>Existing ID</th><th>Review status</th></tr></thead><tbody>';
+                foreach ( $candidates as $item ) { echo '<tr>'; foreach ( $item as $cell ) { echo '<td>' . esc_html( (string) $cell ) . '</td>'; } echo '</tr>'; }
+                echo '</tbody></table></div>';
+            } else { echo '<p>No exact-name or exact-slug candidates in sampled rows.</p>'; }
+        } else { echo '<p>Duplicate matching unavailable for this file or table; manual review required.</p>'; }
         echo '<h2>' . esc_html( ucfirst( $type ) ) . ' — first 10 rows</h2><div style="overflow-x:auto"><table class="widefat striped"><thead><tr>';
         foreach ( $headers as $header ) { echo '<th>' . esc_html( $header ) . '</th>'; }
         echo '</tr></thead><tbody>';
