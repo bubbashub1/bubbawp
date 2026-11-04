@@ -9,6 +9,13 @@ final class BH_Family_Hub_3 {
     public static function register() {
         add_shortcode( 'bubbahub_family_hub', array( __CLASS__, 'render' ) );
         add_action( 'wp_enqueue_scripts', array( __CLASS__, 'styles' ) );
+        add_action( 'template_redirect', array( __CLASS__, 'private_cache_headers' ), 0 );
+    }
+
+    public static function private_cache_headers() {
+        if (!defined('BH3_FAMILY_PRIVATE_PREVIEW') || BH3_FAMILY_PRIVATE_PREVIEW !== true || !is_singular()) return;
+        $post = get_post();
+        if ($post && has_shortcode($post->post_content, 'bubbahub_family_hub')) nocache_headers();
     }
 
     public static function styles() {
@@ -58,7 +65,6 @@ final class BH_Family_Hub_3 {
             <div class="bh3-family__notice" role="status"><?php echo esc_html__( 'Signed in. Family data remains in preview mode while account compatibility checks are completed.', 'bubba-hub-manager' ); ?></div>
           <?php endif; ?>
           <?php if ($private_preview && !is_wp_error($saved) && !is_wp_error($planner) && !is_wp_error($profiles)) : ?>
-            <?php nocache_headers(); ?>
             <div class="bh3-family__notice" role="status">
               <?php echo esc_html(sprintf('Your Hub: %d saved activities, %d planned activities, %d child profiles.', count($saved), count($planner), count($profiles['children']))); ?>
             </div>
