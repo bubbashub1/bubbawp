@@ -122,8 +122,9 @@ final class BH_Family_Hub_3 {
                 <form class="bh3-family__search" method="get" action="<?php echo esc_url($return_url); ?>">
                   <label for="bh3-saved-search"><?php echo esc_html__('Search saved activities', 'bubba-hub-manager'); ?></label>
                   <input id="bh3-saved-search" type="search" name="bh3_saved_search" maxlength="80" value="<?php echo esc_attr($saved_search); ?>" placeholder="<?php echo esc_attr__('Activity name', 'bubba-hub-manager'); ?>">
+                  <input type="hidden" name="bh3_saved_sort" value="<?php echo esc_attr($saved_sort); ?>">
                   <button type="submit"><?php echo esc_html__('Search', 'bubba-hub-manager'); ?></button>
-                  <?php if ($saved_search !== '') : ?><a href="<?php echo esc_url($return_url); ?>"><?php echo esc_html__('Clear', 'bubba-hub-manager'); ?></a><?php endif; ?>
+                  <?php if ($saved_search !== '') : ?><a href="<?php echo esc_url(add_query_arg('bh3_saved_sort', $saved_sort, $return_url)); ?>"><?php echo esc_html__('Clear', 'bubba-hub-manager'); ?></a><?php endif; ?>
                 </form>
                 <form class="bh3-family__sort" method="get" action="<?php echo esc_url($return_url); ?>">
                   <label for="bh3-saved-sort"><?php echo esc_html__('Sort favourites', 'bubba-hub-manager'); ?></label>
@@ -135,7 +136,7 @@ final class BH_Family_Hub_3 {
                   <button type="submit"><?php echo esc_html__('Apply', 'bubba-hub-manager'); ?></button>
                 </form>
                 <?php if (empty($filtered_saved)) : ?>
-                  <p><?php echo esc_html__('No saved activities yet.', 'bubba-hub-manager'); ?></p>
+                  <p><?php echo esc_html($saved_search !== '' ? __('No favourites match your search.', 'bubba-hub-manager') : __('No saved activities yet.', 'bubba-hub-manager')); ?></p>
                 <?php else : ?>
                   <ul class="bh3-family__items">
                     <?php foreach (array_slice($filtered_saved, 0, $show_saved ? 200 : 8) as $activity_id) : ?>
@@ -176,7 +177,7 @@ final class BH_Family_Hub_3 {
                   <input type="hidden" name="bh3_planner_filter" value="<?php echo esc_attr($planner_filter); ?>">
                   <input type="hidden" name="bh3_planner_sort" value="<?php echo esc_attr($planner_sort); ?>">
                   <button type="submit"><?php echo esc_html__('Search', 'bubba-hub-manager'); ?></button>
-                  <?php if ($planner_search !== '') : ?><a href="<?php echo esc_url(add_query_arg('bh3_planner_filter', $planner_filter, $return_url)); ?>"><?php echo esc_html__('Clear', 'bubba-hub-manager'); ?></a><?php endif; ?>
+                  <?php if ($planner_search !== '') : ?><a href="<?php echo esc_url(add_query_arg(array('bh3_planner_filter' => $planner_filter, 'bh3_planner_sort' => $planner_sort), $return_url)); ?>"><?php echo esc_html__('Clear', 'bubba-hub-manager'); ?></a><?php endif; ?>
                 </form>
                 <form class="bh3-family__sort" method="get" action="<?php echo esc_url($return_url); ?>">
                   <label for="bh3-planner-sort"><?php echo esc_html__('Sort planner', 'bubba-hub-manager'); ?></label>
@@ -194,7 +195,7 @@ final class BH_Family_Hub_3 {
                   <?php endforeach; ?>
                 </nav>
                 <?php if (empty($filtered_planner)) : ?>
-                  <p><?php echo esc_html__('Your planner is empty.', 'bubba-hub-manager'); ?></p>
+                  <p><?php echo esc_html(($planner_search !== '' || $planner_filter !== 'all') ? __('No planned activities match these filters.', 'bubba-hub-manager') : __('Your planner is empty.', 'bubba-hub-manager')); ?></p>
                 <?php else : ?>
                   <ul class="bh3-family__items">
                     <?php foreach (array_slice($filtered_planner, 0, $show_planner ? 200 : 8) as $item) : ?>
