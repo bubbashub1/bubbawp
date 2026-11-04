@@ -89,6 +89,7 @@ final class BH_Manager_3 {
         add_action( 'admin_post_bh3_delete_session', array( 'BH_Sessions_3', 'remove' ) );
         add_action( 'admin_init', array( 'BH_Activity_Create_3', 'register_save' ) );
         add_action( 'admin_post_bh3_save_settings', array( 'BH_Settings_3', 'save' ) );
+        add_action( 'admin_post_bh3_family_display_save', array( 'BH_Workstream_Settings_3', 'family_display_save' ) );
         add_action( 'admin_post_bh3_install_schema', array( __CLASS__, 'install_schema' ) );
     }
 
