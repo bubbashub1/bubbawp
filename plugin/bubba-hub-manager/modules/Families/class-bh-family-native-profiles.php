@@ -49,7 +49,11 @@ final class BH_Family_Native_Profiles_3 {
           </label></p>
           <p><label>Name or nickname <input name="display_name" maxlength="100" required autocomplete="off"></label></p>
           <p><label>Birth or due date <input type="date" name="profile_date" required></label></p>
+          <p class="bh3-family-gender-field"><label>Gender (optional, child profiles only)
+            <select name="gender"><option value="">Prefer not to say</option><option value="girl">Girl</option><option value="boy">Boy</option><option value="another">Another identity</option></select>
+          </label></p>
           <p><button type="submit">Add family profile</button></p>
+          <script>(function(){var f=document.currentScript.closest('form');if(!f)return;var t=f.querySelector('[name="profile_type"]'),g=f.querySelector('.bh3-family-gender-field');function sync(){g.hidden=t.value!=='child';}t.addEventListener('change',sync);sync();})();</script>
         </form>
         <?php return ob_get_clean();
     }
@@ -88,7 +92,8 @@ final class BH_Family_Native_Profiles_3 {
         $records=$wpdb->get_results($wpdb->prepare("SELECT id,profile_type,display_name,profile_date,gender FROM `{$table}` WHERE user_id=%d ORDER BY id DESC LIMIT 70",get_current_user_id()),ARRAY_A);
         if (!is_array($records)) return '<p>Unable to load profiles.</p>';
         ob_start(); ?>
-        <div class="bh3-family-profile-preview">
+        <style>.bh3-family-profile-manager{display:grid;grid-template-columns:minmax(190px,230px) minmax(0,1fr);gap:26px;align-items:start}.bh3-family-profile-manager nav,.bh3-family-profile-manager section{background:#fff;border:1px solid #dce8e1;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(22,62,51,.05)}.bh3-family-profile-manager nav a{display:block;padding:10px 12px;border-radius:10px;color:#245b49;text-decoration:none}.bh3-family-profile-manager nav a[aria-current=page]{background:#e8f2ed;font-weight:600}.bh3-family-profile-manager h2,.bh3-family-profile-manager h3{color:#174f40}.bh3-family-profile-manager .bh3-family-profile-entry{padding:16px;margin:12px 0;border:1px solid #e0e9e3;border-radius:14px;background:#fbfdfb}.bh3-family-profile-manager form.bh3-family-profile-add{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding:20px;border:1px solid #dce8e1;border-radius:16px;background:#fbfdfb}.bh3-family-profile-manager form p{margin:0;min-width:0}.bh3-family-profile-manager label{display:flex;flex-direction:column;gap:7px;font-weight:600;color:#244b40}.bh3-family-profile-manager input,.bh3-family-profile-manager select{width:100%;min-height:46px;padding:10px 12px;border:1px solid #b8cec1;border-radius:10px;background:#fff;font:inherit;box-sizing:border-box}.bh3-family-profile-manager button{border:0;border-radius:10px;background:#205b49;color:#fff;padding:12px 18px;font:inherit;font-weight:600;cursor:pointer}.bh3-family-profile-manager .bh3-family-profile-add p:last-child{grid-column:1/-1}.bh3-family-profile-manager .bh3-family__edit{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:end}@media(max-width:720px){.bh3-family-profile-manager{grid-template-columns:1fr}.bh3-family-profile-manager form.bh3-family-profile-add,.bh3-family-profile-manager .bh3-family__edit{grid-template-columns:1fr}.bh3-family-profile-manager .bh3-family-profile-add p:last-child{grid-column:auto}}</style>
+        <div class="bh3-family-profile-preview bh3-family-profile-manager">
           <div>
             <nav aria-label="My Hub sections"><strong>My Hub</strong>
               <p><a href="<?php echo esc_url(home_url('/family/')); ?>">Overview</a></p>
