@@ -80,6 +80,9 @@ final class BH_Manager_3 {
         BH_Leader_Bookings_3::register();
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-booking-setup.php';
         BH_Leader_Booking_Setup_3::register();
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-booking-storage.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-booking-queue.php';
+        BH_Leader_Booking_Queue_3::register();
         BH_Leader_Frontend_3::register();
         BH_Portal_Access_3::register();
         BH_Family_Hub_3::register(); // Preview shortcode only; FEATURE_FAMILY stays disabled.
