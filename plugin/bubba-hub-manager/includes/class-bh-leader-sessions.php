@@ -98,7 +98,7 @@ final class BH_Leader_Sessions_3 {
         }
         $dates = array();
         foreach ( array( 'start_date', 'end_date' ) as $field ) {
-            $value = (string) wp_unslash( $_POST[$field] ?? '' );
+            $value = isset( $_POST[$field] ) && is_string( $_POST[$field] ) ? wp_unslash( $_POST[$field] ) : '';
             $date = $value ? DateTimeImmutable::createFromFormat( '!Y-m-d', $value ) : null;
             if ( $value && ( ! $date || $date->format( 'Y-m-d' ) !== $value ) ) { wp_die( 'Invalid session date.', '', array( 'response' => 400 ) ); }
             $dates[$field] = $value ?: null;
