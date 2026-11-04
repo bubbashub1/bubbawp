@@ -54,6 +54,8 @@ final class BH_Manager_3 {
         BH_Family_Actions_3::register();
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-frontend-editor.php';
         BH_Leader_Frontend_Editor_3::register();
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-frontend-sessions.php';
+        BH_Leader_Frontend_Sessions_3::register();
         BH_Leader_Frontend_3::register();
         BH_Portal_Access_3::register();
         BH_Family_Hub_3::register(); // Preview shortcode only; FEATURE_FAMILY stays disabled.
