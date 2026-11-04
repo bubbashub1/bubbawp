@@ -43,6 +43,7 @@ final class BH_Ask_Support_Storage_3 {
                 updated_at datetime NOT NULL,
                 PRIMARY KEY  (id),
                 KEY category_status (category_slug,status),
+                UNIQUE KEY unique_form_submission (form_submission_id),
                 KEY owner_user (owner_user_id),
                 KEY visibility_status (visibility,status)
             ) $charset;",
