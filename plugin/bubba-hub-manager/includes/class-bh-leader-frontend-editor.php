@@ -22,6 +22,11 @@ final class BH_Leader_Frontend_Editor_3 {
         $id = absint( $_GET['activity_id'] ?? 0 );
         $row = self::draft( $id );
         if ( ! $row ) { return '<p>This draft is unavailable or is not assigned to your organiser.</p>'; }
+        global $wpdb;
+        $activities_table = $wpdb->prefix . 'activities';
+        $categories = $wpdb->get_col( "SELECT DISTINCT category FROM `{$activities_table}` WHERE category IS NOT NULL AND category <> '' ORDER BY category ASC LIMIT 150" );
+        $categories = array_values( array_unique( array_filter( array_map( 'sanitize_text_field', (array) $categories ) ) ) );
+        if ( $row['category'] && ! in_array( $row['category'], $categories, true ) ) { $categories[] = $row['category']; sort( $categories, SORT_NATURAL | SORT_FLAG_CASE ); }
         ob_start(); ?>
         <section class="bh-leader-edit" style="max-width:850px;margin:32px auto;padding:24px;background:#fff;border:1px solid #dbe5df;border-radius:16px">
         <style>
@@ -52,7 +57,15 @@ final class BH_Leader_Frontend_Editor_3 {
                 $numeric = in_array( $key, array( 'age_min_months', 'age_max_months', 'price_from' ), true );
                 $type = $numeric ? 'number' : ( $key === 'booking_url' ? 'url' : 'text' ); ?>
                 <p><label for="bh-edit-<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $label ); ?></label>
-                <input style="display:block;width:100%;max-width:600px;padding:10px" id="bh-edit-<?php echo esc_attr( $key ); ?>" name="<?php echo esc_attr( $key ); ?>" type="<?php echo esc_attr( $type ); ?>" value="<?php echo esc_attr( (string) ( $row[$key] ?? '' ) ); ?>" <?php if ( $numeric ) : ?>min="0" step="<?php echo $key === 'price_from' ? '0.01' : '1'; ?>"<?php endif; ?> <?php if ( $key === 'title' ) : ?>required<?php endif; ?>></p>
+                <?php if ( $key === 'category' ) : ?>
+                <select id="bh-edit-category" name="category" style="display:block;width:100%;max-width:680px;padding:11px;border:1px solid #b8c9bd;border-radius:9px;font:inherit">
+                    <option value="">Choose a category</option>
+                    <?php foreach ( $categories as $option ) : ?><option value="<?php echo esc_attr( $option ); ?>" <?php selected( $row['category'], $option ); ?>><?php echo esc_html( $option ); ?></option><?php endforeach; ?>
+                </select>
+                <small class="bh-edit-hint">Choose an existing Bubba Hub category. Contact the team if a new one is needed.</small>
+                <?php else : ?>
+                <input style="display:block;width:100%;max-width:600px;padding:10px" id="bh-edit-<?php echo esc_attr( $key ); ?>" name="<?php echo esc_attr( $key ); ?>" type="<?php echo esc_attr( $type ); ?>" value="<?php echo esc_attr( (string) ( $row[$key] ?? '' ) ); ?>" <?php if ( $numeric ) : ?>min="0" step="<?php echo $key === 'price_from' ? '0.01' : '1'; ?>"<?php endif; ?> <?php if ( $key === 'title' ) : ?>required<?php endif; ?>>
+                <?php endif; ?></p>
             <?php endforeach; ?>
             <p class="bh-edit-hint">Age ranges are entered in months. Use 0 for newborns. The booking link must begin with https:// or http://.</p>
             <p><label for="bh-edit-description">Description</label><textarea id="bh-edit-description" name="description" rows="8" style="display:block;width:100%"><?php echo esc_textarea( $row['description'] ); ?></textarea></p>
@@ -69,6 +82,11 @@ final class BH_Leader_Frontend_Editor_3 {
         if ( ! self::draft( $id ) ) { wp_die( 'Draft not found or access denied.', '', array( 'response' => 403 ) ); }
         $title = sanitize_text_field( wp_unslash( $_POST['title'] ?? '' ) );
         $category = sanitize_text_field( wp_unslash( $_POST['category'] ?? '' ) );
+        global $wpdb;
+        $activities_table = $wpdb->prefix . 'activities';
+        $valid_categories = $wpdb->get_col( "SELECT DISTINCT category FROM `{$activities_table}` WHERE category IS NOT NULL AND category <> '' ORDER BY category ASC LIMIT 150" );
+        $existing_draft = self::draft( $id );
+        if ( $category !== '' && $category !== $existing_draft['category'] && ! in_array( $category, (array) $valid_categories, true ) ) { wp_die( 'Please select an existing category.', '', array( 'response' => 400 ) ); }
         if ( $title === '' || strlen( $title ) > 255 || strlen( $category ) > 150 ) { wp_die( 'Invalid title or category.', '', array( 'response' => 400 ) ); }
         $ages = array();
         foreach ( array( 'age_min_months', 'age_max_months' ) as $field ) {
