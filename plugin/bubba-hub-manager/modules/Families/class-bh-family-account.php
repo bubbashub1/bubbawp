@@ -11,7 +11,7 @@ final class BH_Family_Account_3 {
     }
     public static function register() { add_action('admin_post_bh3_family_account', array(__CLASS__, 'save')); }
     public static function save() {
-        if (!BH_Family_Preferences_3::enabled() || !is_user_logged_in() || current_user_can('manage_options')
+        if (!BH_Family_Preferences_3::can_edit()
             || !isset($_POST['_wpnonce']) || !is_scalar($_POST['_wpnonce'])
             || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['_wpnonce'])), 'bh3_family_account')) {
             wp_die(esc_html__('Profile editing is unavailable.', 'bubba-hub-manager'), '', array('response'=>403));
