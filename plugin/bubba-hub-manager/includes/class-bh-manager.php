@@ -118,8 +118,8 @@ final class BH_Manager_3 {
 
     public static function register_admin_page() {
         add_menu_page(
-            __( 'Bubba Hub 3.0 Status', 'bubba-hub-manager' ),
-            __( 'Bubba Hub 3.0', 'bubba-hub-manager' ),
+            __( 'Bubba Hub Status', 'bubba-hub-manager' ),
+            __( 'Bubba Hub', 'bubba-hub-manager' ),
             'manage_options',
             'bubba-hub-3-status',
             array( __CLASS__, 'render_status' ),
