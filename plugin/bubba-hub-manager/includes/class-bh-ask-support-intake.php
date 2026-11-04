@@ -10,6 +10,7 @@ final class BH_Ask_Support_Intake_3 {
         if (strtolower((string) wp_parse_url(home_url(), PHP_URL_HOST)) !== 'staging.bubbahub.co.uk') return;
         add_action('fluentform/submission_inserted', [__CLASS__, 'capture'], 10, 3);
         add_action('admin_menu', [__CLASS__, 'menu'], 32);
+        add_action('admin_post_bh3_ask_reject_question', [__CLASS__, 'reject']);
     }
 
     public static function capture($entry_id, $data, $form): void {
@@ -77,6 +78,38 @@ final class BH_Ask_Support_Intake_3 {
         add_submenu_page('bh3-support-help', 'Ask Support Questions', 'Ask Support Questions', 'manage_options', 'bh3-ask-questions', [__CLASS__, 'render']);
     }
 
+    /**
+     * Rejection is the only enabled moderation transition at this stage.
+     * Approval/sharing must wait for a redaction and access-control review.
+     */
+    public static function reject(): void {
+        if (!current_user_can('manage_options') ||
+            strtolower((string) wp_parse_url(home_url(), PHP_URL_HOST)) !== 'staging.bubbahub.co.uk') {
+            wp_die('Not authorised.', '', ['response' => 403]);
+        }
+        $id = absint($_POST['question_id'] ?? 0);
+        if (!$id) wp_die('Invalid question.', '', ['response' => 400]);
+        check_admin_referer('bh3_ask_reject_' . $id);
+        if (!BH_Ask_Support_Storage_3::installed()) wp_die('Storage unavailable.', '', ['response' => 503]);
+        global $wpdb;
+        $tables = BH_Ask_Support_Storage_3::tables();
+        $updated = $wpdb->update(
+            $tables['questions'],
+            ['status' => 'rejected', 'updated_at' => current_time('mysql', true)],
+            ['id' => $id, 'status' => 'pending_review'],
+            ['%s', '%s'], ['%d', '%s']
+        );
+        if ($updated !== 1) wp_die('Question not pending review or could not be updated.', '', ['response' => 409]);
+        $wpdb->insert($tables['audit'], [
+            'question_id' => $id,
+            'actor_user_id' => get_current_user_id(),
+            'event' => 'moderator_rejected',
+            'occurred_at' => current_time('mysql', true),
+        ], ['%d','%d','%s','%s']);
+        wp_safe_redirect(admin_url('admin.php?page=bh3-ask-questions&rejected=1'));
+        exit;
+    }
+
     public static function render(): void {
         if (!current_user_can('manage_options')) wp_die('Not authorised.', '', ['response' => 403]);
         echo '<div class="wrap"><h1>Ask Support · Moderation queue</h1>';
@@ -89,9 +122,18 @@ final class BH_Ask_Support_Intake_3 {
         $table = BH_Ask_Support_Storage_3::tables()['questions'];
         $rows = $wpdb->get_results("SELECT id,category_slug,visibility,status,created_at,question_text FROM `{$table}` ORDER BY id DESC LIMIT 100", ARRAY_A);
         if (!$rows) { echo '<p>No captured questions. Intake is disabled until explicitly enabled and the form field names are configured.</p></div>'; return; }
-        echo '<table class="widefat striped"><thead><tr><th>ID</th><th>Category</th><th>Visibility requested</th><th>Status</th><th>Submitted (UTC)</th><th>Question (moderators only)</th></tr></thead><tbody>';
+        echo '<table class="widefat striped"><thead><tr><th>ID</th><th>Category</th><th>Visibility requested</th><th>Status</th><th>Submitted (UTC)</th><th>Question (moderators only)</th><th>Action</th></tr></thead><tbody>';
         foreach ($rows as $row) {
-            echo '<tr><td>' . esc_html((string) $row['id']) . '</td><td>' . esc_html($row['category_slug']) . '</td><td>' . esc_html($row['visibility']) . '</td><td>' . esc_html($row['status']) . '</td><td>' . esc_html($row['created_at']) . '</td><td>' . esc_html(wp_trim_words($row['question_text'], 45)) . '</td></tr>';
+            echo '<tr><td>' . esc_html((string) $row['id']) . '</td><td>' . esc_html($row['category_slug']) . '</td><td>' . esc_html($row['visibility']) . '</td><td>' . esc_html($row['status']) . '</td><td>' . esc_html($row['created_at']) . '</td><td>' . esc_html(wp_trim_words($row['question_text'], 45)) . '</td><td>';
+            if ($row['status'] === 'pending_review') {
+                echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+                echo '<input type="hidden" name="action" value="bh3_ask_reject_question">';
+                echo '<input type="hidden" name="question_id" value="' . esc_attr((string) $row['id']) . '">';
+                wp_nonce_field('bh3_ask_reject_' . (int) $row['id']);
+                submit_button('Reject', 'secondary small', 'submit', false);
+                echo '</form>';
+            } else { echo '&mdash;'; }
+            echo '</td></tr>';
         }
         echo '</tbody></table></div>';
     }
