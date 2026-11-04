@@ -30,7 +30,7 @@ final class BH_Leader_Venues_3 {
         exit;
     }
     public static function render() {
-        if ( ! self::allowed() ) { wp_die( 'Staging administrator access required.', '', array( 'response' => 403 ) ); }
+        if ( ! self::allowed() ) { wp_die( 'Leader access required.', '', array( 'response' => 403 ) ); }
         if ( ! self::tables_ready() ) { wp_die( 'Required activity and venue tables are missing.', '', array( 'response' => 409 ) ); }
         global $wpdb;
         $id = absint( $_GET['activity_id'] ?? 0 );
