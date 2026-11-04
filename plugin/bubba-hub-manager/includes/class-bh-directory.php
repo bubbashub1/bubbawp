@@ -23,7 +23,8 @@ final class BH_Directory_3 {
         $category = isset( $_GET['bh_category'] ) && is_string( $_GET['bh_category'] ) ? substr( sanitize_text_field( wp_unslash( $_GET['bh_category'] ) ), 0, 150 ) : '';
         $town = isset( $_GET['bh_town'] ) && is_string( $_GET['bh_town'] ) ? substr( sanitize_text_field( wp_unslash( $_GET['bh_town'] ) ), 0, 120 ) : '';
         $free = isset( $_GET['bh_free'] ) && (string) $_GET['bh_free'] === '1';
-        $page = min( 100, max( 1, absint( $_GET['bh_page'] ?? 1 ) ) );
+        $raw_page = $_GET['bh_page'] ?? 1;
+        $page = min( 100, max( 1, absint( is_scalar( $raw_page ) ? $raw_page : 1 ) ) );
         $conditions = array( "a.status IN ('published','publish')" );
         $params = array();
         if ( $search !== '' ) { $conditions[] = 'a.title LIKE %s'; $params[] = '%' . $wpdb->esc_like( $search ) . '%'; }
@@ -34,7 +35,7 @@ final class BH_Directory_3 {
         $sql = "SELECT a.id,a.title,a.slug,a.description,a.category,a.price_from,a.is_free,o.name AS organiser,
             (SELECT v.town FROM `{$links}` av INNER JOIN `{$venues}` v ON v.id=av.venue_id WHERE av.activity_id=a.id ORDER BY v.name LIMIT 1) AS town
             FROM `{$activities}` a LEFT JOIN `{$organisers}` o ON o.id=a.organiser_id
-            WHERE {$where} ORDER BY a.title ASC LIMIT 13 OFFSET " . ( ( $page - 1 ) * 12 );
+            WHERE {$where} ORDER BY a.title ASC, a.id ASC LIMIT 13 OFFSET " . ( ( $page - 1 ) * 12 );
         $rows = $wpdb->get_results( $params ? $wpdb->prepare( $sql, $params ) : $sql, ARRAY_A );
         if ( ! is_array( $rows ) ) { return '<p>Unable to load the directory.</p>'; }
         $more = count( $rows ) > 12;
