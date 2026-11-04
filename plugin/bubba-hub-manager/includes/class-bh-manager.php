@@ -90,6 +90,8 @@ final class BH_Manager_3 {
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-booking-storage.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-booking-queue.php';
         BH_Leader_Booking_Queue_3::register();
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-booking-calendar.php';
+        BH_Leader_Booking_Calendar_3::register();
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-storefront.php';
         BH_Storefront_3::register();
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-business-directory.php';
