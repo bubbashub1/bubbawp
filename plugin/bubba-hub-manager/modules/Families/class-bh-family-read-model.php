@@ -37,6 +37,7 @@ final class BH_Family_Read_Model_3 {
      */
     public static function activity_titles($ids) {
         if (BH_Family_Identity_3::current_legacy_id() < 1) return new WP_Error('family_not_verified', 'Verified family login required');
+        if (!defined('BH3_FAMILY_ACTIVITY_IDS_VERIFIED') || BH3_FAMILY_ACTIVITY_IDS_VERIFIED !== true) return array();
         if (!is_array($ids)) return array();
         $ids = array_values(array_unique(array_filter(array_map('absint', $ids))));
         $ids = array_slice($ids, 0, 200);
