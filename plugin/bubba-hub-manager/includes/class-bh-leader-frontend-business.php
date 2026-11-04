@@ -25,18 +25,14 @@ final class BH_Leader_Frontend_Business_3 {
         ob_start(); ?>
         <section class="bh-leader-business" id="bh-business-editor">
         
-        <div class="bh-business-layout"><aside class="bh-business-sidebar" aria-label="Business profile sections">
-          <strong>My Business</strong>
-          <a href="<?php echo esc_url( home_url( '/leader/' ) ); ?>">Dashboard</a>
-          <a href="<?php echo esc_url( home_url( '/leader/' ) . '#my-activities' ); ?>">Activities</a>
-          <a href="#bh-business-details">Business details</a>
+        <div class="bh-business-main">
+        <nav class="bh-business-sections" aria-label="Business profile sections">
+          <a href="#bh-business-details">Details</a>
           <a href="#bh-business-appearance">Branding</a>
           <a href="#bh-business-directory">Directory</a>
           <a href="#bh-business-social">Social links</a>
-          <a href="<?php echo esc_url( home_url( '/leader/bookings/' ) ); ?>">Bookings</a>
-          <a href="<?php echo esc_url( home_url( '/leader/about/' ) ); ?>">Preview storefront ↗</a>
-          <a href="<?php echo esc_url( home_url( '/leader/' ) ); ?>">← Dashboard</a>
-        </aside><div class="bh-business-main">
+          <a href="<?php echo esc_url( home_url( '/leader/about/' ) ); ?>">Preview storefront</a>
+        </nav>
         <header class="bh-business-hero"><p>YOUR ORGANISER PROFILE</p><h1>My Business</h1><p>Make it easy for families to learn about your organisation and get in touch.</p></header>
         <?php if ( isset( $_GET['saved'] ) && $_GET['saved'] === '1' ) : ?><p role="status">Business profile saved successfully.</p><?php endif; ?>
         <div class="bh-business-card"><form id="bh-business-profile-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
@@ -102,7 +98,7 @@ final class BH_Leader_Frontend_Business_3 {
             url=URL.createObjectURL(file);preview.src=url;preview.hidden=false;preview.style.display='block';
           });
         })();
-        </script></div></div><div class="bh-business-mobile-save"><button type="submit" form="bh-business-profile-form">Save changes</button></div></section>
+        </script></div><div class="bh-business-mobile-save"><button type="submit" form="bh-business-profile-form">Save changes</button></div></section>
         <?php return ob_get_clean();
     }
     public static function upload_image() {
