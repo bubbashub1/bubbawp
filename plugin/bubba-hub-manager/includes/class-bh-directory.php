@@ -156,7 +156,7 @@ final class BH_Directory_3 {
         .bh3-real-directory.bh3-view-map .bh3-cards,.bh3-real-directory.bh3-view-map .bh3-pages{display:none}
         .bh3-real-directory .bh3-map:focus-visible,.bh3-real-directory button:focus-visible{outline:3px solid #74b38b;outline-offset:3px}
         .bh3-real-directory .bh3-map-card-link{display:inline-block;margin-top:8px;padding:7px 10px;border-radius:7px;border:1px solid #bcd9c5;background:#f4faf6;color:#175c46;font-weight:700;cursor:pointer}
-        .bh3-real-directory article h3{margin:8px 0}.bh3-real-directory .bh3-card-sessions{margin:12px 0;font-size:12px;color:#315b46}.bh3-real-directory .bh3-card-session-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.bh3-real-directory .bh3-card-session-list span{border:1px solid #c8ded0;background:#f5faf6;padding:5px 8px;border-radius:7px;white-space:nowrap}
+        .bh3-real-directory article h3{margin:8px 0}.bh3-real-directory .bh3-card-title-link{color:inherit;text-decoration:none}.bh3-real-directory .bh3-card-title-link:hover{text-decoration:underline}.bh3-real-directory .bh3-card-title-link:focus-visible,.bh3-real-directory .bh3-card-cta:focus-visible{outline:3px solid #d59b38;outline-offset:3px}.bh3-real-directory .bh3-card-footer{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-top:14px}.bh3-real-directory .bh3-card-cta{display:inline-flex;align-items:center;gap:5px;background:#175c46;color:#fff;text-decoration:none;border-radius:8px;padding:9px 12px;font-size:13px;font-weight:650}.bh3-real-directory .bh3-card-cta:hover{background:#104632}.bh3-real-directory .bh3-card-sessions{margin:12px 0;font-size:12px;color:#315b46}.bh3-real-directory .bh3-card-session-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.bh3-real-directory .bh3-card-session-list span{border:1px solid #c8ded0;background:#f5faf6;padding:5px 8px;border-radius:7px;white-space:nowrap}
         .bh3-real-directory .bh3-card-facts{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}.bh3-real-directory .bh3-card-facts span{display:inline-flex;align-items:center;background:#f0f7f2;border:1px solid #dce9df;border-radius:999px;padding:5px 9px;font-size:12px;color:#315b46}.bh3-real-directory article{min-width:0;overflow-wrap:anywhere}.bh3-real-directory .bh3-meta{color:#50675e;font-size:14px}
         .bh3-real-directory .bh3-pages{display:flex;gap:16px;margin-top:24px}
         .bh3-real-directory .bh3-map{border-radius:14px;overflow:hidden;border:1px solid #d7e3dc;margin:16px 0;z-index:0}
@@ -208,12 +208,15 @@ final class BH_Directory_3 {
         } else { echo '<p class="bh3-map-message">No mapped venues for the activities on this page. Listings are available below.</p>'; }
         echo '<p class="bh3-map-message">Map data © OpenStreetMap contributors. Use the list below for full activity details.</p></section>';
         echo '<p class="bh3-map-note">Select a map pin, then choose “Show listing” to highlight its activity card below.</p><div class="bh3-cards">';
+        $detail_page = get_page_by_path( 'activity-preview' );
+        $detail_base_url = $detail_page && has_shortcode( (string) $detail_page->post_content, 'bubbahub_activity' )
+            ? get_permalink( $detail_page ) : '';
         foreach ( $rows as $row ) {
-            $detail_page = get_page_by_path( 'activity-preview' );
-            $detail_url = $detail_page && has_shortcode( (string) $detail_page->post_content, 'bubbahub_activity' )
-                ? add_query_arg( 'bh_activity', absint( $row['id'] ), get_permalink( $detail_page ) ) : '';
-            echo '<article data-activity-id="' . esc_attr( (string) absint( $row['id'] ) ) . '"><div class="bh3-meta">' . esc_html( (string) $row['category'] ) . '</div><h3>' . esc_html( $row['title'] ) . '</h3>';
-            if ( $detail_url ) { echo '<p><a href="' . esc_url( $detail_url ) . '">View activity details</a></p>'; }
+            $detail_url = $detail_base_url ? add_query_arg( 'bh_activity', absint( $row['id'] ), $detail_base_url ) : '';
+            echo '<article data-activity-id="' . esc_attr( (string) absint( $row['id'] ) ) . '"><div class="bh3-meta">' . esc_html( (string) $row['category'] ) . '</div><h3>';
+            if ( $detail_url ) { echo '<a class="bh3-card-title-link" href="' . esc_url( $detail_url ) . '">' . esc_html( $row['title'] ) . '</a>'; }
+            else { echo esc_html( $row['title'] ); }
+            echo '</h3>';
             echo '<p>' . esc_html( wp_trim_words( wp_strip_all_tags( (string) $row['description'] ), 24 ) ) . '</p>';
             echo '<div class="bh3-card-facts">';
             if ( $row['town'] ) { echo '<span>📍 ' . esc_html( (string) $row['town'] ) . '</span>'; }
@@ -232,7 +235,9 @@ final class BH_Directory_3 {
                 if ( count( $session_labels ) > 3 ) { echo '<span aria-label="' . esc_attr( (string) ( count( $session_labels ) - 3 ) . ' additional weekly session times' ) . '">+' . esc_html( (string) ( count( $session_labels ) - 3 ) ) . ' more</span>'; }
                 echo '</div></div>';
             }
-            echo '<strong>' . ( (int) $row['is_free'] ? 'Free' : ( $row['price_from'] !== null ? 'From £' . esc_html( number_format( (float) $row['price_from'], 2 ) ) : 'Price on enquiry' ) ) . '</strong></article>';
+            echo '<div class="bh3-card-footer"><strong>' . ( (int) $row['is_free'] ? 'Free' : ( $row['price_from'] !== null ? 'From £' . esc_html( number_format( (float) $row['price_from'], 2 ) ) : 'Price on enquiry' ) ) . '</strong>';
+            if ( $detail_url ) { echo '<a class="bh3-card-cta" href="' . esc_url( $detail_url ) . '">View details <span aria-hidden="true">→</span></a>'; }
+            echo '</div></article>';
         }
         if ( ! $rows ) { echo '<p>No published activities match these filters. Draft listings are not public.</p>'; }
         echo '</div><nav class="bh3-pages" aria-label="Directory pages">';
