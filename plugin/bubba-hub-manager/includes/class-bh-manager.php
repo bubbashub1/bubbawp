@@ -41,6 +41,7 @@ final class BH_Manager_3 {
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-sessions.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-venues.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-ui.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'modules/Families/class-bh-family-identity.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'modules/Families/class-bh-family-hub.php';
         BH_Family_Hub_3::register(); // Preview shortcode only; FEATURE_FAMILY stays disabled.
         BH_Directory_Preview_3::register();
