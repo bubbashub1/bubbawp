@@ -3,7 +3,7 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 final class BH_Leader_Sessions_3 {
     private static function allowed() {
-        return is_user_logged_in() && current_user_can( 'read' ) && strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) === 'staging.bubbahub.co.uk';
+        return BH_Leader_Access_3::is_staging() && BH_Leader_Access_3::organiser_id() > 0;
     }
     public static function register() {
         add_submenu_page( null, 'My Timetable', 'My Timetable', 'read', 'bh3-leader-sessions', array( __CLASS__, 'render' ) );
