@@ -448,8 +448,8 @@ final class BH_Marketplace_Settings_3 {
         // Once form binding is enabled, no unlinked or unconsented
         // reservation may proceed to Stripe Checkout, even via QA routes.
         if ( defined( 'BH3_ENABLE_BOOKING_FORM_BINDING' ) && BH3_ENABLE_BOOKING_FORM_BINDING === true ) {
-            if ( empty( $booking['booking_submission_id'] ) || empty( $booking['booking_form_id'] )
-                || (int) $booking['booking_form_id'] !== absint( get_option( 'bh3_booking_form_id', 7 ) ) ) {
+            if ( ! absint( get_option( 'bh3_booking_form_id', 0 ) ) || absint( get_option( 'bh3_booking_form_id', 0 ) ) === absint( get_option( 'bh3_booking_consent_form_id', 7 ) ) || empty( $booking['booking_submission_id'] ) || empty( $booking['booking_form_id'] )
+                || (int) $booking['booking_form_id'] !== absint( get_option( 'bh3_booking_form_id', 0 ) ) ) {
                 return new WP_Error( 'booking_form_not_bound', 'Complete and verify the booking form before payment.' );
             }
             $attendees_table = $wpdb->prefix . 'bh3_booking_attendees';
@@ -602,8 +602,8 @@ final class BH_Marketplace_Settings_3 {
         }
         global $wpdb;
         $table = $wpdb->prefix . 'fluentform_submissions';
-        $form_id = absint( get_option( 'bh3_booking_form_id', 7 ) );
-        if ( ! $form_id ) {
+        $form_id = absint( get_option( 'bh3_booking_form_id', 0 ) );
+        if ( ! $form_id || $form_id === absint( get_option( 'bh3_booking_consent_form_id', 7 ) ) ) {
             return new WP_Error( 'booking_form_missing', 'Booking form is not configured.' );
         }
         $row = $wpdb->get_row( $wpdb->prepare(
@@ -989,6 +989,50 @@ final class BH_Marketplace_Settings_3 {
             return '<p>Provide an activity or session ID, for example [bh_booking_readiness activity_id="2"].</p>';
         }
         $html = '<section class="bh3-booking-readiness"><h3>' . esc_html( $heading ) . '</h3>';
+        // Diagnose form separation before anyone enables payment test flags.
+        $booking_form_id = absint( get_option( 'bh3_booking_form_id', 0 ) );
+        $consent_form_id = absint( get_option( 'bh3_booking_consent_form_id', 7 ) );
+        $html .= '<div class="bh3-booking-form-readiness"><h4>Booking forms</h4>';
+        $html .= '<p>Consent form: <strong>#' . esc_html( $consent_form_id ) . '</strong> (separate consent; field mapping pending verification).</p>';
+        if ( ! $booking_form_id ) {
+            $html .= '<p role="status">Booking details form: not configured. Payment checkout must remain disabled.</p>';
+        } elseif ( $booking_form_id === $consent_form_id ) {
+            $html .= '<p role="alert">Booking details form conflicts with consent form #' . esc_html( $consent_form_id ) . '. Configure a different form before checkout.</p>';
+        } else {
+            $html .= '<p>Booking details form: <strong>#' . esc_html( $booking_form_id ) . '</strong> (submission and field mapping still require verification).</p>';
+        }
+        // A form ID alone is not proof that Fluent Forms contains a valid form.
+        global $wpdb;
+        $forms_table = $wpdb->prefix . 'fluentform_forms';
+        $forms_table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $forms_table ) ) ) === $forms_table;
+        if ( ! $forms_table_exists ) {
+            $html .= '<p role="alert">Fluent Forms storage not found. Form integration cannot be tested.</p>';
+        } else {
+            foreach ( array( 'Consent' => $consent_form_id, 'Booking details' => $booking_form_id ) as $form_label => $check_id ) {
+                if ( ! $check_id ) { continue; }
+                $found = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM `{$forms_table}` WHERE id=%d", $check_id ) );
+                $html .= '<p>' . esc_html( $form_label ) . ' form #' . esc_html( $check_id ) . ': ' .
+                    ( $found ? 'Found in Fluent Forms' : 'Not found in Fluent Forms' ) . '.</p>';
+            }
+        }
+        $field_map = get_option( 'bh3_booking_form_field_map', array() );
+        $required_fields = array( 'session_id', 'occurrence_date', 'places', 'consent' );
+        $valid_map = is_array( $field_map );
+        $mapped_names = array();
+        foreach ( $required_fields as $field_name ) {
+            if ( ! $valid_map || empty( $field_map[ $field_name ] ) || ! is_string( $field_map[ $field_name ] )
+                || ! preg_match( '/^[A-Za-z][A-Za-z0-9_]*$/', $field_map[ $field_name ] ) ) {
+                $valid_map = false;
+                break;
+            }
+            $mapped_names[] = $field_map[ $field_name ];
+        }
+        if ( count( array_unique( $mapped_names ) ) !== count( $required_fields ) ) { $valid_map = false; }
+        $html .= '<p>Booking field mapping: ' . ( $valid_map
+            ? 'Configured; actual submission values still require validation.'
+            : 'Incomplete — session, date, places and consent must map to distinct fields.' ) . '</p>';
+        $html .= '<p>Guest booking: preview only. No guest reservations or checkout are enabled.</p></div>';
+
         if ( $activity_id ) {
             $html .= '<p>Activity status: <strong>' . esc_html( $activity['status'] ) . '</strong>. Found ' .
                 esc_html( count( $sessions ) ) . ' session(s)' . ( count( $sessions ) === 100 ? ' (first 100 shown)' : '' ) . '.</p>';
@@ -1094,16 +1138,16 @@ final class BH_Marketplace_Settings_3 {
         if ( is_wp_error( $quote ) ) {
             return '<p role="status">' . esc_html( $quote->get_error_message() ) . '</p>';
         }
-        $enabled = is_user_logged_in()
-            && defined( 'BH3_ENABLE_UNLINKED_BOOKING_TEST_UI' ) && BH3_ENABLE_UNLINKED_BOOKING_TEST_UI === true
-            && defined( 'BH3_ENABLE_PARENT_TEST_BOOKING' ) && BH3_ENABLE_PARENT_TEST_BOOKING === true
-            && defined( 'BH3_ENABLE_STRIPE_TEST_CHECKOUT' ) && BH3_ENABLE_STRIPE_TEST_CHECKOUT === true
-            && defined( 'BH3_ENABLE_BOOKING_RESERVATIONS' ) && BH3_ENABLE_BOOKING_RESERVATIONS === true;
+        // This legacy widget lacks verified form-to-reservation binding.
+        // Never permit unlinked checkout, including with QA flags enabled.
+        $enabled = false;
         $id = 'bh3-book-' . wp_unique_id();
         ob_start();
         echo '<section id="' . esc_attr( $id ) . '" class="bh3-parent-booking" aria-label="Class booking">';
         echo '<h3>Book a class</h3><p><strong>Price per place:</strong> £' .
             esc_html( number_format( $quote['unit_price_pence'] / 100, 2 ) ) . '</p>';
+        echo '<ol class="bh3-booking-steps" aria-label="Booking steps"><li>Choose session and date</li><li>Add attendees</li><li>Complete consent</li><li>Review availability and payment</li><li>Receive confirmation</li></ol>';
+        echo '<p class="bh3-booking-note" role="status">Booking preview only. No place is reserved and no payment is taken on this page.</p>';
         if ( is_user_logged_in() ) {
             $profiles = self::booking_profile_choices( get_current_user_id() );
             echo '<div class="bh3-booking-attendees"><h4>Who is attending?</h4>';
@@ -1126,7 +1170,9 @@ final class BH_Marketplace_Settings_3 {
             // Guest details are local form inputs only. No guest checkout,
             // reservation, or persistent storage is enabled by this preview.
             echo '<div class="bh3-guest-attendees"><h4>Who is attending?</h4>';
-            echo '<p>You can enter details without creating an account. Guest booking is coming soon.</p>';
+            echo '<p>Guest checkout is planned without requiring an account. These details cannot be submitted yet.</p>';
+            echo '<p><label>Parent or carer name <input type="text" autocomplete="name" disabled></label></p>';
+            echo '<p><label>Email for booking updates <input type="email" autocomplete="email" disabled></label></p>';
             echo '<fieldset><legend>Attendee details</legend>';
             echo '<p><label>Booking for <select name="bh3_guest_profile_type" disabled><option value="child">Child</option><option value="bump">Pregnancy / bump</option></select></label></p>';
             echo '<p><label>Child name <input type="text" maxlength="100" autocomplete="off" disabled></label></p>';
@@ -1137,8 +1183,8 @@ final class BH_Marketplace_Settings_3 {
         // Fluent Forms Free captures details, but its submission is not yet
         // cryptographically bound to this booking. Never imply form completion
         // authorises payment until the server-side binding is implemented.
-        $form_id = absint( get_option( 'bh3_booking_form_id', 7 ) );
-        if ( $form_id && shortcode_exists( 'fluentform' ) ) {
+        $form_id = absint( get_option( 'bh3_booking_form_id', 0 ) );
+        if ( $form_id && $form_id !== absint( get_option( 'bh3_booking_consent_form_id', 7 ) ) && shortcode_exists( 'fluentform' ) ) {
             echo '<div class="bh3-booking-details"><h4>Booking details</h4>';
             echo do_shortcode( '[fluentform id="' . $form_id . '"]' );
             echo '<p class="bh3-booking-note">Submitting your details does not reserve a place or confirm a booking.</p></div>';
@@ -1208,6 +1254,19 @@ final class BH_Marketplace_Settings_3 {
             || ! defined( 'BH3_ENABLE_TEST_BOOKING_CONFIRMATION' ) || BH3_ENABLE_TEST_BOOKING_CONFIRMATION !== true
             || ! is_user_logged_in() ) {
             return new WP_Error( 'bound_checkout_disabled', 'Verified test checkout is unavailable.', array( 'status' => 404 ) );
+        }
+        // Form 7 is a separate consent record, not a booking-details form.
+        // Until an independently owned, versioned consent submission is
+        // verified and bound to this reservation, payment must fail closed.
+        $consent_form_id = absint( get_option( 'bh3_booking_consent_form_id', 7 ) );
+        $booking_form_id = absint( get_option( 'bh3_booking_form_id', 0 ) );
+        if ( ! $booking_form_id || $booking_form_id === $consent_form_id ) {
+            return new WP_Error( 'booking_form_not_configured',
+                'A separate booking-details form must be configured.', array( 'status' => 503 ) );
+        }
+        if ( $consent_form_id ) {
+            return new WP_Error( 'separate_consent_binding_pending',
+                'Consent verification is not yet connected to test checkout.', array( 'status' => 503 ) );
         }
         $user_id = get_current_user_id();
         $submission_id = absint( $request->get_param( 'submission_id' ) );
@@ -1283,46 +1342,14 @@ final class BH_Marketplace_Settings_3 {
         ) );
     }
     public static function start_test_booking_checkout( $request ) {
-        // Temporary QA-only bypass. Until Form 7 submission ownership, child
-        // consent and selected-session binding are checked server-side, the
-        // REST endpoint must enforce the same disabled-by-default guard as UI.
-        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
-            || ! defined( 'BH3_ENABLE_UNLINKED_BOOKING_TEST_UI' ) || BH3_ENABLE_UNLINKED_BOOKING_TEST_UI !== true
-            || ! defined( 'BH3_ENABLE_PARENT_TEST_BOOKING' ) || BH3_ENABLE_PARENT_TEST_BOOKING !== true
-            || ! defined( 'BH3_ENABLE_BOOKING_RESERVATIONS' ) || BH3_ENABLE_BOOKING_RESERVATIONS !== true
-            || ! defined( 'BH3_ENABLE_STRIPE_TEST_CHECKOUT' ) || BH3_ENABLE_STRIPE_TEST_CHECKOUT !== true ) {
-            return new WP_Error( 'booking_disabled', 'Test booking is unavailable.', array( 'status' => 404 ) );
-        }
-        $user_id = get_current_user_id();
-        if ( ! $user_id ) {
-            return new WP_Error( 'authentication_required', 'Please sign in.', array( 'status' => 401 ) );
-        }
-        $session_id = absint( $request->get_param( 'session_id' ) );
-        $date = (string) $request->get_param( 'occurrence_date' );
-        $places = absint( $request->get_param( 'places' ) );
-        if ( $session_id < 1 || $places < 1 || $places > 20 || ! preg_match( '/^\\d{4}-\\d{2}-\\d{2}$/', $date ) ) {
-            return new WP_Error( 'invalid_booking_input', 'Invalid booking selection.', array( 'status' => 400 ) );
-        }
-        // Do not create a capacity hold if Checkout is known to be unavailable.
-        if ( self::stripe_status()['mode'] !== 'test' || ! self::stripe_status()['keys_configured']
-            || self::policy()['processing_fees'] !== 'platform' ) {
-            return new WP_Error( 'checkout_not_configured', 'Test checkout is not configured.', array( 'status' => 503 ) );
-        }
-        $reservation = self::reserve_occurrence( $session_id, $date, $places, $user_id );
-        if ( is_wp_error( $reservation ) ) { return $reservation; }
-        $checkout = self::create_test_checkout( $reservation['booking_id'], $user_id );
-        if ( is_wp_error( $checkout ) ) {
-            // Hold expires automatically; do not delete a reservation after an
-            // uncertain Stripe response, as a payment may still be in flight.
-            return new WP_Error( 'checkout_pending_review',
-                'Checkout could not be started. Your temporary hold will expire automatically.',
-                array( 'status' => 503 ) );
-        }
-        return rest_ensure_response( array(
-            'booking_reference' => $reservation['reference'],
-            'checkout_url' => $checkout['checkout_url'],
-            'test_mode' => true,
-        ) );
+        // Retired: this endpoint does not require a verified attendee and
+        // consent submission. Never create holds or Stripe sessions here,
+        // even if legacy QA feature flags have been enabled.
+        return new WP_Error(
+            'unlinked_checkout_retired',
+            'This checkout path is unavailable. Use the verified booking flow.',
+            array( 'status' => 404 )
+        );
     }
     public static function register_test_webhook_route() {
         if ( ! defined( 'BH3_ENABLE_STRIPE_TEST_WEBHOOK' ) || BH3_ENABLE_STRIPE_TEST_WEBHOOK !== true ) { return; }
