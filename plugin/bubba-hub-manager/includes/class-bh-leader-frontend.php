@@ -95,7 +95,7 @@ final class BH_Leader_Frontend_3 {
               <p class="bh-leader-muted">Admin-only staging preview. Activity editing remains restricted until the save permissions are updated.</p>
             <?php endif; ?>
             <nav class="bh-leader-quick-actions" aria-label="Quick actions">
-                <a class="bh-leader-primary-action" href="<?php echo esc_url( home_url( '/leader/new/' ) ); ?>">+ Add activity</a>
+                <a class="bh-leader-primary-action" href="<?php echo esc_url( $admin_preview ? home_url( '/leader/new-activity/' ) : home_url( '/leader/new/' ) ); ?>">+ Add activity</a>
                 <a href="<?php echo esc_url( add_query_arg( $admin_preview ? array( 'bh_preview_organiser' => $organiser_id ) : array(), home_url( '/leader/bookings/' ) ) ); ?>">View class calendar</a>
                 <a href="#my-activities">Manage activities</a>
                 <a href="<?php echo esc_url( home_url( '/leader/business/' ) ); ?>">My business</a>
