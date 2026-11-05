@@ -116,6 +116,35 @@ final class BH_Marketplace_Settings_3 {
         }
         wp_redirect( esc_url_raw( $data['url'] ), 303 ); exit;
     }
+    public static function leader_stripe_status( $user_id ) {
+        $account = get_user_meta( absint( $user_id ), 'bh3_stripe_test_account_id', true );
+        if ( ! is_string( $account ) || ! preg_match( '/^acct_[A-Za-z0-9]+$/', $account ) ) {
+            return array( 'state' => 'not_connected', 'label' => 'Not connected' );
+        }
+        $config = self::stripe_status();
+        if ( $config['mode'] !== 'test' || ! $config['keys_configured'] ) {
+            return array( 'state' => 'unavailable', 'label' => 'Test connection unavailable' );
+        }
+        $key = constant( 'BH3_STRIPE_TEST_SECRET_KEY' );
+        $response = wp_remote_get( 'https://api.stripe.com/v1/accounts/' . rawurlencode( $account ), array(
+            'timeout' => 12, 'redirection' => 0,
+            'headers' => array( 'Authorization' => 'Bearer ' . $key ),
+        ) );
+        if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) !== 200 ) {
+            return array( 'state' => 'unavailable', 'label' => 'Unable to verify with Stripe' );
+        }
+        $data = json_decode( wp_remote_retrieve_body( $response ), true );
+        if ( ! is_array( $data ) || ( $data['id'] ?? '' ) !== $account || ! empty( $data['livemode'] ) ) {
+            return array( 'state' => 'unavailable', 'label' => 'Unexpected Stripe account response' );
+        }
+        if ( ! empty( $data['charges_enabled'] ) && ! empty( $data['payouts_enabled'] ) && ! empty( $data['details_submitted'] ) ) {
+            return array( 'state' => 'ready_test', 'label' => 'Test account ready (no live payments)' );
+        }
+        if ( ! empty( $data['requirements']['disabled_reason'] ) ) {
+            return array( 'state' => 'restricted', 'label' => 'Action required in Stripe' );
+        }
+        return array( 'state' => 'pending', 'label' => 'Onboarding incomplete or under review' );
+    }
     public static function menu() {
         add_submenu_page( 'bubba-hub-3-status', 'Marketplace Commission', 'Marketplace Commission', 'manage_options', 'bh3-marketplace', array( __CLASS__, 'admin_form' ) );
     }
@@ -196,6 +225,10 @@ final class BH_Marketplace_Settings_3 {
             wp_nonce_field( 'bh3_stripe_onboard' );
             echo '<input type="hidden" name="action" value="bh3_stripe_onboard"><button type="submit">Set up Stripe test payouts</button></form>';
             echo '<p>Test onboarding only. Payouts remain disabled.</p>';
+        }
+        if ( $current === 'stripe' ) {
+            $stripe_account = self::leader_stripe_status( get_current_user_id() );
+            echo '<p role="status"><strong>Stripe test payout status:</strong> ' . esc_html( $stripe_account['label'] ) . '</p>';
         }
         echo '</section>';
         return ob_get_clean();
