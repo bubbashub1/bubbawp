@@ -64,6 +64,14 @@ final class BH_Activity_Detail_3 {
             "SELECT v.name,v.town,v.address_line1,v.postcode FROM `{$av}` av INNER JOIN `{$v}` v ON v.id=av.venue_id WHERE av.activity_id=%d ORDER BY v.name ASC LIMIT 1",
             $activity_id
         ), ARRAY_A );
+        // Sessions may carry the venue link even when the activity_venues
+        // junction has not yet been populated by the listing wizard.
+        if ( ! $venues ) {
+            $venues = $wpdb->get_results( $wpdb->prepare(
+                "SELECT DISTINCT v.name,v.town,v.address_line1,v.postcode FROM `{$s}` s INNER JOIN `{$v}` v ON v.id=s.venue_id WHERE s.activity_id=%d AND s.venue_id IS NOT NULL ORDER BY v.name ASC LIMIT 1",
+                $activity_id
+            ), ARRAY_A );
+        }
         $links = $wpdb->prefix . 'session_listing_links';
         $has_links = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $links ) ) ) === $links;
         if ( $has_links ) {
@@ -168,6 +176,14 @@ final class BH_Activity_Detail_3 {
             "SELECT v.id,v.name,v.address_line1,v.town,v.postcode,v.region,v.latitude,v.longitude FROM `{$av}` av
              INNER JOIN `{$v}` v ON v.id=av.venue_id WHERE av.activity_id=%d ORDER BY v.name ASC LIMIT 50", $id
         ), ARRAY_A );
+        // Fall back to the venue assigned to a session if no activity-level
+        // venue association exists yet.
+        if ( ! $venues ) {
+            $venues = $wpdb->get_results( $wpdb->prepare(
+                "SELECT DISTINCT v.id,v.name,v.address_line1,v.town,v.postcode,v.region,v.latitude,v.longitude FROM `{$s}` s
+                 INNER JOIN `{$v}` v ON v.id=s.venue_id WHERE s.activity_id=%d AND s.venue_id IS NOT NULL ORDER BY v.name ASC LIMIT 50", $id
+            ), ARRAY_A );
+        }
         $link_table = $wpdb->prefix . 'session_listing_links';
         $links_ready = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $link_table ) ) ) === $link_table;
         if ( $links_ready ) {
