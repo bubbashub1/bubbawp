@@ -303,7 +303,80 @@ final class BH_Marketplace_Settings_3 {
         if ( $expiry < time() + 30 * MINUTE_IN_SECONDS ) {
             return new WP_Error( 'hold_too_short', 'Checkout requires a longer capacity hold; no payment session created.' );
         }
-        return new WP_Error( 'checkout_not_ready', 'Checkout awaits webhook confirmation and idempotency implementation.' );
+        // Lock per booking; Stripe idempotency protects retries after network timeouts.
+        $lock = 'bh3_checkout_' . md5( $wpdb->prefix . ':' . $booking['id'] );
+        if ( (int) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, 5)', $lock ) ) !== 1 ) {
+            return new WP_Error( 'checkout_busy', 'Checkout is already being prepared.' );
+        }
+        try {
+            $current = $wpdb->get_row( $wpdb->prepare(
+                "SELECT payment_status,stripe_checkout_session_id,reservation_expires_at FROM `{$table}` WHERE id=%d LIMIT 1",
+                (int) $booking['id']
+            ), ARRAY_A );
+            if ( ! $current || $current['payment_status'] !== 'pending' || ! empty( $current['stripe_checkout_session_id'] )
+                || strtotime( $current['reservation_expires_at'] . ' UTC' ) < time() + 30 * MINUTE_IN_SECONDS ) {
+                return new WP_Error( 'checkout_state_changed', 'Reservation is no longer eligible for checkout.' );
+            }
+            $secret = constant( 'BH3_STRIPE_TEST_SECRET_KEY' );
+            $expiry_timestamp = min( time() + 31 * MINUTE_IN_SECONDS, strtotime( $current['reservation_expires_at'] . ' UTC' ) );
+            if ( $expiry_timestamp < time() + 30 * MINUTE_IN_SECONDS ) {
+                return new WP_Error( 'checkout_expiry_invalid', 'Reservation hold is too short.' );
+            }
+            $success = add_query_arg( 'bh3_checkout', 'returned', home_url( '/my-hub/' ) );
+            $cancel = add_query_arg( 'bh3_checkout', 'cancelled', home_url( '/my-hub/' ) );
+            $payload = array(
+                'mode' => 'payment',
+                'success_url' => $success,
+                'cancel_url' => $cancel,
+                'client_reference_id' => $booking['public_reference'],
+                'expires_at' => $expiry_timestamp,
+                'line_items' => array( array(
+                    'price_data' => array(
+                        'currency' => 'gbp',
+                        'unit_amount' => $gross,
+                        'product_data' => array( 'name' => 'Bubba Hub class booking ' . $booking['public_reference'] ),
+                    ),
+                    'quantity' => 1,
+                ) ),
+                'payment_intent_data' => array(
+                    'application_fee_amount' => $commission,
+                    'transfer_data' => array( 'destination' => $account ),
+                    'metadata' => array( 'bh3_booking_id' => (string) $booking['id'] ),
+                ),
+                'metadata' => array( 'bh3_booking_id' => (string) $booking['id'] ),
+            );
+            $response = wp_remote_post( 'https://api.stripe.com/v1/checkout/sessions', array(
+                'timeout' => 25,
+                'headers' => array(
+                    'Authorization' => 'Bearer ' . $secret,
+                    'Idempotency-Key' => 'bh3-test-checkout-' . (int) $booking['id'],
+                ),
+                'body' => $payload,
+            ) );
+            if ( is_wp_error( $response ) ) { return new WP_Error( 'stripe_unavailable', 'Stripe checkout could not be reached.' ); }
+            $data = json_decode( wp_remote_retrieve_body( $response ), true );
+            if ( wp_remote_retrieve_response_code( $response ) !== 200 || ! is_array( $data )
+                || ! preg_match( '/^cs_test_[A-Za-z0-9_]+$/', (string) ( $data['id'] ?? '' ) )
+                || ! isset( $data['url'] ) || ! wp_http_validate_url( $data['url'] )
+                || strtolower( (string) wp_parse_url( $data['url'], PHP_URL_HOST ) ) !== 'checkout.stripe.com'
+                || ( $data['livemode'] ?? null ) !== false
+                || (int) ( $data['amount_total'] ?? -1 ) !== $gross
+                || ( $data['currency'] ?? '' ) !== 'gbp' ) {
+                return new WP_Error( 'stripe_checkout_rejected', 'Stripe did not return a valid test Checkout session.' );
+            }
+            $saved = $wpdb->query( $wpdb->prepare(
+                "UPDATE `{$table}` SET stripe_checkout_session_id=%s,updated_at=%s
+                 WHERE id=%d AND payment_status='pending' AND stripe_checkout_session_id IS NULL",
+                $data['id'], current_time( 'mysql', true ), (int) $booking['id']
+            ) );
+            if ( $saved !== 1 ) {
+                return new WP_Error( 'checkout_not_saved', 'Checkout session could not be saved; manual reconciliation required.' );
+            }
+            return array( 'checkout_session_id' => $data['id'], 'checkout_url' => $data['url'],
+                'booking_id' => (int) $booking['id'], 'test_mode' => true );
+        } finally {
+            $wpdb->get_var( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $lock ) );
+        }
     }
     /**
      * Internal-only signed Stripe event verifier. Does not mutate booking status.
