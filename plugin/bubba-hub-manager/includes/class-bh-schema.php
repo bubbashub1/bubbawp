@@ -3,7 +3,7 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 final class BH_Schema_3 {
-    public const VERSION = '0.4.0';
+    public const VERSION = '0.5.0';
 
     public static function table_names() {
         global $wpdb;
@@ -110,6 +110,8 @@ final class BH_Schema_3 {
                 activity_id bigint(20) unsigned NOT NULL,
                 organiser_id bigint(20) unsigned NOT NULL,
                 customer_user_id bigint(20) unsigned NULL,
+                booking_form_id bigint(20) unsigned NULL,
+                booking_submission_id bigint(20) unsigned NULL,
                 places smallint(5) unsigned NOT NULL,
                 currency char(3) NOT NULL DEFAULT 'gbp',
                 unit_price_pence bigint(20) unsigned NOT NULL,
@@ -125,6 +127,7 @@ final class BH_Schema_3 {
                 updated_at datetime NOT NULL,
                 PRIMARY KEY  (id),
                 UNIQUE KEY public_reference (public_reference),
+                UNIQUE KEY booking_submission_id (booking_submission_id),
                 UNIQUE KEY stripe_checkout_session_id (stripe_checkout_session_id),
                 KEY session_occurrence (session_id,occurrence_date),
                 KEY payment_status (payment_status),
