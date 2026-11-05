@@ -33,3 +33,11 @@ Status: NOT READY TO MERGE TO MAIN. This branch is a staging-only preview.
 - Verify no conflict with existing booking shortcodes and older booking PRs.
 - Run PHP lint, WordPress integration tests, accessibility and regression checks on staging.
 - Obtain explicit approval before merging to main or deploying to live.
+
+## Marketplace implementation progress (2026-11-05)
+- Staging-only `BH_Marketplace_Settings_3` is registered from the manager bootstrap.
+- Admin: Bubba Hub 3.0 > Marketplace Commission; default 3%, editable 0–100%, stored as `bh3_commission_percent`.
+- `BH_Marketplace_Settings_3::split_pence($gross_pence)` returns gross, commission and leader amount before fees in integer pence. It does not charge or pay anyone.
+- Leader preference shortcode: `[bh_leader_payout_settings]`; stores `bh3_payout_method` user meta for linked leaders. Stripe/PayPal/Invoice are preferences only, NOT connected payout methods.
+- NEXT: integrate payout settings into leader Account Settings, verify organiser ownership and connect-account onboarding, add secure server-created Stripe Checkout and Connect webhooks, booking capacity locks, refunds and payout ledger. Do not process payments through Fluent Forms Free Stripe field (avoids 1.9% extra Fluent Forms fee).
+- Block live checkout until Stripe credentials, charge model, processing-fee allocation, leader verification, tax/VAT and refund policy are confirmed and integration tests pass.
