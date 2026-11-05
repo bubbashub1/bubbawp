@@ -6,7 +6,6 @@ final class BH_Marketplace_Settings_3 {
         if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) { return; }
         add_action( 'admin_menu', array( __CLASS__, 'menu' ) );
         add_action( 'rest_api_init', array( __CLASS__, 'register_test_webhook_route' ) );
-        add_action( 'rest_api_init', array( __CLASS__, 'register_test_booking_route' ) );
         add_action( 'rest_api_init', array( __CLASS__, 'register_parent_booking_binding_route' ) );
         add_action( 'rest_api_init', array( __CLASS__, 'register_bound_parent_checkout_route' ) );
         add_action( 'admin_post_bh3_save_commission', array( __CLASS__, 'save_commission' ) );
