@@ -661,9 +661,6 @@ final class BH_Marketplace_Settings_3 {
                 $checked['booking_id']
             ), ARRAY_A );
             if ( ! $record ) { return new WP_Error( 'booking_missing', 'Booking not found.' ); }
-            if ( $record['payment_status'] === 'paid' ) {
-                return array( 'booking_id' => $checked['booking_id'], 'already_paid' => true, 'confirmed' => false );
-            }
             // Expired holds require manual review to avoid overselling.
             if ( empty( $record['reservation_expires_at'] ) || strtotime( $record['reservation_expires_at'] . ' UTC' ) <= time() ) {
                 return new WP_Error( 'hold_expired', 'Payment arrived after the booking hold expired; manual review required.' );
@@ -671,8 +668,25 @@ final class BH_Marketplace_Settings_3 {
             $ledger = $wpdb->get_row( $wpdb->prepare(
                 "SELECT processing_status FROM `{$events}` WHERE stripe_event_id=%s LIMIT 1", $event_id
             ), ARRAY_A );
-            if ( ! $ledger || $ledger['processing_status'] !== 'received' ) {
+            if ( ! $ledger || ! in_array( $ledger['processing_status'], array( 'received', 'processed' ), true ) ) {
                 return new WP_Error( 'event_not_ready', 'Verified event is not ready for processing.' );
+            }
+            if ( $record['payment_status'] === 'paid' ) {
+                // A previous attempt may have updated the booking but failed to
+                // update the event ledger. Repair that partial success on retry.
+                if ( $ledger['processing_status'] === 'received' ) {
+                    $repaired = $wpdb->update( $events, array(
+                        'processing_status' => 'processed',
+                        'processed_at' => current_time( 'mysql', true ),
+                    ), array( 'stripe_event_id' => $event_id, 'processing_status' => 'received' ) );
+                    if ( $repaired !== 1 ) {
+                        return new WP_Error( 'ledger_repair_failed', 'Payment is paid but event reconciliation failed.' );
+                    }
+                }
+                return array( 'booking_id' => $checked['booking_id'], 'already_paid' => true, 'confirmed' => false );
+            }
+            if ( $ledger['processing_status'] !== 'received' ) {
+                return new WP_Error( 'event_already_processed', 'Event processed without a paid booking; manual review required.' );
             }
             $updated = $wpdb->query( $wpdb->prepare(
                 "UPDATE `{$bookings}` SET payment_status='paid', stripe_payment_intent_id=%s, updated_at=%s
@@ -683,9 +697,13 @@ final class BH_Marketplace_Settings_3 {
             if ( $updated !== 1 ) {
                 return new WP_Error( 'confirmation_race', 'Booking status changed; review payment.' );
             }
-            $wpdb->update( $events, array( 'processing_status' => 'processed',
+            $logged = $wpdb->update( $events, array( 'processing_status' => 'processed',
                 'processed_at' => current_time( 'mysql', true ) ),
                 array( 'stripe_event_id' => $event_id, 'processing_status' => 'received' ) );
+            if ( $logged !== 1 ) {
+                // Do not return HTTP 200 to Stripe; its retry repairs the ledger.
+                return new WP_Error( 'ledger_update_failed', 'Booking is paid but event ledger update failed; retry required.' );
+            }
             return array( 'booking_id' => $checked['booking_id'], 'already_paid' => false, 'confirmed' => true );
         } finally {
             $wpdb->get_var( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $lock ) );
