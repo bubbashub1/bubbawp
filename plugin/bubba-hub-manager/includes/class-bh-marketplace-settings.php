@@ -607,6 +607,18 @@ final class BH_Marketplace_Settings_3 {
             }
             echo '<p><a href="' . esc_url( home_url( '/family/profile/' ) ) . '">Add or edit a child in My Hub</a></p></div>';
         }
+        if ( ! is_user_logged_in() ) {
+            // Guest details are local form inputs only. No guest checkout,
+            // reservation, or persistent storage is enabled by this preview.
+            echo '<div class="bh3-guest-attendees"><h4>Who is attending?</h4>';
+            echo '<p>You can enter details without creating an account. Guest booking is coming soon.</p>';
+            echo '<fieldset><legend>Attendee details</legend>';
+            echo '<p><label>Booking for <select name="bh3_guest_profile_type" disabled><option value="child">Child</option><option value="bump">Pregnancy / bump</option></select></label></p>';
+            echo '<p><label>Child name <input type="text" maxlength="100" autocomplete="off" disabled></label></p>';
+            echo '<p><label>Gender (optional) <select disabled><option value="">Prefer not to say</option><option>Girl</option><option>Boy</option><option>Another identity</option></select></label></p>';
+            echo '<p><label>Year of birth <input type="number" min="1900" max="' . esc_attr( wp_date( 'Y' ) ) . '" disabled></label></p>';
+            echo '</fieldset><p><small>Preview only — these fields cannot be submitted yet. Guest consent and booking verification are being built.</small></p></div>';
+        }
         // Fluent Forms Free captures details, but its submission is not yet
         // cryptographically bound to this booking. Never imply form completion
         // authorises payment until the server-side binding is implemented.
