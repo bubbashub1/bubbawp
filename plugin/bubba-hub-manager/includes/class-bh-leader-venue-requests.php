@@ -107,7 +107,12 @@ final class BH_Leader_Venue_Requests_3 {
             $v=$wpdb->prefix.'venues'; $now=current_time('mysql',true);
             $ok=$wpdb->insert($v,array('name'=>$row['venue_name'],'address_line1'=>$row['address_line1'],'town'=>$row['town'],'postcode'=>$row['postcode'],'created_at'=>$now,'updated_at'=>$now));
             if($ok===false) wp_die('Could not create approved venue.','',array('response'=>500)); $venue_id=(int)$wpdb->insert_id;
-            $link=$wpdb->prefix.'activity_venues'; $wpdb->insert($link,array('activity_id'=>(int)$row['activity_id'],'venue_id'=>$venue_id));
+            $link=$wpdb->prefix.'activity_venues';
+            $linked=$wpdb->insert($link,array('activity_id'=>(int)$row['activity_id'],'venue_id'=>$venue_id));
+            if ($linked===false) {
+                $wpdb->delete($v,array('id'=>$venue_id),array('%d'));
+                wp_die('The venue could not be linked to the listing. The approval has not been completed.','',array('response'=>500));
+            }
         }
         $wpdb->update($t,array('status'=>$decision==='approve'?'approved':'rejected','reviewed_by'=>get_current_user_id(),'venue_id'=>$venue_id,'updated_at'=>current_time('mysql',true)),array('id'=>$id,'status'=>'pending'));
         wp_safe_redirect(admin_url('admin.php?page=bh3-venue-requests&reviewed=1')); exit;
