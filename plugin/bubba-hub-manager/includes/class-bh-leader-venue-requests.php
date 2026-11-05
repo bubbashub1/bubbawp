@@ -52,6 +52,7 @@ final class BH_Leader_Venue_Requests_3 {
         if ( ! $activity ) return '<p>Choose one of your own draft activities before requesting a new venue.</p>';
         ob_start(); ?>
         <section class="bh3-venue-request"><h2>Suggest a new venue</h2><p>Your suggestion will be checked by the Bubba Hub team before it is added to the shared venue directory.</p>
+        <p><a href="<?php echo esc_url(add_query_arg(array('activity_id'=>$activity_id,'step'=>5),home_url('/leader/new-activity/'))); ?>">Back to your listing</a></p>
         <?php if ( isset($_GET['venue_request']) && $_GET['venue_request']==='sent' ) : ?><p role="status">Your venue suggestion has been sent for review.</p><?php endif; ?>
         <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
           <input type="hidden" name="action" value="bh3_venue_request_submit"><input type="hidden" name="activity_id" value="<?php echo esc_attr($activity_id); ?>">
@@ -85,7 +86,7 @@ final class BH_Leader_Venue_Requests_3 {
         $now=current_time('mysql',true);
         $ok=$wpdb->insert($t,array('organiser_id'=>$owner,'activity_id'=>$id,'venue_name'=>$name,'address_line1'=>$address,'town'=>$town,'postcode'=>$postcode,'accessibility'=>sanitize_textarea_field(wp_unslash($_POST['accessibility']??'')),'directions'=>sanitize_textarea_field(wp_unslash($_POST['directions']??'')),'status'=>'pending','created_at'=>$now,'updated_at'=>$now));
         if ($ok===false) wp_die('Unable to submit venue request.','',array('response'=>500));
-        wp_safe_redirect(add_query_arg(array('activity_id'=>$id,'venue_request'=>'sent'),home_url('/leader/venues/'))); exit;
+        wp_safe_redirect(add_query_arg(array('activity_id'=>$id,'step'=>5,'venue_request'=>'sent'),home_url('/leader/new-activity/'))); exit;
     }
     public static function admin_page() {
         if (!current_user_can('manage_options')) wp_die('Access denied.');
