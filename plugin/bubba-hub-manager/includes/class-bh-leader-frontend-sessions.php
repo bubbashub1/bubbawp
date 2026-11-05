@@ -79,6 +79,7 @@ final class BH_Leader_Frontend_Sessions_3 {
         <button class="bh-delete" type="submit" onclick="return confirm('Remove this weekly session from the timetable?');">Remove</button></form></div>
         <?php else : ?><small>Read-only non-weekly session</small><?php endif; ?>
         </li><?php endforeach; ?></ul><?php endif; ?></div>
+        <p class="bh-thint"><a href="<?php echo esc_url( home_url( '/leader/bookings/' ) ); ?>">← Back to calendar</a></p>
         <div class="bh-panel" id="bh-session-editor"><h2><?php echo $editing ? 'Edit weekly session' : 'Add weekly session'; ?></h2>
         <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
         <input type="hidden" name="action" value="bh3_frontend_session_save"><input type="hidden" name="activity_id" value="<?php echo esc_attr( $id ); ?>"><input type="hidden" name="session_id" value="<?php echo esc_attr( $editing['id'] ?? 0 ); ?>">
@@ -137,6 +138,10 @@ final class BH_Leader_Frontend_Sessions_3 {
             $date = $value ? DateTimeImmutable::createFromFormat( '!Y-m-d', $value ) : null;
             if ( $value && ( ! $date || $date->format( 'Y-m-d' ) !== $value ) ) { wp_die( 'Invalid date.', '', array( 'response'=>400 ) ); }
             $dates[$field] = $value ?: null;
+        }
+        if ( $dates['start_date'] && $dates['end_date'] && $dates['start_date'] === $dates['end_date'] ) {
+            $single_day = DateTimeImmutable::createFromFormat( '!Y-m-d', $dates['start_date'], wp_timezone() );
+            if ( ! $single_day || (int) $single_day->format( 'N' ) !== (int) $day ) { wp_die( 'The selected day must match the single session date.', '', array( 'response'=>400 ) ); }
         }
         if ( $dates['start_date'] && $dates['end_date'] && $dates['end_date'] < $dates['start_date'] ) { wp_die( 'Invalid date range.', '', array( 'response'=>400 ) ); }
         $enabled = ! empty( $_POST['enable_booking'] );
