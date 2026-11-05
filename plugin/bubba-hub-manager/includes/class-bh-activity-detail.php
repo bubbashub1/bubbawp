@@ -4,7 +4,79 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 final class BH_Activity_Detail_3 {
     public static function register() {
         add_shortcode( 'bubbahub_activity', array( __CLASS__, 'render' ) );
+        add_filter( 'bh_theme_activity_data', array( __CLASS__, 'theme_activity_data' ), 10, 2 );
     }
+    /**
+     * Read-only adapter for the BubbaTheme [bubba_activity] presentation.
+     * Never expose payment links until a separately tested booking flow supplies them.
+     */
+    public static function theme_activity_data( $existing, $activity_id ) {
+        if ( is_array( $existing ) ) { return $existing; }
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) { return $existing; }
+        $activity_id = absint( $activity_id );
+        if ( ! $activity_id ) { return $existing; }
+        global $wpdb;
+        $a = $wpdb->prefix . 'activities';
+        $o = $wpdb->prefix . 'organisers';
+        $s = $wpdb->prefix . 'sessions';
+        $v = $wpdb->prefix . 'venues';
+        $av = $wpdb->prefix . 'activity_venues';
+        foreach ( array( $a, $o, $s, $v, $av ) as $table ) {
+            if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ) !== $table ) { return $existing; }
+        }
+        $activity = $wpdb->get_row( $wpdb->prepare(
+            "SELECT a.*,o.name AS organiser_name,o.website_url AS organiser_website FROM `{$a}` a LEFT JOIN `{$o}` o ON o.id=a.organiser_id WHERE a.id=%d AND a.status IN ('published','publish') LIMIT 1",
+            $activity_id
+        ), ARRAY_A );
+        if ( ! $activity ) { return $existing; }
+        $venues = $wpdb->get_results( $wpdb->prepare(
+            "SELECT v.name,v.town,v.address_line1,v.postcode FROM `{$av}` av INNER JOIN `{$v}` v ON v.id=av.venue_id WHERE av.activity_id=%d ORDER BY v.name ASC LIMIT 1",
+            $activity_id
+        ), ARRAY_A );
+        $links = $wpdb->prefix . 'session_listing_links';
+        $has_links = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $links ) ) ) === $links;
+        if ( $has_links ) {
+            $sessions = $wpdb->get_results( $wpdb->prepare(
+                "SELECT DISTINCT s.id,s.day_of_week,s.start_time,s.end_time,s.term_time_only FROM `{$s}` s JOIN `{$a}` owner ON owner.id=s.activity_id LEFT JOIN `{$links}` sl ON sl.session_id=s.id WHERE (s.activity_id=%d OR sl.activity_id=%d) AND owner.organiser_id=%d AND s.status NOT IN ('cancelled','canceled','inactive') ORDER BY s.day_of_week,s.start_time LIMIT 100",
+                $activity_id, $activity_id, (int) $activity['organiser_id']
+            ), ARRAY_A );
+        } else {
+            $sessions = $wpdb->get_results( $wpdb->prepare(
+                "SELECT s.id,s.day_of_week,s.start_time,s.end_time,s.term_time_only FROM `{$s}` s WHERE s.activity_id=%d AND s.status NOT IN ('cancelled','canceled','inactive') ORDER BY s.day_of_week,s.start_time LIMIT 100",
+                $activity_id
+            ), ARRAY_A );
+        }
+        $names = get_option( 'bh3_session_titles', array() );
+        $names = is_array( $names ) ? $names : array();
+        $days = array( 1=>'Monday', 2=>'Tuesday', 3=>'Wednesday', 4=>'Thursday', 5=>'Friday', 6=>'Saturday', 7=>'Sunday' );
+        $schedule = array();
+        foreach ( $sessions ?: array() as $session ) {
+            $sid = (int) $session['id'];
+            $schedule[] = array(
+                'name' => (string) ( $names[$sid] ?? $activity['title'] ),
+                'day' => $days[(int) $session['day_of_week']] ?? 'Other',
+                'start' => substr( (string) $session['start_time'], 0, 5 ),
+                'end' => substr( (string) $session['end_time'], 0, 5 ),
+                'term_time' => ! empty( $session['term_time_only'] ) ? 'Term time' : '',
+            );
+        }
+        $venue = $venues[0] ?? array();
+        return array(
+            'title' => (string) $activity['title'],
+            'description' => (string) ( $activity['description'] ?? '' ),
+            'organiser' => (string) ( $activity['organiser_name'] ?? '' ),
+            'website_url' => (string) ( $activity['organiser_website'] ?? '' ),
+            'price' => ! empty( $activity['is_free'] ) ? 'Free' : ( isset( $activity['price_from'] ) && $activity['price_from'] !== null ? 'From £' . number_format( (float) $activity['price_from'], 2 ) : 'Ask organiser' ),
+            'age_range' => ( isset( $activity['age_min_months'] ) || isset( $activity['age_max_months'] ) ) ? (string) ( $activity['age_min_months'] ?? '0' ) . '–' . (string) ( $activity['age_max_months'] ?? 'any' ) . ' months' : '',
+            'location' => (string) ( $venue['town'] ?? '' ),
+            'venue' => (string) ( $venue['name'] ?? '' ),
+            'address' => implode( ', ', array_filter( array( $venue['address_line1'] ?? '', $venue['town'] ?? '', $venue['postcode'] ?? '' ) ) ),
+            'sessions_count' => (string) count( $schedule ),
+            'schedule' => $schedule,
+            'categories' => ! empty( $activity['category'] ) ? array( (string) $activity['category'] ) : array(),
+        );
+    }
+
     public static function render( $atts = array() ) {
         if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) {
             return '<p>Activity detail is available on staging only.</p>';
