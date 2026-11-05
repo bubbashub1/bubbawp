@@ -117,8 +117,8 @@ final class BH_Leader_Listing_Wizard_3 {
             <p class="bh3-wizard-help">YOUR LEADER HUB · LISTING CREATOR</p>
             <h1 id="bh3-wizard-title"><?php echo $record ? 'Continue your listing' : 'Create a new listing'; ?></h1>
             <p>Work through the steps at your own pace. You can save a draft and come back later. Verified email accounts can publish completed listings directly; other listings are reviewed first.</p>
-            <?php if ( ! $email_verified ) : ?><p class="bh3-wizard-message">Listings currently require Bubba Hub approval while we connect Simple Membership email activation. Please use the activation link sent during registration.</p><?php endif; ?>
-            <?php if ( isset($_GET['verification']) && $_GET['verification'] === 'sent' ) : ?><p role="status">Verification email sent. Check your inbox.</p><?php elseif ( isset($_GET['verification']) && $_GET['verification'] === 'complete' ) : ?><p role="status">Your email is verified. You can publish completed listings.</p><?php endif; ?>
+            <?php if ( ! $email_verified ) : ?><p class="bh3-wizard-message">Your email has not been confirmed through Simple Membership. Please use the activation link sent during registration. Until then, your listing will be submitted for Bubba Hub approval.</p><?php endif; ?>
+
             <div class="bh3-wizard-steps" aria-label="Listing steps">
               <?php foreach ( $steps as $index => $label ) : ?><div class="bh3-wizard-step" <?php echo $step === $index + 1 ? 'aria-current="step"' : ''; ?>><strong><?php echo esc_html( $index + 1 ); ?></strong><br><?php echo esc_html( $label ); ?></div><?php endforeach; ?>
             </div>
