@@ -37,6 +37,47 @@ final class BH_Venues_3 {
             echo '<tr><th><label for="venue_' . esc_attr( $key ) . '">' . esc_html( $label ) . '</label></th><td><input class="regular-text" id="venue_' . esc_attr( $key ) . '" name="' . esc_attr( $key ) . '" value="' . esc_attr( (string) ( $venue[$key] ?? '' ) ) . '"' . ( $key === 'name' ? ' required maxlength="255"' : '' ) . '></td></tr>';
         }
         echo '</tbody></table>';
+        // OpenStreetMap tiles + Leaflet: no Google Maps API key or paid geocoding dependency.
+        echo '<div class="bh3-venue-map-wrap" style="max-width:900px;margin:16px 0 24px;padding:16px;background:#fff;border:1px solid #dbe5de;border-radius:12px">';
+        echo '<h3 style="margin-top:0">Find venue on map</h3><p>Click the map or drag the marker to set the latitude and longitude. Check the location before saving.</p>';
+        echo '<div id="bh3-venue-map" style="height:360px;max-width:100%;border-radius:9px;background:#edf2ee" role="region" aria-label="OpenStreetMap venue location picker"></div>';
+        echo '<p><button type="button" class="button" id="bh3-venue-map-reset">Use entered coordinates</button> <span id="bh3-venue-map-status" role="status" aria-live="polite"></span></p></div>';
+        echo '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyo1FQ8F6+1iGg=" crossorigin="anonymous">';
+        echo '<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>';
+        echo <<<'BH3_VENUE_MAP'
+<script>
+(function(){
+  const el=document.getElementById('bh3-venue-map');
+  const lat=document.getElementById('venue_latitude');
+  const lng=document.getElementById('venue_longitude');
+  const status=document.getElementById('bh3-venue-map-status');
+  if(!el||!lat||!lng)return;
+  if(typeof L==='undefined'){el.textContent='Map could not load. You can still enter coordinates manually.';return;}
+  const valid=(a,b)=>Number.isFinite(a)&&Number.isFinite(b)&&a>=-90&&a<=90&&b>=-180&&b<=180;
+  const coords=()=>[Number(lat.value),Number(lng.value)];
+  const hasCoords=()=>lat.value.trim()!==''&&lng.value.trim()!==''&&valid(...coords());
+  const start=hasCoords()?coords():[50.7,-3.7];
+  const map=L.map(el,{scrollWheelZoom:false}).setView(start,hasCoords()?14:8);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+  let marker=null;
+  const set=(a,b,write)=>{
+    if(!valid(a,b))return;
+    if(!marker){marker=L.marker([a,b],{draggable:true}).addTo(map);marker.on('dragend',()=>{const p=marker.getLatLng();set(p.lat,p.lng,true);});}
+    else marker.setLatLng([a,b]);
+    if(write){lat.value=a.toFixed(6);lng.value=b.toFixed(6);lat.dispatchEvent(new Event('change',{bubbles:true}));lng.dispatchEvent(new Event('change',{bubbles:true}));}
+    status.textContent='Pin: '+a.toFixed(6)+', '+b.toFixed(6);
+  };
+  if(hasCoords())set(...coords(),false);
+  map.on('click',e=>set(e.latlng.lat,e.latlng.lng,true));
+  const reset=()=>{if(hasCoords()){set(...coords(),false);map.setView(coords(),14);}else status.textContent='Enter valid coordinates or click the map.';};
+  document.getElementById('bh3-venue-map-reset')?.addEventListener('click',reset);
+  lat.addEventListener('change',reset);lng.addEventListener('change',reset);
+  window.setTimeout(()=>map.invalidateSize(),100);
+})();
+</script>
+BH3_VENUE_MAP;
         submit_button( $id ? 'Update venue' : 'Create venue' );
         echo '</form>';
         if ( $id ) { echo '<p><a href="' . esc_url( admin_url( 'admin.php?page=bh3-venues' ) ) . '">Add another venue</a></p>'; }
