@@ -94,8 +94,8 @@ final class BH_Activity_Detail_3 {
                 ? (string) $activity['booking_url'] : '';
             $enquiry_enabled = ! empty( $enquiry_configs[$sid] );
             $schedule[] = array(
-                'booking_url' => $booking_enabled && $external_url ? $external_url : '',
-                'enquiry_url' => $enquiry_enabled ? '#bh-activity-enquiry' : '',
+                'booking_url' => $external_url ?: '',
+                'enquiry_url' => $enquiry_enabled && shortcode_exists( 'fluentform' ) ? '#bh-activity-enquiry' : '',
                 'name' => (string) ( $names[$sid] ?? $activity['title'] ),
                 'day' => $days[(int) $session['day_of_week']] ?? 'Other',
                 'start' => substr( (string) $session['start_time'], 0, 5 ),
@@ -117,7 +117,7 @@ final class BH_Activity_Detail_3 {
             'image_url' => $image_url,
             'summary' => wp_trim_words( wp_strip_all_tags( (string) ( $activity['description'] ?? '' ) ), 24 ),
             'booking_url' => $booking_url,
-            'enquiry_enabled' => ! empty( array_filter( $enquiry_configs ) ),
+            'enquiry_enabled' => (bool) array_filter( $schedule, static function ( $entry ) { return ! empty( $entry['enquiry_url'] ); } ),
             'term_time' => array_filter( $schedule, static function ( $entry ) { return ! empty( $entry['term_time'] ); } ) ? 'Yes' : 'No',
             'session_length' => $duration,
             'title' => (string) $activity['title'],
@@ -129,6 +129,7 @@ final class BH_Activity_Detail_3 {
             'location' => (string) ( $venue['town'] ?? '' ),
             'venue' => (string) ( $venue['name'] ?? '' ),
             'address' => implode( ', ', array_filter( array( $venue['address_line1'] ?? '', $venue['town'] ?? '', $venue['postcode'] ?? '' ) ) ),
+            'map_query' => implode( ', ', array_filter( array( $venue['name'] ?? '', $venue['address_line1'] ?? '', $venue['town'] ?? '', $venue['postcode'] ?? '' ) ) ),
             'directions_url' => ! empty( $venue['postcode'] ) ? 'https://www.google.com/maps/search/?api=1&query=' . rawurlencode( implode( ', ', array_filter( array( $venue['name'] ?? '', $venue['address_line1'] ?? '', $venue['town'] ?? '', $venue['postcode'] ?? '' ) ) ) ) : '',
             'sessions_count' => count( $schedule ) . ' available',
             'schedule' => $schedule,
