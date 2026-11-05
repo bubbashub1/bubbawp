@@ -5,6 +5,7 @@ final class BH_Marketplace_Settings_3 {
     public static function register() {
         if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) { return; }
         add_action( 'admin_menu', array( __CLASS__, 'menu' ) );
+        add_action( 'rest_api_init', array( __CLASS__, 'register_test_webhook_route' ) );
         add_action( 'admin_post_bh3_save_commission', array( __CLASS__, 'save_commission' ) );
         add_action( 'admin_post_bh3_verify_stripe', array( __CLASS__, 'verify_stripe' ) );
         add_action( 'admin_post_bh3_stripe_onboard', array( __CLASS__, 'stripe_onboard' ) );
@@ -308,6 +309,37 @@ final class BH_Marketplace_Settings_3 {
      * Internal-only signed Stripe event verifier. Does not mutate booking status.
      * Call from a dedicated staging webhook controller after registration.
      */
+    /**
+     * Explicitly gated, staging-only webhook ingestion. Respond with a retryable
+     * error when persistence fails. Never mark a booking paid at ingestion.
+     */
+    public static function register_test_webhook_route() {
+        if ( ! defined( 'BH3_ENABLE_STRIPE_TEST_WEBHOOK' ) || BH3_ENABLE_STRIPE_TEST_WEBHOOK !== true ) { return; }
+        register_rest_route( 'bubba-hub/v3', '/stripe-test-webhook', array(
+            'methods' => 'POST',
+            'callback' => array( __CLASS__, 'receive_test_webhook' ),
+            'permission_callback' => '__return_true',
+        ) );
+    }
+    public static function receive_test_webhook( $request ) {
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
+            || ! defined( 'BH3_ENABLE_STRIPE_TEST_WEBHOOK' ) || BH3_ENABLE_STRIPE_TEST_WEBHOOK !== true ) {
+            return new WP_Error( 'webhook_disabled', 'Webhook unavailable.', array( 'status' => 404 ) );
+        }
+        $event = self::verify_test_webhook( $request->get_body(), (string) $request->get_header( 'stripe-signature' ) );
+        if ( is_wp_error( $event ) ) {
+            return new WP_Error( 'signature_rejected', 'Invalid webhook signature or payload.', array( 'status' => 400 ) );
+        }
+        $result = self::record_verified_test_event( $event );
+        if ( is_wp_error( $result ) ) {
+            return new WP_Error( 'event_persistence_failed', 'Event could not be recorded.', array( 'status' => 503 ) );
+        }
+        return rest_ensure_response( array(
+            'received' => true,
+            'duplicate' => $result['duplicate'],
+            'booking_confirmed' => false,
+        ) );
+    }
     public static function verify_test_webhook( $raw_body, $signature_header ) {
         if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
             || ! defined( 'BH3_STRIPE_TEST_WEBHOOK_SECRET' ) ) {
