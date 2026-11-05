@@ -64,6 +64,14 @@ final class BH_Activity_Detail_3 {
             "SELECT v.name,v.town,v.address_line1,v.postcode FROM `{$av}` av INNER JOIN `{$v}` v ON v.id=av.venue_id WHERE av.activity_id=%d ORDER BY v.name ASC LIMIT 1",
             $activity_id
         ), ARRAY_A );
+        // Sessions may carry the venue link even when the activity_venues
+        // junction has not yet been populated by the listing wizard.
+        if ( ! $venues ) {
+            $venues = $wpdb->get_results( $wpdb->prepare(
+                "SELECT DISTINCT v.name,v.town,v.address_line1,v.postcode FROM `{$s}` s INNER JOIN `{$v}` v ON v.id=s.venue_id WHERE s.activity_id=%d AND s.venue_id IS NOT NULL ORDER BY v.name ASC LIMIT 1",
+                $activity_id
+            ), ARRAY_A );
+        }
         $links = $wpdb->prefix . 'session_listing_links';
         $has_links = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $links ) ) ) === $links;
         if ( $has_links ) {
@@ -94,8 +102,8 @@ final class BH_Activity_Detail_3 {
                 ? (string) $activity['booking_url'] : '';
             $enquiry_enabled = ! empty( $enquiry_configs[$sid] );
             $schedule[] = array(
-                'booking_url' => $booking_enabled && $external_url ? $external_url : '',
-                'enquiry_url' => $enquiry_enabled ? '#bh-activity-enquiry' : '',
+                'booking_url' => $external_url ?: '',
+                'enquiry_url' => $enquiry_enabled && shortcode_exists( 'fluentform' ) ? '#bh-activity-enquiry' : '',
                 'name' => (string) ( $names[$sid] ?? $activity['title'] ),
                 'day' => $days[(int) $session['day_of_week']] ?? 'Other',
                 'start' => substr( (string) $session['start_time'], 0, 5 ),
@@ -117,7 +125,7 @@ final class BH_Activity_Detail_3 {
             'image_url' => $image_url,
             'summary' => wp_trim_words( wp_strip_all_tags( (string) ( $activity['description'] ?? '' ) ), 24 ),
             'booking_url' => $booking_url,
-            'enquiry_enabled' => ! empty( array_filter( $enquiry_configs ) ),
+            'enquiry_enabled' => (bool) array_filter( $schedule, static function ( $entry ) { return ! empty( $entry['enquiry_url'] ); } ),
             'term_time' => array_filter( $schedule, static function ( $entry ) { return ! empty( $entry['term_time'] ); } ) ? 'Yes' : 'No',
             'session_length' => $duration,
             'title' => (string) $activity['title'],
@@ -125,10 +133,11 @@ final class BH_Activity_Detail_3 {
             'organiser' => (string) ( $activity['organiser_name'] ?? '' ),
             'website_url' => (string) ( $activity['organiser_website'] ?? '' ),
             'price' => ! empty( $activity['is_free'] ) ? 'Free' : ( isset( $activity['price_from'] ) && $activity['price_from'] !== null ? 'From £' . number_format( (float) $activity['price_from'], 2 ) : 'Ask organiser' ),
-            'age_range' => ( isset( $activity['age_min_months'] ) || isset( $activity['age_max_months'] ) ) ? (string) ( $activity['age_min_months'] ?? '0' ) . '–' . (string) ( $activity['age_max_months'] ?? 'any' ) . ' months' : '',
+            'age_range' => ( isset( $activity['age_min_months'], $activity['age_max_months'] ) && is_numeric( $activity['age_min_months'] ) && is_numeric( $activity['age_max_months'] ) && (int) $activity['age_max_months'] >= (int) $activity['age_min_months'] && ( (int) $activity['age_max_months'] > 0 || (int) $activity['age_min_months'] > 0 ) ) ? (string) (int) $activity['age_min_months'] . '–' . (string) (int) $activity['age_max_months'] . ' months' : '',
             'location' => (string) ( $venue['town'] ?? '' ),
             'venue' => (string) ( $venue['name'] ?? '' ),
             'address' => implode( ', ', array_filter( array( $venue['address_line1'] ?? '', $venue['town'] ?? '', $venue['postcode'] ?? '' ) ) ),
+            'map_query' => implode( ', ', array_filter( array( $venue['name'] ?? '', $venue['address_line1'] ?? '', $venue['town'] ?? '', $venue['postcode'] ?? '' ) ) ),
             'directions_url' => ! empty( $venue['postcode'] ) ? 'https://www.google.com/maps/search/?api=1&query=' . rawurlencode( implode( ', ', array_filter( array( $venue['name'] ?? '', $venue['address_line1'] ?? '', $venue['town'] ?? '', $venue['postcode'] ?? '' ) ) ) ) : '',
             'sessions_count' => count( $schedule ) . ' available',
             'schedule' => $schedule,
@@ -167,6 +176,14 @@ final class BH_Activity_Detail_3 {
             "SELECT v.id,v.name,v.address_line1,v.town,v.postcode,v.region,v.latitude,v.longitude FROM `{$av}` av
              INNER JOIN `{$v}` v ON v.id=av.venue_id WHERE av.activity_id=%d ORDER BY v.name ASC LIMIT 50", $id
         ), ARRAY_A );
+        // Fall back to the venue assigned to a session if no activity-level
+        // venue association exists yet.
+        if ( ! $venues ) {
+            $venues = $wpdb->get_results( $wpdb->prepare(
+                "SELECT DISTINCT v.id,v.name,v.address_line1,v.town,v.postcode,v.region,v.latitude,v.longitude FROM `{$s}` s
+                 INNER JOIN `{$v}` v ON v.id=s.venue_id WHERE s.activity_id=%d AND s.venue_id IS NOT NULL ORDER BY v.name ASC LIMIT 50", $id
+            ), ARRAY_A );
+        }
         $link_table = $wpdb->prefix . 'session_listing_links';
         $links_ready = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $link_table ) ) ) === $link_table;
         if ( $links_ready ) {
