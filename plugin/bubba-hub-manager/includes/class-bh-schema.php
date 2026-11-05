@@ -185,6 +185,59 @@ final class BH_Schema_3 {
         );
     }
 
+    /** Booking-only additive migration. Existing tables are NEVER passed to dbDelta. */
+    public static function booking_table_keys() {
+        return array( 'session_listing_links', 'bookings', 'stripe_events', 'booking_consents', 'booking_attendees' );
+    }
+
+    public static function booking_table_audit() {
+        global $wpdb;
+        $names = self::table_names();
+        $result = array();
+        foreach ( self::booking_table_keys() as $key ) {
+            $table = $names[ $key ];
+            $exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ) === $table;
+            $result[ $key ] = array( 'table' => $table, 'exists' => $exists );
+        }
+        return $result;
+    }
+
+    /** Must be invoked only by the explicit staging administrator action. */
+    public static function install_missing_booking_tables() {
+        if ( ! current_user_can( 'manage_options' )
+            || strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) {
+            return new WP_Error( 'bh3_forbidden', 'Staging administrator permission required.' );
+        }
+        global $wpdb;
+        $audit = self::booking_table_audit();
+        $statements = self::statements();
+        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+        $created = array();
+        foreach ( $audit as $item ) {
+            if ( $item['exists'] ) { continue; }
+            $table = $item['table'];
+            $sql = null;
+            foreach ( $statements as $statement ) {
+                if ( strpos( $statement, "CREATE TABLE {$table} (" ) === 0 ) {
+                    $sql = $statement;
+                    break;
+                }
+            }
+            if ( ! $sql ) {
+                return new WP_Error( 'bh3_missing_definition', 'Booking table definition missing.' );
+            }
+            // Never change or rebuild a pre-existing table.
+            if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ) === $table ) { continue; }
+            dbDelta( $sql );
+            if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ) !== $table ) {
+                return new WP_Error( 'bh3_booking_table_failed', 'Could not create booking table: ' . $table );
+            }
+            $created[] = $table;
+        }
+        // Do not mark the whole legacy schema as 0.7.0: existing core tables were not migrated.
+        return $created;
+    }
+
     /** Admin-only, explicitly invoked later; not called during plugin activation or page load. */
     public static function install() {
         if ( ! current_user_can( 'manage_options' ) ) {
