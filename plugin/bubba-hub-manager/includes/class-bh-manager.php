@@ -164,10 +164,30 @@ final class BH_Manager_3 {
         add_action( 'admin_post_bh3_save_settings', array( 'BH_Settings_3', 'save' ) );
         add_action( 'admin_post_bh3_family_display_save', array( 'BH_Workstream_Settings_3', 'family_display_save' ) );
         add_action( 'admin_post_bh3_install_schema', array( __CLASS__, 'install_schema' ) );
+        add_action( 'admin_post_bh3_install_missing_booking_tables', array( __CLASS__, 'install_missing_booking_tables' ) );
     }
 
     private static function is_staging() {
         return strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) === 'staging.bubbahub.co.uk';
+    }
+
+    /** Additive booking-only migration; requires confirmed staging backup. */
+    public static function install_missing_booking_tables() {
+        if ( ! current_user_can( 'manage_options' ) || ! self::is_staging() ) {
+            wp_die( 'Staging administrator permission required.', '', array( 'response' => 403 ) );
+        }
+        check_admin_referer( 'bh3_install_missing_booking_tables' );
+        $confirm = isset( $_POST['bh3_booking_confirm'] ) && is_string( $_POST['bh3_booking_confirm'] )
+            ? sanitize_text_field( wp_unslash( $_POST['bh3_booking_confirm'] ) ) : '';
+        $backup = isset( $_POST['bh3_backup_confirmed'] ) && $_POST['bh3_backup_confirmed'] === '1';
+        if ( $confirm !== 'CREATE MISSING' || ! $backup ) {
+            wp_die( 'Confirm the completed staging backup and type CREATE MISSING.', '', array( 'response' => 400 ) );
+        }
+        $result = BH_Schema_3::install_missing_booking_tables();
+        set_transient( 'bh3_booking_schema_result_' . get_current_user_id(), is_wp_error( $result )
+            ? $result->get_error_message() : 'Booking table check completed; created ' . count( $result ) . ' missing table(s).', 120 );
+        wp_safe_redirect( admin_url( 'admin.php?page=bubba-hub-3-status' ) );
+        exit;
     }
 
     public static function install_schema() {
@@ -264,6 +284,27 @@ final class BH_Manager_3 {
             echo ' <button class="button button-primary" type="submit">Install tables on staging</button></form>';
         } else {
             echo '<p>Installation is disabled outside staging.bubbahub.co.uk.</p>';
+        }
+        if ( self::is_staging() ) {
+            echo '<h2>Booking tables: safe additive upgrade</h2>';
+            echo '<p>This checks only booking-related tables. Existing tables are never altered; the installed schema version is not changed.</p>';
+            echo '<ul>';
+            foreach ( BH_Schema_3::booking_table_audit() as $item ) {
+                echo '<li><code>' . esc_html( $item['table'] ) . '</code>: ' . esc_html( $item['exists'] ? 'Exists — will be preserved' : 'Missing — can be created' ) . '</li>';
+            }
+            echo '</ul>';
+            $message = get_transient( 'bh3_booking_schema_result_' . get_current_user_id() );
+            if ( $message ) {
+                echo '<div class="notice notice-info"><p>' . esc_html( $message ) . '</p></div>';
+                delete_transient( 'bh3_booking_schema_result_' . get_current_user_id() );
+            }
+            echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+            echo '<input type="hidden" name="action" value="bh3_install_missing_booking_tables">';
+            wp_nonce_field( 'bh3_install_missing_booking_tables' );
+            echo '<p><label><input type="checkbox" name="bh3_backup_confirmed" value="1" required> I have completed and verified a staging database backup.</label></p>';
+            echo '<p><label>Type CREATE MISSING: <input name="bh3_booking_confirm" required autocomplete="off"></label></p>';
+            echo '<p><button type="submit" class="button button-secondary">Create missing booking tables only</button></p>';
+            echo '</form>';
         }
         echo '<h2>' . esc_html__( 'Feature readiness', 'bubba-hub-manager' ) . '</h2>';
         echo '<ul>';
