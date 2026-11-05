@@ -119,6 +119,75 @@ final class BH_Marketplace_Settings_3 {
             'authoritative_reservation_created' => false,
         );
     }
+    /**
+     * Internal-only atomic reservation primitive. No public action is registered.
+     * Requires an existing authenticated customer and an installed bookings table.
+     */
+    public static function reserve_occurrence( $session_id, $occurrence_date, $places, $customer_user_id ) {
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
+            || ! defined( 'BH3_ENABLE_BOOKING_RESERVATIONS' ) || BH3_ENABLE_BOOKING_RESERVATIONS !== true ) {
+            return new WP_Error( 'reservations_disabled', 'Booking reservations are disabled.' );
+        }
+        $customer_user_id = absint( $customer_user_id );
+        if ( ! $customer_user_id || ! get_userdata( $customer_user_id ) ) {
+            return new WP_Error( 'customer_required', 'A valid customer account is required.' );
+        }
+        $quote = self::quote_session( $session_id, $places );
+        if ( is_wp_error( $quote ) ) { return $quote; }
+        $date = is_string( $occurrence_date ) ? DateTimeImmutable::createFromFormat( '!Y-m-d', $occurrence_date, wp_timezone() ) : false;
+        if ( ! $date || $date->format( 'Y-m-d' ) !== $occurrence_date || $date < new DateTimeImmutable( 'today', wp_timezone() ) ) {
+            return new WP_Error( 'invalid_occurrence', 'Choose a valid future session date.' );
+        }
+        // Never use client-provided price, organiser or activity IDs.
+        global $wpdb;
+        $table = $wpdb->prefix . 'bh3_bookings';
+        $lock = 'bh3_' . md5( $wpdb->prefix . ':' . $quote['session_id'] . ':' . $occurrence_date );
+        $acquired = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, 5)', $lock ) );
+        if ( $acquired !== 1 ) {
+            return new WP_Error( 'booking_busy', 'This session is busy. Please try again.' );
+        }
+        try {
+            $availability = self::occurrence_availability( $quote['session_id'], $occurrence_date );
+            if ( is_wp_error( $availability ) ) { return $availability; }
+            if ( $availability['available'] < $quote['places'] ) {
+                return new WP_Error( 'session_full', 'Not enough places remain.' );
+            }
+            // Fail closed if session pricing or capacity changed during the wait.
+            $current = self::quote_session( $session_id, $places );
+            if ( is_wp_error( $current ) || $current['gross_pence'] !== $quote['gross_pence'] ) {
+                return new WP_Error( 'quote_changed', 'Session pricing changed. Please try again.' );
+            }
+            $reference = wp_generate_uuid4();
+            $now = current_time( 'mysql', true );
+            $expires = gmdate( 'Y-m-d H:i:s', time() + 15 * MINUTE_IN_SECONDS );
+            $ok = $wpdb->insert( $table, array(
+                'public_reference' => $reference,
+                'session_id' => $quote['session_id'],
+                'occurrence_date' => $occurrence_date,
+                'activity_id' => $quote['activity_id'],
+                'organiser_id' => $quote['organiser_id'],
+                'customer_user_id' => $customer_user_id,
+                'places' => $quote['places'],
+                'currency' => 'gbp',
+                'unit_price_pence' => $quote['unit_price_pence'],
+                'gross_pence' => $quote['gross_pence'],
+                'commission_pence' => $quote['commission_pence'],
+                'leader_before_fees_pence' => $quote['leader_before_fees_pence'],
+                'commission_rate_percent' => $quote['commission_rate_percent'],
+                'payment_status' => 'pending',
+                'reservation_expires_at' => $expires,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ) );
+            if ( $ok !== 1 ) {
+                return new WP_Error( 'reservation_failed', 'Could not reserve places.' );
+            }
+            return array( 'booking_id' => (int) $wpdb->insert_id, 'reference' => $reference,
+                'expires_at_utc' => $expires, 'status' => 'pending', 'checkout_enabled' => false );
+        } finally {
+            $wpdb->get_var( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $lock ) );
+        }
+    }
     public static function stripe_status() {
         $mode = get_option( 'bh3_stripe_mode', 'test' );
         $mode = $mode === 'live' ? 'live' : 'test';
