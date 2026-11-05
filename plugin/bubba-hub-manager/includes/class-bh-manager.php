@@ -129,6 +129,7 @@ final class BH_Manager_3 {
         add_action( 'admin_menu', array( __CLASS__, 'register_admin_page' ) );
         add_action( 'admin_menu', array( __CLASS__, 'register_workstreams_page' ), 30 );
         add_action( 'admin_menu', array( 'BH_Developments_Admin_3', 'register' ), 30 );
+        add_action( 'admin_post_bh3_save_development_statuses', array( 'BH_Developments_Admin_3', 'save_statuses' ) );
         // Keep legacy staging screens reachable by their existing URLs, but not as duplicate top-level menus.
         add_action( 'admin_menu', array( __CLASS__, 'consolidate_leader_admin_menus' ), 999 );
         add_action( 'admin_menu', array( 'BH_Workstream_Settings_3', 'register' ), 30 );
