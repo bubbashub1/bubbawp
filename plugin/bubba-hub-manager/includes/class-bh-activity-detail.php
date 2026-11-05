@@ -77,13 +77,25 @@ final class BH_Activity_Detail_3 {
                 $activity_id
             ), ARRAY_A );
         }
+        $booking_configs = get_option( 'bh3_session_booking_config', array() );
+        $booking_configs = is_array( $booking_configs ) ? $booking_configs : array();
+        $enquiry_configs = get_option( 'bh3_session_enquiry_enabled', array() );
+        $enquiry_configs = is_array( $enquiry_configs ) ? $enquiry_configs : array();
         $names = get_option( 'bh3_session_titles', array() );
         $names = is_array( $names ) ? $names : array();
         $days = array( 1=>'Monday', 2=>'Tuesday', 3=>'Wednesday', 4=>'Thursday', 5=>'Friday', 6=>'Saturday', 7=>'Sunday' );
         $schedule = array();
         foreach ( $sessions ?: array() as $session ) {
             $sid = (int) $session['id'];
+            $config = $booking_configs[$sid] ?? array();
+            $config = is_array( $config ) ? $config : array();
+            $booking_enabled = ! empty( $config['enabled'] );
+            $external_url = ! empty( $activity['booking_url'] ) && wp_http_validate_url( (string) $activity['booking_url'] )
+                ? (string) $activity['booking_url'] : '';
+            $enquiry_enabled = ! empty( $enquiry_configs[$sid] );
             $schedule[] = array(
+                'booking_url' => $booking_enabled && $external_url ? $external_url : '',
+                'enquiry_url' => $enquiry_enabled ? '#bh-activity-enquiry' : '',
                 'name' => (string) ( $names[$sid] ?? $activity['title'] ),
                 'day' => $days[(int) $session['day_of_week']] ?? 'Other',
                 'start' => substr( (string) $session['start_time'], 0, 5 ),
@@ -105,6 +117,7 @@ final class BH_Activity_Detail_3 {
             'image_url' => $image_url,
             'summary' => wp_trim_words( wp_strip_all_tags( (string) ( $activity['description'] ?? '' ) ), 24 ),
             'booking_url' => $booking_url,
+            'enquiry_enabled' => ! empty( array_filter( $enquiry_configs ) ),
             'term_time' => array_filter( $schedule, static function ( $entry ) { return ! empty( $entry['term_time'] ); } ) ? 'Yes' : 'No',
             'session_length' => $duration,
             'title' => (string) $activity['title'],
