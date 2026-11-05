@@ -27,10 +27,10 @@ final class BH_Leader_Bookings_3 {
         ), ARRAY_A );
         ob_start(); ?>
         <section class="bh-leader-bookings">
-          <header class="bh-bookings-hero"><p>LEADER HUB</p><h1>Bookings</h1><p>Manage your class reservations from one place.</p></header>
+          <header class="bh-bookings-hero"><p>LEADER HUB</p><h1>Class calendar</h1><p>See your sessions in one place. Bookings and space limits are optional.</p></header>
           <div class="bh-bookings-notice" role="status">
-            <strong>Booking records are not connected yet.</strong>
-            <p>This preview shows your linked activities only. No reservations, attendee details, reminders or payments are being read or changed.</p>
+            <strong>Calendar preview — session dates are not connected yet.</strong>
+            <p>You do not need a booking link, a capacity or available-space numbers to publish a class schedule. This preview shows linked activities only; it does not read or change reservations, attendee details, reminders or payments.</p>
           </div>
           <?php
           $month = isset( $_GET['booking_month'] ) && is_string( $_GET['booking_month'] ) ? sanitize_text_field( wp_unslash( $_GET['booking_month'] ) ) : wp_date( 'Y-m' );
@@ -52,7 +52,7 @@ final class BH_Leader_Bookings_3 {
                 <a href="<?php echo esc_url( add_query_arg( 'booking_month', $next ) ); ?>" aria-label="Next month">Next →</a>
               </nav>
             </div>
-            <p class="bh-bookings-calendar-note">Calendar preview — no session or booking dates are connected yet.</p>
+            <p class="bh-bookings-calendar-note">Calendar preview — recurring and one-off session dates will appear here once connected. Booking links and place numbers will remain optional.</p>
             <div class="bh-bookings-calendar-grid" role="grid" aria-label="<?php echo esc_attr( $first->format( 'F Y' ) ); ?>">
               <?php foreach ( array( 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun' ) as $weekday ) : ?>
                 <div class="bh-bookings-calendar-weekday" role="columnheader"><?php echo esc_html( $weekday ); ?></div>
@@ -85,7 +85,7 @@ final class BH_Leader_Bookings_3 {
               <ul class="bh-bookings-activities">
                 <?php foreach ( $activities as $activity ) : ?>
                   <li><div><strong><?php echo esc_html( $activity['title'] ); ?></strong><small><?php echo esc_html( ucfirst( (string) $activity['status'] ) ); ?></small></div>
-                  <span>Reservation integration pending</span></li>
+                  <span>Session calendar integration pending</span></li>
                 <?php endforeach; ?>
               </ul>
             <?php endif; ?>
