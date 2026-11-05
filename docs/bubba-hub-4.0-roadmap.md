@@ -4,6 +4,19 @@ Status: **Planned / backlog only**
 Created: 2026-11-05  
 Owner: Bubba Hub South West
 
+## Product vision and decision principles
+
+**Vision:** A family-first community platform that helps families discover, connect, plan and be inspired, while enabling activity leaders to manage their services with less administration and without dependence on AI.
+
+**Three product pillars:**
+1. **Less AI dependence, more dependable automation:** deterministic workflows, structured WordPress data, reusable templates, clear user controls and optional rather than required AI. Essential browsing, booking, notifications and publishing must work without AI services.
+2. **Less administration for leaders:** one mobile-friendly portal for listings, schedules, venues, bookings, messages, reminders and payments; minimise duplicate entry, unnecessary clicks and manual reconciliation.
+3. **A useful, connected and inspiring family portal:** personal profiles, discovery, favourites, planning, support, community connections and relevant ideas for family time, with privacy and safeguarding built in.
+
+**Feature prioritisation test:** Does this feature (a) save time, (b) make family life easier, or (c) help families and local leaders connect? Prefer features that measurably achieve at least one. Avoid adding complexity or recurring service costs without a clear benefit.
+
+**Outcome measures to define before delivery:** leader minutes per routine task, percentage of bookings/reminders handled without manual intervention, parent repeat usage, activity discovery-to-booking completion, data freshness, and support/connection engagement. Do not collect unnecessary child or family data.
+
 ## Scope and release boundary
 
 Bubba Hub **3.0** remains the WordPress migration, legacy feature parity, security, staging QA, and reliable core Directory, Family Hub, Leader Portal and Booking system. Do not defer critical legacy parity or safety fixes to 4.0 simply because they are unfinished.
