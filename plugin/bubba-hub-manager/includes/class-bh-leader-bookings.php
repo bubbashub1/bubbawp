@@ -147,6 +147,7 @@ final class BH_Leader_Bookings_3 {
           }
           ?>
           <form method="get" class="bh-bookings-filters" role="search" aria-label="Filter sessions">
+            <?php if ( $admin_preview ) : ?><input type="hidden" name="bh_preview_organiser" value="<?php echo esc_attr( $organiser ); ?>"><?php endif; ?>
             <label>Search sessions <input type="search" name="session_search" value="<?php echo esc_attr( $search ); ?>" placeholder="Search sessions or listings"></label>
             <label>Listing <select name="listing_filter"><option value="0">All listings</option><?php foreach ( $activities as $activity ) : ?><option value="<?php echo esc_attr( $activity['id'] ); ?>" <?php selected( $listing_filter, (int) $activity['id'] ); ?>><?php echo esc_html( $activity['title'] ); ?></option><?php endforeach; ?></select></label>
             <label>Type <select name="session_mode"><option value="all" <?php selected( $mode_filter, 'all' ); ?>>All sessions</option><option value="booking" <?php selected( $mode_filter, 'booking' ); ?>>Bookings enabled</option><option value="enquiry" <?php selected( $mode_filter, 'enquiry' ); ?>>Enquiries enabled</option></select></label>
