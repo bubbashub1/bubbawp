@@ -39,6 +39,9 @@ final class BH_Leader_Frontend_Sessions_3 {
         foreach ( $rows as $row ) { if ( (int) $row['id'] === $edit_id && $row['frequency'] === 'weekly' ) { $editing = $row; } }
         $enquiry_settings = get_option( 'bh3_session_enquiry_enabled', array() );
         if ( ! is_array( $enquiry_settings ) ) { $enquiry_settings = array(); }
+        $picked_date = isset( $_GET['session_date'] ) && is_string( $_GET['session_date'] ) ? sanitize_text_field( wp_unslash( $_GET['session_date'] ) ) : '';
+        $picked = $picked_date ? DateTimeImmutable::createFromFormat( '!Y-m-d', $picked_date, wp_timezone() ) : false;
+        if ( ! $picked || $picked->format( 'Y-m-d' ) !== $picked_date ) { $picked_date = ''; }
         $days = array( 1=>'Monday',2=>'Tuesday',3=>'Wednesday',4=>'Thursday',5=>'Friday',6=>'Saturday',7=>'Sunday' );
         ob_start(); ?>
         <section class="bh-leader-timetable">
@@ -65,12 +68,12 @@ final class BH_Leader_Frontend_Sessions_3 {
         <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
         <input type="hidden" name="action" value="bh3_frontend_session_save"><input type="hidden" name="activity_id" value="<?php echo esc_attr( $id ); ?>"><input type="hidden" name="session_id" value="<?php echo esc_attr( $editing['id'] ?? 0 ); ?>">
         <?php wp_nonce_field( 'bh3_frontend_session_' . $id ); ?>
-        <div class="bh-session-grid"><div class="bh-wide"><label for="bh-day">Day</label><select id="bh-day" name="day_of_week" required><?php foreach ( $days as $num=>$day ) : ?><option value="<?php echo esc_attr( $num ); ?>" <?php selected( (int) ( $editing['day_of_week'] ?? 1 ), $num ); ?>><?php echo esc_html( $day ); ?></option><?php endforeach; ?></select></div>
+        <div class="bh-session-grid"><div class="bh-wide"><label for="bh-day">Day</label><select id="bh-day" name="day_of_week" required><?php foreach ( $days as $num=>$day ) : ?><option value="<?php echo esc_attr( $num ); ?>" <?php selected( (int) ( $editing['day_of_week'] ?? ( $picked_date ? (int) $picked->format( 'N' ) : 1 ) ), $num ); ?>><?php echo esc_html( $day ); ?></option><?php endforeach; ?></select></div>
         <div><label for="bh-start">Start time</label><input id="bh-start" type="time" name="start_time" value="<?php echo esc_attr( $editing ? substr( $editing['start_time'], 0, 5 ) : '' ); ?>" required></div>
         <div><label for="bh-end">End time</label><input id="bh-end" type="time" name="end_time" value="<?php echo esc_attr( $editing ? substr( $editing['end_time'], 0, 5 ) : '' ); ?>" required></div>
         <div class="bh-wide"><label for="bh-venue">Venue</label><select id="bh-venue" name="venue_id"><option value="0">No venue</option><?php foreach ( $assigned as $venue ) : ?><option value="<?php echo esc_attr( $venue['id'] ); ?>" <?php selected( (int) ( $editing['venue_id'] ?? 0 ), (int) $venue['id'] ); ?>><?php echo esc_html( $venue['name'] . ( $venue['town'] ? ' — ' . $venue['town'] : '' ) ); ?></option><?php endforeach; ?></select></div>
-        <div><label for="bh-first">First date (optional)</label><input id="bh-first" type="date" name="start_date" value="<?php echo esc_attr( $editing['start_date'] ?? '' ); ?>">
-        </div><div><label for="bh-last">Last date (optional)</label><input id="bh-last" type="date" name="end_date" value="<?php echo esc_attr( $editing['end_date'] ?? '' ); ?>">
+        <div><label for="bh-first">First date (optional)</label><input id="bh-first" type="date" name="start_date" value="<?php echo esc_attr( $editing['start_date'] ?? $picked_date ); ?>">
+        </div><div><label for="bh-last">Last date (optional)</label><input id="bh-last" type="date" name="end_date" value="<?php echo esc_attr( $editing['end_date'] ?? $picked_date ); ?>">
         </div></div>
         <p><label><input type="checkbox" name="allow_enquiry" value="1" <?php checked( ! empty( $enquiry_settings[(int) ( $editing['id'] ?? 0 )] ) ); ?>> Allow families to enquire about this session (Fluent Form 6)</label></p>
         <p><label><input type="checkbox" name="term_time_only" value="1" <?php checked( (int) ( $editing['term_time_only'] ?? 0 ), 1 ); ?>> Term time only</label></p>
