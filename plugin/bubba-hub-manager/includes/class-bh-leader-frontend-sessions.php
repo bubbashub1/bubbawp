@@ -48,6 +48,7 @@ final class BH_Leader_Frontend_Sessions_3 {
         }
         $session_titles = get_option( 'bh3_session_titles', array() );
         if ( ! is_array( $session_titles ) ) { $session_titles = array(); }
+        $booking_form_id = max( 1, absint( get_option( 'bh3_booking_form_id', 7 ) ) );
         $booking_settings = get_option( 'bh3_session_booking_config', array() );
         if ( ! is_array( $booking_settings ) ) { $booking_settings = array(); }
         $booking = $booking_settings[(int) ( $editing['id'] ?? 0 )] ?? array();
@@ -105,12 +106,12 @@ final class BH_Leader_Frontend_Sessions_3 {
         <fieldset class="bh-panel" style="margin:16px 0;padding:16px;border:1px solid #dce9e0;border-radius:12px">
           <legend><strong>Optional booking module</strong></legend>
           <p>Leave this disabled for drop-in classes. Enquiries above are separate from confirmed bookings.</p>
-          <p><label><input type="checkbox" name="enable_booking" value="1" <?php checked( ! empty( $booking['enabled'] ) ); ?>> Enable bookings and payments for this session (Fluent Form 7)</label></p>
+          <p><label><input type="checkbox" name="enable_booking" value="1" <?php checked( ! empty( $booking['enabled'] ) ); ?>> Enable bookings and payments for this session (Fluent Form <?php echo esc_html( $booking_form_id ); ?>)</label></p>
           <div class="bh-session-grid">
             <div><label for="bh-booking-price">Price (£ per place)</label><input id="bh-booking-price" type="number" name="booking_price" min="0" max="100000" step="0.01" value="<?php echo esc_attr( $booking['price'] ?? '' ); ?>" placeholder="0.00"></div>
             <div><label for="bh-booking-capacity">Total spaces</label><input id="bh-booking-capacity" type="number" name="booking_capacity" min="1" max="100000" step="1" value="<?php echo esc_attr( $booking['capacity'] ?? '' ); ?>" placeholder="Optional"></div>
           </div>
-          <p class="bh-thint">Fluent Form 7 will handle booking and payment. Until the form integration and payment confirmation are tested, enabling this setting does not accept bookings, collect payments or reserve places.</p>
+          <p class="bh-thint">Fluent Form <?php echo esc_html( $booking_form_id ); ?> is the planned booking and payment form. Until the form integration and payment confirmation are tested, enabling this setting does not accept bookings, collect payments or reserve places.</p>
         </fieldset>
         <p><label><input type="checkbox" name="term_time_only" value="1" <?php checked( (int) ( $editing['term_time_only'] ?? 0 ), 1 ); ?>> Term time only</label></p>
         <?php if ( ! $assigned ) : ?><p class="bh-thint">No venues linked yet. <a href="<?php echo esc_url( add_query_arg( 'activity_id', $id, home_url( '/leader/venues/' ) ) ); ?>">Add a venue</a> before assigning a location to sessions.</p><?php endif; ?>
