@@ -407,6 +407,26 @@ final class BH_Marketplace_Settings_3 {
         if ( is_wp_error( $result ) ) {
             return new WP_Error( 'event_persistence_failed', 'Event could not be recorded.', array( 'status' => 503 ) );
         }
+        // Confirmation is a separate opt-in gate; ingestion remains safe by default.
+        $confirmation_enabled = defined( 'BH3_ENABLE_TEST_BOOKING_CONFIRMATION' )
+            && BH3_ENABLE_TEST_BOOKING_CONFIRMATION === true;
+        $payment_event = in_array( $event['type'] ?? '', array(
+            'checkout.session.completed', 'checkout.session.async_payment_succeeded'
+        ), true );
+        if ( $confirmation_enabled && $payment_event ) {
+            $confirmed = self::confirm_verified_test_payment( $event );
+            if ( is_wp_error( $confirmed ) ) {
+                // Stripe retries 503; preserve the event for investigation.
+                return new WP_Error( 'payment_confirmation_pending',
+                    'Payment confirmation requires reconciliation.', array( 'status' => 503 ) );
+            }
+            return rest_ensure_response( array(
+                'received' => true,
+                'duplicate' => $result['duplicate'],
+                'booking_confirmed' => ! empty( $confirmed['confirmed'] ),
+                'already_paid' => ! empty( $confirmed['already_paid'] ),
+            ) );
+        }
         return rest_ensure_response( array(
             'received' => true,
             'duplicate' => $result['duplicate'],
