@@ -14,6 +14,7 @@ final class BH_Marketplace_Settings_3 {
         add_action( 'admin_post_bh3_save_payout_method', array( __CLASS__, 'save_method' ) );
         add_shortcode( 'bh_leader_payout_settings', array( __CLASS__, 'leader_form' ) );
         add_shortcode( 'bh_parent_booking', array( __CLASS__, 'parent_booking_widget' ) );
+        add_shortcode( 'bh_booking_readiness', array( __CLASS__, 'booking_readiness_preview' ) );
     }
     public static function rate() {
         $value = get_option( 'bh3_commission_percent', '2.50' );
@@ -787,6 +788,50 @@ final class BH_Marketplace_Settings_3 {
         }
         return array( 'leader_user_id' => $leader_id, 'email' => $leader->user_email );
     }
+    /**
+     * Staging-only, administrator-only booking readiness preview.
+     * Read-only: never reserves a place, sends email or initiates checkout.
+     * Usage: [bh_booking_readiness session_id="123"]
+     */
+    public static function booking_readiness_preview( $atts ) {
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
+            || ! current_user_can( 'manage_options' ) ) {
+            return '';
+        }
+        $atts = shortcode_atts( array( 'session_id' => 0 ), $atts, 'bh_booking_readiness' );
+        $session_id = absint( $atts['session_id'] );
+        if ( ! $session_id ) {
+            return '<p>Provide a session ID, for example [bh_booking_readiness session_id="123"].</p>';
+        }
+        $quote = self::quote_session( $session_id, 1 );
+        $items = array();
+        $items[] = array( 'Session ID', (string) $session_id );
+        $items[] = array( 'Session booking quote', is_wp_error( $quote )
+            ? 'Not ready: ' . $quote->get_error_message()
+            : 'Ready: £' . number_format( $quote['unit_price_pence'] / 100, 2 ) . ' per place' );
+        if ( ! is_wp_error( $quote ) ) {
+            $items[] = array( 'Capacity configured', ! empty( $quote['capacity'] ) ? 'Yes (' . absint( $quote['capacity'] ) . ' places)' : 'No' );
+            $items[] = array( 'Commission', number_format( self::rate(), 2 ) . '%' );
+            $recipient = self::verified_booking_leader_recipient( $quote['organiser_id'] );
+            $items[] = array( 'Verified leader email', is_wp_error( $recipient )
+                ? 'Not ready: ' . $recipient->get_error_message() : 'Verified (address hidden)' );
+        }
+        $names = class_exists( 'BH_Schema_3' ) ? BH_Schema_3::booking_structure_audit() : array();
+        $ready = ! empty( $names );
+        foreach ( $names as $item ) {
+            if ( ! $item['exists'] || $item['missing_columns'] || $item['missing_indexes'] ) {
+                $ready = false;
+                break;
+            }
+        }
+        $items[] = array( 'Booking database', $ready ? 'Expected columns and indexes present' : 'Database structure needs review' );
+        $html = '<section class="bh3-booking-readiness"><h3>Booking readiness — staging only</h3><dl>';
+        foreach ( $items as $item ) {
+            $html .= '<dt><strong>' . esc_html( $item[0] ) . '</strong></dt><dd>' . esc_html( $item[1] ) . '</dd>';
+        }
+        return $html . '</dl><p>Read-only preview. No booking has been made and payments remain disabled.</p></section>';
+    }
+
     public static function booking_profile_choices( $customer_user_id ) {
         $customer_user_id = absint( $customer_user_id );
         if ( ! is_user_logged_in() || $customer_user_id !== get_current_user_id() ) { return array(); }
