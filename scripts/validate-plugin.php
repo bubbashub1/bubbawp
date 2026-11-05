@@ -54,7 +54,7 @@ foreach (glob($root . '/**/*.php') ?: [] as $file) {
             strpos($source, 'public static function create()') !== false &&
             strpos($source, "!self::staging() || !current_user_can('manage_options')") !== false &&
             strpos($source, "check_admin_referer('bh3_create_family_tables')") !== false &&
-            strpos($source, "(!isset($_POST['confirm']) || $_POST['confirm']!=='1')") !== false &&
+            strpos($source, 'if (!isset($_POST[\'confirm\']) || $_POST[\'confirm\']!==\'1\')') !== false &&
             strpos($source, 'if (self::exists($table)) continue;') !== false &&
             strpos($source, "staging.bubbahub.co.uk") !== false) {
             continue;
