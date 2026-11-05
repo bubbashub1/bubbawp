@@ -1255,6 +1255,19 @@ final class BH_Marketplace_Settings_3 {
             || ! is_user_logged_in() ) {
             return new WP_Error( 'bound_checkout_disabled', 'Verified test checkout is unavailable.', array( 'status' => 404 ) );
         }
+        // Form 7 is a separate consent record, not a booking-details form.
+        // Until an independently owned, versioned consent submission is
+        // verified and bound to this reservation, payment must fail closed.
+        $consent_form_id = absint( get_option( 'bh3_booking_consent_form_id', 7 ) );
+        $booking_form_id = absint( get_option( 'bh3_booking_form_id', 0 ) );
+        if ( ! $booking_form_id || $booking_form_id === $consent_form_id ) {
+            return new WP_Error( 'booking_form_not_configured',
+                'A separate booking-details form must be configured.', array( 'status' => 503 ) );
+        }
+        if ( $consent_form_id ) {
+            return new WP_Error( 'separate_consent_binding_pending',
+                'Consent verification is not yet connected to test checkout.', array( 'status' => 503 ) );
+        }
         $user_id = get_current_user_id();
         $submission_id = absint( $request->get_param( 'submission_id' ) );
         $session_id = absint( $request->get_param( 'session_id' ) );
