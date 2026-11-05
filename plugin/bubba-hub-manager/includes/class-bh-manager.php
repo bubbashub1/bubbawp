@@ -293,6 +293,17 @@ final class BH_Manager_3 {
                 echo '<li><code>' . esc_html( $item['table'] ) . '</code>: ' . esc_html( $item['exists'] ? 'Exists — will be preserved' : 'Missing — can be created' ) . '</li>';
             }
             echo '</ul>';
+            echo '<h3>Booking table structure (read-only)</h3><ul>';
+            foreach ( BH_Schema_3::booking_structure_audit() as $item ) {
+                $missing = array_merge(
+                    array_map( function ( $name ) { return 'column: ' . $name; }, $item['missing_columns'] ),
+                    array_map( function ( $name ) { return 'index: ' . $name; }, $item['missing_indexes'] )
+                );
+                echo '<li><code>' . esc_html( $item['table'] ) . '</code>: ';
+                echo esc_html( ! $item['exists'] ? 'Table missing' : ( $missing ? 'Review needed — ' . implode( ', ', $missing ) : 'Expected columns and indexes present' ) );
+                echo '</li>';
+            }
+            echo '</ul>';
             $message = get_transient( 'bh3_booking_schema_result_' . get_current_user_id() );
             if ( $message ) {
                 echo '<div class="notice notice-info"><p>' . esc_html( $message ) . '</p></div>';
