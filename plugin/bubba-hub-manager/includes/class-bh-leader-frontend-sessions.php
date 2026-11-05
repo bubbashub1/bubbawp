@@ -12,7 +12,7 @@ final class BH_Leader_Frontend_Sessions_3 {
         if ( ! $owner ) { return null; }
         global $wpdb;
         $table = $wpdb->prefix . 'activities';
-        return $wpdb->get_row( $wpdb->prepare( "SELECT id,title FROM `{$table}` WHERE id=%d AND organiser_id=%d AND status='draft' LIMIT 1", $id, $owner ), ARRAY_A );
+        return $wpdb->get_row( $wpdb->prepare( "SELECT id,title FROM `{$table}` WHERE id=%d AND organiser_id=%d AND status IN ('draft','published') LIMIT 1", $id, $owner ), ARRAY_A );
     }
     public static function register() {
         add_shortcode( 'bh_leader_timetable', array( __CLASS__, 'render' ) );
@@ -27,7 +27,7 @@ final class BH_Leader_Frontend_Sessions_3 {
     public static function render() {
         $id = absint( $_GET['activity_id'] ?? 0 );
         $activity = self::activity( $id );
-        if ( ! $activity ) { return '<p>Timetable unavailable. Sign in and choose one of your draft activities.</p>'; }
+        if ( ! $activity ) { return '<p>Timetable unavailable. Sign in and choose one of your activities.</p>'; }
         global $wpdb;
         $sessions = $wpdb->prefix . 'sessions';
         $venues = $wpdb->prefix . 'venues';
@@ -46,6 +46,8 @@ final class BH_Leader_Frontend_Sessions_3 {
         if ( $assignments_ready && $editing ) {
             $linked_ids = array_map( 'intval', $wpdb->get_col( $wpdb->prepare( "SELECT activity_id FROM `{$assignment_table}` WHERE session_id=%d", (int) $editing['id'] ) ) );
         }
+        $session_titles = get_option( 'bh3_session_titles', array() );
+        if ( ! is_array( $session_titles ) ) { $session_titles = array(); }
         $booking_settings = get_option( 'bh3_session_booking_config', array() );
         if ( ! is_array( $booking_settings ) ) { $booking_settings = array(); }
         $booking = $booking_settings[(int) ( $editing['id'] ?? 0 )] ?? array();
@@ -59,7 +61,7 @@ final class BH_Leader_Frontend_Sessions_3 {
         <section class="bh-leader-timetable">
 
         
-        <header class="bh-thero"><p>MY TIMETABLE · DRAFT ACTIVITY</p><h1><?php echo esc_html( $activity['title'] ); ?></h1><p>Plan weekly sessions and keep your schedule accurate.</p></header>
+        <header class="bh-thero"><p>BOOKINGS & TIMETABLE</p><h1><?php echo esc_html( $activity['title'] ); ?></h1><p>Plan weekly sessions and keep your schedule accurate.</p></header>
         <p class="bh-thint">These are timetable entries, not bookings. Times follow your WordPress site's time format.</p>
         <?php if ( isset( $_GET['notice'] ) ) : ?><p class="bh-tnotice" role="status"><?php echo esc_html( sanitize_text_field( wp_unslash( $_GET['notice'] ) ) ); ?></p><?php endif; ?>
         <div class="bh-panel"><h2>Current sessions (<?php echo esc_html( count( $rows ) ); ?>)</h2>
@@ -80,6 +82,7 @@ final class BH_Leader_Frontend_Sessions_3 {
         <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
         <input type="hidden" name="action" value="bh3_frontend_session_save"><input type="hidden" name="activity_id" value="<?php echo esc_attr( $id ); ?>"><input type="hidden" name="session_id" value="<?php echo esc_attr( $editing['id'] ?? 0 ); ?>">
         <?php wp_nonce_field( 'bh3_frontend_session_' . $id ); ?>
+        <p><label for="bh-session-title">Session title</label><input id="bh-session-title" type="text" name="session_title" maxlength="160" required value="<?php echo esc_attr( $session_titles[(int) ( $editing['id'] ?? 0 )] ?? $activity['title'] ); ?>" placeholder="e.g. Little Explorers"></p>
         <div class="bh-session-grid"><div class="bh-wide"><label for="bh-day">Day</label><select id="bh-day" name="day_of_week" required><?php foreach ( $days as $num=>$day ) : ?><option value="<?php echo esc_attr( $num ); ?>" <?php selected( (int) ( $editing['day_of_week'] ?? ( $picked_date ? (int) $picked->format( 'N' ) : 1 ) ), $num ); ?>><?php echo esc_html( $day ); ?></option><?php endforeach; ?></select></div>
         <div><label for="bh-start">Start time</label><input id="bh-start" type="time" name="start_time" value="<?php echo esc_attr( $editing ? substr( $editing['start_time'], 0, 5 ) : '' ); ?>" required></div>
         <div><label for="bh-end">End time</label><input id="bh-end" type="time" name="end_time" value="<?php echo esc_attr( $editing ? substr( $editing['end_time'], 0, 5 ) : '' ); ?>" required></div>
@@ -120,7 +123,9 @@ final class BH_Leader_Frontend_Sessions_3 {
         if ( ! self::enabled() ) { wp_die( 'Not permitted.', '', array( 'response'=>403 ) ); }
         $id = absint( $_POST['activity_id'] ?? 0 );
         check_admin_referer( 'bh3_frontend_session_' . $id );
-        if ( ! self::activity( $id ) ) { wp_die( 'Draft not found.', '', array( 'response'=>403 ) ); }
+        if ( ! self::activity( $id ) ) { wp_die( 'Activity not found.', '', array( 'response'=>403 ) ); }
+        $title = isset( $_POST['session_title'] ) && is_string( $_POST['session_title'] ) ? sanitize_text_field( wp_unslash( $_POST['session_title'] ) ) : '';
+        if ( $title === '' || strlen( $title ) > 160 ) { wp_die( 'Enter a session title (up to 160 characters).', '', array( 'response'=>400 ) ); }
         $day = filter_var( wp_unslash( $_POST['day_of_week'] ?? '' ), FILTER_VALIDATE_INT );
         $start = (string) wp_unslash( $_POST['start_time'] ?? '' );
         $end = (string) wp_unslash( $_POST['end_time'] ?? '' );
@@ -156,6 +161,10 @@ final class BH_Leader_Frontend_Sessions_3 {
         else { $data['status']='scheduled'; $data['created_at']=$now; $result=$wpdb->insert( $table, $data ); }
         if ( $result === false ) { wp_die( 'Could not save session.', '', array( 'response'=>500 ) ); }
         $saved_session_id = $session ?: (int) $wpdb->insert_id;
+        $titles = get_option( 'bh3_session_titles', array() );
+        if ( ! is_array( $titles ) ) { $titles = array(); }
+        $titles[$saved_session_id] = $title;
+        update_option( 'bh3_session_titles', $titles, false );
         if ( $saved_session_id ) {
             $flags = get_option( 'bh3_session_enquiry_enabled', array() );
             if ( ! is_array( $flags ) ) { $flags = array(); }
@@ -203,6 +212,10 @@ final class BH_Leader_Frontend_Sessions_3 {
         if ( $result ) {
             $configs = get_option( 'bh3_session_booking_config', array() );
             if ( is_array( $configs ) ) { unset( $configs[$session] ); update_option( 'bh3_session_booking_config', $configs, false ); }
+        }
+        if ( $result ) {
+            $titles = get_option( 'bh3_session_titles', array() );
+            if ( is_array( $titles ) ) { unset( $titles[$session] ); update_option( 'bh3_session_titles', $titles, false ); }
         }
         self::back( $id, 'Session removed.' );
     }
