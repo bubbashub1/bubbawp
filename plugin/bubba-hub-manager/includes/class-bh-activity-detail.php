@@ -133,7 +133,7 @@ final class BH_Activity_Detail_3 {
             'organiser' => (string) ( $activity['organiser_name'] ?? '' ),
             'website_url' => (string) ( $activity['organiser_website'] ?? '' ),
             'price' => ! empty( $activity['is_free'] ) ? 'Free' : ( isset( $activity['price_from'] ) && $activity['price_from'] !== null ? 'From £' . number_format( (float) $activity['price_from'], 2 ) : 'Ask organiser' ),
-            'age_range' => ( isset( $activity['age_min_months'] ) || isset( $activity['age_max_months'] ) ) ? (string) ( $activity['age_min_months'] ?? '0' ) . '–' . (string) ( $activity['age_max_months'] ?? 'any' ) . ' months' : '',
+            'age_range' => ( isset( $activity['age_min_months'], $activity['age_max_months'] ) && is_numeric( $activity['age_min_months'] ) && is_numeric( $activity['age_max_months'] ) && (int) $activity['age_max_months'] >= (int) $activity['age_min_months'] && ( (int) $activity['age_max_months'] > 0 || (int) $activity['age_min_months'] > 0 ) ) ? (string) (int) $activity['age_min_months'] . '–' . (string) (int) $activity['age_max_months'] . ' months' : '',
             'location' => (string) ( $venue['town'] ?? '' ),
             'venue' => (string) ( $venue['name'] ?? '' ),
             'address' => implode( ', ', array_filter( array( $venue['address_line1'] ?? '', $venue['town'] ?? '', $venue['postcode'] ?? '' ) ) ),
