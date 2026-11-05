@@ -3,7 +3,7 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 final class BH_Schema_3 {
-    public const VERSION = '0.5.0';
+    public const VERSION = '0.6.0';
 
     public static function table_names() {
         global $wpdb;
@@ -17,6 +17,7 @@ final class BH_Schema_3 {
             'session_listing_links' => $prefix . 'session_listing_links',
             'bookings' => $prefix . 'bh3_bookings',
             'stripe_events' => $prefix . 'bh3_stripe_events',
+            'booking_consents' => $prefix . 'bh3_booking_consents',
         );
     }
 
@@ -132,6 +133,20 @@ final class BH_Schema_3 {
                 KEY session_occurrence (session_id,occurrence_date),
                 KEY payment_status (payment_status),
                 KEY organiser_id (organiser_id)
+            ) $charset;",
+            "CREATE TABLE {$t['booking_consents']} (
+                id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+                booking_id bigint(20) unsigned NOT NULL,
+                consent_key varchar(80) NOT NULL,
+                consent_version varchar(40) NOT NULL,
+                response varchar(20) NOT NULL,
+                response_at datetime NOT NULL,
+                actor_user_id bigint(20) unsigned NULL,
+                source varchar(20) NOT NULL DEFAULT 'booking',
+                created_at datetime NOT NULL,
+                PRIMARY KEY  (id),
+                UNIQUE KEY booking_consent_version (booking_id,consent_key,consent_version),
+                KEY booking_id (booking_id)
             ) $charset;",
             "CREATE TABLE {$t['sessions']} (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
