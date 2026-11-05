@@ -7,16 +7,15 @@ final class BH_Activity_Detail_3 {
         add_action( 'init', array( __CLASS__, 'register_activity_rewrite' ) );
         add_filter( 'query_vars', array( __CLASS__, 'register_query_vars' ) );
         add_filter( 'redirect_canonical', array( __CLASS__, 'preserve_activity_permalink' ), 10, 2 );
-        add_filter( 'the_content', array( __CLASS__, 'render_pretty_activity_content' ), 20 );
         add_filter( 'bh_theme_activity_id_for_slug', array( __CLASS__, 'activity_id_for_slug' ), 10, 2 );
         add_filter( 'bh_theme_activity_data', array( __CLASS__, 'theme_activity_data' ), 10, 2 );
     }
     public static function register_activity_rewrite() {
         if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) { return; }
         add_rewrite_rule( '^activity/([^/]+)/?$', 'index.php?pagename=activity&bh_activity_slug=$matches[1]', 'top' );
-        if ( get_option( 'bh3_activity_rewrite_version' ) !== '1' ) {
+        if ( get_option( 'bh3_activity_rewrite_version' ) !== '2' ) {
             flush_rewrite_rules( false );
-            update_option( 'bh3_activity_rewrite_version', '1', false );
+            update_option( 'bh3_activity_rewrite_version', '2', false );
         }
     }
     public static function register_query_vars( $vars ) {
@@ -33,22 +32,6 @@ final class BH_Activity_Detail_3 {
         return (int) $wpdb->get_var( $wpdb->prepare(
             "SELECT id FROM `{$table}` WHERE slug=%s AND status IN ('published','publish') LIMIT 1", $slug
         ) );
-    }
-    public static function render_pretty_activity_content( $content ) {
-        if ( ! is_main_query() || ! in_the_loop() || ! is_page( 'activity' ) ) { return $content; }
-        $slug = sanitize_title( (string) get_query_var( 'bh_activity_slug', '' ) );
-        if ( ! $slug ) { return $content; }
-        global $wpdb;
-        $table = $wpdb->prefix . 'activities';
-        $id = (int) $wpdb->get_var( $wpdb->prepare(
-            "SELECT id FROM `{$table}` WHERE slug=%s AND status IN ('published','publish') LIMIT 1", $slug
-        ) );
-        if ( ! $id ) { return '<p class="bh-activity-notice">Activity not found or not published.</p>'; }
-        // Replace the static Move with ME design reference with real activity data.
-        if ( shortcode_exists( 'bubba_activity' ) ) {
-            return do_shortcode( '[bubba_activity id="' . $id . '"]' );
-        }
-        return do_shortcode( '[bubbahub_activity id="' . $id . '"]' );
     }
     public static function preserve_activity_permalink( $redirect_url, $requested_url ) {
         if ( get_query_var( 'bh_activity_slug', '' ) ) { return false; }
@@ -109,12 +92,21 @@ final class BH_Activity_Detail_3 {
             );
         }
         $venue = $venues[0] ?? array();
+        $duration = '';
+        if ( ! empty( $sessions[0]['start_time'] ) && ! empty( $sessions[0]['end_time'] ) ) {
+            $minutes = ( strtotime( $sessions[0]['end_time'] ) - strtotime( $sessions[0]['start_time'] ) ) / 60;
+            if ( $minutes > 0 && $minutes <= 1440 ) { $duration = (string) round( $minutes ) . ' mins'; }
+        }
+        $image_url = (string) ( $activity['image_path'] ?? '' );
+        if ( $image_url && ! wp_http_validate_url( $image_url ) ) { $image_url = ''; }
+        $booking_url = (string) ( $activity['booking_url'] ?? '' );
+        if ( $booking_url && ! wp_http_validate_url( $booking_url ) ) { $booking_url = ''; }
         return array(
-            'image_url' => (string) ( $activity['image_path'] ?? '' ),
+            'image_url' => $image_url,
             'summary' => wp_trim_words( wp_strip_all_tags( (string) ( $activity['description'] ?? '' ) ), 24 ),
-            'booking_url' => (string) ( $activity['booking_url'] ?? '' ),
+            'booking_url' => $booking_url,
             'term_time' => array_filter( $schedule, static function ( $entry ) { return ! empty( $entry['term_time'] ); } ) ? 'Yes' : 'No',
-            'session_length' => ! empty( $sessions[0]['start_time'] ) && ! empty( $sessions[0]['end_time'] ) ? (string) round( ( strtotime( $sessions[0]['end_time'] ) - strtotime( $sessions[0]['start_time'] ) ) / 60 ) . ' mins' : '',
+            'session_length' => $duration,
             'title' => (string) $activity['title'],
             'description' => (string) ( $activity['description'] ?? '' ),
             'organiser' => (string) ( $activity['organiser_name'] ?? '' ),
