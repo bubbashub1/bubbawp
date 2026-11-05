@@ -1329,46 +1329,14 @@ final class BH_Marketplace_Settings_3 {
         ) );
     }
     public static function start_test_booking_checkout( $request ) {
-        // Temporary QA-only bypass. Until Form 7 submission ownership, child
-        // consent and selected-session binding are checked server-side, the
-        // REST endpoint must enforce the same disabled-by-default guard as UI.
-        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
-            || ! defined( 'BH3_ENABLE_UNLINKED_BOOKING_TEST_UI' ) || BH3_ENABLE_UNLINKED_BOOKING_TEST_UI !== true
-            || ! defined( 'BH3_ENABLE_PARENT_TEST_BOOKING' ) || BH3_ENABLE_PARENT_TEST_BOOKING !== true
-            || ! defined( 'BH3_ENABLE_BOOKING_RESERVATIONS' ) || BH3_ENABLE_BOOKING_RESERVATIONS !== true
-            || ! defined( 'BH3_ENABLE_STRIPE_TEST_CHECKOUT' ) || BH3_ENABLE_STRIPE_TEST_CHECKOUT !== true ) {
-            return new WP_Error( 'booking_disabled', 'Test booking is unavailable.', array( 'status' => 404 ) );
-        }
-        $user_id = get_current_user_id();
-        if ( ! $user_id ) {
-            return new WP_Error( 'authentication_required', 'Please sign in.', array( 'status' => 401 ) );
-        }
-        $session_id = absint( $request->get_param( 'session_id' ) );
-        $date = (string) $request->get_param( 'occurrence_date' );
-        $places = absint( $request->get_param( 'places' ) );
-        if ( $session_id < 1 || $places < 1 || $places > 20 || ! preg_match( '/^\\d{4}-\\d{2}-\\d{2}$/', $date ) ) {
-            return new WP_Error( 'invalid_booking_input', 'Invalid booking selection.', array( 'status' => 400 ) );
-        }
-        // Do not create a capacity hold if Checkout is known to be unavailable.
-        if ( self::stripe_status()['mode'] !== 'test' || ! self::stripe_status()['keys_configured']
-            || self::policy()['processing_fees'] !== 'platform' ) {
-            return new WP_Error( 'checkout_not_configured', 'Test checkout is not configured.', array( 'status' => 503 ) );
-        }
-        $reservation = self::reserve_occurrence( $session_id, $date, $places, $user_id );
-        if ( is_wp_error( $reservation ) ) { return $reservation; }
-        $checkout = self::create_test_checkout( $reservation['booking_id'], $user_id );
-        if ( is_wp_error( $checkout ) ) {
-            // Hold expires automatically; do not delete a reservation after an
-            // uncertain Stripe response, as a payment may still be in flight.
-            return new WP_Error( 'checkout_pending_review',
-                'Checkout could not be started. Your temporary hold will expire automatically.',
-                array( 'status' => 503 ) );
-        }
-        return rest_ensure_response( array(
-            'booking_reference' => $reservation['reference'],
-            'checkout_url' => $checkout['checkout_url'],
-            'test_mode' => true,
-        ) );
+        // Retired: this endpoint does not require a verified attendee and
+        // consent submission. Never create holds or Stripe sessions here,
+        // even if legacy QA feature flags have been enabled.
+        return new WP_Error(
+            'unlinked_checkout_retired',
+            'This checkout path is unavailable. Use the verified booking flow.',
+            array( 'status' => 404 )
+        );
     }
     public static function register_test_webhook_route() {
         if ( ! defined( 'BH3_ENABLE_STRIPE_TEST_WEBHOOK' ) || BH3_ENABLE_STRIPE_TEST_WEBHOOK !== true ) { return; }
