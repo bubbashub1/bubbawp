@@ -304,6 +304,49 @@ final class BH_Marketplace_Settings_3 {
         }
         return new WP_Error( 'checkout_not_ready', 'Checkout awaits webhook confirmation and idempotency implementation.' );
     }
+    /**
+     * Internal-only signed Stripe event verifier. Does not mutate booking status.
+     * Call from a dedicated staging webhook controller after registration.
+     */
+    public static function verify_test_webhook( $raw_body, $signature_header ) {
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
+            || ! defined( 'BH3_STRIPE_TEST_WEBHOOK_SECRET' ) ) {
+            return new WP_Error( 'webhook_disabled', 'Stripe test webhook is not configured.' );
+        }
+        $secret = constant( 'BH3_STRIPE_TEST_WEBHOOK_SECRET' );
+        if ( ! is_string( $secret ) || strpos( $secret, 'whsec_' ) !== 0
+            || ! is_string( $raw_body ) || ! is_string( $signature_header )
+            || strlen( $raw_body ) > 1048576 ) {
+            return new WP_Error( 'invalid_webhook', 'Invalid webhook request.' );
+        }
+        $timestamp = null;
+        $signatures = array();
+        foreach ( explode( ',', $signature_header ) as $part ) {
+            $pair = explode( '=', trim( $part ), 2 );
+            if ( count( $pair ) !== 2 ) { continue; }
+            if ( $pair[0] === 't' && ctype_digit( $pair[1] ) ) { $timestamp = (int) $pair[1]; }
+            if ( $pair[0] === 'v1' && preg_match( '/^[a-f0-9]{64}$/i', $pair[1] ) ) {
+                $signatures[] = strtolower( $pair[1] );
+            }
+        }
+        if ( ! $timestamp || abs( time() - $timestamp ) > 300 || ! $signatures ) {
+            return new WP_Error( 'webhook_signature_invalid', 'Invalid or expired Stripe signature.' );
+        }
+        $expected = hash_hmac( 'sha256', $timestamp . '.' . $raw_body, $secret );
+        $matched = false;
+        foreach ( $signatures as $candidate ) {
+            $matched = hash_equals( $expected, $candidate ) || $matched;
+        }
+        if ( ! $matched ) {
+            return new WP_Error( 'webhook_signature_invalid', 'Stripe signature verification failed.' );
+        }
+        $event = json_decode( $raw_body, true );
+        if ( ! is_array( $event ) || empty( $event['id'] ) || empty( $event['type'] )
+            || empty( $event['data']['object'] ) || empty( $event['livemode'] ) === false ) {
+            return new WP_Error( 'invalid_stripe_event', 'Invalid Stripe test event.' );
+        }
+        return $event;
+    }
     public static function stripe_status() {
         $mode = get_option( 'bh3_stripe_mode', 'test' );
         $mode = $mode === 'live' ? 'live' : 'test';
