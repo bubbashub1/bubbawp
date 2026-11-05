@@ -557,6 +557,42 @@ final class BH_Marketplace_Settings_3 {
         return $attendees;
     }
     /** Parent-only profile choices for the booking preview. */
+    /**
+     * Resolve a leader notification recipient without trusting a listing email.
+     * Verification must be recorded by the account-verification workflow;
+     * this method does not send email or expose the address to parents.
+     */
+    public static function verified_booking_leader_recipient( $organiser_id ) {
+        $organiser_id = absint( $organiser_id );
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
+            || ! $organiser_id ) {
+            return new WP_Error( 'recipient_unavailable', 'Verified leader recipient is unavailable.' );
+        }
+        $users = get_users( array(
+            'meta_key' => 'bh3_organiser_id',
+            'meta_value' => (string) $organiser_id,
+            'fields' => 'ID',
+            'number' => 2,
+        ) );
+        if ( count( $users ) !== 1 ) {
+            return new WP_Error( 'leader_link_unverified', 'A unique leader account is required.' );
+        }
+        $leader_id = (int) $users[0];
+        $leader = get_userdata( $leader_id );
+        if ( ! $leader || ! is_email( $leader->user_email ) ) {
+            return new WP_Error( 'leader_email_missing', 'Leader account email is unavailable.' );
+        }
+        // Do not assume WordPress user_email alone proves mailbox ownership.
+        // Only an explicit verification timestamp tied to this exact address
+        // may authorise delivery of children's personal information.
+        $verified_email = (string) get_user_meta( $leader_id, 'bh3_verified_booking_email', true );
+        $verified_at = (string) get_user_meta( $leader_id, 'bh3_verified_booking_email_at', true );
+        if ( ! hash_equals( strtolower( trim( $leader->user_email ) ), strtolower( trim( $verified_email ) ) )
+            || ! $verified_at || ! strtotime( $verified_at ) ) {
+            return new WP_Error( 'leader_email_unverified', 'Leader email must be verified before booking details can be sent.' );
+        }
+        return array( 'leader_user_id' => $leader_id, 'email' => $leader->user_email );
+    }
     public static function booking_profile_choices( $customer_user_id ) {
         $customer_user_id = absint( $customer_user_id );
         if ( ! is_user_logged_in() || $customer_user_id !== get_current_user_id() ) { return array(); }
