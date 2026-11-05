@@ -216,16 +216,25 @@ final class BH_Directory_3 {
             echo '<p class="bh3-results-summary" role="status">Showing activities ' . esc_html( (string) $first_result ) . '–' . esc_html( (string) $last_result ) . ( $more ? ' · More results available' : '' ) . '</p>';
         }
         echo '<p class="bh3-map-note">Select a map pin, then choose “Show listing” to highlight its activity card below.</p><div class="bh3-cards">';
-        $detail_page = get_page_by_path( 'activity-preview' );
-        $detail_base_url = $detail_page && has_shortcode( (string) $detail_page->post_content, 'bubbahub_activity' )
-            ? get_permalink( $detail_page ) : '';
+        // The shared /activity/ page renders the selected listing via bh_activity.
+        $detail_page = get_page_by_path( 'activity' );
+        $detail_base_url = $detail_page ? get_permalink( $detail_page ) : '';
+        if ( ! $detail_base_url ) {
+            $preview_page = get_page_by_path( 'activity-preview' );
+            $detail_base_url = $preview_page && has_shortcode( (string) $preview_page->post_content, 'bubbahub_activity' )
+                ? get_permalink( $preview_page ) : '';
+        }
         foreach ( $rows as $row ) {
             $detail_url = $detail_base_url ? add_query_arg( 'bh_activity', absint( $row['id'] ), $detail_base_url ) : '';
             echo '<article data-activity-id="' . esc_attr( (string) absint( $row['id'] ) ) . '">';
             $image_url = isset( $row['image_path'] ) ? trim( (string) $row['image_path'] ) : '';
             $image_scheme = strtolower( (string) wp_parse_url( $image_url, PHP_URL_SCHEME ) );
             if ( $image_url && in_array( $image_scheme, array( 'http', 'https' ), true ) ) {
-                echo '<div class="bh3-card-image"><img src="' . esc_url( $image_url ) . '" alt="" loading="lazy" decoding="async"></div>';
+                echo '<div class="bh3-card-image">';
+                if ( $detail_url ) { echo '<a href="' . esc_url( $detail_url ) . '" aria-label="' . esc_attr( 'View ' . $row['title'] ) . '">'; }
+                echo '<img src="' . esc_url( $image_url ) . '" alt="" loading="lazy" decoding="async">';
+                if ( $detail_url ) { echo '</a>'; }
+                echo '</div>';
             } else {
                 echo '<div class="bh3-card-image bh3-card-image-empty" aria-hidden="true"><span>BH</span></div>';
             }
