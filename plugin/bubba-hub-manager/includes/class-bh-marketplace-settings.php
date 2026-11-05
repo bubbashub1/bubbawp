@@ -884,22 +884,6 @@ final class BH_Marketplace_Settings_3 {
         echo '</section>';
         return ob_get_clean();
     }
-    public static function register_test_booking_route() {
-        if ( ! defined( 'BH3_ENABLE_PARENT_TEST_BOOKING' ) || BH3_ENABLE_PARENT_TEST_BOOKING !== true ) { return; }
-        register_rest_route( 'bubba-hub/v3', '/test-booking-checkout', array(
-            'methods' => 'POST',
-            'callback' => array( __CLASS__, 'start_test_booking_checkout' ),
-            'permission_callback' => function () { return is_user_logged_in(); },
-            'args' => array(
-                'session_id' => array( 'required' => true, 'type' => 'integer', 'minimum' => 1 ),
-                'occurrence_date' => array( 'required' => true, 'type' => 'string', 'pattern' => '^\\d{4}-\\d{2}-\\d{2}
-        if ( ! defined( 'BH3_ENABLE_STRIPE_TEST_WEBHOOK' ) || BH3_ENABLE_STRIPE_TEST_WEBHOOK !== true ) { return; }
-        register_rest_route( 'bubba-hub/v3', '/stripe-test-webhook', array(
-            'methods' => 'POST',
-            'callback' => array( __CLASS__, 'receive_test_webhook' ),
-            'permission_callback' => '__return_true',
-        ) );
-    }
     public static function receive_test_webhook( $request ) {
         if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
             || ! defined( 'BH3_ENABLE_STRIPE_TEST_WEBHOOK' ) || BH3_ENABLE_STRIPE_TEST_WEBHOOK !== true ) {
