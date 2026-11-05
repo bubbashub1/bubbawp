@@ -976,18 +976,6 @@ final class BH_Marketplace_Settings_3 {
             $wpdb->get_var( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $submission_lock ) );
         }
     }
-    public static function register_parent_booking_binding_route() {
-        if ( ! defined( 'BH3_ENABLE_BOOKING_FORM_BINDING' ) || BH3_ENABLE_BOOKING_FORM_BINDING !== true ) { return; }
-        register_rest_route( 'bubba-hub/v3', '/parent-booking-bind', array(
-            'methods' => 'POST',
-            'callback' => array( __CLASS__, 'receive_parent_booking_binding' ),
-            'permission_callback' => function () { return is_user_logged_in(); },
-            'args' => array(
-                'booking_id' => array( 'required' => true, 'type' => 'integer', 'minimum' => 1 ),
-                'submission_id' => array( 'required' => true, 'type' => 'integer', 'minimum' => 1 ),
-            ),
-        ) );
-    }
     public static function receive_parent_booking_binding( $request ) {
         if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
             || ! defined( 'BH3_ENABLE_BOOKING_FORM_BINDING' ) || BH3_ENABLE_BOOKING_FORM_BINDING !== true
