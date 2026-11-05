@@ -16,8 +16,9 @@ final class BH_Leader_Email_Verification_3 {
     }
     public static function verified( $user_id ) {
         $user = get_userdata( (int) $user_id );
-        return $user && is_email( $user->user_email )
-            && strtolower( trim( (string) get_user_meta( $user_id, self::VERIFIED, true ) ) ) === strtolower( trim( $user->user_email ) );
+        // Fail closed until Simple Membership's activation-completed signal is integrated.
+        // An active membership or the earlier custom token must not grant publishing.
+        return false;
     }
     public static function send() {
         if ( ! is_user_logged_in() ) wp_die( 'Sign in to verify your email.', '', array( 'response' => 403 ) );
