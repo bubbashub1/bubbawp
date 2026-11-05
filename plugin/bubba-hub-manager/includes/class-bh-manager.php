@@ -127,6 +127,8 @@ final class BH_Manager_3 {
         BH_Activity_Detail_3::register();
         add_action( 'admin_menu', array( __CLASS__, 'register_admin_page' ) );
         add_action( 'admin_menu', array( __CLASS__, 'register_workstreams_page' ), 30 );
+        // Keep legacy staging screens reachable by their existing URLs, but not as duplicate top-level menus.
+        add_action( 'admin_menu', array( __CLASS__, 'consolidate_leader_admin_menus' ), 999 );
         add_action( 'admin_menu', array( 'BH_Workstream_Settings_3', 'register' ), 30 );
         BH_Activity_Parity_3::register();
         BH_Field_Manager_3::register();
@@ -222,6 +224,12 @@ final class BH_Manager_3 {
         );
     }
 
+
+    /** Hide legacy leader navigation only; do not unregister pages, callbacks, or permissions. */
+    public static function consolidate_leader_admin_menus() {
+        remove_menu_page( 'bh3-my-listings' );
+        remove_menu_page( 'bh3-leader-dashboard' );
+    }
 
     /** Read-only navigation and implementation inventory; no feature activation. */
     public static function register_workstreams_page() {
