@@ -17,6 +17,14 @@ Status: NOT READY TO MERGE TO MAIN. This branch is a staging-only preview.
 - Check a single-date session and weekday mismatch validation.
 - Delete session and verify linked assignment rows and option metadata are removed.
 
+## Marketplace commission and leader payout requirements
+- Parents pay for a dated session booking. Leaders receive the net proceeds and Bubba Hub retains a configurable commission. Persist gross, commission, processor fee, leader net, currency, refunds, and payment/payout status in auditable records.
+- Leader Account Settings offers Stripe Connect onboarding, verified PayPal payout details, or Invoice/manual settlement. A selected preference is not a verified payment destination.
+- Stripe Connect is the preferred automated marketplace route. PayPal and Invoice require separate settlement and reconciliation workflows.
+- Decide commission percentage, processing fee allocation, payout timing, refunds/chargebacks, VAT and the meaning of invoice settlement before taking real payments.
+- Calculate amounts and payout destinations server-side; verify provider webhooks idempotently. Never trust browser-supplied prices.
+- Provide leader payout statements and admin reconciliation; keep unconfigured payout routes disabled.
+
 ## Must complete before main merge
 - Integrate session selection/creation into listing wizard Step 6.
 - Public listing session display must include shared sessions with correct ownership/status checks.
