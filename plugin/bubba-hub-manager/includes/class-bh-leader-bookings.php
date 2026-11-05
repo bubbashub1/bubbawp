@@ -42,6 +42,16 @@ final class BH_Leader_Bookings_3 {
           $days = (int) $first->format( 't' );
           $prev = $first->modify( '-1 month' )->format( 'Y-m' );
           $next = $first->modify( '+1 month' )->format( 'Y-m' );
+          $search = isset( $_GET['session_search'] ) && is_string( $_GET['session_search'] ) ? sanitize_text_field( wp_unslash( $_GET['session_search'] ) ) : '';
+          $listing_filter = absint( $_GET['listing_filter'] ?? 0 );
+          $mode_filter = isset( $_GET['session_mode'] ) && is_string( $_GET['session_mode'] ) ? sanitize_key( wp_unslash( $_GET['session_mode'] ) ) : 'all';
+          if ( ! in_array( $mode_filter, array( 'all', 'booking', 'enquiry' ), true ) ) { $mode_filter = 'all'; }
+          $owned_ids = array_map( 'intval', wp_list_pluck( $activities ?: array(), 'id' ) );
+          if ( $listing_filter && ! in_array( $listing_filter, $owned_ids, true ) ) { $listing_filter = 0; }
+          $enquiry_flags = get_option( 'bh3_session_enquiry_enabled', array() );
+          $enquiry_flags = is_array( $enquiry_flags ) ? $enquiry_flags : array();
+          $booking_flags = get_option( 'bh3_session_booking_config', array() );
+          $booking_flags = is_array( $booking_flags ) ? $booking_flags : array();
           $occurrences = array();
           $session_titles = get_option( 'bh3_session_titles', array() );
           if ( ! is_array( $session_titles ) ) { $session_titles = array(); }
@@ -60,6 +70,15 @@ final class BH_Leader_Bookings_3 {
               } else {
                   $rules = $wpdb->get_results( $wpdb->prepare( $sql, ...$ids ), ARRAY_A );
               }
+              $shared_listing_map = array();
+              if ( isset( $assignment_table ) && $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $assignment_table ) ) ) === $assignment_table ) {
+                  $session_ids = array_map( 'intval', wp_list_pluck( $rules ?: array(), 'id' ) );
+                  if ( $session_ids ) {
+                      $placeholders = implode( ',', array_fill( 0, count( $session_ids ), '%d' ) );
+                      $links = $wpdb->get_results( $wpdb->prepare( "SELECT session_id,activity_id FROM `{$assignment_table}` WHERE session_id IN ($placeholders)", ...$session_ids ), ARRAY_A );
+                      foreach ( $links as $link ) { $shared_listing_map[(int) $link['session_id']][] = (int) $link['activity_id']; }
+                  }
+              }
               for ( $d = 1; $d <= $days; $d++ ) {
                   $date = $first->modify( '+' . ( $d - 1 ) . ' days' );
                   $ymd = $date->format( 'Y-m-d' );
@@ -75,11 +94,31 @@ final class BH_Leader_Bookings_3 {
                           }
                           if ( ! $in_term ) { $term_unconfigured = true; continue; }
                       }
+                      $session_id = (int) $rule['id'];
+                      $session_name = (string) ( $session_titles[$session_id] ?? $rule['title'] );
+                      if ( $search !== '' && stripos( $session_name . ' ' . $rule['title'], $search ) === false ) { continue; }
+                      if ( $mode_filter === 'booking' && empty( $booking_flags[$session_id]['enabled'] ) ) { continue; }
+                      if ( $mode_filter === 'enquiry' && empty( $enquiry_flags[$session_id] ) ) { continue; }
+                      if ( $listing_filter ) {
+                          $primary_match = (int) $rule['activity_id'] === $listing_filter;
+                          $shared_match = false;
+                          if ( ! $primary_match && ! empty( $shared_listing_map[$session_id] ) ) {
+                              $shared_match = in_array( $listing_filter, $shared_listing_map[$session_id], true );
+                          }
+                          if ( ! $primary_match && ! $shared_match ) { continue; }
+                      }
                       $occurrences[$d][] = $rule;
                   }
               }
           }
           ?>
+          <form method="get" class="bh-bookings-filters" role="search" aria-label="Filter sessions">
+            <label>Search sessions <input type="search" name="session_search" value="<?php echo esc_attr( $search ); ?>" placeholder="Search sessions or listings"></label>
+            <label>Listing <select name="listing_filter"><option value="0">All listings</option><?php foreach ( $activities as $activity ) : ?><option value="<?php echo esc_attr( $activity['id'] ); ?>" <?php selected( $listing_filter, (int) $activity['id'] ); ?>><?php echo esc_html( $activity['title'] ); ?></option><?php endforeach; ?></select></label>
+            <label>Type <select name="session_mode"><option value="all" <?php selected( $mode_filter, 'all' ); ?>>All sessions</option><option value="booking" <?php selected( $mode_filter, 'booking' ); ?>>Bookings enabled</option><option value="enquiry" <?php selected( $mode_filter, 'enquiry' ); ?>>Enquiries enabled</option></select></label>
+            <button type="submit">Filter</button>
+            <a href="<?php echo esc_url( remove_query_arg( array( 'session_search', 'listing_filter', 'session_mode' ) ) ); ?>">Clear filters</a>
+          </form>
           <div class="bh-bookings-panel bh-bookings-calendar" aria-label="Booking calendar preview">
             <div class="bh-bookings-calendar-heading">
               <h2><?php echo esc_html( wp_date( 'F Y', $first->getTimestamp(), $tz ) ); ?></h2>
@@ -108,6 +147,7 @@ final class BH_Leader_Bookings_3 {
             </div>
           </div>
           <style>
+.bh-bookings-filters{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin:16px 0}.bh-bookings-filters label{display:flex;flex-direction:column;gap:4px;flex:1 1 170px}.bh-bookings-filters input,.bh-bookings-filters select{width:100%;min-height:42px}.bh-bookings-filters button{min-height:42px}
           .bh-bookings-calendar{margin:20px 0;padding:20px;border:1px solid #dce9e0;border-radius:14px;background:#fff}
           .bh-bookings-calendar-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
           .bh-bookings-calendar-heading h2{margin:0}
