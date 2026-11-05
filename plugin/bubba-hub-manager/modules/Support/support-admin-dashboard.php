@@ -6,14 +6,15 @@
 defined('ABSPATH') || exit;
 
 add_action('admin_menu', static function (): void {
-    add_menu_page(
-        __('Bubba Hub Support', 'bubbahub'),
-        __('BH Support', 'bubbahub'),
+    // Consolidate the staging support modules under the existing Support & Help menu.
+    // Keep the legacy page untouched; this is a separate functional overview submenu.
+    add_submenu_page(
+        'bh3-support-help',
+        __('Support Overview', 'bubbahub'),
+        __('Overview & Enquiries', 'bubbahub'),
         'manage_options',
         'bh-support-dashboard',
-        'bh_support_dashboard_render',
-        'dashicons-sos',
-        58
+        'bh_support_dashboard_render'
     );
 });
 
