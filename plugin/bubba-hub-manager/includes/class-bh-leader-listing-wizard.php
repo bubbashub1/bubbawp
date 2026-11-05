@@ -105,6 +105,7 @@ final class BH_Leader_Listing_Wizard_3 {
         $data = array_merge( $defaults, (array) $record );
         if ( $id ) { $data['booking_method'] = get_option( 'bh3_activity_booking_method_' . $id, $data['booking_method'] ); }
         $step = min( 7, max( 1, absint( $_GET['step'] ?? 1 ) ) );
+        $email_verified = BH_Leader_Email_Verification_3::verified( get_current_user_id() );
         $category_options = $wpdb->get_col( "SELECT DISTINCT category FROM `{$activities}` WHERE category IS NOT NULL AND category <> '' ORDER BY category ASC LIMIT 150" );
         $category_options = array_values( array_unique( array_filter( array_map( 'sanitize_text_field', (array) $category_options ) ) ) );
         if ( ! empty( $data['category'] ) && ! in_array( $data['category'], $category_options, true ) ) { $category_options[] = $data['category']; }
@@ -115,7 +116,9 @@ final class BH_Leader_Listing_Wizard_3 {
 <header class="bh3-wizard-head">
             <p class="bh3-wizard-help">YOUR LEADER HUB · LISTING CREATOR</p>
             <h1 id="bh3-wizard-title"><?php echo $record ? 'Continue your listing' : 'Create a new listing'; ?></h1>
-            <p>Work through the steps at your own pace. You can save a draft and come back later. Your listing will be reviewed before it is published.</p>
+            <p>Work through the steps at your own pace. You can save a draft and come back later. Verified email accounts can publish completed listings directly; other listings are reviewed first.</p>
+            <?php if ( ! $email_verified ) : ?><p class="bh3-wizard-message">Your account email has not been verified. Listings you submit will be reviewed by Bubba Hub. <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>"><input type="hidden" name="action" value="bh3_send_email_verification"><?php wp_nonce_field('bh3_send_email_verification'); ?><button type="submit">Email me a verification link</button></form></p><?php endif; ?>
+            <?php if ( isset($_GET['verification']) && $_GET['verification'] === 'sent' ) : ?><p role="status">Verification email sent. Check your inbox.</p><?php elseif ( isset($_GET['verification']) && $_GET['verification'] === 'complete' ) : ?><p role="status">Your email is verified. You can publish completed listings.</p><?php endif; ?>
             <div class="bh3-wizard-steps" aria-label="Listing steps">
               <?php foreach ( $steps as $index => $label ) : ?><div class="bh3-wizard-step" <?php echo $step === $index + 1 ? 'aria-current="step"' : ''; ?>><strong><?php echo esc_html( $index + 1 ); ?></strong><br><?php echo esc_html( $label ); ?></div><?php endforeach; ?>
             </div>
@@ -165,20 +168,20 @@ final class BH_Leader_Listing_Wizard_3 {
               <p class="bh3-wizard-help">Use images you own or have permission to use. You can add or replace the listing cover image in your activity editor.</p>
               <?php if ( $id ) : ?><p><a class="bh3-wizard-link" href="<?php echo esc_url( add_query_arg( 'activity_id', $id, home_url( '/leader/edit-activity/' ) ) ); ?>">Add or change listing photo</a></p><?php endif; ?>
             <?php else : ?>
-              <h2>Review your listing</h2><p>Check the key information before submitting your draft for review.</p>
+              <h2>Review your listing</h2><p>Check the key information before <?php echo $email_verified ? 'publishing' : 'submitting for review'; ?>.</p>
               <div class="bh3-wizard-review">
                 <?php foreach ( array( 'Activity name'=>'title','Description'=>'description','Category'=>'category','Additional categories / tags'=>'tags','Age from (months)'=>'age_min_months','Age to (months)'=>'age_max_months','Starting price (£)'=>'price_from','Free activity'=>'is_free','Contact email'=>'contact_email','Contact phone'=>'contact_phone','Website'=>'website','Booking method'=>'booking_method','Booking link'=>'booking_url' ) as $label=>$key ) : ?>
                   <div><strong><?php echo esc_html( $label ); ?></strong><?php echo esc_html( (string) ( $data[$key] ?? '' ) ?: 'Not provided' ); ?></div>
                 <?php endforeach; ?>
               </div>
-              <p class="bh3-wizard-help">Your listing will stay private until the Bubba Hub team approves it. Submitting for review does not confirm bookings or publish your listing.</p>
+              <p class="bh3-wizard-help"><?php echo $email_verified ? 'Your verified email allows you to publish this listing immediately. Publishing does not confirm any bookings.' : 'Your listing will stay private until the Bubba Hub team approves it. Submitting for review does not confirm bookings or publish your listing.'; ?></p>
               <p><a class="bh3-wizard-link" href="<?php echo esc_url(add_query_arg(array('activity_id'=>$id,'step'=>1),home_url('/leader/new-activity/'))); ?>">Edit basics</a> · <a class="bh3-wizard-link" href="<?php echo esc_url(add_query_arg(array('activity_id'=>$id,'step'=>2),home_url('/leader/new-activity/'))); ?>">Edit description</a> · <a class="bh3-wizard-link" href="<?php echo esc_url(add_query_arg(array('activity_id'=>$id,'step'=>3),home_url('/leader/new-activity/'))); ?>">Edit details</a> · <a class="bh3-wizard-link" href="<?php echo esc_url(add_query_arg(array('activity_id'=>$id,'step'=>4),home_url('/leader/new-activity/'))); ?>">Edit booking</a> · <a class="bh3-wizard-link" href="<?php echo esc_url(add_query_arg(array('activity_id'=>$id,'step'=>5),home_url('/leader/new-activity/'))); ?>">Check venues</a></p>
             <?php endif; ?>
             <div class="bh3-wizard-actions">
               <?php if ( $step > 1 ) : ?><a class="secondary" href="<?php echo esc_url( add_query_arg( array( 'activity_id'=>$id, 'step'=>$step - 1 ), get_permalink() ) ); ?>">Back</a><?php else : ?><a class="secondary" href="<?php echo esc_url( home_url( '/leader/' ) ); ?>">Cancel</a><?php endif; ?>
               <?php if ( $step === 7 ) : ?>
                 <button type="submit" name="intent" value="save">Keep as draft</button>
-                <button type="submit" name="intent" value="submit">Submit for Bubba Hub review</button>
+                <button type="submit" name="intent" value="submit"><?php echo $email_verified ? "Publish listing" : "Submit for Bubba Hub review"; ?></button>
               <?php else : ?>
                 <button type="submit" name="intent" value="next">Save &amp; continue</button>
               <?php endif; ?>
@@ -267,8 +270,8 @@ final class BH_Leader_Listing_Wizard_3 {
             if ( ! $required || trim( (string) $required['title'] ) === '' || trim( (string) $required['description'] ) === '' || trim( (string) $required['category'] ) === '' ) {
                 wp_die( 'Please complete the activity name, description and main category before submitting.', '', array( 'response' => 400 ) );
             }
-            // The request is submitted for moderation, never published automatically.
-            $data['status'] = 'pending';
+            // Only the current account email verified by our signed one-time link may bypass moderation.
+            $data['status'] = BH_Leader_Email_Verification_3::verified( get_current_user_id() ) ? 'published' : 'pending';
         } else {
             $data['status'] = 'draft';
         }
