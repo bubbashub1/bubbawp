@@ -1919,38 +1919,47 @@ final class BH_Marketplace_Settings_3 {
         }
         $checked = self::inspect_booking_form_attendees( $submission_id, $user_id, $session_id, $date, $places );
         if ( is_wp_error( $checked ) ) { return $checked; }
-        // Prevent repeated submission IDs from creating new capacity holds.
         global $wpdb;
-        $table = $wpdb->prefix . 'bh3_bookings';
-        $existing = $wpdb->get_var( $wpdb->prepare(
-            "SELECT id FROM `{$table}` WHERE booking_submission_id=%d LIMIT 1", $submission_id
-        ) );
-        if ( $existing ) {
-            return new WP_Error( 'submission_already_booked', 'This form submission already belongs to a booking.', array( 'status' => 409 ) );
+        $submission_lock = 'bh3_sub_' . md5( $wpdb->prefix . ':' . $submission_id );
+        if ( (int) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, 5)', $submission_lock ) ) !== 1 ) {
+            return new WP_Error( 'submission_busy', 'This booking is already being prepared. Please wait.', array( 'status' => 409 ) );
         }
-        $config = self::stripe_status();
-        if ( $config['mode'] !== 'test' || ! $config['keys_configured']
-            || ! defined( 'BH3_STRIPE_TEST_WEBHOOK_SECRET' )
-            || ! is_string( constant( 'BH3_STRIPE_TEST_WEBHOOK_SECRET' ) )
-            || constant( 'BH3_STRIPE_TEST_WEBHOOK_SECRET' ) === ''
-            || self::policy()['processing_fees'] !== 'platform' ) {
-            return new WP_Error( 'test_checkout_not_ready', 'Stripe test payment verification is not configured.', array( 'status' => 503 ) );
+        try {
+            // A submission-scoped lock prevents concurrent requests from making duplicate capacity holds.
+            global $wpdb;
+            $table = $wpdb->prefix . 'bh3_bookings';
+            $existing = $wpdb->get_var( $wpdb->prepare(
+                "SELECT id FROM `{$table}` WHERE booking_submission_id=%d LIMIT 1", $submission_id
+            ) );
+            if ( $existing ) {
+                return new WP_Error( 'submission_already_booked', 'This form submission already belongs to a booking.', array( 'status' => 409 ) );
+            }
+            $config = self::stripe_status();
+            if ( $config['mode'] !== 'test' || ! $config['keys_configured']
+                || ! defined( 'BH3_STRIPE_TEST_WEBHOOK_SECRET' )
+                || ! is_string( constant( 'BH3_STRIPE_TEST_WEBHOOK_SECRET' ) )
+                || constant( 'BH3_STRIPE_TEST_WEBHOOK_SECRET' ) === ''
+                || self::policy()['processing_fees'] !== 'platform' ) {
+                return new WP_Error( 'test_checkout_not_ready', 'Stripe test payment verification is not configured.', array( 'status' => 503 ) );
+            }
+            $reservation = self::reserve_occurrence( $session_id, $date, $places, $user_id );
+            if ( is_wp_error( $reservation ) ) { return $reservation; }
+            $bound = self::bind_parent_submission_to_booking( $reservation['booking_id'], $submission_id, $user_id );
+            if ( is_wp_error( $bound ) ) {
+                return new WP_Error( 'booking_details_not_saved', 'Booking details could not be linked. The temporary hold will expire.', array( 'status' => 409 ) );
+            }
+            $checkout = self::create_test_checkout( $reservation['booking_id'], $user_id );
+            if ( is_wp_error( $checkout ) ) {
+                return new WP_Error( 'test_checkout_not_started', 'Checkout could not be started. The temporary hold will expire.', array( 'status' => 503 ) );
+            }
+            return rest_ensure_response( array(
+                'booking_reference' => $reservation['reference'],
+                'checkout_url' => $checkout['checkout_url'],
+                'test_mode' => true,
+            ) );
+        } finally {
+            $wpdb->get_var( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $submission_lock ) );
         }
-        $reservation = self::reserve_occurrence( $session_id, $date, $places, $user_id );
-        if ( is_wp_error( $reservation ) ) { return $reservation; }
-        $bound = self::bind_parent_submission_to_booking( $reservation['booking_id'], $submission_id, $user_id );
-        if ( is_wp_error( $bound ) ) {
-            return new WP_Error( 'booking_details_not_saved', 'Booking details could not be linked. The temporary hold will expire.', array( 'status' => 409 ) );
-        }
-        $checkout = self::create_test_checkout( $reservation['booking_id'], $user_id );
-        if ( is_wp_error( $checkout ) ) {
-            return new WP_Error( 'test_checkout_not_started', 'Checkout could not be started. The temporary hold will expire.', array( 'status' => 503 ) );
-        }
-        return rest_ensure_response( array(
-            'booking_reference' => $reservation['reference'],
-            'checkout_url' => $checkout['checkout_url'],
-            'test_mode' => true,
-        ) );
     }
     public static function register_parent_booking_binding_route() {
         if ( ! defined( 'BH3_ENABLE_BOOKING_FORM_BINDING' ) || BH3_ENABLE_BOOKING_FORM_BINDING !== true ) { return; }
