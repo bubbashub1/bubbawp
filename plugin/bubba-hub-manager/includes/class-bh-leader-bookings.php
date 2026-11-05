@@ -65,8 +65,8 @@ final class BH_Leader_Bookings_3 {
               $sql = "SELECT s.*,a.title FROM `{$session_table}` s JOIN `{$table}` a ON a.id=s.activity_id WHERE s.activity_id IN ($slots) AND s.frequency='weekly' LIMIT 500";
               $assignment_table = $wpdb->prefix . 'session_listing_links';
               if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $assignment_table ) ) ) === $assignment_table ) {
-                  $sql = "SELECT DISTINCT s.*,a.title FROM `{$session_table}` s JOIN `{$table}` a ON a.id=s.activity_id LEFT JOIN `{$assignment_table}` sl ON sl.session_id=s.id WHERE (s.activity_id IN ($slots) OR sl.activity_id IN ($slots)) AND s.frequency='weekly' LIMIT 500";
-                  $rules = $wpdb->get_results( $wpdb->prepare( $sql, ...array_merge( $ids, $ids ) ), ARRAY_A );
+                  $sql = "SELECT DISTINCT s.*,a.title FROM `{$session_table}` s JOIN `{$table}` a ON a.id=s.activity_id LEFT JOIN `{$assignment_table}` sl ON sl.session_id=s.id WHERE a.organiser_id=%d AND (s.activity_id IN ($slots) OR sl.activity_id IN ($slots)) AND s.frequency='weekly' LIMIT 500";
+                  $rules = $wpdb->get_results( $wpdb->prepare( $sql, ...array_merge( array( $organiser ), $ids, $ids ) ), ARRAY_A );
               } else {
                   $rules = $wpdb->get_results( $wpdb->prepare( $sql, ...$ids ), ARRAY_A );
               }
@@ -92,11 +92,19 @@ final class BH_Leader_Bookings_3 {
                           foreach ( $term_ranges as $range ) {
                               if ( is_array( $range ) && ! empty( $range['start'] ) && ! empty( $range['end'] ) && $ymd >= $range['start'] && $ymd <= $range['end'] ) { $in_term = true; break; }
                           }
-                          if ( ! $in_term ) { $term_unconfigured = true; continue; }
+                          if ( ! $in_term ) { if ( ! $term_ranges ) { $term_unconfigured = true; } continue; }
                       }
                       $session_id = (int) $rule['id'];
                       $session_name = (string) ( $session_titles[$session_id] ?? $rule['title'] );
-                      if ( $search !== '' && stripos( $session_name . ' ' . $rule['title'], $search ) === false ) { continue; }
+                      if ( $search !== '' ) {
+                          $searchable = $session_name . ' ' . $rule['title'];
+                          foreach ( $activities as $listing ) {
+                              if ( (int) $listing['id'] === (int) $rule['activity_id'] || in_array( (int) $listing['id'], $shared_listing_map[$session_id] ?? array(), true ) ) {
+                                  $searchable .= ' ' . $listing['title'];
+                              }
+                          }
+                          if ( stripos( $searchable, $search ) === false ) { continue; }
+                      }
                       if ( $mode_filter === 'booking' && empty( $booking_flags[$session_id]['enabled'] ) ) { continue; }
                       if ( $mode_filter === 'enquiry' && empty( $enquiry_flags[$session_id] ) ) { continue; }
                       if ( $listing_filter ) {
