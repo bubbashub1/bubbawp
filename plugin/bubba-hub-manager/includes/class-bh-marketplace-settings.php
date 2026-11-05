@@ -15,6 +15,93 @@ final class BH_Marketplace_Settings_3 {
         add_shortcode( 'bh_leader_payout_settings', array( __CLASS__, 'leader_form' ) );
         add_shortcode( 'bh_parent_booking', array( __CLASS__, 'parent_booking_widget' ) );
         add_shortcode( 'bh_booking_readiness', array( __CLASS__, 'booking_readiness_preview' ) );
+        add_shortcode( 'bh_leader_email_verification', array( __CLASS__, 'leader_email_verification_widget' ) );
+        add_action( 'admin_post_bh3_request_leader_email_verification', array( __CLASS__, 'request_leader_email_verification' ) );
+        add_action( 'admin_post_bh3_confirm_leader_email_verification', array( __CLASS__, 'confirm_leader_email_verification' ) );
+    }
+    /** Staging-only email ownership proof for the current linked leader account. */
+    public static function leader_email_verification_widget() {
+        if ( ! is_user_logged_in() ) {
+            return '<p>Please log in to verify your leader email address.</p>';
+        }
+        $user = wp_get_current_user();
+        $organiser_id = absint( get_user_meta( $user->ID, 'bh3_organiser_id', true ) );
+        if ( ! $organiser_id || ! is_email( $user->user_email ) ) {
+            return '<p>Your leader account must be linked to an organisation before email verification.</p>';
+        }
+        $verified = (string) get_user_meta( $user->ID, 'bh3_verified_booking_email', true );
+        $verified_at = (string) get_user_meta( $user->ID, 'bh3_verified_booking_email_at', true );
+        $is_verified = $verified_at && strtotime( $verified_at )
+            && hash_equals( strtolower( trim( $user->user_email ) ), strtolower( trim( $verified ) ) );
+        $html = '<section class="bh3-leader-email-verification"><h3>Verify your booking email</h3>';
+        if ( $is_verified ) {
+            return $html . '<p role="status">Your current account email is verified for booking notifications.</p></section>';
+        }
+        $html .= '<p>We will send a verification link to your WordPress account email. Booking details will not be sent until verification is complete.</p>';
+        $html .= '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+        $html .= '<input type="hidden" name="action" value="bh3_request_leader_email_verification">';
+        $html .= wp_nonce_field( 'bh3_request_leader_email_verification', '_wpnonce', true, false );
+        $html .= '<button type="submit">Send verification email</button></form></section>';
+        return $html;
+    }
+    public static function request_leader_email_verification() {
+        if ( ! is_user_logged_in() ) { wp_die( 'Login required.', '', array( 'response' => 403 ) ); }
+        check_admin_referer( 'bh3_request_leader_email_verification' );
+        $user = wp_get_current_user();
+        $organiser_id = absint( get_user_meta( $user->ID, 'bh3_organiser_id', true ) );
+        if ( ! $organiser_id || ! is_email( $user->user_email ) ) {
+            wp_die( 'Linked leader account and valid email required.', '', array( 'response' => 403 ) );
+        }
+        $limit_key = 'bh3_booking_email_verify_limit_' . $user->ID;
+        if ( get_transient( $limit_key ) ) {
+            wp_die( 'Please wait before requesting another verification email.', '', array( 'response' => 429 ) );
+        }
+        $token = bin2hex( random_bytes( 32 ) );
+        $expires = time() + HOUR_IN_SECONDS;
+        $payload = array(
+            'hash' => hash( 'sha256', $token ),
+            'email' => strtolower( trim( $user->user_email ) ),
+            'expires' => $expires,
+        );
+        update_user_meta( $user->ID, 'bh3_booking_email_verification_pending', $payload );
+        set_transient( $limit_key, 1, 2 * MINUTE_IN_SECONDS );
+        $url = add_query_arg( array(
+            'action' => 'bh3_confirm_leader_email_verification',
+            'uid' => $user->ID,
+            'token' => $token,
+        ), admin_url( 'admin-post.php' ) );
+        $sent = wp_mail( $user->user_email, 'Verify your Bubba Hub booking email',
+            "Please confirm your booking email by opening this link within one hour:\n\n" . $url .
+            "\n\nIf you did not request this, you can ignore this email." );
+        if ( ! $sent ) {
+            delete_user_meta( $user->ID, 'bh3_booking_email_verification_pending' );
+            wp_die( 'Email could not be sent. Please check your mail configuration.', '', array( 'response' => 503 ) );
+        }
+        wp_safe_redirect( add_query_arg( 'bh3_email_verification', 'sent', home_url( '/leader/' ) ) );
+        exit;
+    }
+    public static function confirm_leader_email_verification() {
+        $user_id = isset( $_GET['uid'] ) ? absint( $_GET['uid'] ) : 0;
+        $token = isset( $_GET['token'] ) && is_string( $_GET['token'] )
+            ? sanitize_text_field( wp_unslash( $_GET['token'] ) ) : '';
+        if ( ! is_user_logged_in() || get_current_user_id() !== $user_id
+            || ! preg_match( '/^[a-f0-9]{64}$/', $token ) ) {
+            wp_die( 'Log in to the leader account that requested verification.', '', array( 'response' => 403 ) );
+        }
+        $pending = get_user_meta( $user_id, 'bh3_booking_email_verification_pending', true );
+        $user = get_userdata( $user_id );
+        if ( ! is_array( $pending ) || ! $user || empty( $pending['hash'] )
+            || empty( $pending['expires'] ) || time() > (int) $pending['expires']
+            || ! hash_equals( (string) $pending['hash'], hash( 'sha256', $token ) )
+            || ! hash_equals( (string) $pending['email'], strtolower( trim( $user->user_email ) ) )
+            || ! absint( get_user_meta( $user_id, 'bh3_organiser_id', true ) ) ) {
+            wp_die( 'Verification link is invalid or expired. Request a new one.', '', array( 'response' => 403 ) );
+        }
+        update_user_meta( $user_id, 'bh3_verified_booking_email', $user->user_email );
+        update_user_meta( $user_id, 'bh3_verified_booking_email_at', gmdate( 'Y-m-d H:i:s' ) );
+        delete_user_meta( $user_id, 'bh3_booking_email_verification_pending' );
+        wp_safe_redirect( add_query_arg( 'bh3_email_verification', 'verified', home_url( '/leader/' ) ) );
+        exit;
     }
     public static function rate() {
         $value = get_option( 'bh3_commission_percent', '2.50' );
