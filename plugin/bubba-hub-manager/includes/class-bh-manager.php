@@ -116,6 +116,8 @@ final class BH_Manager_3 {
         BH_Leader_Statistics_3::register();
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-account.php';
         BH_Leader_Account_3::register();
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-marketplace-settings.php';
+        BH_Marketplace_Settings_3::register();
         BH_Leader_Layout_3::register();
         BH_Leader_Frontend_3::register();
         BH_Portal_Access_3::register();
