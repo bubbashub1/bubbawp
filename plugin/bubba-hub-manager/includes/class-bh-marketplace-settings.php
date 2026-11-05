@@ -32,6 +32,13 @@ final class BH_Marketplace_Settings_3 {
         $user = wp_get_current_user();
         $organiser_id = absint( get_user_meta( $user->ID, 'bh3_organiser_id', true ) );
         $html = '<section class="bh3-leader-setup"><h2>Leader account setup</h2>';
+        $notice = isset( $_GET['bh3_email_verification'] ) && is_string( $_GET['bh3_email_verification'] )
+            ? sanitize_key( wp_unslash( $_GET['bh3_email_verification'] ) ) : '';
+        if ( 'verified' === $notice ) {
+            $html .= '<p role="status">Your booking email has been verified successfully.</p>';
+        } elseif ( 'sent' === $notice ) {
+            $html .= '<p role="status">Verification email sent. Check your inbox and open the link while logged into this account.</p>';
+        }
         $html .= '<p><strong>Account:</strong> ' . esc_html( $user->display_name ) . '</p>';
         $html .= '<p><strong>Organisation:</strong> ' . ( $organiser_id ? 'Linked' : 'Awaiting team approval' ) . '</p>';
         if ( ! $organiser_id ) {
@@ -93,7 +100,7 @@ final class BH_Marketplace_Settings_3 {
         delete_user_meta( $user_id, 'bh3_verified_booking_email' );
         delete_user_meta( $user_id, 'bh3_verified_booking_email_at' );
         delete_user_meta( $user_id, 'bh3_booking_email_verification_pending' );
-        wp_safe_redirect( add_query_arg( 'bh3_leader_linked', '1', home_url( '/leader/' ) ) );
+        wp_safe_redirect( add_query_arg( 'bh3_leader_linked', '1', home_url( '/leader/setup/' ) ) );
         exit;
     }
     /** Staging-only email ownership proof for the current linked leader account. */
@@ -154,7 +161,7 @@ final class BH_Marketplace_Settings_3 {
             delete_user_meta( $user->ID, 'bh3_booking_email_verification_pending' );
             wp_die( 'Email could not be sent. Please check your mail configuration.', '', array( 'response' => 503 ) );
         }
-        wp_safe_redirect( add_query_arg( 'bh3_email_verification', 'sent', home_url( '/leader/' ) ) );
+        wp_safe_redirect( add_query_arg( 'bh3_email_verification', 'sent', home_url( '/leader/setup/' ) ) );
         exit;
     }
     public static function confirm_leader_email_verification() {
@@ -177,7 +184,7 @@ final class BH_Marketplace_Settings_3 {
         update_user_meta( $user_id, 'bh3_verified_booking_email', $user->user_email );
         update_user_meta( $user_id, 'bh3_verified_booking_email_at', gmdate( 'Y-m-d H:i:s' ) );
         delete_user_meta( $user_id, 'bh3_booking_email_verification_pending' );
-        wp_safe_redirect( add_query_arg( 'bh3_email_verification', 'verified', home_url( '/leader/' ) ) );
+        wp_safe_redirect( add_query_arg( 'bh3_email_verification', 'verified', home_url( '/leader/setup/' ) ) );
         exit;
     }
     public static function rate() {
