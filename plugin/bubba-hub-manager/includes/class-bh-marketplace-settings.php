@@ -1001,6 +1001,36 @@ final class BH_Marketplace_Settings_3 {
         } else {
             $html .= '<p>Booking details form: <strong>#' . esc_html( $booking_form_id ) . '</strong> (submission and field mapping still require verification).</p>';
         }
+        // A form ID alone is not proof that Fluent Forms contains a valid form.
+        global $wpdb;
+        $forms_table = $wpdb->prefix . 'fluentform_forms';
+        $forms_table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $forms_table ) ) ) === $forms_table;
+        if ( ! $forms_table_exists ) {
+            $html .= '<p role="alert">Fluent Forms storage not found. Form integration cannot be tested.</p>';
+        } else {
+            foreach ( array( 'Consent' => $consent_form_id, 'Booking details' => $booking_form_id ) as $form_label => $check_id ) {
+                if ( ! $check_id ) { continue; }
+                $found = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM `{$forms_table}` WHERE id=%d", $check_id ) );
+                $html .= '<p>' . esc_html( $form_label ) . ' form #' . esc_html( $check_id ) . ': ' .
+                    ( $found ? 'Found in Fluent Forms' : 'Not found in Fluent Forms' ) . '.</p>';
+            }
+        }
+        $field_map = get_option( 'bh3_booking_form_field_map', array() );
+        $required_fields = array( 'session_id', 'occurrence_date', 'places', 'consent' );
+        $valid_map = is_array( $field_map );
+        $mapped_names = array();
+        foreach ( $required_fields as $field_name ) {
+            if ( ! $valid_map || empty( $field_map[ $field_name ] ) || ! is_string( $field_map[ $field_name ] )
+                || ! preg_match( '/^[A-Za-z][A-Za-z0-9_]*$/', $field_map[ $field_name ] ) ) {
+                $valid_map = false;
+                break;
+            }
+            $mapped_names[] = $field_map[ $field_name ];
+        }
+        if ( count( array_unique( $mapped_names ) ) !== count( $required_fields ) ) { $valid_map = false; }
+        $html .= '<p>Booking field mapping: ' . ( $valid_map
+            ? 'Configured; actual submission values still require validation.'
+            : 'Incomplete — session, date, places and consent must map to distinct fields.' ) . '</p>';
         $html .= '<p>Guest booking: preview only. No guest reservations or checkout are enabled.</p></div>';
 
         if ( $activity_id ) {
