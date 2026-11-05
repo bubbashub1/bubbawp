@@ -155,6 +155,18 @@ final class BH_Leader_Frontend_Sessions_3 {
         $table = $wpdb->prefix . 'sessions';
         $session = absint( $_POST['session_id'] ?? 0 );
         if ( $session && $wpdb->get_var( $wpdb->prepare( "SELECT frequency FROM `{$table}` WHERE id=%d AND activity_id=%d", $session, $id ) ) !== 'weekly' ) { wp_die( 'Session not editable.', '', array( 'response'=>403 ) ); }
+        // Validate listing assignments before writing any session data.
+        $assignment_table = $wpdb->prefix . 'session_listing_links';
+        $assignments_ready = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $assignment_table ) ) ) === $assignment_table;
+        $selected = array( $id );
+        if ( $assignments_ready ) {
+            $posted = isset( $_POST['listing_ids'] ) && is_array( $_POST['listing_ids'] ) ? array_map( 'absint', wp_unslash( $_POST['listing_ids'] ) ) : array();
+            $selected = array_values( array_unique( array_filter( array_merge( $selected, $posted ) ) ) );
+            $owner_id = absint( get_user_meta( get_current_user_id(), 'bh3_organiser_id', true ) );
+            $activity_table = $wpdb->prefix . 'activities';
+            $allowed = array_map( 'intval', $wpdb->get_col( $wpdb->prepare( "SELECT id FROM `{$activity_table}` WHERE organiser_id=%d", $owner_id ) ) );
+            if ( array_diff( $selected, $allowed ) ) { wp_die( 'You can only assign your own listings.', '', array( 'response'=>403 ) ); }
+        }
         $now = current_time( 'mysql', true );
         $data = array( 'activity_id'=>$id, 'venue_id'=>$venue ?: null, 'day_of_week'=>$day, 'start_time'=>$start . ':00', 'end_time'=>$end . ':00', 'start_date'=>$dates['start_date'], 'end_date'=>$dates['end_date'], 'frequency'=>'weekly', 'term_time_only'=>empty( $_POST['term_time_only'] ) ? 0 : 1, 'updated_at'=>$now );
         if ( ! self::activity( $id ) ) { wp_die( 'Ownership changed.', '', array( 'response'=>403 ) ); }
@@ -180,18 +192,16 @@ final class BH_Leader_Frontend_Sessions_3 {
             $booking_configs[$saved_session_id] = array( 'enabled'=>1, 'price'=>number_format( (float) $raw_price, 2, '.', '' ), 'capacity'=>$raw_capacity === '' ? null : (int) $raw_capacity );
         } else { unset( $booking_configs[$saved_session_id] ); }
         update_option( 'bh3_session_booking_config', $booking_configs, false );
-        $assignment_table = $wpdb->prefix . 'session_listing_links';
-        if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $assignment_table ) ) ) === $assignment_table ) {
-            $owner_id = absint( get_user_meta( get_current_user_id(), 'bh3_organiser_id', true ) );
-            $activity_table = $wpdb->prefix . 'activities';
-            $selected = isset( $_POST['listing_ids'] ) && is_array( $_POST['listing_ids'] ) ? array_map( 'absint', wp_unslash( $_POST['listing_ids'] ) ) : array();
-            $selected[] = $id;
-            $selected = array_values( array_unique( array_filter( $selected ) ) );
-            $allowed = array_map( 'intval', $wpdb->get_col( $wpdb->prepare( "SELECT id FROM `{$activity_table}` WHERE organiser_id=%d", $owner_id ) ) );
-            if ( array_diff( $selected, $allowed ) ) { wp_die( 'You can only assign your own listings.', '', array( 'response'=>403 ) ); }
-            $wpdb->delete( $assignment_table, array( 'session_id'=>$saved_session_id ), array( '%d' ) );
-            foreach ( $selected as $listing_id ) {
-                $wpdb->insert( $assignment_table, array( 'session_id'=>$saved_session_id, 'activity_id'=>$listing_id ), array( '%d', '%d' ) );
+        if ( $assignments_ready ) {
+            // Insert missing assignments first; retain existing links if an insert fails.
+            $existing = array_map( 'intval', $wpdb->get_col( $wpdb->prepare( "SELECT activity_id FROM `{$assignment_table}` WHERE session_id=%d", $saved_session_id ) ) );
+            foreach ( array_diff( $selected, $existing ) as $listing_id ) {
+                if ( false === $wpdb->insert( $assignment_table, array( 'session_id'=>$saved_session_id, 'activity_id'=>$listing_id ), array( '%d', '%d' ) ) ) {
+                    wp_die( 'Could not assign session to listings. Existing assignments were retained.', '', array( 'response'=>500 ) );
+                }
+            }
+            foreach ( array_diff( $existing, $selected ) as $listing_id ) {
+                $wpdb->delete( $assignment_table, array( 'session_id'=>$saved_session_id, 'activity_id'=>$listing_id ), array( '%d', '%d' ) );
             }
         }
         self::back( $id, 'Session saved.' );
@@ -206,6 +216,12 @@ final class BH_Leader_Frontend_Sessions_3 {
         $table = $wpdb->prefix . 'sessions';
         $result = $wpdb->delete( $table, array( 'id'=>$session, 'activity_id'=>$id, 'frequency'=>'weekly' ) );
         if ( $result === false ) { wp_die( 'Could not remove session.', '', array( 'response'=>500 ) ); }
+        if ( $result ) {
+            $assignment_table = $wpdb->prefix . 'session_listing_links';
+            if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $assignment_table ) ) ) === $assignment_table ) {
+                $wpdb->delete( $assignment_table, array( 'session_id'=>$session ), array( '%d' ) );
+            }
+        }
         if ( $result ) {
             $flags = get_option( 'bh3_session_enquiry_enabled', array() );
             if ( is_array( $flags ) ) { unset( $flags[$session] ); update_option( 'bh3_session_enquiry_enabled', $flags, false ); }
