@@ -798,23 +798,65 @@ final class BH_Marketplace_Settings_3 {
             || ! current_user_can( 'manage_options' ) ) {
             return '';
         }
-        $atts = shortcode_atts( array( 'session_id' => 0 ), $atts, 'bh_booking_readiness' );
+        $atts = shortcode_atts( array( 'session_id' => 0, 'activity_id' => 0 ), $atts, 'bh_booking_readiness' );
+        $activity_id = absint( $atts['activity_id'] );
         $session_id = absint( $atts['session_id'] );
-        if ( ! $session_id ) {
-            return '<p>Provide a session ID, for example [bh_booking_readiness session_id="123"].</p>';
+        $sessions = array();
+        $heading = 'Booking readiness — staging only';
+        if ( $activity_id ) {
+            global $wpdb;
+            $activities_table = $wpdb->prefix . 'activities';
+            $sessions_table = $wpdb->prefix . 'sessions';
+            $activity = $wpdb->get_row( $wpdb->prepare(
+                "SELECT id,status FROM `{$activities_table}` WHERE id=%d LIMIT 1", $activity_id
+            ), ARRAY_A );
+            if ( ! $activity ) {
+                return '<p role="status">Activity ' . esc_html( $activity_id ) . ' was not found in the activities table.</p>';
+            }
+            $sessions = $wpdb->get_results( $wpdb->prepare(
+                "SELECT id,status,day_of_week,start_date,end_date,frequency FROM `{$sessions_table}` WHERE activity_id=%d ORDER BY id ASC LIMIT 100",
+                $activity_id
+            ), ARRAY_A );
+            $sessions = is_array( $sessions ) ? $sessions : array();
+            $heading = 'Booking readiness — activity ' . $activity_id;
+        } elseif ( $session_id ) {
+            $sessions[] = array( 'id' => $session_id );
+        } else {
+            return '<p>Provide an activity or session ID, for example [bh_booking_readiness activity_id="2"].</p>';
         }
-        $quote = self::quote_session( $session_id, 1 );
-        $items = array();
-        $items[] = array( 'Session ID', (string) $session_id );
-        $items[] = array( 'Session booking quote', is_wp_error( $quote )
-            ? 'Not ready: ' . $quote->get_error_message()
-            : 'Ready: £' . number_format( $quote['unit_price_pence'] / 100, 2 ) . ' per place' );
-        if ( ! is_wp_error( $quote ) ) {
-            $items[] = array( 'Capacity configured', ! empty( $quote['capacity'] ) ? 'Yes (' . absint( $quote['capacity'] ) . ' places)' : 'No' );
-            $items[] = array( 'Commission', number_format( self::rate(), 2 ) . '%' );
-            $recipient = self::verified_booking_leader_recipient( $quote['organiser_id'] );
-            $items[] = array( 'Verified leader email', is_wp_error( $recipient )
-                ? 'Not ready: ' . $recipient->get_error_message() : 'Verified (address hidden)' );
+        $html = '<section class="bh3-booking-readiness"><h3>' . esc_html( $heading ) . '</h3>';
+        if ( $activity_id ) {
+            $html .= '<p>Activity status: <strong>' . esc_html( $activity['status'] ) . '</strong>. Found ' .
+                esc_html( count( $sessions ) ) . ' session(s)' . ( count( $sessions ) === 100 ? ' (first 100 shown)' : '' ) . '.</p>';
+        }
+        if ( ! $sessions ) {
+            $html .= '<p role="status">No sessions are linked to this activity. Add a session in the activity editor before testing bookings.</p>';
+        }
+        foreach ( $sessions as $session ) {
+            $id = absint( $session['id'] );
+            $quote = self::quote_session( $id, 1 );
+            $items = array( array( 'Session ID', (string) $id ) );
+            if ( isset( $session['status'] ) ) {
+                $items[] = array( 'Session status', (string) $session['status'] );
+                $items[] = array( 'Frequency', (string) $session['frequency'] );
+                $items[] = array( 'Start date', (string) $session['start_date'] );
+                $items[] = array( 'End date', (string) $session['end_date'] );
+            }
+            $items[] = array( 'Session booking quote', is_wp_error( $quote )
+                ? 'Not ready: ' . $quote->get_error_message()
+                : 'Ready: £' . number_format( $quote['unit_price_pence'] / 100, 2 ) . ' per place' );
+            if ( ! is_wp_error( $quote ) ) {
+                $items[] = array( 'Capacity configured', ! empty( $quote['capacity'] ) ? 'Yes (' . absint( $quote['capacity'] ) . ' places)' : 'No' );
+                $items[] = array( 'Commission', number_format( self::rate(), 2 ) . '%' );
+                $recipient = self::verified_booking_leader_recipient( $quote['organiser_id'] );
+                $items[] = array( 'Verified leader email', is_wp_error( $recipient )
+                    ? 'Not ready: ' . $recipient->get_error_message() : 'Verified (address hidden)' );
+            }
+            $html .= '<h4>Session ' . esc_html( $id ) . '</h4><dl>';
+            foreach ( $items as $item ) {
+                $html .= '<dt><strong>' . esc_html( $item[0] ) . '</strong></dt><dd>' . esc_html( $item[1] ) . '</dd>';
+            }
+            $html .= '</dl>';
         }
         $names = class_exists( 'BH_Schema_3' ) ? BH_Schema_3::booking_structure_audit() : array();
         $ready = ! empty( $names );
@@ -824,12 +866,9 @@ final class BH_Marketplace_Settings_3 {
                 break;
             }
         }
-        $items[] = array( 'Booking database', $ready ? 'Expected columns and indexes present' : 'Database structure needs review' );
-        $html = '<section class="bh3-booking-readiness"><h3>Booking readiness — staging only</h3><dl>';
-        foreach ( $items as $item ) {
-            $html .= '<dt><strong>' . esc_html( $item[0] ) . '</strong></dt><dd>' . esc_html( $item[1] ) . '</dd>';
-        }
-        return $html . '</dl><p>Read-only preview. No booking has been made and payments remain disabled.</p></section>';
+        $html .= '<p><strong>Booking database:</strong> ' . esc_html( $ready
+            ? 'Expected columns and indexes present' : 'Database structure needs review' ) . '</p>';
+        return $html . '<p>Read-only preview. No booking has been made and payments remain disabled.</p></section>';
     }
 
     public static function booking_profile_choices( $customer_user_id ) {
