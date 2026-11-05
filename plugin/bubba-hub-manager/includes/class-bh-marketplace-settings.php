@@ -496,6 +496,53 @@ final class BH_Marketplace_Settings_3 {
      * The leader-facing snapshot deliberately excludes full dates of birth,
      * family account identifiers and unselected children.
      */
+    /**
+     * Validate selected family profiles and explicit sharing consent from a
+     * server-stored, parent-owned Fluent Forms submission. Never trust
+     * browser checkbox values alone, and never authorise Checkout here.
+     */
+    public static function inspect_booking_form_attendees( $submission_id, $customer_user_id, $expected_session_id, $expected_date, $expected_places ) {
+        $verified = self::inspect_booking_form_fields( $submission_id, $customer_user_id, $expected_session_id, $expected_date, $expected_places );
+        if ( is_wp_error( $verified ) ) { return $verified; }
+        $map = get_option( 'bh3_booking_form_field_map', array() );
+        if ( ! is_array( $map ) ) { return new WP_Error( 'attendee_fields_unmapped', 'Attendee fields are not configured.' ); }
+        foreach ( array( 'profile_ids', 'share_consent' ) as $field ) {
+            if ( empty( $map[ $field ] ) || ! is_string( $map[ $field ] )
+                || ! preg_match( '/^[A-Za-z][A-Za-z0-9_]*$/', $map[ $field ] ) ) {
+                return new WP_Error( 'attendee_fields_unmapped', 'Attendee selection and sharing consent fields are required.' );
+            }
+        }
+        $keys = array();
+        foreach ( array( 'session_id', 'occurrence_date', 'places', 'consent', 'profile_ids', 'share_consent' ) as $field ) {
+            $keys[] = $map[ $field ];
+        }
+        if ( count( array_unique( $keys ) ) !== count( $keys ) ) {
+            return new WP_Error( 'attendee_fields_ambiguous', 'Booking form field mappings must be unique.' );
+        }
+        global $wpdb;
+        $table = $wpdb->prefix . 'fluentform_submissions';
+        $raw = $wpdb->get_var( $wpdb->prepare(
+            "SELECT response FROM `{$table}` WHERE id=%d AND form_id=%d AND user_id=%d LIMIT 1",
+            $verified['submission_id'], $verified['form_id'], $verified['customer_user_id']
+        ) );
+        $data = json_decode( (string) $raw, true );
+        if ( ! is_array( $data ) ) { return new WP_Error( 'attendee_form_invalid', 'Attendee form could not be read.' ); }
+        $consent = $data[ $map['share_consent'] ] ?? null;
+        if ( ! in_array( $consent, array( 'yes', '1', 1, true ), true ) ) {
+            return new WP_Error( 'attendee_sharing_consent_missing', 'Explicit consent to share selected attendee details is required.' );
+        }
+        $ids = $data[ $map['profile_ids'] ] ?? null;
+        if ( ! is_array( $ids ) || array_keys( $ids ) !== range( 0, count( $ids ) - 1 ) ) {
+            return new WP_Error( 'attendee_selection_invalid', 'Select one saved family profile for each place.' );
+        }
+        $attendees = self::inspect_booking_attendees( $ids, $customer_user_id, $expected_places );
+        if ( is_wp_error( $attendees ) ) { return $attendees; }
+        $verified['attendees'] = $attendees;
+        $verified['attendee_count'] = count( $attendees );
+        $verified['child_sharing_consent_verified'] = true;
+        $verified['checkout_authorised'] = false; // Requires atomic submission-to-booking binding.
+        return $verified;
+    }
     public static function inspect_booking_attendees( $profile_ids, $customer_user_id, $places ) {
         $customer_user_id = absint( $customer_user_id );
         $places = absint( $places );
