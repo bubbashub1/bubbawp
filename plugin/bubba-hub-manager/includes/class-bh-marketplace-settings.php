@@ -661,10 +661,6 @@ final class BH_Marketplace_Settings_3 {
                 $checked['booking_id']
             ), ARRAY_A );
             if ( ! $record ) { return new WP_Error( 'booking_missing', 'Booking not found.' ); }
-            // Expired holds require manual review to avoid overselling.
-            if ( empty( $record['reservation_expires_at'] ) || strtotime( $record['reservation_expires_at'] . ' UTC' ) <= time() ) {
-                return new WP_Error( 'hold_expired', 'Payment arrived after the booking hold expired; manual review required.' );
-            }
             $ledger = $wpdb->get_row( $wpdb->prepare(
                 "SELECT processing_status FROM `{$events}` WHERE stripe_event_id=%s LIMIT 1", $event_id
             ), ARRAY_A );
@@ -687,6 +683,10 @@ final class BH_Marketplace_Settings_3 {
             }
             if ( $ledger['processing_status'] !== 'received' ) {
                 return new WP_Error( 'event_already_processed', 'Event processed without a paid booking; manual review required.' );
+            }
+            // Expired holds require manual review to avoid overselling.
+            if ( empty( $record['reservation_expires_at'] ) || strtotime( $record['reservation_expires_at'] . ' UTC' ) <= time() ) {
+                return new WP_Error( 'hold_expired', 'Payment arrived after the booking hold expired; manual review required.' );
             }
             $updated = $wpdb->query( $wpdb->prepare(
                 "UPDATE `{$bookings}` SET payment_status='paid', stripe_payment_intent_id=%s, updated_at=%s
