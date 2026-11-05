@@ -842,15 +842,52 @@ final class BH_Marketplace_Settings_3 {
                 $items[] = array( 'Start date', (string) $session['start_date'] );
                 $items[] = array( 'End date', (string) $session['end_date'] );
             }
+            // Show independent blockers even if the quote fails on a draft activity.
+            global $wpdb;
+            $session_record = $wpdb->get_row( $wpdb->prepare(
+                "SELECT s.status,s.frequency,s.day_of_week,s.start_date,s.end_date,s.term_time_only,a.status AS activity_status,a.organiser_id
+                 FROM `{$wpdb->prefix}sessions` s
+                 INNER JOIN `{$wpdb->prefix}activities` a ON a.id=s.activity_id
+                 WHERE s.id=%d LIMIT 1", $id
+            ), ARRAY_A );
+            if ( $session_record ) {
+                $items[] = array( 'Activity publication', $session_record['activity_status'] === 'published'
+                    ? 'Published' : 'Blocked: activity is ' . $session_record['activity_status'] );
+                $items[] = array( 'Timetable', $session_record['status'] !== 'scheduled'
+                    ? 'Blocked: session is not scheduled'
+                    : ( ! in_array( $session_record['frequency'], array( 'weekly', 'once', 'single' ), true )
+                        ? 'Review: frequency is not supported for paid booking'
+                        : ( $session_record['frequency'] === 'weekly'
+                            && (int) $session_record['day_of_week'] < 1
+                            ? 'Review: weekday is missing'
+                            : ( in_array( $session_record['frequency'], array( 'once', 'single' ), true )
+                                && empty( $session_record['start_date'] )
+                                ? 'Review: one-off session date is missing' : 'Schedule rule present' ) ) ) );
+                if ( ! empty( $session_record['term_time_only'] ) ) {
+                    $ranges = get_option( 'bh3_term_date_ranges', array() );
+                    $items[] = array( 'Term dates', is_array( $ranges ) && $ranges
+                        ? 'Configured; individual dates still require validation' : 'Blocked: no term-date ranges configured' );
+                }
+                $configs = get_option( 'bh3_session_booking_config', array() );
+                $config = is_array( $configs ) && isset( $configs[$id] ) && is_array( $configs[$id] )
+                    ? $configs[$id] : array();
+                $items[] = array( 'Booking enabled', ! empty( $config['enabled'] ) ? 'Yes' : 'No — enable in session booking settings' );
+                $items[] = array( 'Configured price', isset( $config['price'] ) && is_scalar( $config['price'] )
+                    ? '£' . (string) $config['price'] : 'Not configured' );
+                $items[] = array( 'Configured capacity', ! empty( $config['capacity'] )
+                    ? absint( $config['capacity'] ) . ' places' : 'Not configured' );
+                $recipient = self::verified_booking_leader_recipient( $session_record['organiser_id'] );
+                $items[] = array( 'Verified leader email', is_wp_error( $recipient )
+                    ? 'Not ready: ' . $recipient->get_error_message() : 'Verified (address hidden)' );
+            } else {
+                $items[] = array( 'Linked session', 'Not found in a linked activity' );
+            }
             $items[] = array( 'Session booking quote', is_wp_error( $quote )
                 ? 'Not ready: ' . $quote->get_error_message()
                 : 'Ready: £' . number_format( $quote['unit_price_pence'] / 100, 2 ) . ' per place' );
             if ( ! is_wp_error( $quote ) ) {
                 $items[] = array( 'Capacity configured', ! empty( $quote['capacity'] ) ? 'Yes (' . absint( $quote['capacity'] ) . ' places)' : 'No' );
                 $items[] = array( 'Commission', number_format( self::rate(), 2 ) . '%' );
-                $recipient = self::verified_booking_leader_recipient( $quote['organiser_id'] );
-                $items[] = array( 'Verified leader email', is_wp_error( $recipient )
-                    ? 'Not ready: ' . $recipient->get_error_message() : 'Verified (address hidden)' );
             }
             $html .= '<h4>Session ' . esc_html( $id ) . '</h4><dl>';
             foreach ( $items as $item ) {
