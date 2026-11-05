@@ -31,6 +31,18 @@ final class BH_Marketplace_Settings_3 {
             'currency' => 'gbp',
         ) );
     }
+    public static function stripe_status() {
+        $mode = get_option( 'bh3_stripe_mode', 'test' );
+        $mode = $mode === 'live' ? 'live' : 'test';
+        $secret_constant = $mode === 'live' ? 'BH3_STRIPE_LIVE_SECRET_KEY' : 'BH3_STRIPE_TEST_SECRET_KEY';
+        $publishable_constant = $mode === 'live' ? 'BH3_STRIPE_LIVE_PUBLISHABLE_KEY' : 'BH3_STRIPE_TEST_PUBLISHABLE_KEY';
+        $secret = defined( $secret_constant ) ? constant( $secret_constant ) : '';
+        $public = defined( $publishable_constant ) ? constant( $publishable_constant ) : '';
+        $prefix = $mode === 'live' ? 'live' : 'test';
+        $valid = is_string( $secret ) && strpos( $secret, 'sk_' . $prefix . '_' ) === 0
+            && is_string( $public ) && strpos( $public, 'pk_' . $prefix . '_' ) === 0;
+        return array( 'mode' => $mode, 'keys_configured' => $valid, 'connection_verified' => false );
+    }
     public static function menu() {
         add_submenu_page( 'bubba-hub-3-status', 'Marketplace Commission', 'Marketplace Commission', 'manage_options', 'bh3-marketplace', array( __CLASS__, 'admin_form' ) );
     }
@@ -52,7 +64,14 @@ final class BH_Marketplace_Settings_3 {
             }
             echo '</select></p>';
         }
-        echo '<p><strong>Stripe Connect:</strong> Not connected — checkout and automatic payouts disabled.</p><p><strong>PayPal / Invoice:</strong> Manual settlement workflow not configured.</p>';
+        $stripe = self::stripe_status();
+        echo '<h2>Stripe Connect</h2><p><label for="bh3-stripe-mode">Environment</label><br><select id="bh3-stripe-mode" name="stripe_mode">';
+        foreach ( array( 'test' => 'Test mode', 'live' => 'Live mode (checkout still disabled)' ) as $mode => $label ) {
+            echo '<option value="' . esc_attr( $mode ) . '" ' . selected( $stripe['mode'], $mode, false ) . '>' . esc_html( $label ) . '</option>';
+        }
+        echo '</select></p><p><strong>Credentials:</strong> ' . esc_html( $stripe['keys_configured'] ? 'Configured in server environment (not yet verified with Stripe)' : 'Not configured' ) . '</p>';
+        echo '<p>Set BH3_STRIPE_TEST_SECRET_KEY and BH3_STRIPE_TEST_PUBLISHABLE_KEY securely in wp-config.php or server environment. Live equivalents: BH3_STRIPE_LIVE_SECRET_KEY and BH3_STRIPE_LIVE_PUBLISHABLE_KEY. Never paste secret keys into a page or form.</p>';
+        echo '<p><strong>Connection:</strong> Not verified. Stripe Checkout and automatic payouts remain disabled.</p><p><strong>PayPal / Invoice:</strong> Manual settlement workflow not configured.</p>';
         submit_button( 'Save commission' ); echo '</form><p>Fluent Forms collects booking details only. Direct Stripe Connect checkout, payment verification, refunds and reconciliation must pass staging QA before activation.</p></div>';
     }
     public static function save_commission() {
@@ -73,6 +92,9 @@ final class BH_Marketplace_Settings_3 {
         }
         update_option( 'bh3_commission_percent', number_format( (float) $raw, 2, '.', '' ), false );
         update_option( 'bh3_marketplace_policy', $policy, false );
+        $mode = isset( $_POST['stripe_mode'] ) && is_scalar( $_POST['stripe_mode'] ) ? sanitize_key( wp_unslash( $_POST['stripe_mode'] ) ) : '';
+        if ( ! in_array( $mode, array( 'test', 'live' ), true ) ) { wp_die( 'Invalid Stripe mode', '', array( 'response' => 400 ) ); }
+        update_option( 'bh3_stripe_mode', $mode, false );
         wp_safe_redirect( admin_url( 'admin.php?page=bh3-marketplace' ) ); exit;
     }
     public static function leader_form() {
