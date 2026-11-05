@@ -12,9 +12,9 @@ PR #142. Staging only; do not merge/deploy until validated.
 - Test mobile widths, keyboard navigation and screen reader labels.
 
 ## Data safety
-- Calendar currently includes only the 12 filtered activities on the current directory page. Do not present it as a complete directory-wide calendar.
+- Calendar now queries all filtered published activities independently of the 12-card List pagination, but returns at most 500 matching weekly session rows. The UI must disclose when the cap is reached.
 - Only weekly sessions with `status='scheduled'` are included. Term-time is labelled but actual holiday exclusions, cancellations and dated exceptions are not resolved.
-- The planner currently links to the existing Family Hub; it does not add sessions to `bh_planner` or make bookings.
+- The planner currently links to the existing Family Hub; planner entries deep-link to the activity timetable. It does not add dated sessions to `bh_planner` or make bookings.
 - Do not wire new directory IDs to legacy family planner writes until the ID mapping, verified identity, and family action feature flags have been checked.
 
 ## Before merge
