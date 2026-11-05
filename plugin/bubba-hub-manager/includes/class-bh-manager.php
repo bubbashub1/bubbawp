@@ -57,6 +57,8 @@ final class BH_Manager_3 {
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activity-venues.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-organisers.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-sessions.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-term-dates-admin.php';
+        BH_Term_Dates_Admin_3::register();
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-my-listings.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-dashboard.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-layout.php';
@@ -114,6 +116,8 @@ final class BH_Manager_3 {
         BH_Leader_Statistics_3::register();
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-account.php';
         BH_Leader_Account_3::register();
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-marketplace-settings.php';
+        BH_Marketplace_Settings_3::register();
         BH_Leader_Layout_3::register();
         BH_Leader_Frontend_3::register();
         BH_Portal_Access_3::register();
