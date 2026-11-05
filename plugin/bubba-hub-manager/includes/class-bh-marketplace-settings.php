@@ -243,6 +243,69 @@ final class BH_Marketplace_Settings_3 {
             $wpdb->get_var( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $lock ) );
         }
     }
+    /**
+     * Internal Stripe Checkout test-session creator. No public route is registered.
+     * Destination charges make the platform responsible for Stripe processing fees,
+     * so refuse the default leader-pays policy until a compatible flow is built.
+     */
+    public static function create_test_checkout( $booking_id, $customer_user_id ) {
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
+            || ! defined( 'BH3_ENABLE_STRIPE_TEST_CHECKOUT' ) || BH3_ENABLE_STRIPE_TEST_CHECKOUT !== true ) {
+            return new WP_Error( 'checkout_disabled', 'Checkout is disabled.' );
+        }
+        $config = self::stripe_status();
+        if ( $config['mode'] !== 'test' || ! $config['keys_configured'] ) {
+            return new WP_Error( 'stripe_test_required', 'Stripe test credentials required.' );
+        }
+        if ( self::policy()['processing_fees'] !== 'platform' ) {
+            return new WP_Error( 'fee_policy_unsupported', 'Destination charges charge processing fees to the platform. Choose platform fees or use a different payment flow.' );
+        }
+        $customer_user_id = absint( $customer_user_id );
+        if ( ! $customer_user_id || $customer_user_id !== get_current_user_id() ) {
+            return new WP_Error( 'customer_mismatch', 'Customer authentication required.' );
+        }
+        global $wpdb;
+        $table = $wpdb->prefix . 'bh3_bookings';
+        $booking = $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM `{$table}` WHERE id=%d AND customer_user_id=%d LIMIT 1",
+            absint( $booking_id ), $customer_user_id
+        ), ARRAY_A );
+        if ( ! $booking || $booking['payment_status'] !== 'pending'
+            || ! empty( $booking['stripe_checkout_session_id'] )
+            || empty( $booking['reservation_expires_at'] )
+            || strtotime( $booking['reservation_expires_at'] . ' UTC' ) <= time() + 120 ) {
+            return new WP_Error( 'invalid_reservation', 'Reservation unavailable or too close to expiry.' );
+        }
+        $valid = self::validate_occurrence( (int) $booking['session_id'], $booking['occurrence_date'] );
+        if ( is_wp_error( $valid ) ) { return $valid; }
+        $account = get_user_meta( $customer_user_id, 'bh3_stripe_test_account_id', true );
+        // Payout account belongs to the organiser, never the customer.
+        $organiser_users = get_users( array( 'meta_key' => 'bh3_organiser_id',
+            'meta_value' => (string) (int) $booking['organiser_id'], 'fields' => 'ID', 'number' => 2 ) );
+        if ( count( $organiser_users ) !== 1 ) {
+            return new WP_Error( 'organiser_account_ambiguous', 'Organiser payout account must be uniquely linked.' );
+        }
+        $account = get_user_meta( (int) $organiser_users[0], 'bh3_stripe_test_account_id', true );
+        if ( ! is_string( $account ) || ! preg_match( '/^acct_[A-Za-z0-9]+$/', $account ) ) {
+            return new WP_Error( 'leader_not_connected', 'Leader Stripe test account is not connected.' );
+        }
+        $leader_status = self::leader_stripe_status( (int) $organiser_users[0] );
+        if ( $leader_status['state'] !== 'ready_test' ) {
+            return new WP_Error( 'leader_not_ready', 'Leader test account is not ready.' );
+        }
+        $gross = (int) $booking['gross_pence'];
+        $commission = (int) $booking['commission_pence'];
+        if ( $gross < 50 || $commission < 0 || $commission > $gross || $booking['currency'] !== 'gbp' ) {
+            return new WP_Error( 'invalid_payment_amount', 'Invalid booking amount.' );
+        }
+        $expiry = strtotime( $booking['reservation_expires_at'] . ' UTC' );
+        // Stripe Checkout requires at least 30 minutes to expire. Existing 15-minute
+        // holds cannot safely back Checkout; fail closed rather than oversell.
+        if ( $expiry < time() + 30 * MINUTE_IN_SECONDS ) {
+            return new WP_Error( 'hold_too_short', 'Checkout requires a longer capacity hold; no payment session created.' );
+        }
+        return new WP_Error( 'checkout_not_ready', 'Checkout awaits a 30-minute hold, webhook confirmation and idempotency implementation.' );
+    }
     public static function stripe_status() {
         $mode = get_option( 'bh3_stripe_mode', 'test' );
         $mode = $mode === 'live' ? 'live' : 'test';
