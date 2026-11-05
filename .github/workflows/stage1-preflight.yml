@@ -1,0 +1,28 @@
+name: Stage 1 plugin preflight
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  php-preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PHP CLI
+        run: sudo apt-get update && sudo apt-get install -y php-cli
+      - name: Lint every PHP file, including nested modules
+        shell: bash
+        run: |
+          set -euo pipefail
+          count=0
+          while IFS= read -r -d '' file; do
+            php -l "$file"
+            count=$((count + 1))
+          done < <(find plugin -type f -name '*.php' -print0)
+          test "$count" -gt 0
+          echo "Linted $count PHP files"
+      - name: Check plugin structure and side-effect guard
+        run: php scripts/validate-plugin.php
