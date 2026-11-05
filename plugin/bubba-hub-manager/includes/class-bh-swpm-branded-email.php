@@ -17,7 +17,7 @@ final class BH_Swpm_Branded_Email_3 {
         if ( ! $settings->get_value( 'email-enable-html' ) ) { return $body; }
         // Do not brand unrelated registration or payment emails through this hook.
         // The token URL is already substituted by Simple Membership at this stage.
-        if ( strpos( $body, 'swpm_email_activation=1' ) === false && strpos( $body, 'swpm_email_activation=1' ) === false ) { return $body; }
+        if ( strpos( $body, 'swpm_email_activation=1' ) === false ) { return $body; }
 
         $logo = '';
         $custom_logo_id = (int) get_theme_mod( 'custom_logo' );
@@ -28,7 +28,7 @@ final class BH_Swpm_Branded_Email_3 {
         $logo_html = $logo ? '<img src="' . esc_url( $logo ) . '" width="160" alt="' . esc_attr( $site ) . '" style="max-width:160px;height:auto;display:block;margin:0 auto 8px">' : '';
         // Simple Membership may already provide HTML content; preserve its activation URL.
         $message = wp_kses_post( $body );
-        if ( strpos( $message, '<' ) === false ) { $message = nl2br( esc_html( $body ) ); }
+        if ( strpos( $message, '<' ) === false ) { $message = nl2br( make_clickable( esc_html( $body ) ) ); }
         return '<div style="margin:0;padding:28px 12px;background:#f3f8f3;font-family:Arial,sans-serif;color:#263b32">'
             . '<div style="max-width:560px;margin:auto;background:#fff;border-radius:14px;overflow:hidden">'
             . '<div style="background:#dceee4;padding:26px;text-align:center">' . $logo_html
