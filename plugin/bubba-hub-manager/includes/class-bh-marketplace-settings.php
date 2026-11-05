@@ -556,6 +556,21 @@ final class BH_Marketplace_Settings_3 {
         }
         return $attendees;
     }
+    /** Parent-only profile choices for the booking preview. */
+    public static function booking_profile_choices( $customer_user_id ) {
+        $customer_user_id = absint( $customer_user_id );
+        if ( ! is_user_logged_in() || $customer_user_id !== get_current_user_id() ) { return array(); }
+        global $wpdb;
+        $table = $wpdb->prefix . 'bh_family_profiles';
+        if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ) !== $table ) {
+            return array();
+        }
+        $rows = $wpdb->get_results( $wpdb->prepare(
+            "SELECT id,profile_type,display_name FROM `{$table}` WHERE user_id=%d AND profile_type IN ('child','bump') ORDER BY id DESC LIMIT 50",
+            $customer_user_id
+        ), ARRAY_A );
+        return is_array( $rows ) ? $rows : array();
+    }
     public static function parent_booking_widget( $atts ) {
         $atts = shortcode_atts( array( 'session_id' => 0 ), $atts, 'bh_parent_booking' );
         $session_id = absint( $atts['session_id'] );
@@ -574,6 +589,24 @@ final class BH_Marketplace_Settings_3 {
         echo '<section id="' . esc_attr( $id ) . '" class="bh3-parent-booking" aria-label="Class booking">';
         echo '<h3>Book a class</h3><p><strong>Price per place:</strong> £' .
             esc_html( number_format( $quote['unit_price_pence'] / 100, 2 ) ) . '</p>';
+        if ( is_user_logged_in() ) {
+            $profiles = self::booking_profile_choices( get_current_user_id() );
+            echo '<div class="bh3-booking-attendees"><h4>Who is attending?</h4>';
+            echo '<p>Select the children attending, or choose a pregnancy profile for an antenatal class.</p>';
+            if ( $profiles ) {
+                echo '<fieldset><legend>Family profiles</legend>';
+                foreach ( $profiles as $profile ) {
+                    $type = $profile['profile_type'] === 'bump' ? 'Pregnancy' : 'Child';
+                    echo '<label style="display:block;margin:8px 0"><input type="checkbox" name="bh3_preview_profile_ids[]" value="' .
+                        esc_attr( $profile['id'] ) . '" disabled> ' .
+                        esc_html( $profile['display_name'] ) . ' (' . esc_html( $type ) . ')</label>';
+                }
+                echo '</fieldset><p><small>Selection preview only. Booking submission linking is still being developed.</small></p>';
+            } else {
+                echo '<p>No child or pregnancy profiles found.</p>';
+            }
+            echo '<p><a href="' . esc_url( home_url( '/family/profile/' ) ) . '">Add or edit a child in My Hub</a></p></div>';
+        }
         // Fluent Forms Free captures details, but its submission is not yet
         // cryptographically bound to this booking. Never imply form completion
         // authorises payment until the server-side binding is implemented.
