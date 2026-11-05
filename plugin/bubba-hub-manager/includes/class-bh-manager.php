@@ -137,6 +137,8 @@ final class BH_Manager_3 {
         add_action( 'admin_menu', array( 'BH_Directory_Audit_3', 'register' ) );
         add_action( 'admin_menu', array( 'BH_Modules_3', 'register' ) );
         add_action( 'admin_menu', array( 'BH_Activities_3', 'register' ) );
+        // Register the front-end shortcode on every request; admin_menu only runs in wp-admin.
+        add_shortcode( 'bh_admin_activity_wizard', array( 'BH_Activity_Create_3', 'render_frontend' ) );
         add_action( 'admin_menu', array( 'BH_Activity_Create_3', 'register' ) );
         add_action( 'admin_menu', array( 'BH_Activity_Edit_3', 'register' ) );
         // admin-post.php does not fire admin_menu; register form handlers during admin_init.
