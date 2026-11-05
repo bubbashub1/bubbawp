@@ -17,11 +17,12 @@ final class BH_Leader_Layout_3 {
             'bh_leader_support' => 'Help',
             'bh_leader_statistics' => 'Statistics',
             'bh_leader_account' => 'Account',
+            'bh_leader_payout_settings' => 'Payments',
         );
         if ( ! isset( $pages[ $tag ] ) ||
             strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ||
             ! is_user_logged_in() || ! current_user_can( 'read' ) ||
-            strpos( (string) $output, '<section' ) === false ) { return $output; }
+            ( strpos( (string) $output, '<section' ) === false && 'bh_leader_payout_settings' !== $tag ) ) { return $output; }
         $id = absint( $_GET['activity_id'] ?? 0 );
         $activity_args = $id ? array( 'activity_id' => $id ) : array();
         $links = array(
@@ -31,6 +32,7 @@ final class BH_Leader_Layout_3 {
             array( 'My Business', home_url( '/leader/business/' ), 'My Business' ),
             array( 'Bookings', home_url( '/leader/bookings/' ), 'Bookings' ),
             array( 'Statistics', home_url( '/leader/statistics/' ), 'Statistics' ),
+            array( 'Payments & Payouts', home_url( '/leader/payment/' ), 'Payments' ),
             array( 'Help & Support', home_url( '/leader/support/' ), 'Help' ),
             array( 'Account Settings', home_url( '/leader/account/' ), 'Account' ),
         );
