@@ -464,6 +464,69 @@ final class BH_Marketplace_Settings_3 {
             'safe_to_auto_confirm' => false,
         );
     }
+    /**
+     * Explicitly gated staging payment transition. Caller MUST supply an event
+     * already authenticated by verify_test_webhook(), not untrusted request JSON.
+     * The webhook controller does not invoke this until end-to-end QA is approved.
+     */
+    public static function confirm_verified_test_payment( $event ) {
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
+            || ! defined( 'BH3_ENABLE_TEST_BOOKING_CONFIRMATION' )
+            || BH3_ENABLE_TEST_BOOKING_CONFIRMATION !== true ) {
+            return new WP_Error( 'confirmation_disabled', 'Booking confirmation is disabled.' );
+        }
+        $preflight = self::inspect_verified_checkout_payment( $event );
+        if ( is_wp_error( $preflight ) ) { return $preflight; }
+        global $wpdb;
+        $bookings = $wpdb->prefix . 'bh3_bookings';
+        $events = $wpdb->prefix . 'bh3_stripe_events';
+        $event_id = $event['id'] ?? '';
+        if ( ! is_string( $event_id ) || ! preg_match( '/^evt_[A-Za-z0-9]+$/', $event_id ) ) {
+            return new WP_Error( 'invalid_event', 'Invalid Stripe event ID.' );
+        }
+        $lock = 'bh3_payment_' . md5( $wpdb->prefix . ':' . $preflight['booking_id'] );
+        if ( (int) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, 5)', $lock ) ) !== 1 ) {
+            return new WP_Error( 'payment_busy', 'Payment confirmation is busy.' );
+        }
+        try {
+            // Recheck while holding the lock; the earlier preflight may be stale.
+            $checked = self::inspect_verified_checkout_payment( $event );
+            if ( is_wp_error( $checked ) ) { return $checked; }
+            $record = $wpdb->get_row( $wpdb->prepare(
+                "SELECT id,payment_status,reservation_expires_at FROM `{$bookings}` WHERE id=%d LIMIT 1",
+                $checked['booking_id']
+            ), ARRAY_A );
+            if ( ! $record ) { return new WP_Error( 'booking_missing', 'Booking not found.' ); }
+            if ( $record['payment_status'] === 'paid' ) {
+                return array( 'booking_id' => $checked['booking_id'], 'already_paid' => true, 'confirmed' => false );
+            }
+            // Expired holds require manual review to avoid overselling.
+            if ( empty( $record['reservation_expires_at'] ) || strtotime( $record['reservation_expires_at'] . ' UTC' ) <= time() ) {
+                return new WP_Error( 'hold_expired', 'Payment arrived after the booking hold expired; manual review required.' );
+            }
+            $ledger = $wpdb->get_row( $wpdb->prepare(
+                "SELECT processing_status FROM `{$events}` WHERE stripe_event_id=%s LIMIT 1", $event_id
+            ), ARRAY_A );
+            if ( ! $ledger || $ledger['processing_status'] !== 'received' ) {
+                return new WP_Error( 'event_not_ready', 'Verified event is not ready for processing.' );
+            }
+            $updated = $wpdb->query( $wpdb->prepare(
+                "UPDATE `{$bookings}` SET payment_status='paid', stripe_payment_intent_id=%s, updated_at=%s
+                 WHERE id=%d AND payment_status='pending' AND reservation_expires_at > %s",
+                $checked['payment_intent_id'], current_time( 'mysql', true ),
+                $checked['booking_id'], current_time( 'mysql', true )
+            ) );
+            if ( $updated !== 1 ) {
+                return new WP_Error( 'confirmation_race', 'Booking status changed; review payment.' );
+            }
+            $wpdb->update( $events, array( 'processing_status' => 'processed',
+                'processed_at' => current_time( 'mysql', true ) ),
+                array( 'stripe_event_id' => $event_id, 'processing_status' => 'received' ) );
+            return array( 'booking_id' => $checked['booking_id'], 'already_paid' => false, 'confirmed' => true );
+        } finally {
+            $wpdb->get_var( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $lock ) );
+        }
+    }
     public static function stripe_status() {
         $mode = get_option( 'bh3_stripe_mode', 'test' );
         $mode = $mode === 'live' ? 'live' : 'test';
