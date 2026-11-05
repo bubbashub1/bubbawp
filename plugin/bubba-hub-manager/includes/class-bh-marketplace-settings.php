@@ -491,6 +491,71 @@ final class BH_Marketplace_Settings_3 {
         $owned['checkout_authorised'] = false; // Child profile ownership is not yet checked.
         return $owned;
     }
+    /**
+     * Return only the selected profiles belonging to the authenticated parent.
+     * The leader-facing snapshot deliberately excludes full dates of birth,
+     * family account identifiers and unselected children.
+     */
+    public static function inspect_booking_attendees( $profile_ids, $customer_user_id, $places ) {
+        $customer_user_id = absint( $customer_user_id );
+        $places = absint( $places );
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
+            || ! is_user_logged_in() || $customer_user_id !== get_current_user_id()
+            || ! is_array( $profile_ids ) || $places < 1 || $places > 20
+            || count( $profile_ids ) !== $places ) {
+            return new WP_Error( 'invalid_attendees', 'Select one family profile for each place.' );
+        }
+        $ids = array();
+        foreach ( $profile_ids as $id ) {
+            if ( ! is_scalar( $id ) || ! ctype_digit( (string) $id ) || (int) $id < 1 ) {
+                return new WP_Error( 'invalid_profile_id', 'Invalid family profile selection.' );
+            }
+            $ids[] = (int) $id;
+        }
+        if ( count( array_unique( $ids ) ) !== count( $ids ) ) {
+            return new WP_Error( 'duplicate_attendee', 'Each family profile can only be selected once.' );
+        }
+        global $wpdb;
+        $table = $wpdb->prefix . 'bh_family_profiles';
+        $exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) );
+        if ( $exists !== $table ) {
+            return new WP_Error( 'family_profiles_unavailable', 'Family profiles are unavailable.' );
+        }
+        $columns = $wpdb->get_col( "SHOW COLUMNS FROM `{$table}`", 0 );
+        if ( ! is_array( $columns ) || ! in_array( 'gender', $columns, true ) ) {
+            return new WP_Error( 'family_profiles_outdated', 'Family profile gender field is not ready.' );
+        }
+        $placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+        $rows = $wpdb->get_results( $wpdb->prepare(
+            "SELECT id,profile_type,display_name,profile_date,gender FROM `{$table}` WHERE user_id=%d AND id IN ({$placeholders})",
+            array_merge( array( $customer_user_id ), $ids )
+        ), ARRAY_A );
+        if ( ! is_array( $rows ) || count( $rows ) !== count( $ids ) ) {
+            return new WP_Error( 'profile_not_owned', 'One or more family profiles are unavailable for this account.' );
+        }
+        $by_id = array();
+        foreach ( $rows as $row ) { $by_id[ (int) $row['id'] ] = $row; }
+        $attendees = array();
+        foreach ( $ids as $id ) {
+            $row = $by_id[ $id ];
+            if ( ! in_array( $row['profile_type'], array( 'child', 'bump' ), true ) ) {
+                return new WP_Error( 'invalid_profile_type', 'Unsupported family profile type.' );
+            }
+            if ( $row['profile_type'] === 'child' ) {
+                $year = substr( (string) $row['profile_date'], 0, 4 );
+                if ( ! preg_match( '/^(19|20)\\d{2}$/', $year ) ) {
+                    return new WP_Error( 'birth_year_missing', 'Child birth year is missing.' );
+                }
+                $name = trim( (string) $row['display_name'] );
+                if ( $name === '' ) { return new WP_Error( 'child_name_missing', 'Child name is missing.' ); }
+                $attendees[] = array( 'type' => 'child', 'name' => $name,
+                    'gender' => (string) $row['gender'], 'year_of_birth' => (int) $year );
+            } else {
+                $attendees[] = array( 'type' => 'bump', 'name' => 'Pregnancy', 'gender' => '', 'year_of_birth' => null );
+            }
+        }
+        return $attendees;
+    }
     public static function parent_booking_widget( $atts ) {
         $atts = shortcode_atts( array( 'session_id' => 0 ), $atts, 'bh_parent_booking' );
         $session_id = absint( $atts['session_id'] );
