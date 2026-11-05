@@ -1,5 +1,5 @@
 <?php
-/** Staging-only editing of draft activities, no publishing or deletion. */
+/** Staging-only editing and administrator-controlled publishing of activities. */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 final class BH_Activity_Edit_3 {
     private static function allowed() {
@@ -8,20 +8,21 @@ final class BH_Activity_Edit_3 {
     private static function load( $id ) {
         global $wpdb;
         $table = $wpdb->prefix . 'activities';
-        return $wpdb->get_row( $wpdb->prepare( "SELECT * FROM `{$table}` WHERE id = %d AND status = 'draft' LIMIT 1", $id ), ARRAY_A );
+        return $wpdb->get_row( $wpdb->prepare( "SELECT * FROM `{$table}` WHERE id = %d AND status IN ('draft', 'published') LIMIT 1", $id ), ARRAY_A );
     }
     public static function register() {
         add_submenu_page( null, 'Edit Activity', 'Edit Activity', 'manage_options', 'bh3-edit-activity', array( __CLASS__, 'render' ) );
         add_action( 'admin_post_bh3_update_activity', array( __CLASS__, 'save' ) );
+        add_action( 'admin_post_bh3_change_activity_status', array( __CLASS__, 'change_status' ) );
     }
     public static function render() {
         if ( ! self::allowed() ) { wp_die( 'Editing is restricted to staging administrators.', '', array( 'response' => 403 ) ); }
         $id = absint( $_GET['activity_id'] ?? 0 );
         $row = $id ? self::load( $id ) : null;
-        if ( ! $row ) { wp_die( 'Draft activity not found.', '', array( 'response' => 404 ) ); }
-        echo '<div class="wrap"><h1>Edit draft activity #' . esc_html( (string) $id ) . '</h1>';
-        if ( isset( $_GET['updated'] ) ) { echo '<div class="notice notice-success"><p>Draft updated.</p></div>'; }
-        echo '<p>Draft fields only. Slug and publishing status remain unchanged.</p>';
+        if ( ! $row ) { wp_die( 'Activity not found.', '', array( 'response' => 404 ) ); }
+        echo '<div class="wrap"><h1>Edit activity #' . esc_html( (string) $id ) . '</h1>';
+        if ( isset( $_GET['updated'] ) ) { echo '<div class="notice notice-success"><p>Activity updated.</p></div>'; }
+        echo '<p>Publishing is available to staging administrators only.</p>';
         echo '<p><a class="button" href="' . esc_url( add_query_arg( array( 'page' => 'bh3-activity-venues', 'activity_id' => $id ), admin_url( 'admin.php' ) ) ) . '">Manage venues</a> ';
         echo '<a class="button" href="' . esc_url( add_query_arg( array( 'page' => 'bh3-sessions', 'activity_id' => $id ), admin_url( 'admin.php' ) ) ) . '">Manage timetable</a></p>';
 
@@ -53,8 +54,16 @@ final class BH_Activity_Edit_3 {
         }
         echo '</select> <a href="' . esc_url( admin_url( 'admin.php?page=bh3-organisers' ) ) . '">Manage organisers</a></td></tr>';
         echo '</tbody></table>';
-        submit_button( 'Update draft' );
-        echo '</form></div>';
+        submit_button( 'Save activity' );
+        echo '</form>';
+        echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+        echo '<input type="hidden" name="action" value="bh3_change_activity_status"><input type="hidden" name="activity_id" value="' . esc_attr( (string) $id ) . '">';
+        wp_nonce_field( 'bh3_change_activity_status_' . $id );
+        $published = $row['status'] === 'published';
+        submit_button( $published ? 'Return to draft' : 'Publish on staging', $published ? 'secondary' : 'primary', 'submit', false );
+        echo '</form>';
+        if ( $published && ! empty( $row['slug'] ) ) { echo '<p><a class="button" target="_blank" rel="noopener noreferrer" href="' . esc_url( home_url( '/activity/' . $row['slug'] . '/' ) ) . '">View public activity</a></p>'; }
+        echo '</div>';
     }
     public static function save() {
         if ( ! self::allowed() ) { wp_die( 'Staging administrator permission required.', '', array( 'response' => 403 ) ); }
@@ -93,8 +102,26 @@ final class BH_Activity_Edit_3 {
             'is_free' => $free, 'booking_url' => $url, 'updated_at' => current_time( 'mysql', true )
         );
         $table = $wpdb->prefix . 'activities';
-        $result = $wpdb->update( $table, $data, array( 'id' => $id, 'status' => 'draft' ) );
+        $result = $wpdb->update( $table, $data, array( 'id' => $id ) );
         if ( $result === false ) { wp_die( 'Database update failed.', '', array( 'response' => 500 ) ); }
+        wp_safe_redirect( add_query_arg( array( 'page' => 'bh3-edit-activity', 'activity_id' => $id, 'updated' => 1 ), admin_url( 'admin.php' ) ) );
+        exit;
+    }
+    public static function change_status() {
+        if ( ! self::allowed() ) { wp_die( 'Staging administrator permission required.', '', array( 'response' => 403 ) ); }
+        $id = absint( $_POST['activity_id'] ?? 0 );
+        check_admin_referer( 'bh3_change_activity_status_' . $id );
+        $row = $id ? self::load( $id ) : null;
+        if ( ! $row ) { wp_die( 'Activity not found.', '', array( 'response' => 404 ) ); }
+        $next = $row['status'] === 'published' ? 'draft' : 'published';
+        if ( $next === 'published' && ( trim( (string) $row['title'] ) === '' || trim( (string) $row['slug'] ) === '' ) ) {
+            wp_die( 'Add a title and slug before publishing.', '', array( 'response' => 400 ) );
+        }
+        global $wpdb;
+        $data = array( 'status' => $next, 'updated_at' => current_time( 'mysql', true ) );
+        if ( $next === 'published' ) { $data['published_at'] = current_time( 'mysql', true ); }
+        $result = $wpdb->update( $wpdb->prefix . 'activities', $data, array( 'id' => $id, 'status' => $row['status'] ) );
+        if ( $result === false || $result === 0 ) { wp_die( 'Could not update activity status.', '', array( 'response' => 500 ) ); }
         wp_safe_redirect( add_query_arg( array( 'page' => 'bh3-edit-activity', 'activity_id' => $id, 'updated' => 1 ), admin_url( 'admin.php' ) ) );
         exit;
     }
