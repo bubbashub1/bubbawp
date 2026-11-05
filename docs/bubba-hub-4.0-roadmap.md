@@ -17,6 +17,22 @@ Owner: Bubba Hub South West
 
 **Outcome measures to define before delivery:** leader minutes per routine task, percentage of bookings/reminders handled without manual intervention, parent repeat usage, activity discovery-to-booking completion, data freshness, and support/connection engagement. Do not collect unnecessary child or family data.
 
+## Cross-sector guiding principle
+
+> **Does it save time, make family life easier, or help people connect? If it doesn't, it probably isn't a priority.**
+
+Apply this principle to all Bubba Hub development, including 3.0 parity work and future releases, across Directory, Family Hub, Leader Portal, Bookings, Events, Support & Guidance, Community, Membership, Admin and Communications.
+
+### Feature decision test
+
+- **Save time:** reduce repetitive admin, searching, clicks or duplicate entry.
+- **Make family life easier:** improve accessible discovery, planning, booking, confidence and support.
+- **Help people connect:** enable appropriate, safe connections among families, leaders and local services.
+- Meeting one goal makes a feature worth considering; two or three strengthen its priority.
+- Features meeting none should normally be deferred **except** essential security, safeguarding, privacy, accessibility, legal compliance, data integrity or reliability work.
+
+**Design guardrails:** mobile-first simplicity; accessible and inclusive experiences; privacy and safeguarding by design; core functions operate without AI or new paid dependencies; avoid feature bloat.
+
 ## Scope and release boundary
 
 Bubba Hub **3.0** remains the WordPress migration, legacy feature parity, security, staging QA, and reliable core Directory, Family Hub, Leader Portal and Booking system. Do not defer critical legacy parity or safety fixes to 4.0 simply because they are unfinished.
