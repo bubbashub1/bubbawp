@@ -29,8 +29,8 @@ final class BH_Leader_Bookings_3 {
         <section class="bh-leader-bookings">
           <header class="bh-bookings-hero"><p>LEADER HUB</p><h1>Class calendar</h1><p>See your sessions in one place. Bookings and space limits are optional.</p></header>
           <div class="bh-bookings-notice" role="status">
-            <strong>Calendar preview — session dates are not connected yet.</strong>
-            <p>You do not need a booking link, a capacity or available-space numbers to publish a class schedule. This preview shows linked activities only; it does not read or change reservations, attendee details, reminders or payments.</p>
+            <strong>Session calendar — staging preview.</strong>
+            <p>You do not need a booking link, a capacity or available-space numbers to publish a class schedule. Sessions are projected from weekly timetable rules; this calendar does not accept reservations, handle attendee details, reminders or payments.</p>
           </div>
           <?php
           $month = isset( $_GET['booking_month'] ) && is_string( $_GET['booking_month'] ) ? sanitize_text_field( wp_unslash( $_GET['booking_month'] ) ) : wp_date( 'Y-m' );
@@ -43,6 +43,8 @@ final class BH_Leader_Bookings_3 {
           $prev = $first->modify( '-1 month' )->format( 'Y-m' );
           $next = $first->modify( '+1 month' )->format( 'Y-m' );
           $occurrences = array();
+          $session_titles = get_option( 'bh3_session_titles', array() );
+          if ( ! is_array( $session_titles ) ) { $session_titles = array(); }
           $term_ranges = get_option( 'bh3_term_date_ranges', array() );
           $term_ranges = is_array( $term_ranges ) ? $term_ranges : array();
           $term_unconfigured = false;
@@ -100,7 +102,7 @@ final class BH_Leader_Bookings_3 {
                   <?php if ( count( $activities ) === 1 ) : ?>
                     <a class="bh-calendar-add" href="<?php echo esc_url( add_query_arg( array( 'activity_id'=>(int) $activities[0]['id'], 'session_date'=>$first->modify( '+' . ( $day - 1 ) . ' days' )->format( 'Y-m-d' ) ), home_url( '/leader/timetable/' ) ) ); ?>" aria-label="<?php echo esc_attr( 'Add session for ' . $day . ' ' . $first->format( 'F' ) ); ?>">+ Add</a>
                   <?php endif; ?>
-                  <?php foreach ( $occurrences[$day] ?? array() as $session ) : ?><div class="bh-calendar-session"><a href="<?php echo esc_url( add_query_arg( array( 'activity_id'=>(int) $session['activity_id'], 'edit_session'=>(int) $session['id'] ), home_url( '/leader/timetable/' ) ) ); ?>"><?php echo esc_html( substr( $session['start_time'], 0, 5 ) . ' ' . $session['title'] ); ?></a><?php if ( ! empty( $session['term_time_only'] ) ) : ?> · Term<?php endif; ?></div><?php endforeach; ?>
+                  <?php foreach ( $occurrences[$day] ?? array() as $session ) : ?><div class="bh-calendar-session"><a href="<?php echo esc_url( add_query_arg( array( 'activity_id'=>(int) $session['activity_id'], 'edit_session'=>(int) $session['id'] ), home_url( '/leader/timetable/' ) ) ); ?>"><?php echo esc_html( substr( $session['start_time'], 0, 5 ) . ' ' . ( $session_titles[(int) $session['id']] ?? $session['title'] ) ); ?></a><?php if ( ! empty( $session['term_time_only'] ) ) : ?> · Term<?php endif; ?></div><?php endforeach; ?>
                 </div>
               <?php endfor; ?>
             </div>
@@ -123,10 +125,17 @@ final class BH_Leader_Bookings_3 {
             <?php if ( ! $activities ) : ?>
               <p>No linked activities found. <a href="<?php echo esc_url( home_url( '/leader/' ) ); ?>">Go to your dashboard</a>.</p>
             <?php else : ?>
+              <p><label for="bh-calendar-new-activity"><strong>Add a session to a listing</strong></label></p>
+              <form method="get" action="<?php echo esc_url( home_url( '/leader/timetable/' ) ); ?>">
+                <select id="bh-calendar-new-activity" name="activity_id" required>
+                  <?php foreach ( $activities as $activity ) : ?><option value="<?php echo esc_attr( $activity['id'] ); ?>"><?php echo esc_html( $activity['title'] ); ?></option><?php endforeach; ?>
+                </select>
+                <button type="submit">+ Add session</button>
+              </form>
               <ul class="bh-bookings-activities">
                 <?php foreach ( $activities as $activity ) : ?>
                   <li><div><strong><?php echo esc_html( $activity['title'] ); ?></strong><small><?php echo esc_html( ucfirst( (string) $activity['status'] ) ); ?></small></div>
-                  <span>Session calendar integration pending</span></li>
+                  <a href="<?php echo esc_url( add_query_arg( 'activity_id', (int) $activity['id'], home_url( '/leader/timetable/' ) ) ); ?>">Manage sessions</a></li>
                 <?php endforeach; ?>
               </ul>
             <?php endif; ?>
