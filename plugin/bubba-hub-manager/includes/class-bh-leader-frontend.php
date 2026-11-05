@@ -72,6 +72,19 @@ final class BH_Leader_Frontend_3 {
 
         <main class="bh-leader-shell">
             <header class="bh-leader-head"><h1>Leader Dashboard</h1><p class="bh-leader-muted">Welcome, <?php echo esc_html( $name ); ?>. Manage your Bubba Hub activities.</p></header>
+            <nav class="bh-leader-quick-actions" aria-label="Quick actions">
+                <a class="bh-leader-primary-action" href="<?php echo esc_url( home_url( '/leader/new/' ) ); ?>">+ Add activity</a>
+                <a href="<?php echo esc_url( home_url( '/leader/bookings/' ) ); ?>">View class calendar</a>
+                <a href="#my-activities">Manage activities</a>
+                <a href="<?php echo esc_url( home_url( '/leader/business/' ) ); ?>">My business</a>
+            </nav>
+            <style>
+              .bh-leader-quick-actions{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0 22px;align-items:center}
+              .bh-leader-quick-actions a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border:1px solid #cbded2;border-radius:10px;background:#fff;color:#205943;font-weight:650;text-decoration:none;box-sizing:border-box}
+              .bh-leader-quick-actions a.bh-leader-primary-action{background:#227c63;color:#fff;border-color:#227c63}
+              .bh-leader-quick-actions a:focus-visible{outline:3px solid #b3d7c6;outline-offset:2px}
+              @media(max-width:600px){.bh-leader-quick-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.bh-leader-quick-actions a{padding:10px;text-align:center}}
+            </style>
             <section class="bh-leader-stats" aria-label="Listing summary">
                 <div class="bh-leader-stat"><strong><?php echo esc_html( number_format_i18n( $totals['all'] ) ); ?></strong>Total activities</div>
                 <div class="bh-leader-stat"><strong><?php echo esc_html( number_format_i18n( $totals['draft'] ) ); ?></strong>Drafts</div>
