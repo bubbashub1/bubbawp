@@ -436,6 +436,61 @@ final class BH_Marketplace_Settings_3 {
             'checkout_authorised' => false,
         );
     }
+    /**
+     * Validate the expected Form 7 booking fields without trusting client-side
+     * values. Admin must map actual Fluent Forms input names first.
+     * No payment or capacity reservation is authorised by this check alone.
+     */
+    public static function inspect_booking_form_fields( $submission_id, $customer_user_id, $expected_session_id, $expected_date, $expected_places ) {
+        $owned = self::inspect_booking_form_submission( $submission_id, $customer_user_id );
+        if ( is_wp_error( $owned ) ) { return $owned; }
+        $map = get_option( 'bh3_booking_form_field_map', array() );
+        $required = array( 'session_id', 'occurrence_date', 'places', 'consent' );
+        if ( ! is_array( $map ) ) {
+            return new WP_Error( 'booking_fields_unmapped', 'Booking form field mapping is missing.' );
+        }
+        foreach ( $required as $field ) {
+            if ( empty( $map[ $field ] ) || ! is_string( $map[ $field ] )
+                || ! preg_match( '/^[A-Za-z][A-Za-z0-9_]*$/', $map[ $field ] ) ) {
+                return new WP_Error( 'booking_fields_unmapped', 'Booking form field mapping is incomplete.' );
+            }
+        }
+        if ( count( array_unique( array_values( array_intersect_key( $map, array_flip( $required ) ) ) ) ) !== count( $required ) ) {
+            return new WP_Error( 'booking_fields_ambiguous', 'Booking form field mapping has duplicate keys.' );
+        }
+        global $wpdb;
+        $table = $wpdb->prefix . 'fluentform_submissions';
+        $raw = $wpdb->get_var( $wpdb->prepare(
+            "SELECT response FROM `{$table}` WHERE id=%d AND form_id=%d AND user_id=%d LIMIT 1",
+            $owned['submission_id'], $owned['form_id'], $owned['customer_user_id']
+        ) );
+        $data = json_decode( (string) $raw, true );
+        if ( ! is_array( $data ) ) {
+            return new WP_Error( 'booking_fields_invalid', 'Booking details could not be read.' );
+        }
+        $session = $data[ $map['session_id'] ] ?? null;
+        $date = $data[ $map['occurrence_date'] ] ?? null;
+        $places = $data[ $map['places'] ] ?? null;
+        $consent = $data[ $map['consent'] ] ?? null;
+        if ( ! is_scalar( $session ) || ! ctype_digit( (string) $session )
+            || (int) $session !== absint( $expected_session_id )
+            || ! is_string( $date ) || $date !== $expected_date
+            || ! preg_match( '/^\\d{4}-\\d{2}-\\d{2}$/', $date )
+            || ! is_scalar( $places ) || ! ctype_digit( (string) $places )
+            || (int) $places !== absint( $expected_places )
+            || (int) $places < 1 || (int) $places > 20 ) {
+            return new WP_Error( 'booking_selection_mismatch', 'Booking details do not match the selected class, date and places.' );
+        }
+        // Consent must be an explicit affirmative value, never a non-empty
+        // arbitrary string, unchecked checkbox, or inferred default.
+        if ( ! in_array( $consent, array( 'yes', '1', 1, true ), true ) ) {
+            return new WP_Error( 'booking_consent_missing', 'Booking consent is required.' );
+        }
+        $owned['session_selection_verified'] = true;
+        $owned['consent_verified'] = true;
+        $owned['checkout_authorised'] = false; // Child profile ownership is not yet checked.
+        return $owned;
+    }
     public static function parent_booking_widget( $atts ) {
         $atts = shortcode_atts( array( 'session_id' => 0 ), $atts, 'bh_parent_booking' );
         $session_id = absint( $atts['session_id'] );
