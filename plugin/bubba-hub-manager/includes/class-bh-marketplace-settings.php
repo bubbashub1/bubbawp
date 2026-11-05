@@ -214,7 +214,7 @@ final class BH_Marketplace_Settings_3 {
             }
             $reference = wp_generate_uuid4();
             $now = current_time( 'mysql', true );
-            $expires = gmdate( 'Y-m-d H:i:s', time() + 15 * MINUTE_IN_SECONDS );
+            $expires = gmdate( 'Y-m-d H:i:s', time() + 35 * MINUTE_IN_SECONDS );
             $ok = $wpdb->insert( $table, array(
                 'public_reference' => $reference,
                 'session_id' => $quote['session_id'],
@@ -278,7 +278,6 @@ final class BH_Marketplace_Settings_3 {
         }
         $valid = self::validate_occurrence( (int) $booking['session_id'], $booking['occurrence_date'] );
         if ( is_wp_error( $valid ) ) { return $valid; }
-        $account = get_user_meta( $customer_user_id, 'bh3_stripe_test_account_id', true );
         // Payout account belongs to the organiser, never the customer.
         $organiser_users = get_users( array( 'meta_key' => 'bh3_organiser_id',
             'meta_value' => (string) (int) $booking['organiser_id'], 'fields' => 'ID', 'number' => 2 ) );
@@ -299,12 +298,11 @@ final class BH_Marketplace_Settings_3 {
             return new WP_Error( 'invalid_payment_amount', 'Invalid booking amount.' );
         }
         $expiry = strtotime( $booking['reservation_expires_at'] . ' UTC' );
-        // Stripe Checkout requires at least 30 minutes to expire. Existing 15-minute
-        // holds cannot safely back Checkout; fail closed rather than oversell.
+        // Reserve a minimum 30-minute Checkout window; leave a safety margin.
         if ( $expiry < time() + 30 * MINUTE_IN_SECONDS ) {
             return new WP_Error( 'hold_too_short', 'Checkout requires a longer capacity hold; no payment session created.' );
         }
-        return new WP_Error( 'checkout_not_ready', 'Checkout awaits a 30-minute hold, webhook confirmation and idempotency implementation.' );
+        return new WP_Error( 'checkout_not_ready', 'Checkout awaits webhook confirmation and idempotency implementation.' );
     }
     public static function stripe_status() {
         $mode = get_option( 'bh3_stripe_mode', 'test' );
