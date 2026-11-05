@@ -119,7 +119,12 @@ final class BH_Activity_Edit_3 {
         }
         global $wpdb;
         $data = array( 'status' => $next, 'updated_at' => current_time( 'mysql', true ) );
-        if ( $next === 'published' ) { $data['published_at'] = current_time( 'mysql', true ); }
+        // published_at is an optional parity column, absent from the base activities schema.
+        if ( $next === 'published' ) {
+            $table_name = $wpdb->prefix . 'activities';
+            $column = $wpdb->get_var( $wpdb->prepare( "SHOW COLUMNS FROM `{$table_name}` LIKE %s", 'published_at' ) );
+            if ( $column === 'published_at' ) { $data['published_at'] = current_time( 'mysql', true ); }
+        }
         $result = $wpdb->update( $wpdb->prefix . 'activities', $data, array( 'id' => $id, 'status' => $row['status'] ) );
         if ( $result === false || $result === 0 ) { wp_die( 'Could not update activity status.', '', array( 'response' => 500 ) ); }
         wp_safe_redirect( add_query_arg( array( 'page' => 'bh3-edit-activity', 'activity_id' => $id, 'updated' => 1 ), admin_url( 'admin.php' ) ) );
