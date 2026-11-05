@@ -8,6 +8,7 @@ final class BH_Activity_Detail_3 {
         add_filter( 'query_vars', array( __CLASS__, 'register_query_vars' ) );
         add_filter( 'redirect_canonical', array( __CLASS__, 'preserve_activity_permalink' ), 10, 2 );
         add_filter( 'the_content', array( __CLASS__, 'render_pretty_activity_content' ), 20 );
+        add_filter( 'bh_theme_activity_id_for_slug', array( __CLASS__, 'activity_id_for_slug' ), 10, 2 );
         add_filter( 'bh_theme_activity_data', array( __CLASS__, 'theme_activity_data' ), 10, 2 );
     }
     public static function register_activity_rewrite() {
@@ -21,6 +22,17 @@ final class BH_Activity_Detail_3 {
     public static function register_query_vars( $vars ) {
         $vars[] = 'bh_activity_slug';
         return $vars;
+    }
+    public static function activity_id_for_slug( $existing, $slug ) {
+        if ( $existing ) { return absint( $existing ); }
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) { return 0; }
+        $slug = sanitize_title( (string) $slug );
+        if ( ! $slug ) { return 0; }
+        global $wpdb;
+        $table = $wpdb->prefix . 'activities';
+        return (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT id FROM `{$table}` WHERE slug=%s AND status IN ('published','publish') LIMIT 1", $slug
+        ) );
     }
     public static function render_pretty_activity_content( $content ) {
         if ( ! is_main_query() || ! in_the_loop() || ! is_page( 'activity' ) ) { return $content; }
