@@ -7,6 +7,7 @@ final class BH_Marketplace_Settings_3 {
         add_action( 'admin_menu', array( __CLASS__, 'menu' ) );
         add_action( 'admin_post_bh3_save_commission', array( __CLASS__, 'save_commission' ) );
         add_action( 'admin_post_bh3_verify_stripe', array( __CLASS__, 'verify_stripe' ) );
+        add_action( 'admin_post_bh3_stripe_onboard', array( __CLASS__, 'stripe_onboard' ) );
         add_action( 'admin_post_bh3_save_payout_method', array( __CLASS__, 'save_method' ) );
         add_shortcode( 'bh_leader_payout_settings', array( __CLASS__, 'leader_form' ) );
     }
@@ -72,6 +73,48 @@ final class BH_Marketplace_Settings_3 {
             'mode' => $status['mode'], 'result' => $result, 'checked_at' => time(),
         ), false );
         wp_safe_redirect( admin_url( 'admin.php?page=bh3-marketplace&stripe_check=' . rawurlencode( $result ) ) ); exit;
+    }
+    public static function stripe_onboard() {
+        if ( ! is_user_logged_in() || ! absint( get_user_meta( get_current_user_id(), 'bh3_organiser_id', true ) ) ) {
+            wp_die( 'Linked leader account required.', '', array( 'response' => 403 ) );
+        }
+        check_admin_referer( 'bh3_stripe_onboard' );
+        $status = self::stripe_status();
+        if ( $status['mode'] !== 'test' || ! $status['keys_configured']
+            || ! defined( 'BH3_ENABLE_STRIPE_TEST_ONBOARDING' ) || BH3_ENABLE_STRIPE_TEST_ONBOARDING !== true ) {
+            wp_die( 'Stripe test onboarding disabled.', '', array( 'response' => 403 ) );
+        }
+        $key = constant( 'BH3_STRIPE_TEST_SECRET_KEY' );
+        $user_id = get_current_user_id();
+        $account = get_user_meta( $user_id, 'bh3_stripe_test_account_id', true );
+        if ( ! is_string( $account ) || ! preg_match( '/^acct_[A-Za-z0-9]+$/', $account ) ) {
+            $created = wp_remote_post( 'https://api.stripe.com/v1/accounts', array(
+                'timeout' => 20, 'redirection' => 0,
+                'headers' => array( 'Authorization' => 'Bearer ' . $key ),
+                'body' => array( 'type' => 'express', 'country' => 'GB', 'capabilities[transfers][requested]' => 'true', 'metadata[wp_user_id]' => (string) $user_id ),
+            ) );
+            $data = ! is_wp_error( $created ) && wp_remote_retrieve_response_code( $created ) === 200 ? json_decode( wp_remote_retrieve_body( $created ), true ) : null;
+            if ( ! is_array( $data ) || empty( $data['id'] ) || ! preg_match( '/^acct_[A-Za-z0-9]+$/', $data['id'] ) ) {
+                wp_die( 'Stripe test account creation failed.', '', array( 'response' => 502 ) );
+            }
+            $account = $data['id'];
+            update_user_meta( $user_id, 'bh3_stripe_test_account_id', $account );
+        }
+        $return = home_url( '/leader/account/' );
+        $response = wp_remote_post( 'https://api.stripe.com/v1/account_links', array(
+            'timeout' => 20, 'redirection' => 0,
+            'headers' => array( 'Authorization' => 'Bearer ' . $key ),
+            'body' => array(
+                'account' => $account, 'type' => 'account_onboarding',
+                'refresh_url' => add_query_arg( 'stripe_return', 'refresh', $return ),
+                'return_url' => add_query_arg( 'stripe_return', 'complete', $return ),
+            ),
+        ) );
+        $data = ! is_wp_error( $response ) && wp_remote_retrieve_response_code( $response ) === 200 ? json_decode( wp_remote_retrieve_body( $response ), true ) : null;
+        if ( ! is_array( $data ) || empty( $data['url'] ) || strpos( $data['url'], 'https://connect.stripe.com/' ) !== 0 ) {
+            wp_die( 'Stripe test onboarding link failed.', '', array( 'response' => 502 ) );
+        }
+        wp_redirect( esc_url_raw( $data['url'] ), 303 ); exit;
     }
     public static function menu() {
         add_submenu_page( 'bubba-hub-3-status', 'Marketplace Commission', 'Marketplace Commission', 'manage_options', 'bh3-marketplace', array( __CLASS__, 'admin_form' ) );
@@ -147,7 +190,14 @@ final class BH_Marketplace_Settings_3 {
         foreach ( array( 'stripe' => 'Stripe Connect (automated setup pending)', 'paypal' => 'PayPal (manual settlement pending)', 'invoice' => 'Invoice (manual settlement pending)' ) as $key => $label ) {
             echo '<option value="' . esc_attr( $key ) . '" ' . selected( $current, $key, false ) . '>' . esc_html( $label ) . '</option>';
         }
-        echo '</select><button type="submit">Save preference</button></form></section>';
+        echo '</select><button type="submit">Save preference</button></form>';
+        if ( self::stripe_status()['mode'] === 'test' && self::stripe_status()['keys_configured'] && defined( 'BH3_ENABLE_STRIPE_TEST_ONBOARDING' ) && BH3_ENABLE_STRIPE_TEST_ONBOARDING === true ) {
+            echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+            wp_nonce_field( 'bh3_stripe_onboard' );
+            echo '<input type="hidden" name="action" value="bh3_stripe_onboard"><button type="submit">Set up Stripe test payouts</button></form>';
+            echo '<p>Test onboarding only. Payouts remain disabled.</p>';
+        }
+        echo '</section>';
         return ob_get_clean();
     }
     public static function save_method() {
