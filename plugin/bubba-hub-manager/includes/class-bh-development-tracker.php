@@ -6,7 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 add_action( 'admin_menu', static function () {
     add_submenu_page(
-        'bh-manager',
+        'bubba-hub-3-status',
         '3.0 Development Tracker',
         'Development Tracker',
         'manage_options',
