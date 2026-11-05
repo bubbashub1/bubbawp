@@ -34,6 +34,17 @@ foreach (glob($root . '/**/*.php') ?: [] as $file) {
             strpos($source, "staging.bubbahub.co.uk") !== false) {
             continue;
         }
+        // Family tables are created only via a staging administrator action with
+        // a nonce and explicit backup acknowledgement; existing tables are skipped.
+        if ($unsafe === 'dbDelta(' && basename($file) === 'class-bh-family-db-setup.php' &&
+            strpos($source, 'public static function create()') !== false &&
+            strpos($source, 'self::staging()') !== false &&
+            strpos($source, "current_user_can('manage_options')") !== false &&
+            strpos($source, "check_admin_referer('bh3_create_family_tables')") !== false &&
+            strpos($source, 'if (self::exists($table)) continue;') !== false &&
+            strpos($source, "add_action('admin_post_bh3_create_family_tables'") !== false) {
+            continue;
+        }
         // Ask Support schema is an explicit, staging-only administrator action.
         // Keep this narrowly scoped: no activation hook, nonce and typed confirmation required.
         if ($unsafe === 'dbDelta(' && basename($file) === 'class-bh-ask-support-storage.php' &&
@@ -45,6 +56,12 @@ foreach (glob($root . '/**/*.php') ?: [] as $file) {
             strpos($source, "add_action('admin_post_bh3_ask_install_schema'") !== false) {
             continue;
         }
+        // Leader venue request table is created only through an explicit staging admin action with nonce.
+        if ($unsafe === 'dbDelta(' && basename($file) === 'class-bh-leader-venue-requests.php' &&
+            strpos($source, 'public static function install()') !== false &&
+            strpos($source, "check_admin_referer( 'bh3_venue_request_install' )") !== false &&
+            strpos($source, "staging.bubbahub.co.uk") !== false &&
+            strpos($source, 'admin_post_bh3_venue_request_install') !== false) { continue; }
         if (strpos($source, $unsafe) !== false) {
             fwrite(STDERR, "Unexpected side-effect API in {$file}: {$unsafe}\n");
             exit(1);
