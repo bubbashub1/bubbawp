@@ -403,7 +403,7 @@ final class BH_Family_Hub_3 {
                     <?php foreach (array_slice($filtered_planner, 0, $show_planner ? 200 : 8) as $item) : ?>
                       <li>
                         <?php $planner_id = absint($item['activity_id'] ?? 0); $planner_label = $activity_titles[$planner_id] ?? sprintf(__('Activity #%d', 'bubba-hub-manager'), $planner_id); ?>
-                        <?php if (!empty($activity_links[$planner_id])) : ?><a href="<?php echo esc_url($activity_links[$planner_id]); ?>"><?php echo esc_html($planner_label); ?></a><?php else : ?><?php echo esc_html($planner_label); ?><?php endif; ?>
+                        <?php if (!empty($activity_links[$planner_id])) : ?><a href="<?php echo esc_url($activity_links[$planner_id] . '#timetable'); ?>"><?php echo esc_html($planner_label); ?></a> <a class="bh3-family__timetable-link" href="<?php echo esc_url($activity_links[$planner_id] . '#timetable'); ?>"><?php echo esc_html__('Timetable & booking options', 'bubba-hub-manager'); ?></a><?php else : ?><?php echo esc_html($planner_label); ?><?php endif; ?>
                         <span class="bh3-family__status"><?php echo esc_html(!empty($item['visited']) ? __('Visited', 'bubba-hub-manager') : __('Not visited yet', 'bubba-hub-manager')); ?></span>
                         <?php if (!$admin_demo && BH_Family_Actions_3::enabled()) : ?>
                           <?php foreach (array((!empty($item['visited']) ? 'not_visited' : 'visited') => (!empty($item['visited']) ? __('Mark not visited', 'bubba-hub-manager') : __('Mark visited', 'bubba-hub-manager')), 'unplan' => __('Remove', 'bubba-hub-manager')) as $action_key => $action_label) : ?>
