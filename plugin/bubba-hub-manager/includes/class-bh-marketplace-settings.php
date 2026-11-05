@@ -501,6 +501,46 @@ final class BH_Marketplace_Settings_3 {
      * server-stored, parent-owned Fluent Forms submission. Never trust
      * browser checkbox values alone, and never authorise Checkout here.
      */
+    /**
+     * Validate guest-entered attendees before a future booking write.
+     * Returns only minimal attendee snapshots; no dates of birth or contact
+     * details. This is validation only, not guest Checkout authorisation.
+     */
+    public static function validate_guest_booking_attendees( $submitted, $places ) {
+        $places = absint( $places );
+        if ( ! is_array( $submitted ) || $places < 1 || $places > 20 || count( $submitted ) !== $places ) {
+            return new WP_Error( 'guest_attendee_count', 'Enter one attendee for each booked place.' );
+        }
+        $attendees = array();
+        foreach ( $submitted as $row ) {
+            if ( ! is_array( $row ) || ! isset( $row['type'] ) || ! is_string( $row['type'] )
+                || ! in_array( $row['type'], array( 'child', 'bump' ), true ) ) {
+                return new WP_Error( 'guest_attendee_type', 'Choose child or pregnancy for each attendee.' );
+            }
+            if ( $row['type'] === 'bump' ) {
+                $attendees[] = array( 'type' => 'bump', 'name' => 'Pregnancy', 'gender' => '', 'year_of_birth' => null );
+                continue;
+            }
+            $name = isset( $row['name'] ) && is_string( $row['name'] ) ? trim( sanitize_text_field( $row['name'] ) ) : '';
+            if ( $name === '' || mb_strlen( $name ) > 100 ) {
+                return new WP_Error( 'guest_child_name', 'Enter a child name of up to 100 characters.' );
+            }
+            $year = $row['year_of_birth'] ?? null;
+            $current_year = (int) wp_date( 'Y' );
+            if ( ! is_scalar( $year ) || ! ctype_digit( (string) $year )
+                || (int) $year < 1900 || (int) $year > $current_year ) {
+                return new WP_Error( 'guest_child_year', 'Enter a valid year of birth.' );
+            }
+            $gender = isset( $row['gender'] ) && is_string( $row['gender'] ) ? trim( sanitize_text_field( $row['gender'] ) ) : '';
+            if ( mb_strlen( $gender ) > 40 ) {
+                return new WP_Error( 'guest_child_gender', 'Gender must be 40 characters or fewer.' );
+            }
+            $attendees[] = array( 'type' => 'child', 'name' => $name,
+                'gender' => $gender, 'year_of_birth' => (int) $year );
+        }
+        return $attendees;
+    }
+
     public static function inspect_booking_form_attendees( $submission_id, $customer_user_id, $expected_session_id, $expected_date, $expected_places ) {
         $verified = self::inspect_booking_form_fields( $submission_id, $customer_user_id, $expected_session_id, $expected_date, $expected_places );
         if ( is_wp_error( $verified ) ) { return $verified; }
