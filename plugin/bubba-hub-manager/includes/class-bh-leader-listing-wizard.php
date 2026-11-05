@@ -198,7 +198,7 @@ final class BH_Leader_Listing_Wizard_3 {
             if ( ! $existing ) { wp_die( 'Draft not found or not owned by this organiser.', '', array( 'response' => 404 ) ); }
         }
         $title = self::value( 'title' );
-        if ( $step === 1 && $title === '' && ! $id ) { wp_die( 'Please enter an activity name.', '', array( 'response' => 400 ) ); }
+        if ( $step === 1 && $title === '' ) { wp_die( 'Please enter an activity name.', '', array( 'response' => 400 ) ); }
         $min = self::value( 'age_min_months', 3 ); $max = self::value( 'age_max_months', 3 );
         if ( $min !== '' && ( ! ctype_digit( $min ) || (int) $min > 216 ) ) { wp_die( 'Minimum age must be between 0 and 216 months.', '', array( 'response' => 400 ) ); }
         if ( $max !== '' && ( ! ctype_digit( $max ) || (int) $max > 216 ) ) { wp_die( 'Maximum age must be between 0 and 216 months.', '', array( 'response' => 400 ) ); }
@@ -254,6 +254,7 @@ final class BH_Leader_Listing_Wizard_3 {
         if ( ! $id && ! isset( $data['title'] ) ) { $data['title'] = 'Untitled listing draft'; }
         if ( ! isset( $columns['organiser_id'], $columns['title'], $columns['status'] ) ) { wp_die( 'The activity table is missing required fields.', '', array( 'response' => 409 ) ); }
         if ( $step === 7 && $intent === 'submit' ) {
+            if ( ! $id ) { wp_die( 'Save your listing draft before submitting it.', '', array( 'response' => 400 ) ); }
             $required = $wpdb->get_row( $wpdb->prepare( "SELECT title,description,category FROM `{$table}` WHERE id=%d AND organiser_id=%d AND status='draft' LIMIT 1", $id, (int) $organiser['id'] ), ARRAY_A );
             if ( ! $required || trim( (string) $required['title'] ) === '' || trim( (string) $required['description'] ) === '' || trim( (string) $required['category'] ) === '' ) {
                 wp_die( 'Please complete the activity name, description and main category before submitting.', '', array( 'response' => 400 ) );
