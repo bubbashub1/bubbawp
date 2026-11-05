@@ -32,6 +32,51 @@ final class BH_Leader_Bookings_3 {
             <strong>Booking records are not connected yet.</strong>
             <p>This preview shows your linked activities only. No reservations, attendee details, reminders or payments are being read or changed.</p>
           </div>
+          <?php
+          $month = isset( $_GET['booking_month'] ) && is_string( $_GET['booking_month'] ) ? sanitize_text_field( wp_unslash( $_GET['booking_month'] ) ) : wp_date( 'Y-m' );
+          if ( ! preg_match( '/^20[0-9]{2}-(0[1-9]|1[0-2])$/', $month ) ) { $month = wp_date( 'Y-m' ); }
+          $tz = wp_timezone();
+          $first = DateTimeImmutable::createFromFormat( '!Y-m-d', $month . '-01', $tz );
+          $first = $first ?: new DateTimeImmutable( 'first day of this month', $tz );
+          $start = (int) $first->format( 'N' ) - 1;
+          $days = (int) $first->format( 't' );
+          $prev = $first->modify( '-1 month' )->format( 'Y-m' );
+          $next = $first->modify( '+1 month' )->format( 'Y-m' );
+          ?>
+          <div class="bh-bookings-panel bh-bookings-calendar" aria-label="Booking calendar preview">
+            <div class="bh-bookings-calendar-heading">
+              <h2><?php echo esc_html( wp_date( 'F Y', $first->getTimestamp(), $tz ) ); ?></h2>
+              <nav aria-label="Calendar month">
+                <a href="<?php echo esc_url( add_query_arg( 'booking_month', $prev ) ); ?>" aria-label="Previous month">← Previous</a>
+                <a href="<?php echo esc_url( remove_query_arg( 'booking_month' ) ); ?>">Today</a>
+                <a href="<?php echo esc_url( add_query_arg( 'booking_month', $next ) ); ?>" aria-label="Next month">Next →</a>
+              </nav>
+            </div>
+            <p class="bh-bookings-calendar-note">Calendar preview — no session or booking dates are connected yet.</p>
+            <div class="bh-bookings-calendar-grid" role="grid" aria-label="<?php echo esc_attr( $first->format( 'F Y' ) ); ?>">
+              <?php foreach ( array( 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun' ) as $weekday ) : ?>
+                <div class="bh-bookings-calendar-weekday" role="columnheader"><?php echo esc_html( $weekday ); ?></div>
+              <?php endforeach; ?>
+              <?php for ( $blank = 0; $blank < $start; $blank++ ) : ?><div class="bh-bookings-calendar-empty" aria-hidden="true"></div><?php endfor; ?>
+              <?php for ( $day = 1; $day <= $days; $day++ ) : ?>
+                <div class="bh-bookings-calendar-day" role="gridcell" aria-label="<?php echo esc_attr( $first->setDate( (int) $first->format( 'Y' ), (int) $first->format( 'm' ), $day )->format( 'j F Y' ) ); ?>">
+                  <span><?php echo esc_html( (string) $day ); ?></span>
+                </div>
+              <?php endfor; ?>
+            </div>
+          </div>
+          <style>
+          .bh-bookings-calendar{margin:20px 0;padding:20px;border:1px solid #dce9e0;border-radius:14px;background:#fff}
+          .bh-bookings-calendar-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+          .bh-bookings-calendar-heading h2{margin:0}
+          .bh-bookings-calendar-heading nav{display:flex;gap:12px;flex-wrap:wrap}
+          .bh-bookings-calendar-note{color:#51675c;font-size:.9rem}
+          .bh-bookings-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+          .bh-bookings-calendar-weekday{text-align:center;font-size:.8rem;font-weight:700;padding:8px 0;color:#245d48}
+          .bh-bookings-calendar-day,.bh-bookings-calendar-empty{min-height:66px;border:1px solid #e3eae6;border-radius:6px;padding:7px;font-size:.9rem}
+          .bh-bookings-calendar-day{background:#f8fbf9}
+          @media(max-width:600px){.bh-bookings-calendar{padding:12px}.bh-bookings-calendar-day,.bh-bookings-calendar-empty{min-height:45px;padding:4px;font-size:.8rem}.bh-bookings-calendar-grid{gap:2px}}
+          </style>
           <div class="bh-bookings-panel">
             <h2>Your activities</h2>
             <?php if ( ! $activities ) : ?>
