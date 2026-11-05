@@ -15,4 +15,5 @@ if ( ! defined( 'ABSPATH' ) ) {
 define( 'BUBBA_HUB_MANAGER_VERSION', '0.1.0' );
 define( 'BUBBA_HUB_MANAGER_PATH', plugin_dir_path( __FILE__ ) );
 require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-manager.php';
+require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-development-tracker.php';
 add_action( 'plugins_loaded', array( 'BH_Manager_3', 'boot' ) );
