@@ -6,7 +6,17 @@ final class BH_Activity_Create_3 {
         return current_user_can( 'manage_options' ) && strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) === 'staging.bubbahub.co.uk';
     }
     public static function register() {
+        add_shortcode( 'bh_admin_activity_wizard', array( __CLASS__, 'render_frontend' ) );
         add_submenu_page( 'bubba-hub-3-status', 'Add Activity', 'Add Activity', 'manage_options', 'bh3-add-activity', array( __CLASS__, 'render' ) );
+    }
+    /** Reuse the validated seven-step admin wizard on a staging front-end page. */
+    public static function render_frontend() {
+        if ( ! self::allowed() ) {
+            return '<p>This activity creation tool is available to staging administrators only.</p>';
+        }
+        ob_start();
+        self::render();
+        return ob_get_clean();
     }
     public static function register_save() {
         add_action( 'admin_post_bh3_create_activity', array( __CLASS__, 'save' ) );
@@ -123,6 +133,7 @@ final class BH_Activity_Create_3 {
         echo '</nav><form id="bh3-listing-wizard" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="bh3_create_activity">';
         wp_nonce_field( 'bh3_create_activity' );
         echo '<input type="hidden" name="activity_id" value="' . esc_attr( (string) $edit_id ) . '">';
+        if ( ! is_admin() ) { echo '<input type="hidden" name="bh3_frontend_wizard" value="1">'; }
         echo '<section class="bh3-panel" data-panel="0"><h2>Basics</h2><div class="bh3-fields">';
         self::field( 'title', 'Activity title', 'text', '', 'required maxlength="255"' );
         echo '<label class="bh3-field"><span>Organiser</span><select name="organiser_id"><option value="0">Select organiser (optional)</option>';
@@ -416,7 +427,11 @@ BH3_WIZARD_SCRIPT;
             wp_die( 'Unable to save custom fields.', '', array( 'response' => 500 ) );
         }
         if ( false === $wpdb->query( 'COMMIT' ) ) { $wpdb->query( 'ROLLBACK' ); wp_die( 'Unable to complete activity save.', '', array( 'response' => 500 ) ); }
-        wp_safe_redirect( add_query_arg( array( 'page' => 'bh3-add-activity', 'created' => $activity_id, 'edited' => $edit_id ? 1 : 0 ), admin_url( 'admin.php' ) ) );
+        $frontend = isset( $_POST['bh3_frontend_wizard'] ) && (string) $_POST['bh3_frontend_wizard'] === '1';
+        $destination = $frontend
+            ? add_query_arg( array( 'created' => $activity_id, 'edited' => $edit_id ? 1 : 0 ), home_url( '/leader/new-activity/' ) )
+            : add_query_arg( array( 'page' => 'bh3-add-activity', 'created' => $activity_id, 'edited' => $edit_id ? 1 : 0 ), admin_url( 'admin.php' ) );
+        wp_safe_redirect( $destination );
         exit;
     }
 }
