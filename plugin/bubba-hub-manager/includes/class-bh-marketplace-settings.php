@@ -33,6 +33,57 @@ final class BH_Marketplace_Settings_3 {
             'currency' => 'gbp',
         ) );
     }
+    /**
+     * Server-authoritative booking quote. Not a capacity hold or a payment request.
+     * Never accept an amount or commission from browser/Fluent Forms input.
+     */
+    public static function quote_session( $session_id, $places = 1 ) {
+        $session_id = absint( $session_id );
+        $places = filter_var( $places, FILTER_VALIDATE_INT );
+        if ( ! $session_id || $places === false || $places < 1 || $places > 20 ) {
+            return new WP_Error( 'invalid_booking_request', 'Invalid session or number of places.' );
+        }
+        global $wpdb;
+        $sessions = $wpdb->prefix . 'sessions';
+        $activities = $wpdb->prefix . 'activities';
+        $row = $wpdb->get_row( $wpdb->prepare(
+            "SELECT s.id,s.status,a.id AS activity_id,a.organiser_id,a.status AS activity_status
+             FROM `{$sessions}` s INNER JOIN `{$activities}` a ON a.id=s.activity_id
+             WHERE s.id=%d LIMIT 1", $session_id
+        ), ARRAY_A );
+        if ( ! $row || $row['activity_status'] !== 'published' || $row['status'] !== 'scheduled' ) {
+            return new WP_Error( 'session_unavailable', 'This session is not available for booking.' );
+        }
+        $configs = get_option( 'bh3_session_booking_config', array() );
+        $config = is_array( $configs ) ? ( $configs[$session_id] ?? null ) : null;
+        if ( ! is_array( $config ) || empty( $config['enabled'] ) ) {
+            return new WP_Error( 'booking_disabled', 'Bookings are not enabled for this session.' );
+        }
+        $price = isset( $config['price'] ) && is_scalar( $config['price'] ) ? (string) $config['price'] : '';
+        if ( ! preg_match( '/^(?:0|[1-9][0-9]{0,5})(?:\\.[0-9]{1,2})?$/', $price ) || (float) $price > 100000 ) {
+            return new WP_Error( 'invalid_server_price', 'Session price is not configured correctly.' );
+        }
+        $parts = explode( '.', $price, 2 );
+        $unit_pence = (int) $parts[0] * 100 + (int) str_pad( $parts[1] ?? '', 2, '0' );
+        $gross_pence = $unit_pence * $places;
+        if ( $gross_pence < 1 ) {
+            return new WP_Error( 'free_session', 'Free sessions do not require Stripe checkout.' );
+        }
+        $capacity = isset( $config['capacity'] ) ? absint( $config['capacity'] ) : 0;
+        if ( $capacity && $places > $capacity ) {
+            return new WP_Error( 'capacity_exceeded', 'Requested places exceed session capacity.' );
+        }
+        return array_merge( self::booking_snapshot( $gross_pence ), array(
+            'session_id' => $session_id,
+            'activity_id' => (int) $row['activity_id'],
+            'organiser_id' => (int) $row['organiser_id'],
+            'places' => $places,
+            'unit_price_pence' => $unit_pence,
+            'capacity' => $capacity,
+            'capacity_checked_against_existing_bookings' => false,
+            'checkout_enabled' => false,
+        ) );
+    }
     public static function stripe_status() {
         $mode = get_option( 'bh3_stripe_mode', 'test' );
         $mode = $mode === 'live' ? 'live' : 'test';
