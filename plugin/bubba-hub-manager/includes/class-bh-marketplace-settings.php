@@ -347,6 +347,47 @@ final class BH_Marketplace_Settings_3 {
         }
         return $event;
     }
+    /**
+     * Record a verified Stripe event exactly once. This is a ledger-only primitive;
+     * it never confirms payment or changes capacity.
+     */
+    public static function record_verified_test_event( $event ) {
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
+            || ! defined( 'BH3_ENABLE_STRIPE_TEST_WEBHOOK' ) || BH3_ENABLE_STRIPE_TEST_WEBHOOK !== true ) {
+            return new WP_Error( 'webhook_disabled', 'Test webhook processing is disabled.' );
+        }
+        if ( ! is_array( $event ) || ! isset( $event['id'], $event['type'], $event['livemode'] )
+            || $event['livemode'] !== false || ! is_string( $event['id'] )
+            || ! preg_match( '/^evt_[A-Za-z0-9]+$/', $event['id'] )
+            || ! is_string( $event['type'] ) || strlen( $event['type'] ) > 100 ) {
+            return new WP_Error( 'invalid_event', 'Invalid Stripe test event.' );
+        }
+        global $wpdb;
+        $table = $wpdb->prefix . 'bh3_stripe_events';
+        if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ) !== $table ) {
+            return new WP_Error( 'event_table_missing', 'Stripe event storage is not installed.' );
+        }
+        $session = $event['data']['object']['id'] ?? null;
+        $session = is_string( $session ) && preg_match( '/^cs_test_[A-Za-z0-9_]+$/', $session ) ? $session : null;
+        $inserted = $wpdb->insert( $table, array(
+            'stripe_event_id' => $event['id'],
+            'event_type' => $event['type'],
+            'checkout_session_id' => $session,
+            'processing_status' => 'received',
+            'received_at' => current_time( 'mysql', true ),
+        ) );
+        if ( $inserted === 1 ) {
+            return array( 'event_id' => $event['id'], 'recorded' => true, 'duplicate' => false, 'booking_confirmed' => false );
+        }
+        $existing = $wpdb->get_row( $wpdb->prepare(
+            "SELECT stripe_event_id,processing_status FROM `{$table}` WHERE stripe_event_id=%s LIMIT 1", $event['id']
+        ), ARRAY_A );
+        if ( $existing ) {
+            return array( 'event_id' => $event['id'], 'recorded' => false, 'duplicate' => true,
+                'processing_status' => $existing['processing_status'], 'booking_confirmed' => false );
+        }
+        return new WP_Error( 'event_record_failed', 'Could not record Stripe event.' );
+    }
     public static function stripe_status() {
         $mode = get_option( 'bh3_stripe_mode', 'test' );
         $mode = $mode === 'live' ? 'live' : 'test';
