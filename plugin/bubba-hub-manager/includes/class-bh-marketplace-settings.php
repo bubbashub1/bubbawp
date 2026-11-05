@@ -7,6 +7,7 @@ final class BH_Marketplace_Settings_3 {
         add_action( 'admin_menu', array( __CLASS__, 'menu' ) );
         add_action( 'rest_api_init', array( __CLASS__, 'register_test_webhook_route' ) );
         add_action( 'rest_api_init', array( __CLASS__, 'register_test_booking_route' ) );
+        add_action( 'rest_api_init', array( __CLASS__, 'register_parent_booking_binding_route' ) );
         add_action( 'admin_post_bh3_save_commission', array( __CLASS__, 'save_commission' ) );
         add_action( 'admin_post_bh3_verify_stripe', array( __CLASS__, 'verify_stripe' ) );
         add_action( 'admin_post_bh3_stripe_onboard', array( __CLASS__, 'stripe_onboard' ) );
@@ -1329,6 +1330,43 @@ final class BH_Marketplace_Settings_3 {
  ),
                 'places' => array( 'required' => true, 'type' => 'integer', 'minimum' => 1, 'maximum' => 20 ),
             ),
+        ) );
+    }
+    /**
+     * Staging-only authenticated form binding endpoint. It cannot create a
+     * reservation, start Checkout, or send attendee details to a leader.
+     */
+    public static function register_parent_booking_binding_route() {
+        if ( ! defined( 'BH3_ENABLE_BOOKING_FORM_BINDING' ) || BH3_ENABLE_BOOKING_FORM_BINDING !== true ) { return; }
+        register_rest_route( 'bubba-hub/v3', '/parent-booking-bind', array(
+            'methods' => 'POST',
+            'callback' => array( __CLASS__, 'receive_parent_booking_binding' ),
+            'permission_callback' => function () { return is_user_logged_in(); },
+            'args' => array(
+                'booking_id' => array( 'required' => true, 'type' => 'integer', 'minimum' => 1 ),
+                'submission_id' => array( 'required' => true, 'type' => 'integer', 'minimum' => 1 ),
+            ),
+        ) );
+    }
+    public static function receive_parent_booking_binding( $request ) {
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
+            || ! defined( 'BH3_ENABLE_BOOKING_FORM_BINDING' ) || BH3_ENABLE_BOOKING_FORM_BINDING !== true
+            || ! is_user_logged_in() ) {
+            return new WP_Error( 'booking_binding_unavailable', 'Booking binding unavailable.', array( 'status' => 404 ) );
+        }
+        $result = self::bind_parent_submission_to_booking(
+            absint( $request->get_param( 'booking_id' ) ),
+            absint( $request->get_param( 'submission_id' ) ),
+            get_current_user_id()
+        );
+        if ( is_wp_error( $result ) ) {
+            return new WP_Error( $result->get_error_code(), $result->get_error_message(), array( 'status' => 400 ) );
+        }
+        return rest_ensure_response( array(
+            'booking_id' => $result['booking_id'],
+            'attendee_count' => $result['attendee_count'],
+            'details_saved' => true,
+            'checkout_authorised' => false,
         ) );
     }
     public static function start_test_booking_checkout( $request ) {
