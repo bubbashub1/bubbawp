@@ -906,7 +906,11 @@ final class BH_Marketplace_Settings_3 {
         ) );
     }
     public static function start_test_booking_checkout( $request ) {
+        // Temporary QA-only bypass. Until Form 7 submission ownership, child
+        // consent and selected-session binding are checked server-side, the
+        // REST endpoint must enforce the same disabled-by-default guard as UI.
         if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
+            || ! defined( 'BH3_ENABLE_UNLINKED_BOOKING_TEST_UI' ) || BH3_ENABLE_UNLINKED_BOOKING_TEST_UI !== true
             || ! defined( 'BH3_ENABLE_PARENT_TEST_BOOKING' ) || BH3_ENABLE_PARENT_TEST_BOOKING !== true
             || ! defined( 'BH3_ENABLE_BOOKING_RESERVATIONS' ) || BH3_ENABLE_BOOKING_RESERVATIONS !== true
             || ! defined( 'BH3_ENABLE_STRIPE_TEST_CHECKOUT' ) || BH3_ENABLE_STRIPE_TEST_CHECKOUT !== true ) {
