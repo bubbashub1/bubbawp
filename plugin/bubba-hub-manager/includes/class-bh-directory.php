@@ -200,7 +200,7 @@ final class BH_Directory_3 {
             foreach ( ( $sessions_by_activity[ (int) $calendar_row['id'] ] ?? array() ) as $calendar_label ) {
                 $day_index = array_search( substr( $calendar_label, 0, 3 ), array( 1 => 'Mon', 2 => 'Tue', 3 => 'Wed', 4 => 'Thu', 5 => 'Fri', 6 => 'Sat', 7 => 'Sun' ), true );
                 if ( ! $day_index ) { continue; }
-                $calendar_events[] = array( 'day' => $day_index, 'title' => (string) $calendar_row['title'], 'time' => substr( $calendar_label, 4 ), 'url' => home_url( user_trailingslashit( 'activity/' . $calendar_slug ) ) );
+                $calendar_events[] = array( 'day' => $day_index, 'title' => (string) $calendar_row['title'], 'time' => substr( $calendar_label, 4 ), 'url' => home_url( user_trailingslashit( 'activity/' . $calendar_slug ) ) . '#timetable' );
             }
         }
         $calendar_id = 'bh3-calendar-' . wp_unique_id();
@@ -276,6 +276,7 @@ final class BH_Directory_3 {
                 if ( count( $session_labels ) > 3 ) { echo '<span aria-label="' . esc_attr( (string) ( count( $session_labels ) - 3 ) . ' additional weekly session times' ) . '">+' . esc_html( (string) ( count( $session_labels ) - 3 ) ) . ' more</span>'; }
                 echo '</div></div>';
             }
+            if ( $detail_url && $session_labels ) { echo '<p class="bh3-card-schedule-link"><a href="' . esc_url( $detail_url . '#timetable' ) . '">View timetable &amp; booking options</a></p>'; }
             echo '<div class="bh3-card-footer"><strong class="bh3-card-price">' . ( (int) $row['is_free'] ? 'Free' : ( $row['price_from'] !== null ? 'From £' . esc_html( number_format( (float) $row['price_from'], 2 ) ) : 'Price on enquiry' ) ) . '</strong>';
             if ( $detail_url ) { echo '<a class="bh3-card-cta" href="' . esc_url( $detail_url ) . '">View details <span aria-hidden="true">→</span></a>'; }
             echo '</div></article>';
