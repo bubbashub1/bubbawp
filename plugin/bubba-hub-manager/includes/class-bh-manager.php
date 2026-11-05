@@ -62,6 +62,8 @@ final class BH_Manager_3 {
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-layout.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-frontend.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-listing-wizard.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-email-verification.php';
+        BH_Leader_Email_Verification_3::register();
         BH_Leader_Listing_Wizard_3::register();
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-venue-requests.php';
         BH_Leader_Venue_Requests_3::register();
