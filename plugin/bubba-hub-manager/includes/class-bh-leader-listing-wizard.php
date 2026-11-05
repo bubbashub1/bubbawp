@@ -121,6 +121,8 @@ final class BH_Leader_Listing_Wizard_3 {
             </div>
           </header>
           <?php if ( isset( $_GET['saved'] ) ) : ?><p role="status" class="bh3-wizard-message">Your draft has been saved.</p><?php endif; ?>
+          <?php if ( isset( $_GET['venue_request'] ) && $_GET['venue_request'] === 'sent' ) : ?><p role="status" class="bh3-wizard-message">Your venue suggestion has been sent to the Bubba Hub team for review. You can continue editing your listing while it is checked.</p><?php endif; ?>
+          <?php if ( $id ) : ?><p class="bh3-wizard-help"><strong>Listing status:</strong> Draft — only you and the Bubba Hub team can review it until you submit it for approval.</p><?php endif; ?>
           <form class="bh3-wizard-card" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
             <input type="hidden" name="action" value="bh3_leader_listing_save">
             <input type="hidden" name="activity_id" value="<?php echo esc_attr( $id ); ?>">
