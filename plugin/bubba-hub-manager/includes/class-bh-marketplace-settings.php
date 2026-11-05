@@ -397,6 +397,45 @@ final class BH_Marketplace_Settings_3 {
      * validated submission is linked to a booking; do not imply it charges.
      * Usage: [bh_parent_booking session_id="123"]
      */
+    /**
+     * Read-only Fluent Forms submission ownership check. This is a prerequisite
+     * only: child consent and session-specific fields still require validation.
+     */
+    public static function inspect_booking_form_submission( $submission_id, $customer_user_id ) {
+        $submission_id = absint( $submission_id );
+        $customer_user_id = absint( $customer_user_id );
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
+            || ! $submission_id || ! $customer_user_id || $customer_user_id !== get_current_user_id()
+            || ! is_user_logged_in() ) {
+            return new WP_Error( 'form_access_denied', 'Booking form access denied.' );
+        }
+        global $wpdb;
+        $table = $wpdb->prefix . 'fluentform_submissions';
+        $form_id = absint( get_option( 'bh3_booking_form_id', 7 ) );
+        if ( ! $form_id ) {
+            return new WP_Error( 'booking_form_missing', 'Booking form is not configured.' );
+        }
+        $row = $wpdb->get_row( $wpdb->prepare(
+            "SELECT id,form_id,user_id,created_at FROM `{$table}` WHERE id=%d AND form_id=%d AND user_id=%d LIMIT 1",
+            $submission_id, $form_id, $customer_user_id
+        ), ARRAY_A );
+        if ( ! $row ) {
+            return new WP_Error( 'submission_not_owned', 'Booking details submission was not found for this account.' );
+        }
+        $created = strtotime( $row['created_at'] . ' UTC' );
+        if ( ! $created || $created > time() + 300 || $created < time() - DAY_IN_SECONDS ) {
+            return new WP_Error( 'submission_outdated', 'Please submit fresh booking details.' );
+        }
+        return array(
+            'submission_id' => (int) $row['id'],
+            'form_id' => (int) $row['form_id'],
+            'customer_user_id' => (int) $row['user_id'],
+            'owned' => true,
+            'child_consent_verified' => false,
+            'session_selection_verified' => false,
+            'checkout_authorised' => false,
+        );
+    }
     public static function parent_booking_widget( $atts ) {
         $atts = shortcode_atts( array( 'session_id' => 0 ), $atts, 'bh_parent_booking' );
         $session_id = absint( $atts['session_id'] );
