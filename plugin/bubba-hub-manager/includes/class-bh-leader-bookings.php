@@ -91,7 +91,10 @@ final class BH_Leader_Bookings_3 {
               <?php for ( $day = 1; $day <= $days; $day++ ) : ?>
                 <div class="bh-bookings-calendar-day" role="gridcell" aria-label="<?php echo esc_attr( $first->setDate( (int) $first->format( 'Y' ), (int) $first->format( 'm' ), $day )->format( 'j F Y' ) ); ?>">
                   <span><?php echo esc_html( (string) $day ); ?></span>
-                  <?php foreach ( $occurrences[$day] ?? array() as $session ) : ?><div class="bh-calendar-session"><?php echo esc_html( substr( $session['start_time'], 0, 5 ) . ' ' . $session['title'] ); ?><?php if ( ! empty( $session['term_time_only'] ) ) : ?> · Term<?php endif; ?></div><?php endforeach; ?>
+                  <?php if ( count( $activities ) === 1 ) : ?>
+                    <a class="bh-calendar-add" href="<?php echo esc_url( add_query_arg( array( 'activity_id'=>(int) $activities[0]['id'], 'session_date'=>$first->modify( '+' . ( $day - 1 ) . ' days' )->format( 'Y-m-d' ) ), home_url( '/leader/timetable/' ) ) ); ?>" aria-label="<?php echo esc_attr( 'Add session for ' . $day . ' ' . $first->format( 'F' ) ); ?>">+ Add</a>
+                  <?php endif; ?>
+                  <?php foreach ( $occurrences[$day] ?? array() as $session ) : ?><div class="bh-calendar-session"><a href="<?php echo esc_url( add_query_arg( array( 'activity_id'=>(int) $session['activity_id'], 'edit_session'=>(int) $session['id'] ), home_url( '/leader/timetable/' ) ) ); ?>"><?php echo esc_html( substr( $session['start_time'], 0, 5 ) . ' ' . $session['title'] ); ?></a><?php if ( ! empty( $session['term_time_only'] ) ) : ?> · Term<?php endif; ?></div><?php endforeach; ?>
                 </div>
               <?php endfor; ?>
             </div>
@@ -105,7 +108,7 @@ final class BH_Leader_Bookings_3 {
           .bh-bookings-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
           .bh-bookings-calendar-weekday{text-align:center;font-size:.8rem;font-weight:700;padding:8px 0;color:#245d48}
           .bh-bookings-calendar-day,.bh-bookings-calendar-empty{min-height:66px;border:1px solid #e3eae6;border-radius:6px;padding:7px;font-size:.9rem}
-          .bh-bookings-calendar-day{background:#f8fbf9;overflow-wrap:anywhere}.bh-calendar-session{background:#dceee4;color:#245d48;border-radius:5px;padding:4px;margin-top:5px;font-size:.75rem}
+          .bh-bookings-calendar-day{background:#f8fbf9;overflow-wrap:anywhere}.bh-calendar-add{display:block;font-size:.75rem;margin-top:5px}.bh-calendar-session{background:#dceee4;color:#245d48;border-radius:5px;padding:4px;margin-top:5px;font-size:.75rem}
           @media(max-width:600px){.bh-bookings-calendar{padding:12px}.bh-bookings-calendar-day,.bh-bookings-calendar-empty{min-height:45px;padding:4px;font-size:.8rem}.bh-bookings-calendar-grid{gap:2px}}
           </style>
           <div class="bh-bookings-panel">
