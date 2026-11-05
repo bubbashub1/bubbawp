@@ -897,7 +897,12 @@ final class BH_Marketplace_Settings_3 {
             'args' => array(
                 'submission_id' => array( 'required' => true, 'type' => 'integer', 'minimum' => 1 ),
                 'session_id' => array( 'required' => true, 'type' => 'integer', 'minimum' => 1 ),
-                'occurrence_date' => array( 'required' => true, 'type' => 'string', 'pattern' => '^\\d{4}-\\d{2}-\\d{2}
+                'occurrence_date' => array( 'required' => true, 'type' => 'string', 'pattern' => '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' ),
+                'places' => array( 'required' => true, 'type' => 'integer', 'minimum' => 1, 'maximum' => 20 ),
+            ),
+        ) );
+    }
+    public static function register_parent_booking_binding_route() {
         if ( ! defined( 'BH3_ENABLE_BOOKING_FORM_BINDING' ) || BH3_ENABLE_BOOKING_FORM_BINDING !== true ) { return; }
         register_rest_route( 'bubba-hub/v3', '/parent-booking-bind', array(
             'methods' => 'POST',
