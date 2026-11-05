@@ -1138,16 +1138,16 @@ final class BH_Marketplace_Settings_3 {
         if ( is_wp_error( $quote ) ) {
             return '<p role="status">' . esc_html( $quote->get_error_message() ) . '</p>';
         }
-        $enabled = is_user_logged_in()
-            && defined( 'BH3_ENABLE_UNLINKED_BOOKING_TEST_UI' ) && BH3_ENABLE_UNLINKED_BOOKING_TEST_UI === true
-            && defined( 'BH3_ENABLE_PARENT_TEST_BOOKING' ) && BH3_ENABLE_PARENT_TEST_BOOKING === true
-            && defined( 'BH3_ENABLE_STRIPE_TEST_CHECKOUT' ) && BH3_ENABLE_STRIPE_TEST_CHECKOUT === true
-            && defined( 'BH3_ENABLE_BOOKING_RESERVATIONS' ) && BH3_ENABLE_BOOKING_RESERVATIONS === true;
+        // This legacy widget lacks verified form-to-reservation binding.
+        // Never permit unlinked checkout, including with QA flags enabled.
+        $enabled = false;
         $id = 'bh3-book-' . wp_unique_id();
         ob_start();
         echo '<section id="' . esc_attr( $id ) . '" class="bh3-parent-booking" aria-label="Class booking">';
         echo '<h3>Book a class</h3><p><strong>Price per place:</strong> £' .
             esc_html( number_format( $quote['unit_price_pence'] / 100, 2 ) ) . '</p>';
+        echo '<ol class="bh3-booking-steps" aria-label="Booking steps"><li>Choose session and date</li><li>Add attendees</li><li>Complete consent</li><li>Review availability and payment</li><li>Receive confirmation</li></ol>';
+        echo '<p class="bh3-booking-note" role="status">Booking preview only. No place is reserved and no payment is taken on this page.</p>';
         if ( is_user_logged_in() ) {
             $profiles = self::booking_profile_choices( get_current_user_id() );
             echo '<div class="bh3-booking-attendees"><h4>Who is attending?</h4>';
@@ -1170,7 +1170,9 @@ final class BH_Marketplace_Settings_3 {
             // Guest details are local form inputs only. No guest checkout,
             // reservation, or persistent storage is enabled by this preview.
             echo '<div class="bh3-guest-attendees"><h4>Who is attending?</h4>';
-            echo '<p>You can enter details without creating an account. Guest booking is coming soon.</p>';
+            echo '<p>Guest checkout is planned without requiring an account. These details cannot be submitted yet.</p>';
+            echo '<p><label>Parent or carer name <input type="text" autocomplete="name" disabled></label></p>';
+            echo '<p><label>Email for booking updates <input type="email" autocomplete="email" disabled></label></p>';
             echo '<fieldset><legend>Attendee details</legend>';
             echo '<p><label>Booking for <select name="bh3_guest_profile_type" disabled><option value="child">Child</option><option value="bump">Pregnancy / bump</option></select></label></p>';
             echo '<p><label>Child name <input type="text" maxlength="100" autocomplete="off" disabled></label></p>';
