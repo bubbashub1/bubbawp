@@ -58,13 +58,13 @@ final class BH_Activity_Create_3 {
     }
     public static function render() {
         if ( ! current_user_can( 'manage_options' ) ) { wp_die( 'Permission denied.' ); }
-        echo '<div class="wrap bh3-wizard"><h1>' . ( absint( $_GET['activity_id'] ?? 0 ) ? 'Edit draft activity' : 'Add activity' ) . '</h1>';
+        echo '<div class="wrap bh3-wizard"><h1>' . ( ( isset( $_GET['activity_id'] ) && is_scalar( $_GET['activity_id'] ) ? absint( $_GET['activity_id'] ) : 0 ) ? 'Edit draft activity' : 'Add activity' ) . '</h1>';
         if ( ! self::allowed() ) { echo '<p>Activity creation is restricted to staging administrators.</p></div>'; return; }
         if ( isset( $_GET['created'] ) ) {
             echo '<div class="notice notice-success"><p>Draft created successfully. ID: ' . esc_html( (string) absint( $_GET['created'] ) ) . '</p></div>';
         }
         global $wpdb;
-        $edit_id = absint( $_GET['activity_id'] ?? 0 );
+        $edit_id = ( isset( $_GET['activity_id'] ) && is_scalar( $_GET['activity_id'] ) ? absint( $_GET['activity_id'] ) : 0 );
         $existing = null;
         $existing_venue_ids = array();
         $existing_sessions = array();
@@ -291,10 +291,12 @@ BH3_WIZARD_SCRIPT;
         if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ) !== $table ) { wp_die( 'Activities table is missing.', '', array( 'response' => 409 ) ); }
         $title = self::text_value( 'title', 255 );
         if ( $title === '' ) { wp_die( 'Enter an activity title.', '', array( 'response' => 400 ) ); }
+        if ( isset( $_POST['activity_id'] ) && ! is_scalar( $_POST['activity_id'] ) ) { wp_die( 'Invalid activity ID.', '', array( 'response' => 400 ) ); }
         $edit_id = absint( $_POST['activity_id'] ?? 0 );
         if ( $edit_id && ! $wpdb->get_var( $wpdb->prepare( "SELECT id FROM `{$table}` WHERE id=%d AND status='draft' LIMIT 1", $edit_id ) ) ) {
             wp_die( 'Draft activity not found or no longer editable.', '', array( 'response' => 409 ) );
         }
+        if ( isset( $_POST['organiser_id'] ) && ! is_scalar( $_POST['organiser_id'] ) ) { wp_die( 'Invalid organiser ID.', '', array( 'response' => 400 ) ); }
         $organiser_id = absint( $_POST['organiser_id'] ?? 0 );
         if ( $organiser_id ) {
             $org_table = $wpdb->prefix . 'organisers';
