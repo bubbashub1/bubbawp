@@ -506,6 +506,87 @@ final class BH_Marketplace_Settings_3 {
      * Returns only minimal attendee snapshots; no dates of birth or contact
      * details. This is validation only, not guest Checkout authorisation.
      */
+    /**
+     * Atomically attach an already-verified Fluent Form 7 submission and
+     * selected family attendees to an existing pending reservation.
+     * This does not authorise payment or dispatch notifications.
+     */
+    public static function bind_parent_submission_to_booking( $booking_id, $submission_id, $customer_user_id ) {
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
+            || ! defined( 'BH3_ENABLE_BOOKING_FORM_BINDING' ) || BH3_ENABLE_BOOKING_FORM_BINDING !== true
+            || ! is_user_logged_in() || get_current_user_id() !== absint( $customer_user_id ) ) {
+            return new WP_Error( 'booking_binding_disabled', 'Booking form binding is unavailable.' );
+        }
+        $booking_id = absint( $booking_id );
+        $submission_id = absint( $submission_id );
+        if ( ! $booking_id || ! $submission_id ) { return new WP_Error( 'booking_binding_invalid', 'Booking or submission is missing.' ); }
+        global $wpdb;
+        $bookings = $wpdb->prefix . 'bh3_bookings';
+        $attendees_table = $wpdb->prefix . 'bh3_booking_attendees';
+        $consents_table = $wpdb->prefix . 'bh3_booking_consents';
+        foreach ( array( $bookings, $attendees_table, $consents_table ) as $table ) {
+            if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ) !== $table ) {
+                return new WP_Error( 'booking_schema_missing', 'Booking tables must be migrated first.' );
+            }
+        }
+        $lock = 'bh3_bind_' . md5( $wpdb->prefix . ':' . $booking_id );
+        if ( (int) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, 5)', $lock ) ) !== 1 ) {
+            return new WP_Error( 'booking_binding_busy', 'Booking is being updated. Try again.' );
+        }
+        try {
+            $booking = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM `{$bookings}` WHERE id=%d", $booking_id ), ARRAY_A );
+            if ( ! $booking || (int) $booking['customer_user_id'] !== absint( $customer_user_id )
+                || $booking['payment_status'] !== 'pending'
+                || ! empty( $booking['booking_submission_id'] )
+                || strtotime( (string) $booking['reservation_expires_at'] . ' UTC' ) <= time() ) {
+                return new WP_Error( 'booking_not_bindable', 'Booking is unavailable or reservation has expired.' );
+            }
+            $checked = self::inspect_booking_form_attendees( $submission_id, $customer_user_id,
+                (int) $booking['session_id'], (string) $booking['occurrence_date'], (int) $booking['places'] );
+            if ( is_wp_error( $checked ) ) { return $checked; }
+            $now = current_time( 'mysql', true );
+            if ( $wpdb->query( 'START TRANSACTION' ) === false ) {
+                return new WP_Error( 'booking_transaction_failed', 'Could not start booking update.' );
+            }
+            $success = $wpdb->update( $bookings,
+                array( 'booking_form_id' => (int) $checked['form_id'],
+                    'booking_submission_id' => $submission_id, 'updated_at' => $now ),
+                array( 'id' => $booking_id, 'payment_status' => 'pending', 'booking_submission_id' => null ),
+                array( '%d', '%d', '%s' ), array( '%d', '%s', '%d' ) ) === 1;
+            if ( $success ) {
+                foreach ( $checked['attendees'] as $index => $person ) {
+                    $success = $wpdb->insert( $attendees_table, array(
+                        'booking_id' => $booking_id, 'attendee_number' => $index + 1,
+                        'attendee_type' => $person['type'], 'attendee_name' => $person['name'],
+                        'gender' => $person['gender'], 'year_of_birth' => $person['year_of_birth'],
+                        'created_at' => $now,
+                    ) ) === 1;
+                    if ( ! $success ) { break; }
+                }
+            }
+            if ( $success ) {
+                $success = $wpdb->insert( $consents_table, array(
+                    'booking_id' => $booking_id, 'consent_key' => 'share_attendee_details',
+                    'consent_version' => 'v1', 'response' => 'yes',
+                    'response_at' => $now, 'actor_user_id' => $customer_user_id,
+                    'source' => 'booking', 'created_at' => $now,
+                ) ) === 1;
+            }
+            if ( ! $success ) {
+                $wpdb->query( 'ROLLBACK' );
+                return new WP_Error( 'booking_binding_failed', 'Booking details could not be saved.' );
+            }
+            if ( $wpdb->query( 'COMMIT' ) === false ) {
+                $wpdb->query( 'ROLLBACK' );
+                return new WP_Error( 'booking_commit_failed', 'Booking update could not be confirmed.' );
+            }
+            return array( 'booking_id' => $booking_id, 'submission_id' => $submission_id,
+                'attendee_count' => count( $checked['attendees'] ), 'checkout_authorised' => false );
+        } finally {
+            $wpdb->get_var( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $lock ) );
+        }
+    }
+
     public static function validate_guest_booking_attendees( $submitted, $places ) {
         $places = absint( $places );
         if ( ! is_array( $submitted ) || $places < 1 || $places > 20 || count( $submitted ) !== $places ) {
