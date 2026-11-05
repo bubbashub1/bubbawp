@@ -225,7 +225,8 @@ final class BH_Directory_3 {
                 ? get_permalink( $preview_page ) : '';
         }
         foreach ( $rows as $row ) {
-            $detail_url = $detail_base_url ? add_query_arg( 'bh_activity', absint( $row['id'] ), $detail_base_url ) : '';
+            $slug = isset( $row['slug'] ) ? sanitize_title( (string) $row['slug'] ) : '';
+            $detail_url = $slug ? home_url( user_trailingslashit( 'activity/' . $slug ) ) : ( $detail_base_url ? add_query_arg( 'bh_activity', absint( $row['id'] ), $detail_base_url ) : '' );
             echo '<article data-activity-id="' . esc_attr( (string) absint( $row['id'] ) ) . '">';
             $image_url = isset( $row['image_path'] ) ? trim( (string) $row['image_path'] ) : '';
             $image_scheme = strtolower( (string) wp_parse_url( $image_url, PHP_URL_SCHEME ) );
