@@ -51,7 +51,13 @@ final class BH_Leader_Bookings_3 {
               $session_table = $wpdb->prefix . 'sessions';
               $slots = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
               $sql = "SELECT s.*,a.title FROM `{$session_table}` s JOIN `{$table}` a ON a.id=s.activity_id WHERE s.activity_id IN ($slots) AND s.frequency='weekly' LIMIT 500";
-              $rules = $wpdb->get_results( $wpdb->prepare( $sql, ...$ids ), ARRAY_A );
+              $assignment_table = $wpdb->prefix . 'session_listing_links';
+              if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $assignment_table ) ) ) === $assignment_table ) {
+                  $sql = "SELECT DISTINCT s.*,a.title FROM `{$session_table}` s JOIN `{$table}` a ON a.id=s.activity_id LEFT JOIN `{$assignment_table}` sl ON sl.session_id=s.id WHERE (s.activity_id IN ($slots) OR sl.activity_id IN ($slots)) AND s.frequency='weekly' LIMIT 500";
+                  $rules = $wpdb->get_results( $wpdb->prepare( $sql, ...array_merge( $ids, $ids ) ), ARRAY_A );
+              } else {
+                  $rules = $wpdb->get_results( $wpdb->prepare( $sql, ...$ids ), ARRAY_A );
+              }
               for ( $d = 1; $d <= $days; $d++ ) {
                   $date = $first->modify( '+' . ( $d - 1 ) . ' days' );
                   $ymd = $date->format( 'Y-m-d' );
