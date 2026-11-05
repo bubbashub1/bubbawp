@@ -448,8 +448,8 @@ final class BH_Marketplace_Settings_3 {
         // Once form binding is enabled, no unlinked or unconsented
         // reservation may proceed to Stripe Checkout, even via QA routes.
         if ( defined( 'BH3_ENABLE_BOOKING_FORM_BINDING' ) && BH3_ENABLE_BOOKING_FORM_BINDING === true ) {
-            if ( empty( $booking['booking_submission_id'] ) || empty( $booking['booking_form_id'] )
-                || (int) $booking['booking_form_id'] !== absint( get_option( 'bh3_booking_form_id', 7 ) ) ) {
+            if ( ! absint( get_option( 'bh3_booking_form_id', 0 ) ) || absint( get_option( 'bh3_booking_form_id', 0 ) ) === absint( get_option( 'bh3_booking_consent_form_id', 7 ) ) || empty( $booking['booking_submission_id'] ) || empty( $booking['booking_form_id'] )
+                || (int) $booking['booking_form_id'] !== absint( get_option( 'bh3_booking_form_id', 0 ) ) ) {
                 return new WP_Error( 'booking_form_not_bound', 'Complete and verify the booking form before payment.' );
             }
             $attendees_table = $wpdb->prefix . 'bh3_booking_attendees';
@@ -602,8 +602,8 @@ final class BH_Marketplace_Settings_3 {
         }
         global $wpdb;
         $table = $wpdb->prefix . 'fluentform_submissions';
-        $form_id = absint( get_option( 'bh3_booking_form_id', 7 ) );
-        if ( ! $form_id ) {
+        $form_id = absint( get_option( 'bh3_booking_form_id', 0 ) );
+        if ( ! $form_id || $form_id === absint( get_option( 'bh3_booking_consent_form_id', 7 ) ) ) {
             return new WP_Error( 'booking_form_missing', 'Booking form is not configured.' );
         }
         $row = $wpdb->get_row( $wpdb->prepare(
@@ -1137,8 +1137,8 @@ final class BH_Marketplace_Settings_3 {
         // Fluent Forms Free captures details, but its submission is not yet
         // cryptographically bound to this booking. Never imply form completion
         // authorises payment until the server-side binding is implemented.
-        $form_id = absint( get_option( 'bh3_booking_form_id', 7 ) );
-        if ( $form_id && shortcode_exists( 'fluentform' ) ) {
+        $form_id = absint( get_option( 'bh3_booking_form_id', 0 ) );
+        if ( $form_id && $form_id !== absint( get_option( 'bh3_booking_consent_form_id', 7 ) ) && shortcode_exists( 'fluentform' ) ) {
             echo '<div class="bh3-booking-details"><h4>Booking details</h4>';
             echo do_shortcode( '[fluentform id="' . $form_id . '"]' );
             echo '<p class="bh3-booking-note">Submitting your details does not reserve a place or confirm a booking.</p></div>';
