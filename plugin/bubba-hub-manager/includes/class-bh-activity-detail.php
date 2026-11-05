@@ -116,7 +116,8 @@ final class BH_Activity_Detail_3 {
             'location' => (string) ( $venue['town'] ?? '' ),
             'venue' => (string) ( $venue['name'] ?? '' ),
             'address' => implode( ', ', array_filter( array( $venue['address_line1'] ?? '', $venue['town'] ?? '', $venue['postcode'] ?? '' ) ) ),
-            'sessions_count' => (string) count( $schedule ),
+            'directions_url' => ! empty( $venue['postcode'] ) ? 'https://www.google.com/maps/search/?api=1&query=' . rawurlencode( implode( ', ', array_filter( array( $venue['name'] ?? '', $venue['address_line1'] ?? '', $venue['town'] ?? '', $venue['postcode'] ?? '' ) ) ) ) : '',
+            'sessions_count' => count( $schedule ) . ' available',
             'schedule' => $schedule,
             'categories' => ! empty( $activity['category'] ) ? array( (string) $activity['category'] ) : array(),
         );
