@@ -406,6 +406,7 @@ final class BH_Marketplace_Settings_3 {
             return '<p role="status">' . esc_html( $quote->get_error_message() ) . '</p>';
         }
         $enabled = is_user_logged_in()
+            && defined( 'BH3_ENABLE_UNLINKED_BOOKING_TEST_UI' ) && BH3_ENABLE_UNLINKED_BOOKING_TEST_UI === true
             && defined( 'BH3_ENABLE_PARENT_TEST_BOOKING' ) && BH3_ENABLE_PARENT_TEST_BOOKING === true
             && defined( 'BH3_ENABLE_STRIPE_TEST_CHECKOUT' ) && BH3_ENABLE_STRIPE_TEST_CHECKOUT === true
             && defined( 'BH3_ENABLE_BOOKING_RESERVATIONS' ) && BH3_ENABLE_BOOKING_RESERVATIONS === true;
@@ -414,10 +415,21 @@ final class BH_Marketplace_Settings_3 {
         echo '<section id="' . esc_attr( $id ) . '" class="bh3-parent-booking" aria-label="Class booking">';
         echo '<h3>Book a class</h3><p><strong>Price per place:</strong> £' .
             esc_html( number_format( $quote['unit_price_pence'] / 100, 2 ) ) . '</p>';
+        // Fluent Forms Free captures details, but its submission is not yet
+        // cryptographically bound to this booking. Never imply form completion
+        // authorises payment until the server-side binding is implemented.
+        $form_id = absint( get_option( 'bh3_booking_form_id', 7 ) );
+        if ( $form_id && shortcode_exists( 'fluentform' ) ) {
+            echo '<div class="bh3-booking-details"><h4>Booking details</h4>';
+            echo do_shortcode( '[fluentform id="' . $form_id . '"]' );
+            echo '<p class="bh3-booking-note">Submitting your details does not reserve a place or confirm a booking.</p></div>';
+        } else {
+            echo '<p role="status">Booking details form is not available.</p>';
+        }
         if ( ! is_user_logged_in() ) {
             echo '<p>Please <a href="' . esc_url( wp_login_url( get_permalink() ) ) . '">sign in</a> to book.</p>';
         } elseif ( ! $enabled ) {
-            echo '<p role="status">Online payments are not available yet. Booking preview only.</p>';
+            echo '<p role="status">Online checkout remains disabled until booking details are securely linked to the reservation. Booking preview only.</p>';
         } else {
             echo '<form class="bh3-test-booking-form"><label>Session date <input name="occurrence_date" type="date" required min="' .
                 esc_attr( wp_date( 'Y-m-d' ) ) . '"></label> ';
