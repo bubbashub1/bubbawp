@@ -3,7 +3,7 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 final class BH_Schema_3 {
-    public const VERSION = '0.1.0';
+    public const VERSION = '0.2.0';
 
     public static function table_names() {
         global $wpdb;
