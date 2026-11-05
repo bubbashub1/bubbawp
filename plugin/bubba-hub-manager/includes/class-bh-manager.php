@@ -65,6 +65,9 @@ final class BH_Manager_3 {
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-ask-support-inbox.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-ask-support-storage.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-ask-support-moderation.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-ask-support-intake.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-ask-support-replies.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-ask-support-parent.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-portal-access.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-edit.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-leader-sessions.php';
