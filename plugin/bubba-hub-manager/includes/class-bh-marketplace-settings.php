@@ -16,8 +16,85 @@ final class BH_Marketplace_Settings_3 {
         add_shortcode( 'bh_parent_booking', array( __CLASS__, 'parent_booking_widget' ) );
         add_shortcode( 'bh_booking_readiness', array( __CLASS__, 'booking_readiness_preview' ) );
         add_shortcode( 'bh_leader_email_verification', array( __CLASS__, 'leader_email_verification_widget' ) );
+        add_shortcode( 'bh_leader_account_setup', array( __CLASS__, 'leader_account_setup_widget' ) );
+        add_action( 'admin_post_bh3_admin_link_leader', array( __CLASS__, 'admin_link_leader' ) );
         add_action( 'admin_post_bh3_request_leader_email_verification', array( __CLASS__, 'request_leader_email_verification' ) );
         add_action( 'admin_post_bh3_confirm_leader_email_verification', array( __CLASS__, 'confirm_leader_email_verification' ) );
+    }
+    /**
+     * Front-end setup status for leaders, with an administrator-only staging
+     * linking form. A leader must never self-claim an arbitrary organiser ID.
+     */
+    public static function leader_account_setup_widget() {
+        if ( ! is_user_logged_in() ) {
+            return '<section class="bh3-leader-setup"><h2>Set up your leader account</h2><p>Please log in or register to get started.</p><a href="' . esc_url( wp_login_url( get_permalink() ) ) . '">Log in</a></section>';
+        }
+        $user = wp_get_current_user();
+        $organiser_id = absint( get_user_meta( $user->ID, 'bh3_organiser_id', true ) );
+        $html = '<section class="bh3-leader-setup"><h2>Leader account setup</h2>';
+        $html .= '<p><strong>Account:</strong> ' . esc_html( $user->display_name ) . '</p>';
+        $html .= '<p><strong>Organisation:</strong> ' . ( $organiser_id ? 'Linked' : 'Awaiting team approval' ) . '</p>';
+        if ( ! $organiser_id ) {
+            $html .= '<p>To protect organisers from unauthorised claims, the Bubba Hub team must approve your organisation link.</p>';
+        } else {
+            $html .= self::leader_email_verification_widget();
+        }
+        if ( current_user_can( 'manage_options' ) ) {
+            global $wpdb;
+            $organisers_table = $wpdb->prefix . 'organisers';
+            $exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $organisers_table ) ) );
+            $html .= '<h3>Team: link a test leader</h3>';
+            if ( $exists !== $organisers_table ) {
+                $html .= '<p>Organiser table unavailable.</p>';
+            } else {
+                $organisers = $wpdb->get_results( "SELECT id, name FROM `{$organisers_table}` ORDER BY name ASC LIMIT 200", ARRAY_A );
+                $html .= '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+                $html .= '<input type="hidden" name="action" value="bh3_admin_link_leader">';
+                $html .= wp_nonce_field( 'bh3_admin_link_leader', '_wpnonce', true, false );
+                $html .= '<p><label>WordPress user ID <input type="number" name="leader_user_id" min="1" required></label></p>';
+                $html .= '<p><label>Approved organisation <select name="organiser_id" required><option value="">Select organisation</option>';
+                foreach ( $organisers as $org ) {
+                    $html .= '<option value="' . esc_attr( $org['id'] ) . '">' . esc_html( $org['name'] ) . ' (#' . absint( $org['id'] ) . ')</option>';
+                }
+                $html .= '</select></label></p><button type="submit">Approve and link leader</button></form>';
+                $html .= '<p>Only link accounts after confirming the leader is authorised to represent the selected organisation.</p>';
+            }
+        }
+        return $html . '</section>';
+    }
+    public static function admin_link_leader() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( 'Administrator approval required.', '', array( 'response' => 403 ) );
+        }
+        check_admin_referer( 'bh3_admin_link_leader' );
+        $user_id = isset( $_POST['leader_user_id'] ) ? absint( $_POST['leader_user_id'] ) : 0;
+        $organiser_id = isset( $_POST['organiser_id'] ) ? absint( $_POST['organiser_id'] ) : 0;
+        $user = $user_id ? get_userdata( $user_id ) : false;
+        if ( ! $user || ! $organiser_id || ! is_email( $user->user_email )
+            || user_can( $user_id, 'manage_options' ) ) {
+            wp_die( 'Choose a valid non-administrator leader and organisation.', '', array( 'response' => 400 ) );
+        }
+        global $wpdb;
+        $table = $wpdb->prefix . 'organisers';
+        $exists = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM `{$table}` WHERE id = %d LIMIT 1", $organiser_id ) );
+        if ( ! $exists ) { wp_die( 'Organisation does not exist.', '', array( 'response' => 400 ) ); }
+        $linked = get_users( array( 'meta_key' => 'bh3_organiser_id', 'meta_value' => (string) $organiser_id, 'fields' => 'ID', 'number' => 2 ) );
+        foreach ( $linked as $existing_id ) {
+            if ( (int) $existing_id !== $user_id ) {
+                wp_die( 'Organisation is already linked to another account. Review ownership before making changes.', '', array( 'response' => 409 ) );
+            }
+        }
+        $old = absint( get_user_meta( $user_id, 'bh3_organiser_id', true ) );
+        if ( $old && $old !== $organiser_id ) {
+            wp_die( 'Account already belongs to another organisation. Review ownership before changing links.', '', array( 'response' => 409 ) );
+        }
+        update_user_meta( $user_id, 'bh3_organiser_id', $organiser_id );
+        // A newly approved organisation link never inherits an old verification.
+        delete_user_meta( $user_id, 'bh3_verified_booking_email' );
+        delete_user_meta( $user_id, 'bh3_verified_booking_email_at' );
+        delete_user_meta( $user_id, 'bh3_booking_email_verification_pending' );
+        wp_safe_redirect( add_query_arg( 'bh3_leader_linked', '1', home_url( '/leader/' ) ) );
+        exit;
     }
     /** Staging-only email ownership proof for the current linked leader account. */
     public static function leader_email_verification_widget() {
