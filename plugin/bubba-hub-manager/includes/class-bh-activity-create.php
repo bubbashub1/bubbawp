@@ -201,8 +201,16 @@ final class BH_Activity_Create_3 {
         echo '</section>';
         echo '<section class="bh3-panel" data-panel="6" hidden><h2>Review your listing</h2><div class="bh3-review" id="bh3-review-summary">Review the fields above before saving.</div><p>This creates a draft only. Publishing remains administrator-controlled.</p></section>';
         echo '<div class="bh3-actions"><div><button type="button" class="button" id="bh3-prev" disabled>← Back</button> <button type="button" class="button button-primary" id="bh3-next">Continue →</button></div><button type="submit" class="button button-primary" id="bh3-submit" hidden>Save draft activity</button></div></form></div>';
-        echo '<script>const bh3SavedListing=' . wp_json_encode( $existing ?: array() ) . ';const bh3SavedVenues=' . wp_json_encode( $existing_venue_ids ) . ';const bh3SavedSessions=' . wp_json_encode( $existing_sessions ) . ';';
-        echo <<<'BH3_WIZARD_SCRIPT'
+        // Enqueue outside the shortcode HTML so wptexturize and content filters cannot alter JavaScript operators.
+        wp_register_script( 'bh3-activity-wizard', false, array(), '1.0.1', true );
+        wp_enqueue_script( 'bh3-activity-wizard' );
+        wp_add_inline_script( 'bh3-activity-wizard',
+            'const bh3SavedListing=' . wp_json_encode( $existing ?: array() ) . ';' .
+            'const bh3SavedVenues=' . wp_json_encode( $existing_venue_ids ) . ';' .
+            'const bh3SavedSessions=' . wp_json_encode( $existing_sessions ) . ';',
+            'before'
+        );
+        wp_add_inline_script( 'bh3-activity-wizard', <<<'BH3_WIZARD_SCRIPT'
 (function(){const form=document.getElementById("bh3-listing-wizard");if(!form)return;let step=0;const panels=[...form.querySelectorAll("[data-panel]")],nav=[...document.querySelectorAll(".bh3-steps [data-step]")],prev=document.getElementById("bh3-prev"),next=document.getElementById("bh3-next"),save=document.getElementById("bh3-submit"),summary=document.getElementById("bh3-review-summary");
         const missingCustom=n=>{for(const label of panels[n].querySelectorAll('label[data-bh3-required="1"]')){const el=label.querySelector("input,textarea,select");if(!el)continue;const filled=el.type==="checkbox"?el.checked:el.multiple?el.selectedOptions.length>0:String(el.value||"").trim()!=="";if(!filled)return el;}return null;};
         const show=n=>{n=Math.max(0,Math.min(6,n));let missing=null;if(n>step){for(let i=step;i<n;i++){missing=missingCustom(i);if(missing){n=i;break;}}}if(step===5&&n>5){for(const row of sessionRows.querySelectorAll('.bh3-session-row')){if(row.closest('.bh3-day-card:not(.is-on)'))continue;const day=row.querySelector('input[name$="[day]"]'),times=row.querySelectorAll('input[type=time]'),start=times[0],end=times[1];if(!day.value||!start.value||!end.value||end.value<=start.value){alert('Complete each weekly session and make sure its end time is later than its start.');(!day.value?day:!start.value?start:end).focus();return;}}}step=n;panels.forEach((p,i)=>p.hidden=i!==step);nav.forEach((b,i)=>b.setAttribute("aria-current",i===step?"step":"false"));prev.disabled=step===0;if(missing){alert('Please complete the required custom field before continuing.');missing.focus();}next.hidden=step===6;save.hidden=step!==6;if(step===6){const fields=[["Activity", "title"],["Category","category"],["Organiser","organiser_id"],["Age range","age_range"],["Price from","price_from"],["Contact email","contact_email"],["Website","website"]];summary.innerHTML=fields.map(([label,name])=>{const el=form.elements.namedItem(name);return "<p><strong>"+label+":</strong> "+String(el?.selectedOptions?.[0]?.textContent||el?.value||"—").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]))+"</p>"}).join("");}};
@@ -270,8 +278,10 @@ final class BH_Activity_Create_3 {
         });
         if(bh3SavedListing&&bh3SavedListing.id){for(const [name,value] of Object.entries(bh3SavedListing)){const el=form.elements.namedItem(name);if(!el)continue;if(el instanceof RadioNodeList)continue;if(el.type==="checkbox")el.checked=Number(value)===1;else if(name==="gallery_images"){try{el.value=JSON.parse(value||"[]").join("\\n");}catch(e){el.value=value||"";}}else if(value!==null)el.value=String(value);}for(const id of bh3SavedVenues){const el=form.querySelector('input[name="venue_ids[]"][value="'+Number(id)+'"]');if(el)el.checked=true;}for(const s of bh3SavedSessions){addSessionRow(Number(s.day)||1,s);}}
         show(0);})();
-        </script></div>
-BH3_WIZARD_SCRIPT;
+BH3_WIZARD_SCRIPT
+        );
+        echo '</div>';
+
 
     }
     private static function checkbox( $key ) { return ! empty( $_POST[$key] ) ? 1 : 0; }
