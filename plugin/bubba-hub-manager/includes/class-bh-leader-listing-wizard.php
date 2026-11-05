@@ -171,11 +171,17 @@ final class BH_Leader_Listing_Wizard_3 {
                   <div><strong><?php echo esc_html( $label ); ?></strong><?php echo esc_html( (string) ( $data[$key] ?? '' ) ?: 'Not provided' ); ?></div>
                 <?php endforeach; ?>
               </div>
-              <p class="bh3-wizard-help">Saving creates or updates a private draft. It does not publish the listing or confirm any bookings.</p>
+              <p class="bh3-wizard-help">Your listing will stay private until the Bubba Hub team approves it. Submitting for review does not confirm bookings or publish your listing.</p>
+              <p><a class="bh3-wizard-link" href="<?php echo esc_url(add_query_arg(array('activity_id'=>$id,'step'=>1),home_url('/leader/new-activity/'))); ?>">Edit basics</a> · <a class="bh3-wizard-link" href="<?php echo esc_url(add_query_arg(array('activity_id'=>$id,'step'=>2),home_url('/leader/new-activity/'))); ?>">Edit description</a> · <a class="bh3-wizard-link" href="<?php echo esc_url(add_query_arg(array('activity_id'=>$id,'step'=>3),home_url('/leader/new-activity/'))); ?>">Edit details</a> · <a class="bh3-wizard-link" href="<?php echo esc_url(add_query_arg(array('activity_id'=>$id,'step'=>4),home_url('/leader/new-activity/'))); ?>">Edit booking</a> · <a class="bh3-wizard-link" href="<?php echo esc_url(add_query_arg(array('activity_id'=>$id,'step'=>5),home_url('/leader/new-activity/'))); ?>">Check venues</a></p>
             <?php endif; ?>
             <div class="bh3-wizard-actions">
               <?php if ( $step > 1 ) : ?><a class="secondary" href="<?php echo esc_url( add_query_arg( array( 'activity_id'=>$id, 'step'=>$step - 1 ), get_permalink() ) ); ?>">Back</a><?php else : ?><a class="secondary" href="<?php echo esc_url( home_url( '/leader/' ) ); ?>">Cancel</a><?php endif; ?>
-              <button type="submit" name="intent" value="<?php echo $step < 7 ? 'next' : 'submit'; ?>"><?php echo $step < 7 ? 'Save &amp; continue' : 'Save draft for review'; ?></button>
+              <?php if ( $step === 7 ) : ?>
+                <button type="submit" name="intent" value="save">Keep as draft</button>
+                <button type="submit" name="intent" value="submit">Submit for Bubba Hub review</button>
+              <?php else : ?>
+                <button type="submit" name="intent" value="next">Save &amp; continue</button>
+              <?php endif; ?>
             </div>
           </form>
         </section>
