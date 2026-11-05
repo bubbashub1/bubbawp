@@ -989,6 +989,20 @@ final class BH_Marketplace_Settings_3 {
             return '<p>Provide an activity or session ID, for example [bh_booking_readiness activity_id="2"].</p>';
         }
         $html = '<section class="bh3-booking-readiness"><h3>' . esc_html( $heading ) . '</h3>';
+        // Diagnose form separation before anyone enables payment test flags.
+        $booking_form_id = absint( get_option( 'bh3_booking_form_id', 0 ) );
+        $consent_form_id = absint( get_option( 'bh3_booking_consent_form_id', 7 ) );
+        $html .= '<div class="bh3-booking-form-readiness"><h4>Booking forms</h4>';
+        $html .= '<p>Consent form: <strong>#' . esc_html( $consent_form_id ) . '</strong> (separate consent; field mapping pending verification).</p>';
+        if ( ! $booking_form_id ) {
+            $html .= '<p role="status">Booking details form: not configured. Payment checkout must remain disabled.</p>';
+        } elseif ( $booking_form_id === $consent_form_id ) {
+            $html .= '<p role="alert">Booking details form conflicts with consent form #' . esc_html( $consent_form_id ) . '. Configure a different form before checkout.</p>';
+        } else {
+            $html .= '<p>Booking details form: <strong>#' . esc_html( $booking_form_id ) . '</strong> (submission and field mapping still require verification).</p>';
+        }
+        $html .= '<p>Guest booking: preview only. No guest reservations or checkout are enabled.</p></div>';
+
         if ( $activity_id ) {
             $html .= '<p>Activity status: <strong>' . esc_html( $activity['status'] ) . '</strong>. Found ' .
                 esc_html( count( $sessions ) ) . ' session(s)' . ( count( $sessions ) === 100 ? ' (first 100 shown)' : '' ) . '.</p>';
