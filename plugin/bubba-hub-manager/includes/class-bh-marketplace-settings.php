@@ -16,8 +16,8 @@ final class BH_Marketplace_Settings_3 {
         add_shortcode( 'bh_parent_booking', array( __CLASS__, 'parent_booking_widget' ) );
     }
     public static function rate() {
-        $value = get_option( 'bh3_commission_percent', '3.00' );
-        return is_numeric( $value ) ? min( 100, max( 0, (float) $value ) ) : 3.0;
+        $value = get_option( 'bh3_commission_percent', '2.50' );
+        return is_numeric( $value ) ? min( 100, max( 0, (float) $value ) ) : 2.5;
     }
     public static function split_pence( $gross_pence ) {
         $gross = max( 0, absint( $gross_pence ) );
@@ -835,7 +835,7 @@ final class BH_Marketplace_Settings_3 {
             } else {
                 echo '<p>No child or pregnancy profiles found.</p>';
             }
-            echo '<p><a href="' . esc_url( home_url( '/family/profile/' ) ) . '">Add or edit a child in My Hub</a></p></div>';
+            echo '<p><a href="' . esc_url( home_url( '/my-hub/children/' ) ) . '">Add or edit a child in My Hub</a></p></div>';
         }
         if ( ! is_user_logged_in() ) {
             // Guest details are local form inputs only. No guest checkout,
