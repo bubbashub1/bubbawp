@@ -250,7 +250,7 @@ final class BH_Activity_Detail_3 {
             }
             echo '</section>';
         }
-        if ( $has( 'timetable' ) ) { echo '<section' . $order_style( 'timetable' ) . '><h2>Weekly timetable</h2>';
+        if ( $has( 'timetable' ) ) { echo '<section id="timetable"' . $order_style( 'timetable' ) . '><h2>Weekly timetable</h2>';
         if ( $sessions ) {
             echo '<div class="bh3-table-wrap"><table><thead><tr><th>Session</th><th>Day</th><th>Time</th><th>Venue</th><th>Details</th></tr></thead><tbody>';
             foreach ( $sessions as $session ) {
