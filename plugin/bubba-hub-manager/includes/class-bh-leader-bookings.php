@@ -19,7 +19,20 @@ final class BH_Leader_Bookings_3 {
             return '<p>Please sign in to view your bookings dashboard.</p>';
         }
         $organiser = absint( get_user_meta( get_current_user_id(), 'bh3_organiser_id', true ) );
-        if ( ! $organiser ) { return '<p>Your account is not linked to an organiser.</p>'; }
+        $admin_preview = current_user_can( 'manage_options' );
+        $preview_organisers = array();
+        if ( $admin_preview ) {
+            global $wpdb;
+            $org_table = $wpdb->prefix . 'organisers';
+            if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $org_table ) ) ) === $org_table ) {
+                $preview_organisers = $wpdb->get_results( "SELECT id, name FROM `{$org_table}` ORDER BY name ASC LIMIT 200", ARRAY_A );
+                $allowed = array_map( 'intval', wp_list_pluck( $preview_organisers, 'id' ) );
+                $requested = isset( $_GET['bh_preview_organiser'] ) ? absint( $_GET['bh_preview_organiser'] ) : 0;
+                if ( $requested && in_array( $requested, $allowed, true ) ) { $organiser = $requested; }
+                elseif ( ! $organiser && $allowed ) { $organiser = $allowed[0]; }
+            }
+        }
+        if ( ! $organiser ) { return '<p>Your account is not linked to an organiser. An administrator can select a test organisation on staging.</p>'; }
         global $wpdb;
         $table = $wpdb->prefix . 'activities';
         $activities = $wpdb->get_results( $wpdb->prepare(
@@ -27,6 +40,19 @@ final class BH_Leader_Bookings_3 {
         ), ARRAY_A );
         ob_start(); ?>
         <section class="bh-leader-bookings">
+          <?php if ( $admin_preview ) : ?>
+          <form method="get" class="bh-bookings-filters" aria-label="Administrator staging organisation preview">
+            <label><strong>Staging admin: preview organisation</strong>
+              <select name="bh_preview_organiser" onchange="this.form.submit()">
+                <?php foreach ( $preview_organisers as $org ) : ?>
+                  <option value="<?php echo esc_attr( $org['id'] ); ?>" <?php selected( $organiser, (int) $org['id'] ); ?>><?php echo esc_html( $org['name'] ); ?></option>
+                <?php endforeach; ?>
+              </select>
+            </label>
+            <button type="submit">View organisation</button>
+          </form>
+          <p><small>Administrator-only staging preview. This does not impersonate a leader or grant access to other leader editing screens.</small></p>
+          <?php endif; ?>
           <header class="bh-bookings-hero"><p>LEADER HUB</p><h1>Class calendar</h1><p>See your sessions in one place. Bookings and space limits are optional.</p></header>
           <div class="bh-bookings-notice" role="status">
             <strong>Session calendar — staging preview.</strong>
