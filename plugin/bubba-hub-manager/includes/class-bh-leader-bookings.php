@@ -113,6 +113,7 @@ final class BH_Leader_Bookings_3 {
           </style>
           <div class="bh-bookings-panel">
             <h2>Your activities</h2>
+            <p>Shared sessions will be managed here and assigned to multiple listings without duplicating capacity. The shared-session editor is not enabled until the assignment table and migration have been tested.</p>
             <?php if ( ! $activities ) : ?>
               <p>No linked activities found. <a href="<?php echo esc_url( home_url( '/leader/' ) ); ?>">Go to your dashboard</a>.</p>
             <?php else : ?>
