@@ -195,11 +195,13 @@ final class BH_Directory_3 {
         // Calendar data uses only already-filtered published listings; it never claims booking availability.
         // Calendar queries the complete filtered result set independently of card pagination.
         // Bound the payload to protect page performance on large directories.
+        // A day or term-time filter must also apply to the displayed session, not only its parent activity.
+        $calendar_session_conditions = ( $day ? ' AND s.day_of_week=' . (int) $day : '' ) . ( $term ? ' AND s.term_time_only=1' : '' );
         $calendar_sql = "SELECT a.id,a.title,a.slug,s.day_of_week,LEFT(s.start_time,5) AS start_time,s.term_time_only
             FROM `{$activities}` a
             INNER JOIN `{$wpdb->prefix}sessions` s ON s.activity_id=a.id
             WHERE {$where} AND s.frequency='weekly' AND s.status='scheduled'
-              AND s.day_of_week BETWEEN 1 AND 7 AND s.start_time IS NOT NULL
+              AND s.day_of_week BETWEEN 1 AND 7 AND s.start_time IS NOT NULL {$calendar_session_conditions}
             ORDER BY s.day_of_week,s.start_time,a.title LIMIT 501";
         $calendar_rows = $wpdb->get_results( $params ? $wpdb->prepare( $calendar_sql, $params ) : $calendar_sql, ARRAY_A );
         $calendar_limited = is_array( $calendar_rows ) && count( $calendar_rows ) > 500;
