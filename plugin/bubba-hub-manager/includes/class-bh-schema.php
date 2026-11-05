@@ -14,6 +14,7 @@ final class BH_Schema_3 {
             'activities' => $prefix . 'activities',
             'activity_venues' => $prefix . 'activity_venues',
             'sessions' => $prefix . 'sessions',
+            'session_listing_links' => $prefix . 'session_listing_links',
         );
     }
 
@@ -77,6 +78,14 @@ final class BH_Schema_3 {
                 PRIMARY KEY  (id),
                 UNIQUE KEY activity_venue (activity_id,venue_id),
                 KEY venue_id (venue_id)
+            ) $charset;",
+            "CREATE TABLE {$t['session_listing_links']} (
+                id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+                session_id bigint(20) unsigned NOT NULL,
+                activity_id bigint(20) unsigned NOT NULL,
+                PRIMARY KEY  (id),
+                UNIQUE KEY session_listing (session_id,activity_id),
+                KEY activity_id (activity_id)
             ) $charset;",
             "CREATE TABLE {$t['sessions']} (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
