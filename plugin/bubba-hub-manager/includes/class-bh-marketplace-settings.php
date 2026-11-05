@@ -123,6 +123,57 @@ final class BH_Marketplace_Settings_3 {
      * Internal-only atomic reservation primitive. No public action is registered.
      * Requires an existing authenticated customer and an installed bookings table.
      */
+    /**
+     * Confirm a requested calendar date is an actual scheduled occurrence.
+     * Reject unsupported frequency rules rather than taking payment for a non-event.
+     */
+    public static function validate_occurrence( $session_id, $occurrence_date ) {
+        $session_id = absint( $session_id );
+        $date = is_string( $occurrence_date ) ? DateTimeImmutable::createFromFormat( '!Y-m-d', $occurrence_date, wp_timezone() ) : false;
+        if ( ! $session_id || ! $date || $date->format( 'Y-m-d' ) !== $occurrence_date ) {
+            return new WP_Error( 'invalid_occurrence', 'Invalid session date.' );
+        }
+        $today = new DateTimeImmutable( 'today', wp_timezone() );
+        if ( $date < $today || $date > $today->modify( '+365 days' ) ) {
+            return new WP_Error( 'date_out_of_range', 'Session date is outside the bookable range.' );
+        }
+        global $wpdb;
+        $table = $wpdb->prefix . 'sessions';
+        $rule = $wpdb->get_row( $wpdb->prepare(
+            "SELECT day_of_week,start_date,end_date,frequency,term_time_only,status FROM `{$table}` WHERE id=%d LIMIT 1",
+            $session_id
+        ), ARRAY_A );
+        if ( ! $rule || $rule['status'] !== 'scheduled' ) {
+            return new WP_Error( 'session_unavailable', 'Session is not scheduled.' );
+        }
+        if ( $rule['frequency'] === 'weekly' ) {
+            if ( (int) $rule['day_of_week'] !== (int) $date->format( 'N' ) ) {
+                return new WP_Error( 'wrong_weekday', 'This class does not run on the selected day.' );
+            }
+        } elseif ( $rule['frequency'] === 'once' || $rule['frequency'] === 'single' ) {
+            if ( empty( $rule['start_date'] ) || $rule['start_date'] !== $occurrence_date ) {
+                return new WP_Error( 'wrong_date', 'This class does not run on the selected date.' );
+            }
+        } else {
+            return new WP_Error( 'unsupported_frequency', 'This timetable type is not ready for paid booking.' );
+        }
+        if ( ( ! empty( $rule['start_date'] ) && $occurrence_date < $rule['start_date'] )
+            || ( ! empty( $rule['end_date'] ) && $occurrence_date > $rule['end_date'] ) ) {
+            return new WP_Error( 'outside_schedule', 'This date is outside the class schedule.' );
+        }
+        if ( ! empty( $rule['term_time_only'] ) ) {
+            $ranges = get_option( 'bh3_term_date_ranges', array() );
+            $valid = false;
+            foreach ( is_array( $ranges ) ? $ranges : array() as $range ) {
+                if ( is_array( $range ) && ! empty( $range['start'] ) && ! empty( $range['end'] )
+                    && $occurrence_date >= $range['start'] && $occurrence_date <= $range['end'] ) {
+                    $valid = true; break;
+                }
+            }
+            if ( ! $valid ) { return new WP_Error( 'outside_term', 'No confirmed term-time session on this date.' ); }
+        }
+        return true;
+    }
     public static function reserve_occurrence( $session_id, $occurrence_date, $places, $customer_user_id ) {
         if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
             || ! defined( 'BH3_ENABLE_BOOKING_RESERVATIONS' ) || BH3_ENABLE_BOOKING_RESERVATIONS !== true ) {
@@ -138,6 +189,8 @@ final class BH_Marketplace_Settings_3 {
         if ( ! $date || $date->format( 'Y-m-d' ) !== $occurrence_date || $date < new DateTimeImmutable( 'today', wp_timezone() ) ) {
             return new WP_Error( 'invalid_occurrence', 'Choose a valid future session date.' );
         }
+        $valid_occurrence = self::validate_occurrence( $session_id, $occurrence_date );
+        if ( is_wp_error( $valid_occurrence ) ) { return $valid_occurrence; }
         // Never use client-provided price, organiser or activity IDs.
         global $wpdb;
         $table = $wpdb->prefix . 'bh3_bookings';
@@ -152,6 +205,8 @@ final class BH_Marketplace_Settings_3 {
             if ( $availability['available'] < $quote['places'] ) {
                 return new WP_Error( 'session_full', 'Not enough places remain.' );
             }
+            $recheck_date = self::validate_occurrence( $session_id, $occurrence_date );
+            if ( is_wp_error( $recheck_date ) ) { return $recheck_date; }
             // Fail closed if session pricing or capacity changed during the wait.
             $current = self::quote_session( $session_id, $places );
             if ( is_wp_error( $current ) || $current['gross_pence'] !== $quote['gross_pence'] ) {
