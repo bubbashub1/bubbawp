@@ -33,7 +33,43 @@ final class BH_Ask_Support_Inbox_3 {
             <p><strong>Your selected topics:</strong> <?php echo esc_html(implode(', ', array_values($categories))); ?></p>
             <p role="status">Your interest is saved. Specialist approval is required before any questions can be viewed or answered.</p>
           <?php endif; ?>
-          <p style="font-size:.9rem;color:#52685b">Public and private questions are not exposed through this preview. A matching category alone never grants access.</p>
+          <?php
+          // No question data is queried unless the complete schema exists.
+          if (BH_Ask_Support_Storage_3::installed() && $opted_in && $categories) {
+              $tables = BH_Ask_Support_Storage_3::tables();
+              $user_id = get_current_user_id();
+              $approved = $wpdb->get_col($wpdb->prepare(
+                  "SELECT category_slug FROM `{$tables['specialists']}` WHERE user_id=%d AND organiser_id=%d AND opted_in=1 AND approval_status='approved'",
+                  $user_id, $organiser_id
+              ));
+              $approved = array_values(array_intersect((array) $approved, array_keys($categories)));
+              if ($approved) {
+                  $placeholders = implode(',', array_fill(0, count($approved), '%s'));
+                  $query = "SELECT id,category_slug,question_text,created_at FROM `{$tables['questions']}` WHERE status='open' AND category_slug IN ($placeholders) ORDER BY created_at DESC LIMIT 30";
+                  $questions = $wpdb->get_results($wpdb->prepare($query, $approved), ARRAY_A);
+                  echo '<h3>Questions awaiting specialist replies</h3>';
+                  if (!$questions) echo '<p>No approved questions in your topics yet.</p>';
+                  foreach ((array) $questions as $question) {
+                      // Revalidate each record individually; never expose parent contacts.
+                      if (!BH_Ask_Support_Storage_3::can_specialist_access((int) $question['id'], $user_id)) continue;
+                      echo '<article style="border:1px solid #dbe5df;border-radius:12px;padding:16px;margin:12px 0">';
+                      echo '<p style="font-size:.85rem;color:#52685b">Question #' . esc_html((string) $question['id']) . ' · ' . esc_html($categories[$question['category_slug']] ?? $question['category_slug']) . '</p>';
+                      echo '<p style="white-space:pre-wrap">' . esc_html($question['question_text']) . '</p>';
+                      echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+                      echo '<input type="hidden" name="action" value="bh3_ask_submit_reply">';
+                      echo '<input type="hidden" name="question_id" value="' . esc_attr((string) $question['id']) . '">';
+                      wp_nonce_field('bh3_ask_reply_' . (int) $question['id']);
+                      echo '<label for="bh3-reply-' . esc_attr((string) $question['id']) . '">Your reply (held for moderation)</label>';
+                      echo '<textarea id="bh3-reply-' . esc_attr((string) $question['id']) . '" name="reply_body" rows="4" minlength="10" maxlength="5000" required style="display:block;width:100%;margin:8px 0"></textarea>';
+                      echo '<button type="submit">Submit reply for review</button></form>';
+                      echo '</article>';
+                  }
+              } else {
+                  echo '<p role="status">Your selected categories are awaiting administrator approval.</p>';
+              }
+          }
+          ?>
+          <p style="font-size:.9rem;color:#52685b">Only moderator-reviewed questions are shown to verified specialists. Parent contact details are never included.</p>
         </section>
         <?php return (string) ob_get_clean();
     }
