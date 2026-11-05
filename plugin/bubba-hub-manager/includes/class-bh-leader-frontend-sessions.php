@@ -37,6 +37,8 @@ final class BH_Leader_Frontend_Sessions_3 {
         $edit_id = absint( $_GET['edit_session'] ?? 0 );
         $editing = null;
         foreach ( $rows as $row ) { if ( (int) $row['id'] === $edit_id && $row['frequency'] === 'weekly' ) { $editing = $row; } }
+        $enquiry_settings = get_option( 'bh3_session_enquiry_enabled', array() );
+        if ( ! is_array( $enquiry_settings ) ) { $enquiry_settings = array(); }
         $days = array( 1=>'Monday',2=>'Tuesday',3=>'Wednesday',4=>'Thursday',5=>'Friday',6=>'Saturday',7=>'Sunday' );
         ob_start(); ?>
         <section class="bh-leader-timetable">
@@ -49,7 +51,7 @@ final class BH_Leader_Frontend_Sessions_3 {
         <?php if ( ! $rows ) : ?><p>No sessions yet.</p><?php else : ?><ul>
         <?php foreach ( $rows as $row ) : ?><li>
         <strong><?php echo esc_html( ( $days[(int) $row['day_of_week']] ?? 'Other' ) . ' ' . wp_date( get_option( 'time_format' ), strtotime( '2000-01-01 ' . $row['start_time'] ) ) . '–' . wp_date( get_option( 'time_format' ), strtotime( '2000-01-01 ' . $row['end_time'] ) ) ); ?></strong>
-        <span><?php echo esc_html( $row['venue_name'] ?: 'No venue' ); ?></span>
+        <span><?php echo esc_html( $row['venue_name'] ?: 'No venue' ); ?></span><small><?php echo ! empty( $enquiry_settings[(int) $row['id']] ) ? ' · Enquiries enabled' : ' · Enquiries off'; ?></small>
         <div class="bh-session-meta"><?php echo esc_html( $row['term_time_only'] ? 'Term time only' : 'All year' ); ?><?php if ( $row['start_date'] || $row['end_date'] ) : ?> · <?php echo esc_html( $row['start_date'] ? wp_date( get_option( 'date_format' ), strtotime( $row['start_date'] . ' 12:00:00' ) ) : 'Any start' ); ?> – <?php echo esc_html( $row['end_date'] ? wp_date( get_option( 'date_format' ), strtotime( $row['end_date'] . ' 12:00:00' ) ) : 'Ongoing' ); ?><?php endif; ?></div>
         <?php if ( $row['frequency'] === 'weekly' ) : ?>
         <div class="bh-actions"><a class="bh-action" href="<?php echo esc_url( add_query_arg( array( 'activity_id'=>$id,'edit_session'=>(int) $row['id'] ), home_url( '/leader/timetable/' ) ) ); ?>">Edit</a>
@@ -70,6 +72,7 @@ final class BH_Leader_Frontend_Sessions_3 {
         <div><label for="bh-first">First date (optional)</label><input id="bh-first" type="date" name="start_date" value="<?php echo esc_attr( $editing['start_date'] ?? '' ); ?>">
         </div><div><label for="bh-last">Last date (optional)</label><input id="bh-last" type="date" name="end_date" value="<?php echo esc_attr( $editing['end_date'] ?? '' ); ?>">
         </div></div>
+        <p><label><input type="checkbox" name="allow_enquiry" value="1" <?php checked( ! empty( $enquiry_settings[(int) ( $editing['id'] ?? 0 )] ) ); ?>> Allow families to enquire about this session (Fluent Form 6)</label></p>
         <p><label><input type="checkbox" name="term_time_only" value="1" <?php checked( (int) ( $editing['term_time_only'] ?? 0 ), 1 ); ?>> Term time only</label></p>
         <?php if ( ! $assigned ) : ?><p class="bh-thint">No venues linked yet. <a href="<?php echo esc_url( add_query_arg( 'activity_id', $id, home_url( '/leader/venues/' ) ) ); ?>">Add a venue</a> before assigning a location to sessions.</p><?php endif; ?>
         <div class="bh-session-actions-footer"><button type="submit"><?php echo $editing ? 'Save session' : 'Add session'; ?></button>
@@ -109,6 +112,14 @@ final class BH_Leader_Frontend_Sessions_3 {
         if ( $session ) { $result = $wpdb->update( $table, $data, array( 'id'=>$session, 'activity_id'=>$id ) ); }
         else { $data['status']='scheduled'; $data['created_at']=$now; $result=$wpdb->insert( $table, $data ); }
         if ( $result === false ) { wp_die( 'Could not save session.', '', array( 'response'=>500 ) ); }
+        $saved_session_id = $session ?: (int) $wpdb->insert_id;
+        if ( $saved_session_id ) {
+            $flags = get_option( 'bh3_session_enquiry_enabled', array() );
+            if ( ! is_array( $flags ) ) { $flags = array(); }
+            if ( ! empty( $_POST['allow_enquiry'] ) ) { $flags[$saved_session_id] = 1; }
+            else { unset( $flags[$saved_session_id] ); }
+            update_option( 'bh3_session_enquiry_enabled', $flags, false );
+        }
         self::back( $id, 'Session saved.' );
     }
     public static function delete() {
@@ -121,6 +132,10 @@ final class BH_Leader_Frontend_Sessions_3 {
         $table = $wpdb->prefix . 'sessions';
         $result = $wpdb->delete( $table, array( 'id'=>$session, 'activity_id'=>$id, 'frequency'=>'weekly' ) );
         if ( $result === false ) { wp_die( 'Could not remove session.', '', array( 'response'=>500 ) ); }
+        if ( $result ) {
+            $flags = get_option( 'bh3_session_enquiry_enabled', array() );
+            if ( is_array( $flags ) ) { unset( $flags[$session] ); update_option( 'bh3_session_enquiry_enabled', $flags, false ); }
+        }
         self::back( $id, 'Session removed.' );
     }
 }
