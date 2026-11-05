@@ -202,6 +202,51 @@ final class BH_Schema_3 {
         return $result;
     }
 
+    /** Read-only comparison against the declared booking table columns and indexes. */
+    public static function booking_structure_audit() {
+        global $wpdb;
+        $names = self::table_names();
+        $definitions = self::statements();
+        $results = array();
+        foreach ( self::booking_table_keys() as $key ) {
+            $table = $names[ $key ];
+            $definition = '';
+            foreach ( $definitions as $statement ) {
+                if ( strpos( $statement, "CREATE TABLE {$table} (" ) === 0 ) {
+                    $definition = $statement;
+                    break;
+                }
+            }
+            $expected_columns = array();
+            $expected_indexes = array();
+            foreach ( explode( "\n", $definition ) as $line ) {
+                $line = trim( $line );
+                if ( preg_match( '/^([a-z_]+)\\s+(?:bigint|smallint|tinyint|varchar|char|decimal|datetime|date|time|longtext)\\b/i', $line, $match ) ) {
+                    $expected_columns[] = $match[1];
+                } elseif ( preg_match( '/^(?:UNIQUE\\s+)?KEY\\s+([a-z_]+)\\s*\\(/i', $line, $match ) ) {
+                    $expected_indexes[] = $match[1];
+                } elseif ( strpos( $line, 'PRIMARY KEY' ) === 0 ) {
+                    $expected_indexes[] = 'PRIMARY';
+                }
+            }
+            $exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ) === $table;
+            $actual_columns = array();
+            $actual_indexes = array();
+            if ( $exists ) {
+                // Table identifiers come only from the plugin's fixed schema map.
+                $actual_columns = $wpdb->get_col( "SHOW COLUMNS FROM `{$table}`", 0 );
+                $actual_indexes = $wpdb->get_col( "SHOW INDEX FROM `{$table}`", 2 );
+            }
+            $results[ $key ] = array(
+                'table' => $table,
+                'exists' => $exists,
+                'missing_columns' => array_values( array_diff( $expected_columns, (array) $actual_columns ) ),
+                'missing_indexes' => array_values( array_diff( $expected_indexes, (array) $actual_indexes ) ),
+            );
+        }
+        return $results;
+    }
+
     /** Must be invoked only by the explicit staging administrator action. */
     public static function install_missing_booking_tables() {
         if ( ! current_user_can( 'manage_options' )
