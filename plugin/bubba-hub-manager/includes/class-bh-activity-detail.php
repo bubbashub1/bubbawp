@@ -6,6 +6,7 @@ final class BH_Activity_Detail_3 {
         add_shortcode( 'bubbahub_activity', array( __CLASS__, 'render' ) );
         add_action( 'init', array( __CLASS__, 'register_activity_rewrite' ) );
         add_filter( 'query_vars', array( __CLASS__, 'register_query_vars' ) );
+        add_filter( 'redirect_canonical', array( __CLASS__, 'preserve_activity_permalink' ), 10, 2 );
         add_filter( 'bh_theme_activity_data', array( __CLASS__, 'theme_activity_data' ), 10, 2 );
     }
     public static function register_activity_rewrite() {
@@ -19,6 +20,10 @@ final class BH_Activity_Detail_3 {
     public static function register_query_vars( $vars ) {
         $vars[] = 'bh_activity_slug';
         return $vars;
+    }
+    public static function preserve_activity_permalink( $redirect_url, $requested_url ) {
+        if ( get_query_var( 'bh_activity_slug', '' ) ) { return false; }
+        return $redirect_url;
     }
     /**
      * Read-only adapter for the BubbaTheme [bubba_activity] presentation.
