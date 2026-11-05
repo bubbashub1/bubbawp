@@ -120,8 +120,8 @@ final class BH_Leader_Bookings_3 {
           @media(max-width:600px){.bh-bookings-calendar{padding:12px}.bh-bookings-calendar-day,.bh-bookings-calendar-empty{min-height:45px;padding:4px;font-size:.8rem}.bh-bookings-calendar-grid{gap:2px}}
           </style>
           <div class="bh-bookings-panel">
-            <h2>Your activities</h2>
-            <p>Shared sessions will be managed here and assigned to multiple listings without duplicating capacity. The shared-session editor is not enabled until the assignment table and migration have been tested.</p>
+            <h2>Manage your sessions</h2>
+            <p>Create a session once, assign it to multiple listings and manage it in one place. Booking and payment collection are not active in this preview.</p>
             <?php if ( ! $activities ) : ?>
               <p>No linked activities found. <a href="<?php echo esc_url( home_url( '/leader/' ) ); ?>">Go to your dashboard</a>.</p>
             <?php else : ?>
