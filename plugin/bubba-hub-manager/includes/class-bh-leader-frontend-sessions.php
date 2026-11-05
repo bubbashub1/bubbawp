@@ -37,6 +37,9 @@ final class BH_Leader_Frontend_Sessions_3 {
         $edit_id = absint( $_GET['edit_session'] ?? 0 );
         $editing = null;
         foreach ( $rows as $row ) { if ( (int) $row['id'] === $edit_id && $row['frequency'] === 'weekly' ) { $editing = $row; } }
+        $booking_settings = get_option( 'bh3_session_booking_config', array() );
+        if ( ! is_array( $booking_settings ) ) { $booking_settings = array(); }
+        $booking = $booking_settings[(int) ( $editing['id'] ?? 0 )] ?? array();
         $enquiry_settings = get_option( 'bh3_session_enquiry_enabled', array() );
         if ( ! is_array( $enquiry_settings ) ) { $enquiry_settings = array(); }
         $picked_date = isset( $_GET['session_date'] ) && is_string( $_GET['session_date'] ) ? sanitize_text_field( wp_unslash( $_GET['session_date'] ) ) : '';
@@ -76,6 +79,16 @@ final class BH_Leader_Frontend_Sessions_3 {
         </div><div><label for="bh-last">Last date (optional)</label><input id="bh-last" type="date" name="end_date" value="<?php echo esc_attr( $editing['end_date'] ?? $picked_date ); ?>">
         </div></div>
         <p><label><input type="checkbox" name="allow_enquiry" value="1" <?php checked( ! empty( $enquiry_settings[(int) ( $editing['id'] ?? 0 )] ) ); ?>> Allow families to enquire about this session (Fluent Form 6)</label></p>
+        <fieldset class="bh-panel" style="margin:16px 0;padding:16px;border:1px solid #dce9e0;border-radius:12px">
+          <legend><strong>Optional booking module</strong></legend>
+          <p>Leave this disabled for drop-in classes. Enquiries above are separate from confirmed bookings.</p>
+          <p><label><input type="checkbox" name="enable_booking" value="1" <?php checked( ! empty( $booking['enabled'] ) ); ?>> Enable bookings for this session</label></p>
+          <div class="bh-session-grid">
+            <div><label for="bh-booking-price">Price (£ per place)</label><input id="bh-booking-price" type="number" name="booking_price" min="0" max="100000" step="0.01" value="<?php echo esc_attr( $booking['price'] ?? '' ); ?>" placeholder="0.00"></div>
+            <div><label for="bh-booking-capacity">Total spaces</label><input id="bh-booking-capacity" type="number" name="booking_capacity" min="1" max="100000" step="1" value="<?php echo esc_attr( $booking['capacity'] ?? '' ); ?>" placeholder="Optional"></div>
+          </div>
+          <p class="bh-thint">These settings prepare the session for future booking functionality. They do not collect payments, accept bookings or reserve places yet.</p>
+        </fieldset>
         <p><label><input type="checkbox" name="term_time_only" value="1" <?php checked( (int) ( $editing['term_time_only'] ?? 0 ), 1 ); ?>> Term time only</label></p>
         <?php if ( ! $assigned ) : ?><p class="bh-thint">No venues linked yet. <a href="<?php echo esc_url( add_query_arg( 'activity_id', $id, home_url( '/leader/venues/' ) ) ); ?>">Add a venue</a> before assigning a location to sessions.</p><?php endif; ?>
         <div class="bh-session-actions-footer"><button type="submit"><?php echo $editing ? 'Save session' : 'Add session'; ?></button>
@@ -123,6 +136,19 @@ final class BH_Leader_Frontend_Sessions_3 {
             else { unset( $flags[$saved_session_id] ); }
             update_option( 'bh3_session_enquiry_enabled', $flags, false );
         }
+        $booking_configs = get_option( 'bh3_session_booking_config', array() );
+        if ( ! is_array( $booking_configs ) ) { $booking_configs = array(); }
+        $enabled = ! empty( $_POST['enable_booking'] );
+        $raw_price = isset( $_POST['booking_price'] ) && is_scalar( $_POST['booking_price'] ) ? trim( (string) wp_unslash( $_POST['booking_price'] ) ) : '';
+        $raw_capacity = isset( $_POST['booking_capacity'] ) && is_scalar( $_POST['booking_capacity'] ) ? trim( (string) wp_unslash( $_POST['booking_capacity'] ) ) : '';
+        if ( $enabled ) {
+            if ( $raw_price === '' || ! preg_match( '/^[0-9]{1,6}(\\.[0-9]{1,2})?$/', $raw_price ) || (float) $raw_price > 100000 ) { wp_die( 'Enter a valid price, including 0 for free sessions.', '', array( 'response'=>400 ) ); }
+            if ( $raw_capacity !== '' && ( ! ctype_digit( $raw_capacity ) || (int) $raw_capacity < 1 || (int) $raw_capacity > 100000 ) ) { wp_die( 'Spaces must be a positive whole number.', '', array( 'response'=>400 ) ); }
+            $booking_configs[$saved_session_id] = array( 'enabled'=>1, 'price'=>number_format( (float) $raw_price, 2, '.', '' ), 'capacity'=>$raw_capacity === '' ? null : (int) $raw_capacity );
+        } else {
+            unset( $booking_configs[$saved_session_id] );
+        }
+        update_option( 'bh3_session_booking_config', $booking_configs, false );
         self::back( $id, 'Session saved.' );
     }
     public static function delete() {
@@ -138,6 +164,10 @@ final class BH_Leader_Frontend_Sessions_3 {
         if ( $result ) {
             $flags = get_option( 'bh3_session_enquiry_enabled', array() );
             if ( is_array( $flags ) ) { unset( $flags[$session] ); update_option( 'bh3_session_enquiry_enabled', $flags, false ); }
+        }
+        if ( $result ) {
+            $configs = get_option( 'bh3_session_booking_config', array() );
+            if ( is_array( $configs ) ) { unset( $configs[$session] ); update_option( 'bh3_session_booking_config', $configs, false ); }
         }
         self::back( $id, 'Session removed.' );
     }
