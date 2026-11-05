@@ -13,8 +13,18 @@ final class BH_Leader_Frontend_3 {
         if ( ! current_user_can( 'read' ) ) { return '<p>Access denied.</p>'; }
         global $wpdb;
         $organiser_id = absint( get_user_meta( get_current_user_id(), 'bh3_organiser_id', true ) );
-        if ( ! $organiser_id ) { return '<div class="bh-leader-shell"><h1>Your Leader Hub</h1><p>Your account has not yet been linked to an organiser. Please contact Bubba Hub support.</p></div>'; }
+        $own_organiser_id = $organiser_id;
+        $admin_preview = current_user_can( 'manage_options' );
+        $preview_organisers = array();
         $organisers = $wpdb->prefix . 'organisers';
+        if ( $admin_preview && $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $organisers ) ) ) === $organisers ) {
+            $preview_organisers = $wpdb->get_results( "SELECT id,name FROM `{$organisers}` ORDER BY name ASC LIMIT 200", ARRAY_A );
+            $allowed_ids = array_map( 'intval', wp_list_pluck( $preview_organisers, 'id' ) );
+            $requested_id = isset( $_GET['bh_preview_organiser'] ) ? absint( $_GET['bh_preview_organiser'] ) : 0;
+            if ( $requested_id && in_array( $requested_id, $allowed_ids, true ) ) { $organiser_id = $requested_id; }
+            elseif ( ! $organiser_id && $allowed_ids ) { $organiser_id = $allowed_ids[0]; }
+        }
+        if ( ! $organiser_id ) { return '<div class="bh-leader-shell"><h1>Your Leader Hub</h1><p>Your account has not yet been linked to an organiser. Please contact Bubba Hub support.</p></div>'; }
         $activities = $wpdb->prefix . 'activities';
         foreach ( array( $organisers, $activities ) as $table ) {
             if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ) !== $table ) { return '<p>The Leader Portal is being set up. Please try again later.</p>'; }
@@ -71,10 +81,22 @@ final class BH_Leader_Frontend_3 {
         ?>
 
         <main class="bh-leader-shell">
-            <header class="bh-leader-head"><h1>Leader Dashboard</h1><p class="bh-leader-muted">Welcome, <?php echo esc_html( $name ); ?>. Manage your Bubba Hub activities.</p></header>
+            <header class="bh-leader-head"><h1>Leader Dashboard</h1><p class="bh-leader-muted"><?php echo $admin_preview ? 'Staging organisation preview: ' : 'Welcome, '; ?><?php echo esc_html( $name ); ?>. Manage your Bubba Hub activities.</p></header>
+            <?php if ( $admin_preview ) : ?>
+              <form method="get" class="bh-leader-quick-actions" aria-label="Staging administrator organisation selector">
+                <label for="bh-preview-organisation"><strong>Preview organisation</strong></label>
+                <select id="bh-preview-organisation" name="bh_preview_organiser">
+                  <?php foreach ( $preview_organisers as $org ) : ?>
+                    <option value="<?php echo esc_attr( $org['id'] ); ?>" <?php selected( $organiser_id, (int) $org['id'] ); ?>><?php echo esc_html( $org['name'] ); ?></option>
+                  <?php endforeach; ?>
+                </select>
+                <button type="submit">Switch preview</button>
+              </form>
+              <p class="bh-leader-muted">Admin-only staging preview. Activity editing remains restricted until the save permissions are updated.</p>
+            <?php endif; ?>
             <nav class="bh-leader-quick-actions" aria-label="Quick actions">
                 <a class="bh-leader-primary-action" href="<?php echo esc_url( home_url( '/leader/new/' ) ); ?>">+ Add activity</a>
-                <a href="<?php echo esc_url( home_url( '/leader/bookings/' ) ); ?>">View class calendar</a>
+                <a href="<?php echo esc_url( add_query_arg( $admin_preview ? array( 'bh_preview_organiser' => $organiser_id ) : array(), home_url( '/leader/bookings/' ) ) ); ?>">View class calendar</a>
                 <a href="#my-activities">Manage activities</a>
                 <a href="<?php echo esc_url( home_url( '/leader/business/' ) ); ?>">My business</a>
             </nav>
@@ -156,6 +178,7 @@ final class BH_Leader_Frontend_3 {
             <section class="bh-leader-list" id="my-activities"><h2>My Activities</h2>
                 <p class="bh-leader-muted">Find an activity below to update its details, venues and timetable. Published listings remain read-only until the team enables editing.</p>
                 <form class="bh-leader-filters" method="get" action="<?php echo esc_url( get_permalink() ); ?>">
+                    <?php if ( $admin_preview ) : ?><input type="hidden" name="bh_preview_organiser" value="<?php echo esc_attr( $organiser_id ); ?>"><?php endif; ?>
                     <label class="screen-reader-text" for="bh-leader-search">Search activities</label>
                     <input id="bh-leader-search" type="search" name="bh_leader_search" placeholder="Search activities" value="<?php echo esc_attr( $search ); ?>">
                     <label class="screen-reader-text" for="bh-leader-status-filter">Status</label>
