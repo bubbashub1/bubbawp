@@ -3,7 +3,7 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 final class BH_Schema_3 {
-    public const VERSION = '0.2.0';
+    public const VERSION = '0.3.0';
 
     public static function table_names() {
         global $wpdb;
@@ -15,6 +15,7 @@ final class BH_Schema_3 {
             'activity_venues' => $prefix . 'activity_venues',
             'sessions' => $prefix . 'sessions',
             'session_listing_links' => $prefix . 'session_listing_links',
+            'bookings' => $prefix . 'bh3_bookings',
         );
     }
 
@@ -86,6 +87,34 @@ final class BH_Schema_3 {
                 PRIMARY KEY  (id),
                 UNIQUE KEY session_listing (session_id,activity_id),
                 KEY activity_id (activity_id)
+            ) $charset;",
+            "CREATE TABLE {$t['bookings']} (
+                id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+                public_reference char(36) NOT NULL,
+                session_id bigint(20) unsigned NOT NULL,
+                occurrence_date date NOT NULL,
+                activity_id bigint(20) unsigned NOT NULL,
+                organiser_id bigint(20) unsigned NOT NULL,
+                customer_user_id bigint(20) unsigned NULL,
+                places smallint(5) unsigned NOT NULL,
+                currency char(3) NOT NULL DEFAULT 'gbp',
+                unit_price_pence bigint(20) unsigned NOT NULL,
+                gross_pence bigint(20) unsigned NOT NULL,
+                commission_pence bigint(20) unsigned NOT NULL,
+                leader_before_fees_pence bigint(20) unsigned NOT NULL,
+                commission_rate_percent decimal(5,2) NOT NULL,
+                payment_status varchar(30) NOT NULL DEFAULT 'pending',
+                reservation_expires_at datetime NULL,
+                stripe_checkout_session_id varchar(255) NULL,
+                stripe_payment_intent_id varchar(255) NULL,
+                created_at datetime NOT NULL,
+                updated_at datetime NOT NULL,
+                PRIMARY KEY  (id),
+                UNIQUE KEY public_reference (public_reference),
+                UNIQUE KEY stripe_checkout_session_id (stripe_checkout_session_id),
+                KEY session_occurrence (session_id,occurrence_date),
+                KEY payment_status (payment_status),
+                KEY organiser_id (organiser_id)
             ) $charset;",
             "CREATE TABLE {$t['sessions']} (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
