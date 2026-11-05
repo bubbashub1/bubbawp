@@ -84,6 +84,41 @@ final class BH_Marketplace_Settings_3 {
             'checkout_enabled' => false,
         ) );
     }
+    /**
+     * Read availability for one occurrence. Pending reservations count only until expiry.
+     * This is a read-only preview; reservation creation must use an atomic DB lock.
+     */
+    public static function occurrence_availability( $session_id, $occurrence_date ) {
+        $session_id = absint( $session_id );
+        $date = is_string( $occurrence_date ) ? DateTimeImmutable::createFromFormat( '!Y-m-d', $occurrence_date, wp_timezone() ) : false;
+        if ( ! $session_id || ! $date || $date->format( 'Y-m-d' ) !== $occurrence_date ) {
+            return new WP_Error( 'invalid_occurrence', 'Invalid session date.' );
+        }
+        $configs = get_option( 'bh3_session_booking_config', array() );
+        $config = is_array( $configs ) ? ( $configs[$session_id] ?? array() ) : array();
+        if ( empty( $config['enabled'] ) || empty( $config['capacity'] ) ) {
+            return new WP_Error( 'capacity_not_configured', 'A capacity must be configured before paid checkout.' );
+        }
+        $capacity = absint( $config['capacity'] );
+        if ( $capacity < 1 ) { return new WP_Error( 'invalid_capacity', 'Invalid session capacity.' ); }
+        global $wpdb;
+        $table = $wpdb->prefix . 'bh3_bookings';
+        if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ) !== $table ) {
+            return new WP_Error( 'bookings_table_missing', 'Booking storage has not been installed.' );
+        }
+        $used = (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT COALESCE(SUM(places),0) FROM `{$table}`
+             WHERE session_id=%d AND occurrence_date=%s
+             AND (payment_status='paid' OR (payment_status='pending' AND reservation_expires_at > UTC_TIMESTAMP()))",
+            $session_id, $occurrence_date
+        ) );
+        return array(
+            'session_id' => $session_id, 'occurrence_date' => $occurrence_date,
+            'capacity' => $capacity, 'reserved_or_paid' => $used,
+            'available' => max( 0, $capacity - $used ),
+            'authoritative_reservation_created' => false,
+        );
+    }
     public static function stripe_status() {
         $mode = get_option( 'bh3_stripe_mode', 'test' );
         $mode = $mode === 'live' ? 'live' : 'test';
