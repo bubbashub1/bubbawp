@@ -6,6 +6,7 @@ final class BH_Marketplace_Settings_3 {
         if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) { return; }
         add_action( 'admin_menu', array( __CLASS__, 'menu' ) );
         add_action( 'admin_post_bh3_save_commission', array( __CLASS__, 'save_commission' ) );
+        add_action( 'admin_post_bh3_verify_stripe', array( __CLASS__, 'verify_stripe' ) );
         add_action( 'admin_post_bh3_save_payout_method', array( __CLASS__, 'save_method' ) );
         add_shortcode( 'bh_leader_payout_settings', array( __CLASS__, 'leader_form' ) );
     }
@@ -43,6 +44,35 @@ final class BH_Marketplace_Settings_3 {
             && is_string( $public ) && strpos( $public, 'pk_' . $prefix . '_' ) === 0;
         return array( 'mode' => $mode, 'keys_configured' => $valid, 'connection_verified' => false );
     }
+    public static function verify_stripe() {
+        if ( ! current_user_can( 'manage_options' ) ) { wp_die( 'Forbidden', '', array( 'response' => 403 ) ); }
+        check_admin_referer( 'bh3_verify_stripe' );
+        $status = self::stripe_status();
+        $constant = $status['mode'] === 'live' ? 'BH3_STRIPE_LIVE_SECRET_KEY' : 'BH3_STRIPE_TEST_SECRET_KEY';
+        $result = 'missing';
+        if ( $status['keys_configured'] && defined( $constant ) ) {
+            $response = wp_remote_get( 'https://api.stripe.com/v1/account', array(
+                'timeout' => 12,
+                'redirection' => 0,
+                'headers' => array( 'Authorization' => 'Bearer ' . constant( $constant ) ),
+            ) );
+            if ( is_wp_error( $response ) ) {
+                $result = 'network_error';
+            } elseif ( wp_remote_retrieve_response_code( $response ) === 200 ) {
+                $payload = json_decode( wp_remote_retrieve_body( $response ), true );
+                $result = is_array( $payload ) && ! empty( $payload['id'] ) && strpos( $payload['id'], 'acct_' ) === 0
+                    && ( ! isset( $payload['livemode'] ) || (bool) $payload['livemode'] === ( $status['mode'] === 'live' ) )
+                    ? 'verified' : 'unexpected_response';
+            } else {
+                $result = 'rejected';
+            }
+        }
+        // Persist only verification metadata, never Stripe keys or response payloads.
+        update_option( 'bh3_stripe_verification', array(
+            'mode' => $status['mode'], 'result' => $result, 'checked_at' => time(),
+        ), false );
+        wp_safe_redirect( admin_url( 'admin.php?page=bh3-marketplace&stripe_check=' . rawurlencode( $result ) ) ); exit;
+    }
     public static function menu() {
         add_submenu_page( 'bubba-hub-3-status', 'Marketplace Commission', 'Marketplace Commission', 'manage_options', 'bh3-marketplace', array( __CLASS__, 'admin_form' ) );
     }
@@ -72,7 +102,16 @@ final class BH_Marketplace_Settings_3 {
         echo '</select></p><p><strong>Credentials:</strong> ' . esc_html( $stripe['keys_configured'] ? 'Configured in server environment (not yet verified with Stripe)' : 'Not configured' ) . '</p>';
         echo '<p>Set BH3_STRIPE_TEST_SECRET_KEY and BH3_STRIPE_TEST_PUBLISHABLE_KEY securely in wp-config.php or server environment. Live equivalents: BH3_STRIPE_LIVE_SECRET_KEY and BH3_STRIPE_LIVE_PUBLISHABLE_KEY. Never paste secret keys into a page or form.</p>';
         echo '<p><strong>Connection:</strong> Not verified. Stripe Checkout and automatic payouts remain disabled.</p><p><strong>PayPal / Invoice:</strong> Manual settlement workflow not configured.</p>';
-        submit_button( 'Save commission' ); echo '</form><p>Fluent Forms collects booking details only. Direct Stripe Connect checkout, payment verification, refunds and reconciliation must pass staging QA before activation.</p></div>';
+        submit_button( 'Save payment settings' ); echo '</form>';
+        $last = get_option( 'bh3_stripe_verification', array() );
+        if ( is_array( $last ) && ! empty( $last['result'] ) ) {
+            echo '<p><strong>Last verification:</strong> ' . esc_html( $last['result'] ) . ' (' . esc_html( $last['mode'] ?? '' ) . ' mode). Reverify after changing credentials.</p>';
+        }
+        echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+        wp_nonce_field( 'bh3_verify_stripe' );
+        echo '<input type="hidden" name="action" value="bh3_verify_stripe">';
+        submit_button( 'Verify Stripe API connection', 'secondary' );
+        echo '</form><p>Fluent Forms collects booking details only. Direct Stripe Connect checkout, payment verification, refunds and reconciliation must pass staging QA before activation.</p></div>';
     }
     public static function save_commission() {
         if ( ! current_user_can( 'manage_options' ) ) { wp_die( 'Forbidden', '', array( 'response' => 403 ) ); }
