@@ -420,6 +420,50 @@ final class BH_Marketplace_Settings_3 {
         }
         return new WP_Error( 'event_record_failed', 'Could not record Stripe event.' );
     }
+    /**
+     * Read-only payment reconciliation preflight for a verified test event.
+     * Never infer a paid booking from a redirect or unchecked client metadata.
+     */
+    public static function inspect_verified_checkout_payment( $event ) {
+        if ( ! is_array( $event ) || ( $event['livemode'] ?? null ) !== false
+            || ! in_array( $event['type'] ?? '', array( 'checkout.session.completed', 'checkout.session.async_payment_succeeded' ), true ) ) {
+            return new WP_Error( 'unsupported_payment_event', 'Not a successful test checkout event.' );
+        }
+        $object = $event['data']['object'] ?? array();
+        $checkout_id = $object['id'] ?? '';
+        if ( ! is_string( $checkout_id ) || ! preg_match( '/^cs_test_[A-Za-z0-9_]+$/', $checkout_id )
+            || ( $object['payment_status'] ?? '' ) !== 'paid'
+            || ( $object['mode'] ?? '' ) !== 'payment' ) {
+            return new WP_Error( 'unpaid_checkout', 'Checkout has not confirmed payment.' );
+        }
+        global $wpdb;
+        $table = $wpdb->prefix . 'bh3_bookings';
+        $booking = $wpdb->get_row( $wpdb->prepare(
+            "SELECT id,public_reference,payment_status,currency,gross_pence,stripe_checkout_session_id,stripe_payment_intent_id
+             FROM `{$table}` WHERE stripe_checkout_session_id=%s LIMIT 1", $checkout_id
+        ), ARRAY_A );
+        if ( ! $booking || ! in_array( $booking['payment_status'], array( 'pending', 'paid' ), true )
+            || strtolower( (string) ( $object['currency'] ?? '' ) ) !== $booking['currency']
+            || ! isset( $object['amount_total'] ) || ! is_numeric( $object['amount_total'] )
+            || (int) $object['amount_total'] !== (int) $booking['gross_pence'] ) {
+            return new WP_Error( 'payment_mismatch', 'Checkout does not match a pending booking and amount.' );
+        }
+        $intent = $object['payment_intent'] ?? '';
+        if ( ! is_string( $intent ) || ! preg_match( '/^pi_[A-Za-z0-9]+$/', $intent )
+            || ( ! empty( $booking['stripe_payment_intent_id'] ) && $booking['stripe_payment_intent_id'] !== $intent ) ) {
+            return new WP_Error( 'payment_intent_mismatch', 'Payment intent is missing or mismatched.' );
+        }
+        return array(
+            'booking_id' => (int) $booking['id'],
+            'reference' => $booking['public_reference'],
+            'checkout_session_id' => $checkout_id,
+            'payment_intent_id' => $intent,
+            'gross_pence' => (int) $booking['gross_pence'],
+            'already_paid' => $booking['payment_status'] === 'paid',
+            'payment_confirmed_in_database' => $booking['payment_status'] === 'paid',
+            'safe_to_auto_confirm' => false,
+        );
+    }
     public static function stripe_status() {
         $mode = get_option( 'bh3_stripe_mode', 'test' );
         $mode = $mode === 'live' ? 'live' : 'test';
