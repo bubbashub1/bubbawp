@@ -193,6 +193,50 @@ final class BH_Directory_3 {
         // Automatically apply filters, with a short debounce for text and numeric input.
         // Keep native GET submission for keyboard access, browser history and non-JS visitors.
         echo '<script>(function(){function init(){document.querySelectorAll(".bh3-real-directory .bh3-search-form").forEach(form=>{if(form.dataset.bh3AutoSearch)return;form.dataset.bh3AutoSearch="1";let timer;const submit=()=>{clearTimeout(timer);const page=form.querySelector("[name=bh_page]");if(page)page.value="1";if(form.requestSubmit)form.requestSubmit();else form.submit()};form.addEventListener("input",event=>{const field=event.target;if(!field.matches("input[type=search],input[type=number]"))return;clearTimeout(timer);timer=setTimeout(submit,550)});form.addEventListener("change",event=>{const field=event.target;if(field.matches("select,input[type=checkbox]"))submit()});form.addEventListener("submit",()=>clearTimeout(timer))})}if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init()})();</script>';
+        echo '<script>(function(){
+function init(){
+document.querySelectorAll(".bh3-real-directory").forEach(scope=>{
+const form=scope.querySelector(".bh3-search-form");if(!form||scope.dataset.bh3Ajax)return;
+scope.dataset.bh3Ajax="1";
+let controller=null,latestUrl=location.href,ajaxUpdated=false;
+const status=document.createElement("span");status.className="bh3-ajax-status";status.setAttribute("role","status");status.setAttribute("aria-live","polite");form.append(status);
+const update=async(url,push)=>{
+if(controller)controller.abort();controller=new AbortController();const current=controller;
+scope.setAttribute("aria-busy","true");status.textContent="Updating activities…";
+try{
+const response=await fetch(url,{signal:current.signal,credentials:"same-origin",headers:{"X-Requested-With":"XMLHttpRequest"}});
+if(!response.ok)throw Error("HTTP "+response.status);
+const doc=new DOMParser().parseFromString(await response.text(),"text/html");
+const incoming=doc.querySelector(".bh3-real-directory");
+if(!incoming)throw Error("Directory response missing");
+for(const selector of [".bh3-cards",".bh3-results-summary",".bh3-pages"]){
+const old=scope.querySelector(selector),fresh=incoming.querySelector(selector);
+if(old&&fresh)old.replaceWith(fresh);
+else if(old&&!fresh)old.remove();
+else if(fresh){const cards=scope.querySelector(".bh3-cards");if(cards)cards.insertAdjacentElement(selector===".bh3-pages"?"afterend":"beforebegin",fresh)}
+}
+latestUrl=url;ajaxUpdated=true;if(push)history.pushState({bh3Directory:true},"",url);
+status.textContent="Results updated";
+}catch(error){if(error.name==="AbortError")return;status.textContent="Loading full results…";location.assign(url)}
+finally{if(current===controller)scope.removeAttribute("aria-busy")}
+};
+form.addEventListener("submit",event=>{
+if(!scope.classList.contains("bh3-view-list"))return;
+event.preventDefault();const url=new URL(form.action||location.href,location.href);
+url.search=new URLSearchParams(new FormData(form)).toString();
+url.searchParams.delete("bh_page");update(url.href,true)
+});
+scope.addEventListener("click",event=>{
+const page=event.target.closest(".bh3-pages a");
+if(page){event.preventDefault();update(page.href,true);return}
+const view=event.target.closest("[data-bh3-view]");
+if(view&&ajaxUpdated&&view.dataset.bh3View!=="list"){event.preventDefault();event.stopImmediatePropagation();location.assign(latestUrl)}
+},true);
+window.addEventListener("popstate",()=>{if(scope.isConnected&&location.href!==latestUrl)location.reload()});
+});
+}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
+})();</script>';
         echo '<div class="bh3-view-toggle" role="group" aria-label="Directory view">'; if ( $map_points ) { echo '<button type="button" data-bh3-view="map" aria-pressed="false">Map</button>'; } echo '<button type="button" data-bh3-view="list" aria-pressed="true">List</button><button type="button" data-bh3-view="calendar" aria-pressed="false">Calendar</button><a class="bh3-planner-tab" href="' . esc_url( home_url( '/my-hub/planner/' ) ) . '">My Planner</a></div>';
         echo '<script>(function(){function ready(){document.querySelectorAll(".bh3-real-directory").forEach(scope=>{scope.classList.add("bh3-view-list");scope.querySelectorAll("[data-bh3-view]").forEach(button=>button.addEventListener("click",()=>{const view=button.dataset.bh3View;scope.classList.toggle("bh3-view-map",view==="map");scope.classList.toggle("bh3-view-list",view==="list");scope.classList.toggle("bh3-view-calendar",view==="calendar");scope.querySelectorAll("[data-bh3-view]").forEach(b=>b.setAttribute("aria-pressed",String(b===button)));}));});}if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",ready);else ready();})();</script>';
         // Calendar data uses only already-filtered published listings; it never claims booking availability.
