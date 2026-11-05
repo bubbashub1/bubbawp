@@ -37,6 +37,15 @@ final class BH_Leader_Frontend_Sessions_3 {
         $edit_id = absint( $_GET['edit_session'] ?? 0 );
         $editing = null;
         foreach ( $rows as $row ) { if ( (int) $row['id'] === $edit_id && $row['frequency'] === 'weekly' ) { $editing = $row; } }
+        $owner_id = absint( get_user_meta( get_current_user_id(), 'bh3_organiser_id', true ) );
+        $activity_table = $wpdb->prefix . 'activities';
+        $owned_listings = $wpdb->get_results( $wpdb->prepare( "SELECT id,title FROM `{$activity_table}` WHERE organiser_id=%d ORDER BY title LIMIT 200", $owner_id ), ARRAY_A );
+        $assignment_table = $wpdb->prefix . 'session_listing_links';
+        $assignments_ready = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $assignment_table ) ) ) === $assignment_table;
+        $linked_ids = array();
+        if ( $assignments_ready && $editing ) {
+            $linked_ids = array_map( 'intval', $wpdb->get_col( $wpdb->prepare( "SELECT activity_id FROM `{$assignment_table}` WHERE session_id=%d", (int) $editing['id'] ) ) );
+        }
         $booking_settings = get_option( 'bh3_session_booking_config', array() );
         if ( ! is_array( $booking_settings ) ) { $booking_settings = array(); }
         $booking = $booking_settings[(int) ( $editing['id'] ?? 0 )] ?? array();
@@ -78,6 +87,17 @@ final class BH_Leader_Frontend_Sessions_3 {
         <div><label for="bh-first">First date (optional)</label><input id="bh-first" type="date" name="start_date" value="<?php echo esc_attr( $editing['start_date'] ?? $picked_date ); ?>">
         </div><div><label for="bh-last">Last date (optional)</label><input id="bh-last" type="date" name="end_date" value="<?php echo esc_attr( $editing['end_date'] ?? $picked_date ); ?>">
         </div></div>
+        <fieldset class="bh-panel" style="padding:16px;margin:16px 0;border:1px solid #dce9e0;border-radius:12px">
+          <legend><strong>Show this session on your listings</strong></legend>
+          <?php if ( $assignments_ready ) : ?>
+            <p>Choose all listings that should display this shared session. Editing it updates every assigned listing.</p>
+            <?php foreach ( $owned_listings as $listing ) : ?>
+              <p><label><input type="checkbox" name="listing_ids[]" value="<?php echo esc_attr( $listing['id'] ); ?>" <?php checked( (int) $listing['id'] === $id || in_array( (int) $listing['id'], $linked_ids, true ) ); ?> <?php disabled( (int) $listing['id'] === $id ); ?>> <?php echo esc_html( $listing['title'] ); ?><?php if ( (int) $listing['id'] === $id ) : ?> (primary listing)<?php endif; ?></label></p>
+            <?php endforeach; ?>
+          <?php else : ?>
+            <p>Shared listing assignment will become available after the administrator installs the new assignment table. Existing sessions remain linked to their original listing.</p>
+          <?php endif; ?>
+        </fieldset>
         <p><label><input type="checkbox" name="allow_enquiry" value="1" <?php checked( ! empty( $enquiry_settings[(int) ( $editing['id'] ?? 0 )] ) ); ?>> Allow families to enquire about this session (Fluent Form 6)</label></p>
         <fieldset class="bh-panel" style="margin:16px 0;padding:16px;border:1px solid #dce9e0;border-radius:12px">
           <legend><strong>Optional booking module</strong></legend>
@@ -150,6 +170,20 @@ final class BH_Leader_Frontend_Sessions_3 {
             $booking_configs[$saved_session_id] = array( 'enabled'=>1, 'price'=>number_format( (float) $raw_price, 2, '.', '' ), 'capacity'=>$raw_capacity === '' ? null : (int) $raw_capacity );
         } else { unset( $booking_configs[$saved_session_id] ); }
         update_option( 'bh3_session_booking_config', $booking_configs, false );
+        $assignment_table = $wpdb->prefix . 'session_listing_links';
+        if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $assignment_table ) ) ) === $assignment_table ) {
+            $owner_id = absint( get_user_meta( get_current_user_id(), 'bh3_organiser_id', true ) );
+            $activity_table = $wpdb->prefix . 'activities';
+            $selected = isset( $_POST['listing_ids'] ) && is_array( $_POST['listing_ids'] ) ? array_map( 'absint', wp_unslash( $_POST['listing_ids'] ) ) : array();
+            $selected[] = $id;
+            $selected = array_values( array_unique( array_filter( $selected ) ) );
+            $allowed = array_map( 'intval', $wpdb->get_col( $wpdb->prepare( "SELECT id FROM `{$activity_table}` WHERE organiser_id=%d", $owner_id ) ) );
+            if ( array_diff( $selected, $allowed ) ) { wp_die( 'You can only assign your own listings.', '', array( 'response'=>403 ) ); }
+            $wpdb->delete( $assignment_table, array( 'session_id'=>$saved_session_id ), array( '%d' ) );
+            foreach ( $selected as $listing_id ) {
+                $wpdb->insert( $assignment_table, array( 'session_id'=>$saved_session_id, 'activity_id'=>$listing_id ), array( '%d', '%d' ) );
+            }
+        }
         self::back( $id, 'Session saved.' );
     }
     public static function delete() {
