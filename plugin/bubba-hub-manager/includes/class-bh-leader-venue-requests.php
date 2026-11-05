@@ -79,7 +79,10 @@ final class BH_Leader_Venue_Requests_3 {
             $message='A similar venue may already exist. Please ask the team to check before submitting another request.';
             wp_die(esc_html($message.' Matches: '.implode('; ',array_map(static function($v){return $v['name'].' — '.$v['town'].' '.$v['postcode'];},$matches))),'',array('response'=>409));
         }
-        $t=self::table(); $now=current_time('mysql',true);
+        $t=self::table();
+        $pending=$wpdb->get_var($wpdb->prepare("SELECT id FROM `{$t}` WHERE activity_id=%d AND organiser_id=%d AND status='pending' AND (postcode=%s OR venue_name=%s) LIMIT 1",$id,$owner,$postcode,$name));
+        if ($pending) wp_die('A matching venue request is already awaiting review.','',array('response'=>409));
+        $now=current_time('mysql',true);
         $ok=$wpdb->insert($t,array('organiser_id'=>$owner,'activity_id'=>$id,'venue_name'=>$name,'address_line1'=>$address,'town'=>$town,'postcode'=>$postcode,'accessibility'=>sanitize_textarea_field(wp_unslash($_POST['accessibility']??'')),'directions'=>sanitize_textarea_field(wp_unslash($_POST['directions']??'')),'status'=>'pending','created_at'=>$now,'updated_at'=>$now));
         if ($ok===false) wp_die('Unable to submit venue request.','',array('response'=>500));
         wp_safe_redirect(add_query_arg(array('activity_id'=>$id,'venue_request'=>'sent'),home_url('/leader/venues/'))); exit;
@@ -104,6 +107,9 @@ final class BH_Leader_Venue_Requests_3 {
         global $wpdb; $t=self::table(); $row=$wpdb->get_row($wpdb->prepare("SELECT * FROM `{$t}` WHERE id=%d AND status='pending'",$id),ARRAY_A); if(!$row) wp_die('Request not found or already reviewed.','',array('response'=>404));
         $venue_id=null;
         if($decision==='approve'){
+            $a=$wpdb->prefix.'activities';
+            $still_owned=$wpdb->get_var($wpdb->prepare("SELECT id FROM `{$a}` WHERE id=%d AND organiser_id=%d AND status='draft' LIMIT 1",(int)$row['activity_id'],(int)$row['organiser_id']));
+            if (!$still_owned) wp_die('The original draft listing is no longer available to this organiser. Review cannot continue.','',array('response'=>409));
             $v=$wpdb->prefix.'venues'; $now=current_time('mysql',true);
             $ok=$wpdb->insert($v,array('name'=>$row['venue_name'],'address_line1'=>$row['address_line1'],'town'=>$row['town'],'postcode'=>$row['postcode'],'created_at'=>$now,'updated_at'=>$now));
             if($ok===false) wp_die('Could not create approved venue.','',array('response'=>500)); $venue_id=(int)$wpdb->insert_id;
