@@ -167,7 +167,7 @@ final class BH_Directory_3 {
         echo '<form class="bh3-search-form" method="get" aria-label="Filter activities">';
         if ( $show( 'keyword' ) ) { echo '<label><span>Search</span><input type="search" name="bh_search" placeholder="Activity, organiser or keyword" value="' . esc_attr( $search ) . '"></label>'; }
         echo '<div class="bh3-quick-search-action"><button type="submit">Search activities</button></div>';
-        $has_active_filters = $category !== '' || $town !== '' || $region !== '' || $age !== null || $day > 0 || $postcode !== '' || $free || $term || $max_price !== null || $sort !== 'title' || $geo_valid;
+        $has_active_filters = $category !== '' || $town !== '' || $region !== '' || $age !== null || $day > 0 || $postcode !== '' || $free || $term || $max_price > 0 || $sort !== 'title' || $geo_valid;
         echo '<details class="bh3-filter-details" open><summary>More filters' . ( $has_active_filters ? ' · Active' : '' ) . '</summary><div class="bh3-filter-fields">';
         if ( $show( 'category' ) ) { echo '<label><span>Category</span><input type="search" name="bh_category" placeholder="e.g. Swimming" value="' . esc_attr( $category ) . '"></label>'; }
         if ( $show( 'price' ) ) { echo '<label><span>Maximum price</span><select name="bh_max_price"><option value="">Any price</option>'; foreach ( array( 5, 10, 20, 50 ) as $limit ) { echo '<option value="' . esc_attr( (string) $limit ) . '" ' . selected( $max_price, $limit, false ) . '>Up to £' . esc_html( (string) $limit ) . '</option>'; } echo '</select></label>'; }
@@ -256,7 +256,7 @@ final class BH_Directory_3 {
             echo '</div></article>';
         }
         if ( ! $rows ) {
-            $clear_url = remove_query_arg( array( 'bh_page', 'bh_keyword', 'bh_category', 'bh_age', 'bh_day', 'bh_max_price', 'bh_region', 'bh_town', 'bh_postcode', 'bh_free', 'bh_term_time', 'bh_near_me', 'bh_radius', 'bh_sort' ) );
+            $clear_url = remove_query_arg( array( 'bh_page', 'bh_search', 'bh_category', 'bh_age', 'bh_day', 'bh_max_price', 'bh_region', 'bh_town', 'bh_postcode', 'bh_free', 'bh_term', 'bh_radius', 'bh_sort', 'bh_lat', 'bh_lng' ) );
             echo '<div class="bh3-empty-state" role="status"><h3>No activities found</h3><p>Try a different town, age or day, or remove your filters to see more family activities.</p><a href="' . esc_url( $clear_url ) . '">Clear filters</a></div>';
         }
         echo '</div><nav class="bh3-pages" aria-label="Directory pages">';
