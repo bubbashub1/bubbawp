@@ -280,6 +280,31 @@ final class BH_Marketplace_Settings_3 {
             || strtotime( $booking['reservation_expires_at'] . ' UTC' ) <= time() + 120 ) {
             return new WP_Error( 'invalid_reservation', 'Reservation unavailable or too close to expiry.' );
         }
+        // Once form binding is enabled, no unlinked or unconsented
+        // reservation may proceed to Stripe Checkout, even via QA routes.
+        if ( defined( 'BH3_ENABLE_BOOKING_FORM_BINDING' ) && BH3_ENABLE_BOOKING_FORM_BINDING === true ) {
+            if ( empty( $booking['booking_submission_id'] ) || empty( $booking['booking_form_id'] )
+                || (int) $booking['booking_form_id'] !== absint( get_option( 'bh3_booking_form_id', 7 ) ) ) {
+                return new WP_Error( 'booking_form_not_bound', 'Complete and verify the booking form before payment.' );
+            }
+            $attendees_table = $wpdb->prefix . 'bh3_booking_attendees';
+            $consents_table = $wpdb->prefix . 'bh3_booking_consents';
+            foreach ( array( $attendees_table, $consents_table ) as $required_table ) {
+                if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $required_table ) ) ) !== $required_table ) {
+                    return new WP_Error( 'booking_details_schema_missing', 'Booking details storage is not ready.' );
+                }
+            }
+            $attendee_count = (int) $wpdb->get_var( $wpdb->prepare(
+                "SELECT COUNT(*) FROM `{$attendees_table}` WHERE booking_id=%d", (int) $booking['id']
+            ) );
+            $sharing_consent = (int) $wpdb->get_var( $wpdb->prepare(
+                "SELECT COUNT(*) FROM `{$consents_table}` WHERE booking_id=%d AND consent_key=%s AND consent_version=%s AND response=%s",
+                (int) $booking['id'], 'share_attendee_details', 'v1', 'yes'
+            ) );
+            if ( $attendee_count !== (int) $booking['places'] || $sharing_consent !== 1 ) {
+                return new WP_Error( 'booking_details_incomplete', 'Attendees and sharing consent must be saved before payment.' );
+            }
+        }
         $valid = self::validate_occurrence( (int) $booking['session_id'], $booking['occurrence_date'] );
         if ( is_wp_error( $valid ) ) { return $valid; }
         // Payout account belongs to the organiser, never the customer.
