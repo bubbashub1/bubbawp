@@ -298,6 +298,26 @@ final class BH_Developments_Admin_3 {
             echo '</tbody></table></div>';
             echo '<p class="description">This structural check does not inspect bookings, attendees, consent submissions, payment events or user data. Functional and permissions testing is still required.</p>';
         }
+        if ( 'staging.bubbahub.co.uk' === $site_host ) {
+            global $wpdb;
+            echo '<h2>Booking integration checkpoints</h2>';
+            echo '<p>Configuration-only checks. These do not read bookings, form submissions, family records, payment events or other personal information. A configured component is not proof of a working booking journey.</p>';
+            $booking_checks = array();
+            $session_table = $wpdb->prefix . 'sessions';
+            $booking_checks[] = array( 'Session timetable table', BH_Family_DB_Setup_3::exists( $session_table ), 'Confirm a scheduled occurrence can be selected on the activity page.' );
+            $booking_checks[] = array( 'Leader bookings page', (bool) get_page_by_path( 'leader/bookings' ), 'Check the booking dashboard shortcode and leader permissions.' );
+            $booking_checks[] = array( 'Leader payment page', (bool) get_page_by_path( 'leader/payment' ), 'Confirm payout settings are available to the correct leader.' );
+            $booking_checks[] = array( 'Booking terms page', (bool) get_page_by_path( 'legal/bookings' ), 'Verify the consent form links to the correct terms.' );
+            $consent_form_available = false;
+            $consent_form_available = shortcode_exists( 'fluentform' );
+            $booking_checks[] = array( 'Fluent Forms integration', $consent_form_available, 'Verify form #7 exists, is published and maps consent responses correctly; this check does not inspect its submissions.' );
+            echo '<div style="max-width:1250px;overflow-x:auto"><table class="widefat striped"><thead><tr><th>Checkpoint</th><th>Detected</th><th>Manual verification</th></tr></thead><tbody>';
+            foreach ( $booking_checks as $check ) {
+                echo '<tr><th scope="row">' . esc_html( $check[0] ) . '</th><td>' . ( $check[1] ? 'Yes' : 'Not detected' ) . '</td><td>' . esc_html( $check[2] ) . '</td></tr>';
+            }
+            echo '</tbody></table></div>';
+            echo '<p class="description">Page presence and shortcode registration do not validate access control, form #7 configuration, attendee links or Stripe processing. Those require separate staging tests.</p>';
+        }
         echo '<h2>Sector implementation blueprints</h2>';
         echo '<p>Read-only planning references. Shortcodes and pages listed here may require verification on staging; nothing below creates a table, form or page.</p>';
         echo '<style>.bh3-sector-details{max-width:1250px;margin:8px 0;background:#fff;border:1px solid #dcdcde;border-radius:6px}.bh3-sector-details summary{cursor:pointer;padding:12px 15px;font-weight:600}.bh3-sector-details[open] summary{border-bottom:1px solid #dcdcde}.bh3-sector-details dl{display:grid;grid-template-columns:minmax(110px,170px) minmax(0,1fr);gap:9px 16px;margin:15px}.bh3-sector-details dt{font-weight:600}.bh3-sector-details dd{margin:0;overflow-wrap:anywhere}@media(max-width:782px){.bh3-sector-details dl{grid-template-columns:1fr;gap:4px}.bh3-sector-details dd{margin-bottom:12px}}</style>';
