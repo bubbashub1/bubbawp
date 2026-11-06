@@ -684,7 +684,7 @@ final class BH_Marketplace_Settings_3 {
         // reservation may proceed to Stripe Checkout, even via QA routes.
         if ( defined( 'BH3_ENABLE_BOOKING_FORM_BINDING' ) && BH3_ENABLE_BOOKING_FORM_BINDING === true ) {
             if ( empty( $booking['booking_submission_id'] ) || empty( $booking['booking_form_id'] )
-                || (int) $booking['booking_form_id'] !== absint( get_option( 'bh3_booking_form_id', 7 ) ) ) {
+                || (int) $booking['booking_form_id'] !== absint( get_option( 'bh3_booking_form_id', 8 ) ) ) {
                 return new WP_Error( 'booking_form_not_bound', 'Complete and verify the booking form before payment.' );
             }
             $attendees_table = $wpdb->prefix . 'bh3_booking_attendees';
@@ -867,7 +867,7 @@ final class BH_Marketplace_Settings_3 {
         }
         global $wpdb;
         $table = $wpdb->prefix . 'fluentform_submissions';
-        $form_id = absint( get_option( 'bh3_booking_form_id', 7 ) );
+        $form_id = absint( get_option( 'bh3_booking_form_id', 8 ) );
         if ( ! $form_id ) {
             return new WP_Error( 'booking_form_missing', 'Booking form is not configured.' );
         }
@@ -903,7 +903,7 @@ final class BH_Marketplace_Settings_3 {
      * selected occurrence, bind attendees/consent, then redirect to Stripe.
      */
     public static function filter_form7_checkout_confirmation( $return_data, $form, $confirmation, $submission_id, $form_data ) {
-        $form_id = absint( get_option( 'bh3_booking_form_id', 7 ) );
+        $form_id = absint( get_option( 'bh3_booking_form_id', 8 ) );
         if ( absint( $form->id ?? 0 ) !== $form_id ) { return $return_data; }
         if ( ! is_user_logged_in() || ! is_array( $form_data ) ) {
             $return_data['message'] = 'Your details were received, but you must be signed in to continue to secure checkout.';
@@ -940,7 +940,7 @@ final class BH_Marketplace_Settings_3 {
     }
 
     public static function filter_form7_checkbox_field( $data, $form ) {
-        if ( absint( $form->id ?? 0 ) !== absint( get_option( 'bh3_booking_form_id', 7 ) )
+        if ( absint( $form->id ?? 0 ) !== absint( get_option( 'bh3_booking_form_id', 8 ) )
             || ( $data['attributes']['name'] ?? '' ) !== 'family_profile_ids'
             || ! is_user_logged_in() ) { return $data; }
         $options = array();
@@ -979,7 +979,7 @@ final class BH_Marketplace_Settings_3 {
     }
 
     public static function filter_form7_hidden_field( $data, $form ) {
-        if ( absint( $form->id ?? 0 ) !== absint( get_option( 'bh3_booking_form_id', 7 ) )
+        if ( absint( $form->id ?? 0 ) !== absint( get_option( 'bh3_booking_form_id', 8 ) )
             || empty( $GLOBALS['bh3_form7_session_id'] ) || ! is_user_logged_in() ) { return $data; }
         $field_name = $data['attributes']['name'] ?? '';
         if ( $field_name === 'session_id' ) {
@@ -1563,7 +1563,7 @@ final class BH_Marketplace_Settings_3 {
         }
         // Do not display a submittable Form 7 when booking is disabled.
         // A submission without a configured checkout would strand the parent.
-        $form_id = absint( get_option( 'bh3_booking_form_id', 7 ) );
+        $form_id = absint( get_option( 'bh3_booking_form_id', 8 ) );
         if ( $enabled && $form_id && shortcode_exists( 'fluentform' ) ) {
             echo '<div class="bh3-booking-details"><h4>Booking details</h4>';
             echo '<p>Please read our <a href="' . esc_url( home_url( '/legal/bookings/' ) ) . '" target="_blank" rel="noopener">Booking Terms &amp; Conditions</a> before continuing. Your booking is confirmed only after Stripe verifies payment.</p>';
