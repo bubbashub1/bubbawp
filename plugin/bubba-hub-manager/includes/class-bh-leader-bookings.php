@@ -239,15 +239,33 @@ final class BH_Leader_Bookings_3 {
             <?php if ( ! $record_rows ) : ?>
               <p>No booking records for this date.</p>
             <?php else : ?>
-              <div style="overflow-x:auto"><table><thead><tr><th scope="col">Reference</th><th scope="col">Places</th><th scope="col">Booking status</th><th scope="col">Payment status</th></tr></thead><tbody>
+              <div style="overflow-x:auto"><table><thead><tr><th scope="col">Reference</th><th scope="col">Places</th><th scope="col">Booking status</th><th scope="col">Payment status</th><th scope="col">Action</th></tr></thead><tbody>
               <?php foreach ( $record_rows as $record_row ) : ?>
                 <tr><td><?php echo esc_html( '#' . absint( $record_row['id'] ) ); ?></td>
                 <td><?php echo esc_html( (string) absint( $record_row['places'] ) ); ?></td>
                 <td><?php echo esc_html( sanitize_text_field( $record_row['booking_status'] ) ); ?></td>
-                <td><?php echo esc_html( sanitize_text_field( $record_row['payment_status'] ) ); ?></td></tr>
+                <td><?php echo esc_html( sanitize_text_field( $record_row['payment_status'] ) ); ?></td>
+                <td>
+                <?php
+                $can_enrol = defined( 'BH3_ENABLE_LEADER_BOOKING_ACTIONS' ) && BH3_ENABLE_LEADER_BOOKING_ACTIONS === true
+                    && ! $admin_preview
+                    && class_exists( 'BH_Marketplace_Settings_3' )
+                    && $record_row['booking_status'] === 'confirmed'
+                    && $record_row['payment_status'] === 'paid'
+                    && ! is_wp_error( BH_Marketplace_Settings_3::leader_enrolment_eligibility( (int) $record_row['id'] ) );
+                ?>
+                <?php if ( $can_enrol ) : ?>
+                  <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+                    <input type="hidden" name="action" value="bh3_leader_enrol_booking">
+                    <input type="hidden" name="booking_id" value="<?php echo esc_attr( (int) $record_row['id'] ); ?>">
+                    <?php wp_nonce_field( 'bh3_enrol_booking_' . (int) $record_row['id'] ); ?>
+                    <button type="submit">Mark as Enrolled</button>
+                  </form>
+                <?php else : ?><span>—</span><?php endif; ?>
+                </td></tr>
               <?php endforeach; ?>
               </tbody></table></div>
-              <p><small>Showing up to 25 records. No customer or child information is shown. Status changes remain disabled.</small></p>
+              <p><small>Showing up to 25 records. No customer or child information is shown. Enrolment is available only when staging actions are enabled and the booking is eligible.</small></p>
             <?php endif; ?>
             <?php endif; ?>
             <p><a href="<?php echo esc_url( remove_query_arg( array( 'bh_occurrence_session', 'bh_occurrence_date' ) ) ); ?>">Close session details</a></p>
