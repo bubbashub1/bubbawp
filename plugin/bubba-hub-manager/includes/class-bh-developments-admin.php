@@ -33,6 +33,26 @@ final class BH_Developments_Admin_3 {
         );
     }
 
+    public static function save_legacy_features() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'Administrator permission required.', 'bubba-hub-manager' ), '', array( 'response' => 403 ) );
+        }
+        check_admin_referer( 'bh3_save_legacy_features' );
+        $items = function_exists( 'bh_development_tracker_items' ) ? bh_development_tracker_items() : array();
+        $allowed = array( 'Planned', 'In progress', 'Needs testing', 'Ready to deploy', 'Deployed', 'Blocked', 'Complete' );
+        $saved = get_option( 'bh_development_tracker_statuses', array() );
+        $saved = is_array( $saved ) ? $saved : array();
+        $posted = isset( $_POST['bh_tracker_status'] ) && is_array( $_POST['bh_tracker_status'] ) ? wp_unslash( $_POST['bh_tracker_status'] ) : array();
+        foreach ( $items as $key => $item ) {
+            if ( isset( $posted[$key] ) && is_string( $posted[$key] ) && in_array( $posted[$key], $allowed, true ) ) {
+                $saved[$key] = $posted[$key];
+            }
+        }
+        update_option( 'bh_development_tracker_statuses', $saved, false );
+        wp_safe_redirect( add_query_arg( array( 'page' => 'bh3-developments', 'legacy_updated' => '1' ), admin_url( 'admin.php' ) ) );
+        exit;
+    }
+
     public static function save_readiness() {
         if ( ! current_user_can( 'manage_options' ) ) {
             wp_die( esc_html__( 'Administrator permission required.', 'bubba-hub-manager' ), '', array( 'response' => 403 ) );
@@ -144,13 +164,23 @@ final class BH_Developments_Admin_3 {
         $legacy_items = function_exists( 'bh_development_tracker_items' ) ? bh_development_tracker_items() : array();
         $legacy_saved = get_option( 'bh_development_tracker_statuses', array() );
         $legacy_saved = is_array( $legacy_saved ) ? $legacy_saved : array();
-        echo '<details><summary><strong>Existing 3.0 feature tracker (' . esc_html( count( $legacy_items ) ) . ' items) — preserved</strong></summary>';
-        echo '<table class="widefat striped"><thead><tr><th>Sector</th><th>Feature</th><th>Saved / initial status</th></tr></thead><tbody>';
-        foreach ( $legacy_items as $feature_key => $feature ) {
-            $feature_status = isset( $legacy_saved[$feature_key] ) ? $legacy_saved[$feature_key] : $feature[2];
-            echo '<tr><td>' . esc_html( $feature[0] ) . '</td><td>' . esc_html( $feature[1] ) . '</td><td>' . esc_html( $feature_status ) . '</td></tr>';
+        if ( isset( $_GET['legacy_updated'] ) && '1' === $_GET['legacy_updated'] ) {
+            echo '<div class="notice notice-success inline"><p>3.0 feature statuses saved.</p></div>';
         }
-        echo '</tbody></table></details>';
+        $legacy_allowed = array( 'Planned', 'In progress', 'Needs testing', 'Ready to deploy', 'Deployed', 'Blocked', 'Complete' );
+        echo '<details><summary><strong>Existing 3.0 feature tracker (' . esc_html( count( $legacy_items ) ) . ' items) — editable and preserved</strong></summary>';
+        echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="bh3_save_legacy_features">';
+        wp_nonce_field( 'bh3_save_legacy_features' );
+        echo '<table class="widefat striped"><thead><tr><th>Sector</th><th>Feature</th><th>Status</th></tr></thead><tbody>';
+        foreach ( $legacy_items as $feature_key => $feature ) {
+            $feature_status = isset( $legacy_saved[$feature_key] ) && in_array( $legacy_saved[$feature_key], $legacy_allowed, true ) ? $legacy_saved[$feature_key] : $feature[2];
+            echo '<tr><td>' . esc_html( $feature[0] ) . '</td><td>' . esc_html( $feature[1] ) . '</td><td><label class="screen-reader-text" for="bh-legacy-' . esc_attr( $feature_key ) . '">Status for ' . esc_html( $feature[1] ) . '</label><select id="bh-legacy-' . esc_attr( $feature_key ) . '" name="bh_tracker_status[' . esc_attr( $feature_key ) . ']">';
+            foreach ( $legacy_allowed as $option ) {
+                echo '<option value="' . esc_attr( $option ) . '"' . selected( $feature_status, $option, false ) . '>' . esc_html( $option ) . '</option>';
+            }
+            echo '</select></td></tr>';
+        }
+        echo '</tbody></table><p><button type="submit" class="button button-secondary">Save 3.0 feature statuses</button></p></form></details>';
         echo '<p><a href="' . esc_url( 'https://github.com/bubbashub1/bubbawp/blob/audit/foundation-contracts-2026-11-06/docs/data-foundation/DEVELOPMENT_BLUEPRINT.md' ) . '" target="_blank" rel="noopener noreferrer">Read the full development blueprint (SQL, forms, shortcodes and page hierarchy)</a></p>';
         echo '<h2>SQL &amp; forms development register</h2>';
         echo '<p>Source-code assessment only. Reuse and extension proposals are not approved migrations. Confirm staging schemas and Fluent Forms exports before creating or changing tables.</p>';
