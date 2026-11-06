@@ -49,6 +49,8 @@ check_fee( $form_map['places'] === 'places', 'Form 7 places field is mapped auto
 check_fee( $form_map['consent'] === 'booking_terms_consent', 'Form 7 booking terms checkbox is mapped automatically' );
 check_fee( $form_map['profile_ids'] === 'family_profile_ids', 'Form 7 family profile field is mapped automatically' );
 check_fee( $form_map['share_consent'] === 'share_child_details_consent', 'Form 7 attendee sharing consent is mapped automatically' );
+check_fee( $form_map['parent_name'] === 'parent_name', 'Form 7 parent name is mapped automatically' );
+check_fee( $form_map['parent_email'] === 'parent_email', 'Form 7 parent email is mapped automatically' );
 $fee_test_options['bh3_booking_form_field_map'] = array( 'places' => 'custom_places' );
 $custom_map = BH_Marketplace_Settings_3::booking_form_field_map();
 check_fee( $custom_map['places'] === 'custom_places' && $custom_map['consent'] === 'booking_terms_consent', 'administrator field overrides retain safe defaults' );
