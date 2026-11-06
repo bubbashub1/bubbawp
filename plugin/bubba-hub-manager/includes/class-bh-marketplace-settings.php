@@ -191,6 +191,37 @@ final class BH_Marketplace_Settings_3 {
         $commission = (int) round( $gross * self::rate() / 100, 0, PHP_ROUND_HALF_UP );
         return array( 'gross_pence' => $gross, 'commission_pence' => $commission, 'leader_before_fees_pence' => $gross - $commission );
     }
+    /**
+     * Illustrative parent-paid quote in integer pence. The leader's class price
+     * is preserved; the single customer fee covers platform commission and an
+     * estimated Stripe processing allowance. This is NOT a payment instruction.
+     * Configure real processing rates and review fee disclosure before launch.
+     */
+    public static function parent_paid_fee_preview( $leader_price_pence, $processing_percent = 1.5, $processing_fixed_pence = 20 ) {
+        $leader_price_pence = absint( $leader_price_pence );
+        if ( $leader_price_pence < 1 || $leader_price_pence > 10000000 ) {
+            return new WP_Error( 'invalid_leader_price', 'Invalid class price.' );
+        }
+        $processing_percent = (float) $processing_percent;
+        $processing_fixed_pence = absint( $processing_fixed_pence );
+        if ( $processing_percent < 0 || $processing_percent >= 100 || $processing_fixed_pence > 10000 ) {
+            return new WP_Error( 'invalid_processing_assumption', 'Invalid processing fee assumption.' );
+        }
+        $platform_pence = (int) round( $leader_price_pence * self::rate() / 100, 0, PHP_ROUND_HALF_UP );
+        // Gross up for Stripe's percentage charged on the parent-facing total.
+        $total_pence = (int) ceil( ( $leader_price_pence + $platform_pence + $processing_fixed_pence ) / ( 1 - $processing_percent / 100 ) );
+        $customer_fee_pence = $total_pence - $leader_price_pence;
+        return array(
+            'leader_price_pence' => $leader_price_pence,
+            'booking_fee_pence' => $customer_fee_pence,
+            'parent_total_pence' => $total_pence,
+            'platform_component_pence' => $platform_pence,
+            'estimated_processing_pence' => $customer_fee_pence - $platform_pence,
+            'processing_percent_assumption' => $processing_percent,
+            'processing_fixed_pence_assumption' => $processing_fixed_pence,
+            'preview_only' => true,
+        );
+    }
     public static function policy() {
         $defaults = array( 'processing_fees' => 'leader', 'payout_schedule' => 'weekly', 'refund_policy' => 'manual_review' );
         $saved = get_option( 'bh3_marketplace_policy', array() );
@@ -1937,6 +1968,16 @@ final class BH_Marketplace_Settings_3 {
         echo '<div class="wrap"><h1>Marketplace commission</h1><p>Default 3%. No live charges or payouts are enabled.</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
         wp_nonce_field( 'bh3_save_commission' );
         echo '<input type="hidden" name="action" value="bh3_save_commission"><label>Commission (%) <input type="number" name="rate" required min="0" max="100" step="0.01" value="' . esc_attr( number_format( self::rate(), 2, '.', '' ) ) . '"></label>';
+        echo '<h2>Parent-paid booking fee (preview only)</h2>';
+        echo '<p>Parents will see one Bubba Hub Booking Fee on top of the class price. Leaders retain their advertised class price. This preview does not change checkout, charge cards or alter existing bookings.</p>';
+        $example = self::parent_paid_fee_preview( 500 );
+        if ( ! is_wp_error( $example ) ) {
+            echo '<p><strong>Example £5.00 class:</strong> class £5.00 + one booking fee £'
+                . esc_html( number_format( $example['booking_fee_pence'] / 100, 2 ) )
+                . ' = parent total £' . esc_html( number_format( $example['parent_total_pence'] / 100, 2 ) )
+                . '; leader receives £5.00.</p>';
+        }
+        echo '<p><em>Illustrative processing assumption: 1.5% + 20p. Actual Stripe pricing depends on card and payment method; confirm your account rates before activation. Existing Stripe checkout is not yet compatible with this pricing model and remains disabled.</em></p>';
         $policy = self::policy();
         $choices = array(
             'processing_fees' => array( 'Processing fees paid by', array( 'leader' => 'Leader (recommended)', 'platform' => 'Bubba Hub' ) ),
