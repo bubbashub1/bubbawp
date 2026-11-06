@@ -102,6 +102,8 @@ check_fee( strpos( $source, 'parent-bound-test-checkout' ) !== false, 'Form 7 co
 check_fee( strpos( $source, 'redirectUrl' ) !== false, 'successful bound checkout redirects to Stripe' );
 check_fee( strpos( $source, 'bh3-test-booking-form' ) === false, 'duplicate standalone checkout form is removed' );
 check_fee( strpos( $source, 'booking_context_token' ) !== false, 'Form 7 context token is generated and checked' );
+check_fee( strpos( $source, 'data-bh-price-total' ) !== false && strpos( $source, 'data-price-quotes' ) !== false,
+    'parent total and combined booking fee update with selected place count' );
 check_fee( strpos( $source, "SET booking_status='confirmed', payment_status='paid'" ) !== false, 'verified payment automatically confirms the reservation' );
 check_fee( strpos( $source, 'send_booking_confirmation_notifications' ) !== false, 'paid webhook dispatches booking confirmation notifications' );
 check_fee( strpos( $source, "'consent_key' => 'booking_terms'" ) !== false, 'accepted booking terms are stored against the booking' );
