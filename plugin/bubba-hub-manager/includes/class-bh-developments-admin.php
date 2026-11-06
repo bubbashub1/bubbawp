@@ -325,6 +325,41 @@ final class BH_Developments_Admin_3 {
                 echo '<tr><th scope="row">' . esc_html( $check[0] ) . '</th><td>' . ( $check[1] ? 'Yes' : 'Not detected' ) . '</td><td>' . esc_html( $check[2] ) . '</td></tr>';
             }
             echo '</tbody></table></div>';
+            // Show only configuration metadata from form #7, never submitted values.
+            if ( $consent_form_available && 'Yes' === $form_seven_status ) {
+                $form_fields_json = $wpdb->get_var( $wpdb->prepare( "SELECT form_fields FROM `{$form_table}` WHERE id = %d LIMIT 1", 7 ) );
+                $form_definition = json_decode( (string) $form_fields_json, true );
+                $field_inventory = array();
+                $walk_fields = static function ( $elements ) use ( &$walk_fields, &$field_inventory ) {
+                    if ( ! is_array( $elements ) ) { return; }
+                    foreach ( $elements as $element ) {
+                        if ( ! is_array( $element ) ) { continue; }
+                        $attributes = isset( $element['attributes'] ) && is_array( $element['attributes'] ) ? $element['attributes'] : array();
+                        $field_name = isset( $attributes['name'] ) && is_string( $attributes['name'] ) ? $attributes['name'] : '';
+                        $field_type = isset( $element['element'] ) && is_string( $element['element'] ) ? $element['element'] : '';
+                        if ( '' !== $field_name ) { $field_inventory[] = array( $field_name, $field_type ); }
+                        if ( isset( $element['columns'] ) && is_array( $element['columns'] ) ) {
+                            foreach ( $element['columns'] as $column ) {
+                                if ( is_array( $column ) ) { $walk_fields( $column['fields'] ?? array() ); }
+                            }
+                        }
+                        if ( isset( $element['fields'] ) ) { $walk_fields( $element['fields'] ); }
+                    }
+                };
+                $walk_fields( $form_definition['fields'] ?? array() );
+                echo '<details style="max-width:1250px;margin:12px 0"><summary><strong>Consent form #7 — configured field names (read-only)</strong></summary>';
+                echo '<p>Use this inventory to map consent fields to booking consent keys. Field names and types only; no submission data is queried.</p>';
+                if ( $field_inventory ) {
+                    echo '<table class="widefat striped"><thead><tr><th>Field name</th><th>Field type</th></tr></thead><tbody>';
+                    foreach ( $field_inventory as $field ) {
+                        echo '<tr><td><code>' . esc_html( $field[0] ) . '</code></td><td>' . esc_html( $field[1] ) . '</td></tr>';
+                    }
+                    echo '</tbody></table>';
+                } else {
+                    echo '<p>No named fields found in the standard Fluent Forms field definition. Check the form builder manually.</p>';
+                }
+                echo '</details>';
+            }
             echo '<p class="description">Page presence and shortcode registration do not validate access control, form #7 configuration, attendee links or Stripe processing. Those require separate staging tests.</p>';
         }
         echo '<h2>Sector implementation blueprints</h2>';
