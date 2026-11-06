@@ -182,7 +182,7 @@ final class BH_Leader_Bookings_3 {
                   $organiser, $inspect_id, $inspect_date
               ), ARRAY_A );
           }
-          $capacity_counts = array( 'reserved'=>0, 'confirmed'=>0, 'occupied'=>0, 'unknown'=>false );
+          $capacity_counts = array( 'reserved'=>0, 'confirmed'=>0, 'occupied'=>0, 'unknown'=>false, 'stale_holds'=>0 );
           if ( is_array( $booking_totals ) ) {
               if ( count( $booking_totals ) > 1000 ) { $capacity_counts['unknown'] = true; }
               else {
@@ -194,6 +194,11 @@ final class BH_Leader_Bookings_3 {
                       if ( $status === 'reserved' ) {
                           // Expired holds remain occupied until expiry processing is verified.
                           $capacity_counts['reserved'] += $places;
+                           if ( (string) $booking_row['payment_status'] === 'pending'
+                               && ! empty( $booking_row['reservation_expires_at'] )
+                               && strtotime( $booking_row['reservation_expires_at'] . ' UTC' ) <= time() ) {
+                               $capacity_counts['stale_holds'] += $places;
+                           }
                       } elseif ( in_array( $status, array( 'confirmed', 'enrolled' ), true ) ) {
                           $capacity_counts['confirmed'] += $places;
                       } else { $capacity_counts['unknown'] = true; }
@@ -217,7 +222,10 @@ final class BH_Leader_Bookings_3 {
               <?php elseif ( $inspect_capacity > 0 ) : ?>
                 <p role="status">Recorded places exceed configured capacity. Please review the booking data.</p>
               <?php endif; ?>
-              <p role="status">Read-only record totals. Expired reservations remain counted until the expiry process is verified. These numbers do not guarantee live availability or permit checkout.</p>
+              <?php if ( $capacity_counts['stale_holds'] > 0 ) : ?>
+               <p role="status"><strong>Needs review:</strong> <?php echo esc_html( (string) $capacity_counts['stale_holds'] ); ?> place(s) are held by unpaid reservations past their expiry time. They remain occupied until a verified expiry transition releases them.</p>
+               <?php endif; ?>
+               <p role="status">Read-only record totals. Expired reservations remain counted until the expiry process is verified. These numbers do not guarantee live availability or permit checkout.</p>
             <?php endif; ?>
             <p><a href="<?php echo esc_url( remove_query_arg( array( 'bh_occurrence_session', 'bh_occurrence_date' ) ) ); ?>">Close session details</a></p>
           </section>
