@@ -18,6 +18,46 @@ final class BH_Developments_Admin_3 {
         );
     }
 
+    private static function readiness_areas() {
+        return array(
+            'directory' => 'Directory & Listings',
+            'family' => 'Family Hub',
+            'leader' => 'Leader Portal',
+            'booking' => 'Bookings & Consent',
+            'support' => 'Support & Guidance',
+            'membership' => 'Membership',
+            'communications' => 'Communications',
+            'events' => 'Events & Expo',
+            'claims' => 'Claims & Data Quality',
+            'platform' => 'Platform & Developments',
+        );
+    }
+
+    public static function save_readiness() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'Administrator permission required.', 'bubba-hub-manager' ), '', array( 'response' => 403 ) );
+        }
+        check_admin_referer( 'bh3_save_development_readiness' );
+        $allowed = array( 'not_assessed', 'draft', 'staging_validated', 'implemented', 'tested', 'ready_to_deploy', 'deployed', 'blocked' );
+        $dimensions = array( 'sql', 'forms', 'shortcodes', 'pages', 'code', 'testing', 'deployment' );
+        $existing = get_option( 'bhs_development_readiness', array() );
+        $existing = is_array( $existing ) ? $existing : array();
+        $posted = isset( $_POST['bhs_readiness'] ) && is_array( $_POST['bhs_readiness'] ) ? wp_unslash( $_POST['bhs_readiness'] ) : array();
+        foreach ( self::readiness_areas() as $key => $label ) {
+            foreach ( $dimensions as $dimension ) {
+                if ( isset( $posted[$key][$dimension] ) && is_string( $posted[$key][$dimension] ) ) {
+                    $value = sanitize_key( $posted[$key][$dimension] );
+                    if ( in_array( $value, $allowed, true ) ) {
+                        $existing[$key][$dimension] = $value;
+                    }
+                }
+            }
+        }
+        update_option( 'bhs_development_readiness', $existing, false );
+        wp_safe_redirect( add_query_arg( array( 'page' => 'bh3-developments', 'readiness_updated' => '1' ), admin_url( 'admin.php' ) ) );
+        exit;
+    }
+
     public static function save_statuses() {
         if ( ! current_user_can( 'manage_options' ) ) {
             wp_die( esc_html__( 'Administrator permission required.', 'bubba-hub-manager' ), '', array( 'response' => 403 ) );
@@ -64,6 +104,54 @@ final class BH_Developments_Admin_3 {
         echo '<div class="notice notice-info inline"><p><strong>Our guiding principle:</strong> Does it save time, make family life easier, or help people connect? If it doesn\'t, it probably isn\'t a priority.</p></div>';
         echo '<h2>Bubba Hub 3.0 — Current delivery</h2>';
         echo '<p>Complete WordPress migration, legacy feature parity, security and staging testing across Directory, Family Hub, Leader Portal, Bookings and Support. Essential unfinished migration work stays in 3.0.</p>';
+        echo '<h2>Sector readiness — SQL, forms, shortcodes, pages and delivery</h2>';
+        echo '<p>Manually maintained planning statuses. These are not deployment or test results. Existing 3.0 tracker statuses and 4.0 phase statuses are preserved separately.</p>';
+        if ( isset( $_GET['readiness_updated'] ) && '1' === $_GET['readiness_updated'] ) {
+            echo '<div class="notice notice-success inline"><p>Sector readiness saved.</p></div>';
+        }
+        $readiness = get_option( 'bhs_development_readiness', array() );
+        $readiness = is_array( $readiness ) ? $readiness : array();
+        $readiness_labels = array(
+            'not_assessed' => 'Not assessed',
+            'draft' => 'Draft prepared',
+            'staging_validated' => 'Staging validated',
+            'implemented' => 'Implemented',
+            'tested' => 'Tested',
+            'ready_to_deploy' => 'Ready to deploy',
+            'deployed' => 'Deployed',
+            'blocked' => 'Blocked',
+        );
+        $readiness_dimensions = array( 'sql' => 'SQL', 'forms' => 'Forms', 'shortcodes' => 'Shortcodes', 'pages' => 'Pages', 'code' => 'Code', 'testing' => 'Testing', 'deployment' => 'Deployment' );
+        echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+        echo '<input type="hidden" name="action" value="bh3_save_development_readiness">';
+        wp_nonce_field( 'bh3_save_development_readiness' );
+        echo '<div style="overflow-x:auto"><table class="widefat striped"><thead><tr><th>Sector</th>';
+        foreach ( $readiness_dimensions as $label ) { echo '<th>' . esc_html( $label ) . '</th>'; }
+        echo '</tr></thead><tbody>';
+        foreach ( self::readiness_areas() as $key => $sector ) {
+            echo '<tr><th scope="row">' . esc_html( $sector ) . '</th>';
+            foreach ( $readiness_dimensions as $dimension => $label ) {
+                $current = isset( $readiness[$key][$dimension] ) && isset( $readiness_labels[$readiness[$key][$dimension]] ) ? $readiness[$key][$dimension] : 'not_assessed';
+                echo '<td><label class="screen-reader-text" for="bhs-' . esc_attr( $key . '-' . $dimension ) . '">' . esc_html( $sector . ' ' . $label ) . '</label><select id="bhs-' . esc_attr( $key . '-' . $dimension ) . '" name="bhs_readiness[' . esc_attr( $key ) . '][' . esc_attr( $dimension ) . ']">';
+                foreach ( $readiness_labels as $value => $option_label ) {
+                    echo '<option value="' . esc_attr( $value ) . '"' . selected( $current, $value, false ) . '>' . esc_html( $option_label ) . '</option>';
+                }
+                echo '</select></td>';
+            }
+            echo '</tr>';
+        }
+        echo '</tbody></table></div><p><button class="button button-primary" type="submit">Save sector readiness</button></p></form>';
+        $legacy_items = function_exists( 'bh_development_tracker_items' ) ? bh_development_tracker_items() : array();
+        $legacy_saved = get_option( 'bh_development_tracker_statuses', array() );
+        $legacy_saved = is_array( $legacy_saved ) ? $legacy_saved : array();
+        echo '<details><summary><strong>Existing 3.0 feature tracker (' . esc_html( count( $legacy_items ) ) . ' items) — preserved</strong></summary>';
+        echo '<table class="widefat striped"><thead><tr><th>Sector</th><th>Feature</th><th>Saved / initial status</th></tr></thead><tbody>';
+        foreach ( $legacy_items as $feature_key => $feature ) {
+            $feature_status = isset( $legacy_saved[$feature_key] ) ? $legacy_saved[$feature_key] : $feature[2];
+            echo '<tr><td>' . esc_html( $feature[0] ) . '</td><td>' . esc_html( $feature[1] ) . '</td><td>' . esc_html( $feature_status ) . '</td></tr>';
+        }
+        echo '</tbody></table></details>';
+        echo '<p><a href="' . esc_url( 'https://github.com/bubbashub1/bubbawp/blob/audit/foundation-contracts-2026-11-06/docs/data-foundation/DEVELOPMENT_BLUEPRINT.md' ) . '" target="_blank" rel="noopener noreferrer">Read the full development blueprint (SQL, forms, shortcodes and page hierarchy)</a></p>';
         echo '<h2>SQL &amp; forms development register</h2>';
         echo '<p>Source-code assessment only. Reuse and extension proposals are not approved migrations. Confirm staging schemas and Fluent Forms exports before creating or changing tables.</p>';
         $data_register = array(
