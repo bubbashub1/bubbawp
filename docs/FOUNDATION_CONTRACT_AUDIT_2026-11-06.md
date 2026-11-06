@@ -37,3 +37,12 @@ Statuses must distinguish **draft/planned**, **building**, **ready for QA**, **Q
 - Staging-only tests, backup, and explicit approval before migrations or deployment.
 
 No production database changes authorised by this audit.
+
+## Approved naming convention — 2026-11-06
+User approved **`bhs`** as the stable naming prefix for **new Bubba Hub development**, independent of the 3.0/4.0 product version.
+
+- New custom tables: use `bhs_*` as the application-specific table stem, with actual WordPress table names resolved via the configured prefix and checked for double-prefix/collision (e.g. `$wpdb->prefix . 'bhs_bookings'` only after confirming this is the desired physical name).
+- New PHP classes, action names, option keys, admin slugs and shortcodes: prefer consistent `BHS_*`, `bhs_*`, and `bhs-*` forms, according to identifier type.
+- **Do not rename** existing `bh_*`, `bh3_*`, WordPress-prefixed tables, hooks, option keys, shortcodes, admin slugs, form IDs or external endpoints as part of the naming decision.
+- Provide compatibility aliases/adapters where public identifiers change. For database renames, require verified staging schema and data, a migration and rollback plan, and explicit approval before executing.
+- Audit the `bh3` references and produce an old → new mapping before implementation. Naming approval is **not** approval to execute database migrations.
