@@ -1087,6 +1087,7 @@ final class BH_Marketplace_Settings_3 {
                 foreach ( $checked['attendees'] as $index => $person ) {
                     $success = $wpdb->insert( $attendees_table, array(
                         'booking_id' => $booking_id, 'attendee_number' => $index + 1,
+                        'family_profile_id' => absint( $person['profile_id'] ?? 0 ) ?: null,
                         'attendee_type' => $person['type'], 'attendee_name' => $person['name'],
                         'gender' => $person['gender'], 'year_of_birth' => $person['year_of_birth'],
                         'created_at' => $now,
@@ -1245,10 +1246,10 @@ final class BH_Marketplace_Settings_3 {
                 }
                 $name = trim( (string) $row['display_name'] );
                 if ( $name === '' ) { return new WP_Error( 'child_name_missing', 'Child name is missing.' ); }
-                $attendees[] = array( 'type' => 'child', 'name' => $name,
+                $attendees[] = array( 'profile_id' => $id, 'type' => 'child', 'name' => $name,
                     'gender' => (string) $row['gender'], 'year_of_birth' => (int) $year );
             } else {
-                $attendees[] = array( 'type' => 'bump', 'name' => 'Pregnancy', 'gender' => '', 'year_of_birth' => null );
+                $attendees[] = array( 'profile_id' => $id, 'type' => 'bump', 'name' => 'Pregnancy', 'gender' => '', 'year_of_birth' => null );
             }
         }
         return $attendees;
@@ -1883,8 +1884,9 @@ final class BH_Marketplace_Settings_3 {
         $attendee_lines = array();
         foreach ( (array) $attendees as $person ) {
             $line = ( $person['attendee_type'] === 'bump' ? 'Pregnancy profile' : (string) $person['attendee_name'] );
-            if ( $person['attendee_type'] !== 'bump' && ! empty( $person['year_of_birth'] ) ) {
-                $line .= ' (born ' . (int) $person['year_of_birth'] . ')';
+            if ( $person['attendee_type'] !== 'bump' ) {
+                if ( ! empty( $person['gender'] ) ) { $line .= ' — ' . sanitize_text_field( $person['gender'] ); }
+                if ( ! empty( $person['year_of_birth'] ) ) { $line .= ', born ' . (int) $person['year_of_birth']; }
             }
             $attendee_lines[] = $line;
         }
