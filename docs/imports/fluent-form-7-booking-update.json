@@ -9,25 +9,6 @@
         {
           "element": "input_hidden",
           "attributes": {
-            "name": "activity_id",
-            "id": "",
-            "class": ""
-          },
-          "settings": {
-            "container_class": "",
-            "label": "Activity ID",
-            "admin_field_label": "Activity ID",
-            "validation_rules": {
-              "required": {
-                "value": false,
-                "message": ""
-              }
-            }
-          }
-        },
-        {
-          "element": "input_hidden",
-          "attributes": {
             "name": "session_id",
             "id": "",
             "class": ""
@@ -59,44 +40,6 @@
               "required": {
                 "value": true,
                 "message": "Please refresh the booking form and try again."
-              }
-            }
-          }
-        },
-        {
-          "element": "input_hidden",
-          "attributes": {
-            "name": "organiser_id",
-            "id": "",
-            "class": ""
-          },
-          "settings": {
-            "container_class": "",
-            "label": "Organiser ID",
-            "admin_field_label": "Organiser ID",
-            "validation_rules": {
-              "required": {
-                "value": false,
-                "message": ""
-              }
-            }
-          }
-        },
-        {
-          "element": "input_hidden",
-          "attributes": {
-            "name": "booking_reference",
-            "id": "",
-            "class": ""
-          },
-          "settings": {
-            "container_class": "",
-            "label": "Booking reference",
-            "admin_field_label": "Booking reference",
-            "validation_rules": {
-              "required": {
-                "value": false,
-                "message": ""
               }
             }
           }
@@ -211,25 +154,6 @@
             "container_class": "",
             "label": "Phone number",
             "admin_field_label": "Phone number",
-            "validation_rules": {
-              "required": {
-                "value": false,
-                "message": ""
-              }
-            }
-          }
-        },
-        {
-          "element": "textarea",
-          "attributes": {
-            "name": "child_details",
-            "id": "",
-            "class": ""
-          },
-          "settings": {
-            "container_class": "",
-            "label": "Child details (for guest bookings): name, year of birth and optional gender",
-            "admin_field_label": "Child details (for guest bookings): name, year of birth and optional gender",
             "validation_rules": {
               "required": {
                 "value": false,
