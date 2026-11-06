@@ -1561,11 +1561,10 @@ final class BH_Marketplace_Settings_3 {
             echo '<p><label>Year of birth <input type="number" min="1900" max="' . esc_attr( wp_date( 'Y' ) ) . '" disabled></label></p>';
             echo '</fieldset><p><small>Preview only — these fields cannot be submitted yet. Guest consent and booking verification are being built.</small></p></div>';
         }
-        // Fluent Forms Free captures details, but its submission is not yet
-        // cryptographically bound to this booking. Never imply form completion
-        // authorises payment until the server-side binding is implemented.
+        // Do not display a submittable Form 7 when booking is disabled.
+        // A submission without a configured checkout would strand the parent.
         $form_id = absint( get_option( 'bh3_booking_form_id', 7 ) );
-        if ( $form_id && shortcode_exists( 'fluentform' ) ) {
+        if ( $enabled && $form_id && shortcode_exists( 'fluentform' ) ) {
             echo '<div class="bh3-booking-details"><h4>Booking details</h4>';
             echo '<p>Please read our <a href="' . esc_url( home_url( '/legal/bookings/' ) ) . '" target="_blank" rel="noopener">Booking Terms &amp; Conditions</a> before continuing. Your booking is confirmed only after Stripe verifies payment.</p>';
             $previous_session_context = $GLOBALS['bh3_form7_session_id'] ?? null;
@@ -1574,9 +1573,9 @@ final class BH_Marketplace_Settings_3 {
             echo '<script>(function(){const root=document.getElementById(' . wp_json_encode( $id ) . ');if(!root)return;const box=root.querySelector(".bh3-booking-fee-preview"),field=root.querySelector("[name=places]");if(!box||!field)return;let quotes={};try{quotes=JSON.parse(box.dataset.priceQuotes||"{}");}catch(e){return;}const update=function(){const count=String(Math.max(1,Math.min(20,parseInt(field.value||"1",10)||1)));const q=quotes[count];if(!q)return;box.querySelector("[data-bh-price-class]").textContent=(q.class/100).toFixed(2);box.querySelector("[data-bh-price-fee]").textContent=(q.fee/100).toFixed(2);box.querySelector("[data-bh-price-total]").textContent=(q.total/100).toFixed(2);};field.addEventListener("input",update);field.addEventListener("change",update);update();})();</script>';
             if ( $previous_session_context === null ) { unset( $GLOBALS['bh3_form7_session_id'] ); }
             else { $GLOBALS['bh3_form7_session_id'] = $previous_session_context; }
-            echo '<p class="bh3-booking-note">Submitting your details does not reserve a place or confirm a booking. Your place is only held when secure checkout confirms the reservation.</p></div>';
-        } else {
-            echo '<p role="status">Booking details form is not available.</p>';
+            echo '<p class="bh3-booking-note">Submitting your details creates a temporary place hold and opens Stripe test checkout. Your booking is confirmed only after payment is verified.</p></div>';
+        } elseif ( $enabled ) {
+            echo '<p role="status">Booking details form is not available. Please contact Bubba Hub before attempting payment.</p>';
         }
         if ( ! is_user_logged_in() ) {
             echo '<p>Please <a href="' . esc_url( wp_login_url( get_permalink() ) ) . '">sign in</a> to book.</p>';
