@@ -50,6 +50,10 @@ check_fee( $form_map['share_consent'] === 'share_child_details_consent', 'Form 7
 $fee_test_options['bh3_booking_form_field_map'] = array( 'places' => 'custom_places' );
 $custom_map = BH_Marketplace_Settings_3::booking_form_field_map();
 check_fee( $custom_map['places'] === 'custom_places' && $custom_map['consent'] === 'booking_terms_consent', 'administrator field overrides retain safe defaults' );
+check_fee( BH_Marketplace_Settings_3::is_affirmative_booking_consent( 'yes' ), 'scalar affirmative consent is accepted' );
+check_fee( BH_Marketplace_Settings_3::is_affirmative_booking_consent( array( 'yes' ) ), 'checkbox-array affirmative consent is accepted' );
+check_fee( ! BH_Marketplace_Settings_3::is_affirmative_booking_consent( array() ), 'empty consent is rejected' );
+check_fee( ! BH_Marketplace_Settings_3::is_affirmative_booking_consent( 'no' ), 'negative consent is rejected' );
 
 $source = file_get_contents( dirname( __DIR__ ) . '/plugin/bubba-hub-manager/includes/class-bh-marketplace-settings.php' );
 check_fee( strpos( $source, "'unit_amount' => $parent_total" ) !== false, 'Stripe Checkout charges parent total including fee' );
@@ -58,5 +62,8 @@ check_fee( strpos( $source, '!== $parent_total' ) !== false, 'Stripe Checkout re
 check_fee( strpos( $source, 'Checkout does not match the saved class price and combined booking fee.' ) !== false, 'webhook reconciliation validates fee metadata and total' );
 check_fee( strpos( $source, 'name="processing_percent"' ) !== false, 'administrator can configure estimated processing percentage' );
 check_fee( strpos( $source, 'name="processing_fixed_pence"' ) !== false, 'administrator can configure fixed processing amount' );
+check_fee( strpos( $source, 'fluentform/rendering_field_data_input_checkbox' ) !== false, 'Form 7 family profile checkbox choices are populated dynamically' );
+check_fee( strpos( $source, 'fluentform/rendering_field_data_input_hidden' ) !== false, 'Form 7 session ID is populated from server-side widget context' );
+check_fee( strpos( $source, 'family_profile_ids' ) !== false, 'Form 7 family profile selection is mapped' );
 
 echo "Parent-paid booking fee smoke tests passed.\n";
