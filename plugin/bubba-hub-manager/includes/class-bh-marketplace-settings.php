@@ -275,7 +275,15 @@ final class BH_Marketplace_Settings_3 {
         if ( $capacity && $places > $capacity ) {
             return new WP_Error( 'capacity_exceeded', 'Requested places exceed session capacity.' );
         }
+        // Keep legacy gross/commission snapshot unchanged until reservation and
+        // webhook schema are migrated together. Expose a separate server-owned
+        // parent-paid breakdown for UI review; never use browser-supplied totals.
+        $parent_fee_quote = self::parent_paid_fee_preview( $gross_pence );
+        if ( is_wp_error( $parent_fee_quote ) ) {
+            return $parent_fee_quote;
+        }
         return array_merge( self::booking_snapshot( $gross_pence ), array(
+            'parent_paid_fee_quote' => $parent_fee_quote,
             'session_id' => $session_id,
             'activity_id' => (int) $row['activity_id'],
             'organiser_id' => (int) $row['organiser_id'],
