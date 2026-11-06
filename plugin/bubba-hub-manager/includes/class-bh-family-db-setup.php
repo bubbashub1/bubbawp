@@ -118,6 +118,7 @@ final class BH_Family_DB_Setup_3 {
         check_admin_referer('bh3_create_family_tables');
         if (!isset($_POST['confirm']) || $_POST['confirm']!=='1') wp_die('Confirm backup first.','',array('response'=>400));
         require_once ABSPATH.'wp-admin/includes/upgrade.php';
+        global $wpdb;
         $failed=false;
         $names = self::names();
         foreach (self::definitions() as $key=>$sql) {
