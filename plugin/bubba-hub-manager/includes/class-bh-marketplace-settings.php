@@ -2292,6 +2292,10 @@ final class BH_Marketplace_Settings_3 {
         echo '<div class="wrap"><h1>Marketplace commission</h1><p>Booking fee preview only. No live charges or payouts are enabled.</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
         wp_nonce_field( 'bh3_save_commission' );
         echo '<input type="hidden" name="action" value="bh3_save_commission"><label>Commission (%) <input type="number" name="rate" required min="0" max="100" step="0.01" value="' . esc_attr( number_format( self::rate(), 2, '.', '' ) ) . '"></label>';
+        echo '<h2>Parent booking form</h2>';
+        $booking_form_id = absint( get_option( 'bh3_booking_form_id', 8 ) );
+        echo '<p><label for="bh3-booking-form-id">Fluent Forms booking form ID</label><br><input id="bh3-booking-form-id" type="number" name="booking_form_id" min="1" max="999999" step="1" required value="' . esc_attr( $booking_form_id ) . '"></p>';
+        echo '<p class="description">The updated checkout form is ID 8 on staging. Keep the checkout page shortcode [bh_parent_booking]; do not embed the Fluent Form separately.</p>';
         echo '<h2>Parent-paid booking fee (preview only)</h2>';
         echo '<p>Parents will see one Bubba Hub Booking Fee on top of the class price. Leaders retain their advertised class price. The processing assumptions below are editable and are used in the server-side fee quote; they do not change existing bookings.</p>';
         $fee_settings = self::parent_booking_fee_settings();
@@ -2362,6 +2366,21 @@ final class BH_Marketplace_Settings_3 {
             || (int) $fixed_raw > 10000 ) {
             wp_die( 'Invalid processing fee assumptions', '', array( 'response' => 400 ) );
         }
+        $booking_form_raw = isset( $_POST['booking_form_id'] ) && is_scalar( $_POST['booking_form_id'] )
+            ? trim( (string) wp_unslash( $_POST['booking_form_id'] ) ) : '';
+        if ( ! preg_match( '/^[1-9][0-9]{0,5}$/', $booking_form_raw ) ) {
+            wp_die( 'Invalid Fluent Forms booking form ID', '', array( 'response' => 400 ) );
+        }
+        $booking_form_id = (int) $booking_form_raw;
+        global $wpdb;
+        $form_table = $wpdb->prefix . 'fluentform_forms';
+        $form_exists = $wpdb->get_var( $wpdb->prepare(
+            "SELECT id FROM `{$form_table}` WHERE id=%d LIMIT 1", $booking_form_id
+        ) );
+        if ( (int) $form_exists !== $booking_form_id ) {
+            wp_die( 'Booking form ID not found in Fluent Forms', '', array( 'response' => 400 ) );
+        }
+        update_option( 'bh3_booking_form_id', $booking_form_id, false );
         update_option( 'bh3_parent_booking_fee_settings', array(
             'processing_percent' => number_format( (float) $processing_raw, 2, '.', '' ),
             'processing_fixed_pence' => (int) $fixed_raw,
