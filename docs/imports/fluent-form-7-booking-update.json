@@ -95,8 +95,27 @@
             "admin_field_label": "Session ID",
             "validation_rules": {
               "required": {
-                "value": false,
-                "message": ""
+                "value": true,
+                "message": "Please refresh the booking form and try again."
+              }
+            }
+          }
+        },
+        {
+          "element": "input_hidden",
+          "attributes": {
+            "name": "booking_context_token",
+            "id": "",
+            "class": ""
+          },
+          "settings": {
+            "container_class": "",
+            "label": "Booking context token",
+            "admin_field_label": "Booking context token",
+            "validation_rules": {
+              "required": {
+                "value": true,
+                "message": "Please refresh the booking form and try again."
               }
             }
           }
@@ -144,7 +163,10 @@
           "attributes": {
             "name": "places",
             "id": "",
-            "class": ""
+            "class": "",
+            "min": "1",
+            "max": "20",
+            "step": "1"
           },
           "settings": {
             "container_class": "",
@@ -269,8 +291,8 @@
           },
           "settings": {
             "container_class": "",
-            "label": "Booking terms",
-            "admin_field_label": "Booking terms",
+            "label": "Booking Terms & Conditions",
+            "admin_field_label": "Booking Terms & Conditions",
             "validation_rules": {
               "required": {
                 "value": true,
@@ -279,7 +301,7 @@
             },
             "advanced_options": [
               {
-                "label": "I agree to the Booking Terms & Conditions.",
+                "label": "I have read and agree to the Bubba Hub Booking Terms & Conditions.",
                 "value": "yes"
               }
             ]
