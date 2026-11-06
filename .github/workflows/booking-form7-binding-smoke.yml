@@ -1,0 +1,27 @@
+name: Booking form 7 binding smoke tests
+on:
+  pull_request:
+    paths:
+      - 'plugin/bubba-hub-manager/includes/class-bh-booking-consent-contract.php'
+      - 'plugin/bubba-hub-manager/includes/class-bh-booking-form7-binding.php'
+      - 'tests/booking-form7-binding-smoke.php'
+      - '.github/workflows/booking-form7-binding-smoke.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'plugin/bubba-hub-manager/includes/class-bh-booking-consent-contract.php'
+      - 'plugin/bubba-hub-manager/includes/class-bh-booking-form7-binding.php'
+      - 'tests/booking-form7-binding-smoke.php'
+      - '.github/workflows/booking-form7-binding-smoke.yml'
+jobs:
+  validate-binding:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+      - run: php -l plugin/bubba-hub-manager/includes/class-bh-booking-form7-binding.php
+      - run: php -l tests/booking-form7-binding-smoke.php
+      - run: php tests/booking-form7-binding-smoke.php
