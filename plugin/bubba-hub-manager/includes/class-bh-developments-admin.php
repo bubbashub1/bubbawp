@@ -299,6 +299,7 @@ final class BH_Developments_Admin_3 {
             echo '<p class="description">This structural check does not inspect bookings, attendees, consent submissions, payment events or user data. Functional and permissions testing is still required.</p>';
         }
         if ( 'staging.bubbahub.co.uk' === $site_host ) {
+            global $wpdb;
             echo '<h2>Booking integration checkpoints</h2>';
             echo '<p>Configuration-only checks. These do not read bookings, form submissions, family records, payment events or other personal information. A configured component is not proof of a working booking journey.</p>';
             $booking_checks = array();
@@ -308,9 +309,7 @@ final class BH_Developments_Admin_3 {
             $booking_checks[] = array( 'Leader payment page', (bool) get_page_by_path( 'leader/payment' ), 'Confirm payout settings are available to the correct leader.' );
             $booking_checks[] = array( 'Booking terms page', (bool) get_page_by_path( 'legal/bookings' ), 'Verify the consent form links to the correct terms.' );
             $consent_form_available = false;
-            if ( defined( 'FLUENTFORM' ) || class_exists( 'FluentForm\\App\\Modules\\Form\\Form' ) ) {
-                $consent_form_available = shortcode_exists( 'fluentform' );
-            }
+            $consent_form_available = shortcode_exists( 'fluentform' );
             $booking_checks[] = array( 'Fluent Forms integration', $consent_form_available, 'Verify form #7 exists, is published and maps consent responses correctly; this check does not inspect its submissions.' );
             echo '<div style="max-width:1250px;overflow-x:auto"><table class="widefat striped"><thead><tr><th>Checkpoint</th><th>Detected</th><th>Manual verification</th></tr></thead><tbody>';
             foreach ( $booking_checks as $check ) {
