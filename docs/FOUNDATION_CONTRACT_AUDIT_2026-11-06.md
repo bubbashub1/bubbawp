@@ -119,3 +119,22 @@ Use explicit ID namespaces in registry records: `wp_user_id`, `legacy_user_id`, 
 3. Inventory all remaining files/routes/actions; current table is selected source evidence, not exhaustive.
 4. Consolidate two admin tracker screens without losing `bh_development_tracker_statuses` or `bh3_development_statuses`.
 5. Write BHS compatibility adapter tests before changing existing persistent keys.
+
+## Development-stage SQL and form gap matrix — initial assessment
+This section compares identified feature requirements to source-defined storage. **Proposed** means not yet approved for schema creation; actual staging tables and form exports have not been inspected.
+
+| Development area | Reuse/extend already defined | Candidate new storage only if justified | Form requirement / approach |
+|---|---|---|---|
+| Directory, calendar, timetable | `activities`, `venues`, `activity_venues`, `sessions`, `session_listing_links` | None initially; indexes/occurrence model to be validated | No Fluent Form for searching/filtering |
+| Family profiles, favourites, planner, visited | `bh_family_profiles`, `bh_family_preferences`, `bh_saved_activities`, `bh_planner`, `bh_family_reminders` | School milestone rule/config only if cannot use existing reminders/options | Native authenticated fields; no new Fluent Form |
+| Booking/reservations, attendees, consent | `bh3_bookings`, `bh3_booking_attendees`, `bh3_booking_consents`, `bh3_stripe_events` | Booking status transition history or reminder delivery ledger if existing records cannot satisfy audit/idempotency | Form 6 for enquiry, Form 7 for booking consent; verify separation and field mapping |
+| Leader onboarding, payout, timetable | WP users, organiser mapping, existing listing/session tables and `bh3_payout_method` option/meta | Approval/invitation history only if not covered by existing schema | Native dashboard fields, not new Fluent Form by default |
+| Support enquiries and public/private Q&A | Fluent Forms submissions; `bh_support_enquiry_status`, `bh_support_enquiry_history`; `bh_ask_questions`, `bh_ask_private_contacts`, `bh_ask_leader_categories`, `bh_ask_replies`, `bh_ask_audit` | No new tables until overlap between Q&A and enquiry workflow is resolved | Form 4 Ask Question; Form 5 Family Support, subject to export |
+| Notifications, newsletters, automation | WP mail/FluentSMTP and existing event/booking IDs | `bhs_notification_templates`, `bhs_notification_jobs`, `bhs_notification_delivery_log` **candidates**; consider WP options/Cron and minimal logging first | Native settings/templates; opt-in form only if subscription data genuinely absent |
+| Events, Expo, QR/check-in, exhibitors, sponsors, raffle | Inspect legacy Expo schema and ticket contracts first | `bhs_events`, `bhs_event_sessions`, `bhs_event_tickets`, `bhs_event_checkins`, `bhs_event_exhibitors`, `bhs_event_sponsors` **candidate entities, not approved tables** | Visitor registration, exhibitor application, sponsor enquiry, optional raffle consent — choose native vs Fluent Forms after legacy comparison |
+| Claims, venue submissions, moderation | Organiser/venue/listing tables and WP users | `bhs_claim_requests`, `bhs_venue_submissions`, `bhs_moderation_audit` only after checking legacy and current pending status support | Prefer wizard/native forms with admin approval |
+| Developments admin | Existing WP options `bh_development_tracker_statuses` and `bh3_development_statuses` | **No new SQL required** for v1; unified registry in PHP/config + WP options | Native WP Admin screen; **no Fluent Form** |
+
+**Canonical decisions pending:** whether a session is a reusable timetable definition vs an occurrence; whether enquiries become bookings or remain separate records; native WP profile IDs vs legacy child/bump IDs; whether support Form 4 creates a Q&A record; whether event tickets reuse booking infrastructure. Do not create tables until those decisions and existing legacy schemas are verified.
+
+**Development-stage form inventory:** Existing user-reported IDs 4 (Ask Question), 5 (Family Support), 6 (Interested in Joining), 7 (Booking Consent). New possible forms: event visitor registration, exhibitor application, sponsor enquiry; claim/venue submissions may be better native wizard workflows. All are *requirements to assess*, not requests to create duplicate forms.
