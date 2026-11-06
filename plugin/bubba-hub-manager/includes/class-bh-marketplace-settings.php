@@ -1303,7 +1303,17 @@ final class BH_Marketplace_Settings_3 {
     public static function parent_booking_widget( $atts ) {
         $atts = shortcode_atts( array( 'session_id' => 0 ), $atts, 'bh_parent_booking' );
         $session_id = absint( $atts['session_id'] );
-        if ( ! $session_id ) { return '<p>Select a session to see booking options.</p>'; }
+        // A shared /checkout/ page can receive a session ID from the Book Now link.
+        // The server-side quote still validates session status, price and capacity.
+        if ( ! $session_id && isset( $_GET['session_id'] ) && is_scalar( $_GET['session_id'] ) ) {
+            $requested_session = wp_unslash( $_GET['session_id'] );
+            if ( is_string( $requested_session ) && preg_match( '/^[1-9][0-9]{0,9}$/', $requested_session ) ) {
+                $session_id = absint( $requested_session );
+            }
+        }
+        if ( ! $session_id ) {
+            return '<p>Select a session on an activity page to see booking options.</p>';
+        }
         $quote = self::quote_session( $session_id, 1 );
         if ( is_wp_error( $quote ) ) {
             return '<p role="status">' . esc_html( $quote->get_error_message() ) . '</p>';
