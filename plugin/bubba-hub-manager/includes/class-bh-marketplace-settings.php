@@ -1872,6 +1872,20 @@ final class BH_Marketplace_Settings_3 {
         if ( isset( $_GET['bh3_test_booking_error'] ) ) {
             echo '<div class="notice notice-error"><p>Reservation could not be created: ' . esc_html( sanitize_key( wp_unslash( $_GET['bh3_test_booking_error'] ) ) ) . '</p></div>';
         }
+        $stripe_ready = self::stripe_status();
+        $checks = array(
+            'Stripe mode is test' => $stripe_ready['mode'] === 'test',
+            'Stripe test keys configured' => $stripe_ready['keys_configured'],
+            'Test checkout enabled' => defined( 'BH3_ENABLE_STRIPE_TEST_CHECKOUT' ) && BH3_ENABLE_STRIPE_TEST_CHECKOUT === true,
+            'Test webhook enabled' => defined( 'BH3_ENABLE_STRIPE_TEST_WEBHOOK' ) && BH3_ENABLE_STRIPE_TEST_WEBHOOK === true,
+            'Test-payment confirmation enabled' => defined( 'BH3_ENABLE_TEST_BOOKING_CONFIRMATION' ) && BH3_ENABLE_TEST_BOOKING_CONFIRMATION === true,
+            'Destination charge fee policy supported' => self::policy()['processing_fees'] === 'platform',
+        );
+        echo '<h2>Stripe test-payment readiness (read-only)</h2><ul>';
+        foreach ( $checks as $label => $ready ) {
+            echo '<li>' . esc_html( $ready ? 'PASS' : 'NOT READY' ) . ' — ' . esc_html( $label ) . '</li>';
+        }
+        echo '</ul><p>This checklist does not verify Stripe connectivity, checkout, webhook delivery, consent binding or settlement. Never mark unpaid reservations paid.</p>';
         echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
         wp_nonce_field( 'bh3_create_test_booking' );
         echo '<input type="hidden" name="action" value="bh3_create_test_booking">';
