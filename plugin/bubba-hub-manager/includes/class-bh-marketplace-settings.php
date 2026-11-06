@@ -1746,6 +1746,7 @@ final class BH_Marketplace_Settings_3 {
                 'duplicate' => $result['duplicate'],
                 'booking_confirmed' => ! empty( $confirmed['confirmed'] ),
                 'already_paid' => ! empty( $confirmed['already_paid'] ),
+                'notifications' => $confirmed['notifications'] ?? array(),
             ) );
         }
         return rest_ensure_response( array(
@@ -2036,7 +2037,7 @@ final class BH_Marketplace_Settings_3 {
                 return new WP_Error( 'event_not_ready', 'Verified event is not ready for processing.' );
             }
             $updated = $wpdb->query( $wpdb->prepare(
-                "UPDATE `{$bookings}` SET payment_status='paid', stripe_payment_intent_id=%s, updated_at=%s
+                "UPDATE `{$bookings}` SET booking_status='confirmed', payment_status='paid', stripe_payment_intent_id=%s, updated_at=%s
                  WHERE id=%d AND booking_status='reserved' AND payment_status='pending' AND reservation_expires_at > %s",
                 $checked['payment_intent_id'], current_time( 'mysql', true ),
                 $checked['booking_id'], current_time( 'mysql', true )
