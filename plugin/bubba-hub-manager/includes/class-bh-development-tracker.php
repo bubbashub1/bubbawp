@@ -4,16 +4,8 @@
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-add_action( 'admin_menu', static function () {
-    add_submenu_page(
-        'bubba-hub-3-status',
-        '3.0 Development Tracker',
-        'Development Tracker',
-        'manage_options',
-        'bh-development-tracker',
-        'bh_render_development_tracker'
-    );
-}, 99 );
+// Legacy tracker remains available as a read-only data source for the unified Developments screen.
+// Do not register a second admin submenu; preserve existing option values.
 
 function bh_development_tracker_items() {
     return array(
