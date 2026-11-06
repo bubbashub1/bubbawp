@@ -1881,6 +1881,18 @@ final class BH_Marketplace_Settings_3 {
             'Test-payment confirmation enabled' => defined( 'BH3_ENABLE_TEST_BOOKING_CONFIRMATION' ) && BH3_ENABLE_TEST_BOOKING_CONFIRMATION === true,
             'Destination charge fee policy supported' => self::policy()['processing_fees'] === 'platform',
         );
+        global $submenu, $_registered_pages;
+        $marketplace_hook = get_plugin_page_hookname( 'bh3-marketplace', 'bubba-hub-3-status' );
+        $submenu_found = false;
+        foreach ( (array) ( $submenu['bubba-hub-3-status'] ?? array() ) as $entry ) {
+            if ( isset( $entry[2] ) && $entry[2] === 'bh3-marketplace' ) { $submenu_found = true; break; }
+        }
+        echo '<h2>Marketplace admin access diagnostics</h2><ul>';
+        echo '<li>Administrator capability: ' . esc_html( current_user_can( 'manage_options' ) ? 'PASS' : 'FAIL' ) . '</li>';
+        echo '<li>Marketplace submenu registered: ' . esc_html( $submenu_found ? 'YES' : 'NO' ) . '</li>';
+        echo '<li>Marketplace page hook registered: ' . esc_html( ! empty( $_registered_pages[ $marketplace_hook ] ) ? 'YES' : 'NO' ) . '</li>';
+        echo '<li>Marketplace callback available: ' . esc_html( is_callable( array( __CLASS__, 'admin_form' ) ) ? 'YES' : 'NO' ) . '</li>';
+        echo '</ul>';
         echo '<h2>Stripe test-payment readiness (read-only)</h2><ul>';
         foreach ( $checks as $label => $ready ) {
             echo '<li>' . esc_html( $ready ? 'PASS' : 'NOT READY' ) . ' — ' . esc_html( $label ) . '</li>';
