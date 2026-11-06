@@ -1,0 +1,31 @@
+name: Booking lifecycle smoke tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'plugin/bubba-hub-manager/includes/class-bh-booking-lifecycle.php'
+      - 'tests/booking-lifecycle-smoke.php'
+      - '.github/workflows/booking-lifecycle-smoke.yml'
+  pull_request:
+    paths:
+      - 'plugin/bubba-hub-manager/includes/class-bh-booking-lifecycle.php'
+      - 'tests/booking-lifecycle-smoke.php'
+      - '.github/workflows/booking-lifecycle-smoke.yml'
+
+jobs:
+  booking-lifecycle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+      - name: PHP syntax
+        run: |
+          php -l plugin/bubba-hub-manager/includes/class-bh-booking-lifecycle.php
+          php -l tests/booking-lifecycle-smoke.php
+      - name: Booking lifecycle assertions
+        run: php tests/booking-lifecycle-smoke.php
