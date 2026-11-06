@@ -169,11 +169,56 @@ final class BH_Leader_Bookings_3 {
               $inspect_config = is_array( $inspect_config ) ? $inspect_config : array();
               $inspect_capacity = isset( $inspect_config['capacity'] ) ? absint( $inspect_config['capacity'] ) : 0;
           ?>
+          <?php
+          // Read-only, organiser-scoped counts for one selected occurrence.
+          // Unrecognised statuses must never be silently treated as free places.
+          $booking_table = $wpdb->prefix . 'bh3_bookings';
+          $booking_table_ready = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $booking_table ) ) ) === $booking_table;
+          $booking_totals = null;
+          if ( $booking_table_ready && ! empty( $inspect_config['enabled'] ) ) {
+              $booking_totals = $wpdb->get_results( $wpdb->prepare(
+                  "SELECT booking_status,payment_status,reservation_expires_at,places FROM `{$booking_table}`
+                   WHERE organiser_id=%d AND session_id=%d AND occurrence_date=%s LIMIT 1001",
+                  $organiser, $inspect_id, $inspect_date
+              ), ARRAY_A );
+          }
+          $capacity_counts = array( 'reserved'=>0, 'confirmed'=>0, 'occupied'=>0, 'unknown'=>false );
+          if ( is_array( $booking_totals ) ) {
+              if ( count( $booking_totals ) > 1000 ) { $capacity_counts['unknown'] = true; }
+              else {
+                  foreach ( $booking_totals as $booking_row ) {
+                      $status = strtolower( trim( (string) $booking_row['booking_status'] ) );
+                      $places = (int) $booking_row['places'];
+                      if ( $places < 1 ) { $capacity_counts['unknown'] = true; continue; }
+                      if ( in_array( $status, array( 'cancelled', 'canceled', 'expired', 'rejected' ), true ) ) { continue; }
+                      if ( $status === 'reserved' ) {
+                          // Expired holds remain occupied until expiry processing is verified.
+                          $capacity_counts['reserved'] += $places;
+                      } elseif ( in_array( $status, array( 'confirmed', 'enrolled' ), true ) ) {
+                          $capacity_counts['confirmed'] += $places;
+                      } else { $capacity_counts['unknown'] = true; }
+                  }
+                  $capacity_counts['occupied'] = $capacity_counts['reserved'] + $capacity_counts['confirmed'];
+              }
+          }
+          ?>
           <section class="bh-bookings-panel bh-occurrence-inspector" aria-label="Selected session date">
             <h2><?php echo esc_html( $session_titles[$inspect_id] ?? $inspected['title'] ); ?> — <?php echo esc_html( wp_date( get_option( 'date_format' ), strtotime( $inspect_date . ' 12:00:00' ) ) ); ?></h2>
             <p><strong>Time:</strong> <?php echo esc_html( substr( (string) $inspected['start_time'], 0, 5 ) . '–' . substr( (string) $inspected['end_time'], 0, 5 ) ); ?></p>
             <p><strong>Configured capacity:</strong> <?php echo $inspect_capacity ? esc_html( (string) $inspect_capacity ) : 'Not set'; ?></p>
-            <p role="status">This is a schedule preview. Reserved, confirmed and remaining places cannot be calculated until the reservation records and status rules are validated. No booking or payment action is available here.</p>
+            <?php if ( $booking_totals === null ) : ?>
+              <p role="status">Reservation counts unavailable: booking storage is not ready or bookings are disabled for this session.</p>
+            <?php elseif ( $capacity_counts['unknown'] ) : ?>
+              <p role="status">Reservation counts need review: unsupported or incomplete booking records were found. Remaining places are not displayed.</p>
+            <?php else : ?>
+              <p><strong>Reserved:</strong> <?php echo esc_html( (string) $capacity_counts['reserved'] ); ?> · <strong>Confirmed/enrolled:</strong> <?php echo esc_html( (string) $capacity_counts['confirmed'] ); ?></p>
+              <?php if ( $inspect_capacity > 0 && $capacity_counts['occupied'] <= $inspect_capacity ) : ?>
+                <p><strong>Unallocated capacity (preview):</strong> <?php echo esc_html( (string) ( $inspect_capacity - $capacity_counts['occupied'] ) ); ?></p>
+              <?php elseif ( $inspect_capacity > 0 ) : ?>
+                <p role="status">Recorded places exceed configured capacity. Please review the booking data.</p>
+              <?php endif; ?>
+              <p role="status">Read-only record totals. Expired reservations remain counted until the expiry process is verified. These numbers do not guarantee live availability or permit checkout.</p>
+            <?php endif; ?>
             <p><a href="<?php echo esc_url( remove_query_arg( array( 'bh_occurrence_session', 'bh_occurrence_date' ) ) ); ?>">Close session details</a></p>
           </section>
           <?php endif; ?>
