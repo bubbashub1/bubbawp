@@ -33,6 +33,91 @@ final class BH_Developments_Admin_3 {
         );
     }
 
+    private static function sector_blueprints() {
+        return array(
+            'directory' => array(
+                'Tables' => 'WP organisers, activities, venues, activity_venues, sessions; legacy bh_activities, bh_venues, bh_sessions',
+                'Fields to verify' => 'Age months, category, session price, recurrence, postcode, accessibility, verified organiser ownership',
+                'Forms' => 'Native activity wizard',
+                'Shortcodes' => '[bubbahub_directory], [bubbahub_activity], [bh_admin_activity_wizard] (verify placement)',
+                'Pages' => '/directory/ · /activity/{slug}/ · /organiser/{slug}/',
+                'Next gate' => 'Compare staging DDL, verify permalink routing and canonical session model',
+            ),
+            'family' => array(
+                'Tables' => 'bh_family_profiles, bh_family_preferences, bh_saved_activities, bh_planner, bh_family_reminders; legacy bh_children, bh_bumps',
+                'Fields to verify' => 'Profile type, gender, birth/due date, user ownership, planner session/date, visited',
+                'Forms' => 'Native family profile editor',
+                'Shortcodes' => '[bubbahub_family_hub], [bubbahub_family_profiles], [bubbahub_family_favourites] (verify placement)',
+                'Pages' => '/my-hub/ · profile/ · children/ · preferences/ · planner/ · favourites/',
+                'Next gate' => 'Verify WP-to-legacy user mapping and profile migration before data writes',
+            ),
+            'leader' => array(
+                'Tables' => 'WP organisers, venues, activities, sessions; legacy bh_leader_faqs, bh_leader_messages',
+                'Fields to verify' => 'Verified owner, contact details, payout preference, session edit rights, venue link',
+                'Forms' => 'Native listing/venue wizard; Form 6 for enquiries',
+                'Shortcodes' => '[bh_leader_dashboard], [bh_leader_booking_dashboard], [bh_leader_payout_settings]',
+                'Pages' => '/leader/ · about/ · new-activity/ · bookings/ · messages/ · venues/ · business/ · payment/',
+                'Next gate' => 'Check leader capabilities, ownership and field mappings',
+            ),
+            'booking' => array(
+                'Tables' => 'bh3_bookings, bh3_booking_attendees, bh3_booking_consents; legacy bh_booking_slots, bh_booking_reservations, bh_booking_consent_snapshots',
+                'Fields to verify' => 'Booking vs payment status, occurrence, capacity, attendee identity, consent version, audit history',
+                'Forms' => 'Fluent Forms 6 enquiry and 7 consent — export verification pending',
+                'Shortcodes' => '[bh_parent_booking], [bh_leader_booking_dashboard], [bh_booking_readiness]',
+                'Pages' => '/leader/bookings/ · /leader/payment/ · /legal/bookings/ · activity booking CTA',
+                'Next gate' => 'Choose canonical booking writer and verify form JSON/consent snapshots',
+            ),
+            'support' => array(
+                'Tables' => 'bh_ask_questions, bh_ask_private_contacts, bh_ask_replies, bh_ask_audit; Fluent Forms inbox',
+                'Fields to verify' => 'Topic, visibility, moderation, verified replies, private contact, response history',
+                'Forms' => 'Fluent Forms 4 Ask a Question and 5 Family Support',
+                'Shortcodes' => '[bh_ask_question], [bh_support_hub], [bh_support_resources]',
+                'Pages' => '/guidance/ · resources/ · blog/ · ask/',
+                'Next gate' => 'Confirm form submissions and canonical public/private question records',
+            ),
+            'membership' => array(
+                'Tables' => 'Simple Membership and WP users; existing membership plugin tables',
+                'Fields to verify' => 'Family/Leader tier, access rights, registration and renewal status',
+                'Forms' => 'Simple Membership registration',
+                'Shortcodes' => '[bh_membership_registration] and membership plugin blocks',
+                'Pages' => '/membership-join/ · /auth/',
+                'Next gate' => 'Verify membership tier IDs and permissions on staging',
+            ),
+            'communications' => array(
+                'Tables' => 'bh_newsletter_subscribers, bh_push_subscriptions, bh_push_notifications; FluentSMTP logs',
+                'Fields to verify' => 'Opt-in version, frequency, unsubscribe, dedupe, delivery state',
+                'Forms' => 'Native preferences; newsletter opt-in if required',
+                'Shortcodes' => 'Public shortcode not confirmed',
+                'Pages' => 'Admin communications · /my-hub/preferences/',
+                'Next gate' => 'Review existing sender and delivery logs before adding tables',
+            ),
+            'events' => array(
+                'Tables' => 'bh_expo_reservations, bh_expo_tickets, bh_expo_exhibitors, bh_expo_tables, bh_expo_booking_qrs, bh_expo_family_checkins',
+                'Fields to verify' => 'Event key, timed entry, capacity, QR uniqueness, sponsors, check-ins',
+                'Forms' => 'Visitor, exhibitor and sponsor — planned; IDs not assigned',
+                'Shortcodes' => 'Event templates and shortcodes to be decided',
+                'Pages' => '/events/ · /events/{event-slug}/ (planned)',
+                'Next gate' => 'Audit legacy Expo schema before generalising to multiple events',
+            ),
+            'claims' => array(
+                'Tables' => 'Existing listing ownership, moderation and audit records',
+                'Fields to verify' => 'Claimant identity, proof, duplicate review, approval history',
+                'Forms' => 'Native claim and venue submission (planned)',
+                'Shortcodes' => 'To be decided after existing module audit',
+                'Pages' => 'Admin listings and moderation · /leader/venues/',
+                'Next gate' => 'Locate canonical claim and approval persistence',
+            ),
+            'platform' => array(
+                'Tables' => 'WP options bh_development_tracker_statuses, bh3_development_statuses, bhs_development_readiness',
+                'Fields to verify' => 'Feature ownership, dependencies, QA evidence and deployment sign-off',
+                'Forms' => 'None',
+                'Shortcodes' => 'None — WordPress admin only',
+                'Pages' => '/wp-admin/admin.php?page=bh3-developments',
+                'Next gate' => 'Verify all three status forms save/reload on staging',
+            ),
+        );
+    }
+
     public static function save_legacy_features() {
         if ( ! current_user_can( 'manage_options' ) ) {
             wp_die( esc_html__( 'Administrator permission required.', 'bubba-hub-manager' ), '', array( 'response' => 403 ) );
@@ -124,6 +209,18 @@ final class BH_Developments_Admin_3 {
         echo '<div class="notice notice-info inline"><p><strong>Our guiding principle:</strong> Does it save time, make family life easier, or help people connect? If it doesn\'t, it probably isn\'t a priority.</p></div>';
         echo '<h2>Bubba Hub 3.0 — Current delivery</h2>';
         echo '<p>Complete WordPress migration, legacy feature parity, security and staging testing across Directory, Family Hub, Leader Portal, Bookings and Support. Essential unfinished migration work stays in 3.0.</p>';
+        echo '<h2>Sector implementation blueprints</h2>';
+        echo '<p>Read-only planning references. Shortcodes and pages listed here may require verification on staging; nothing below creates a table, form or page.</p>';
+        echo '<style>.bh3-sector-details{max-width:1250px;margin:8px 0;background:#fff;border:1px solid #dcdcde;border-radius:6px}.bh3-sector-details summary{cursor:pointer;padding:12px 15px;font-weight:600}.bh3-sector-details[open] summary{border-bottom:1px solid #dcdcde}.bh3-sector-details dl{display:grid;grid-template-columns:minmax(110px,170px) minmax(0,1fr);gap:9px 16px;margin:15px}.bh3-sector-details dt{font-weight:600}.bh3-sector-details dd{margin:0;overflow-wrap:anywhere}@media(max-width:782px){.bh3-sector-details dl{grid-template-columns:1fr;gap:4px}.bh3-sector-details dd{margin-bottom:12px}}</style>';
+        foreach ( self::readiness_areas() as $sector_key => $sector_title ) {
+            $blueprint = self::sector_blueprints();
+            if ( ! isset( $blueprint[$sector_key] ) ) { continue; }
+            echo '<details class="bh3-sector-details"><summary>' . esc_html( $sector_title ) . '</summary><dl>';
+            foreach ( $blueprint[$sector_key] as $field_label => $field_value ) {
+                echo '<dt>' . esc_html( $field_label ) . '</dt><dd>' . esc_html( $field_value ) . '</dd>';
+            }
+            echo '</dl></details>';
+        }
         echo '<h2>Sector readiness — SQL, forms, shortcodes, pages and delivery</h2>';
         echo '<p>Manually maintained planning statuses. These are not deployment or test results. Existing 3.0 tracker statuses and 4.0 phase statuses are preserved separately.</p>';
         if ( isset( $_GET['readiness_updated'] ) && '1' === $_GET['readiness_updated'] ) {
