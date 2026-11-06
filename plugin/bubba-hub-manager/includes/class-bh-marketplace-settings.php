@@ -1518,11 +1518,22 @@ final class BH_Marketplace_Settings_3 {
         echo '<h3>Book a class</h3>';
         $fee_quote = $quote['parent_paid_fee_quote'] ?? null;
         if ( is_array( $fee_quote ) && ! empty( $fee_quote['preview_only'] ) ) {
-            echo '<div class="bh3-booking-fee-preview" aria-label="Estimated booking total">';
-            echo '<p><strong>Class price:</strong> £' . esc_html( number_format( $fee_quote['leader_price_pence'] / 100, 2 ) ) . '</p>';
-            echo '<p><strong>Bubba Hub Booking Fee:</strong> £' . esc_html( number_format( $fee_quote['booking_fee_pence'] / 100, 2 ) ) . '</p>';
-            echo '<p><strong>Estimated total:</strong> £' . esc_html( number_format( $fee_quote['parent_total_pence'] / 100, 2 ) ) . '</p>';
-            echo '<p><small>Fee estimate only; final payment pricing is not yet enabled. The class leader receives the advertised class price. No payment is taken here.</small></p>';
+            $price_quotes = array();
+            for ( $place_count = 1; $place_count <= 20; $place_count++ ) {
+                $calculated = self::parent_paid_fee_preview( (int) $quote['unit_price_pence'] * $place_count );
+                if ( ! is_wp_error( $calculated ) ) {
+                    $price_quotes[ $place_count ] = array(
+                        'class' => (int) $calculated['leader_price_pence'],
+                        'fee' => (int) $calculated['booking_fee_pence'],
+                        'total' => (int) $calculated['parent_total_pence'],
+                    );
+                }
+            }
+            echo '<div class="bh3-booking-fee-preview" aria-label="Estimated booking total" data-price-quotes="' . esc_attr( wp_json_encode( $price_quotes ) ) . '">';
+            echo '<p><strong>Class price:</strong> £<span data-bh-price-class>' . esc_html( number_format( $fee_quote['leader_price_pence'] / 100, 2 ) ) . '</span></p>';
+            echo '<p><strong>Bubba Hub Booking Fee:</strong> £<span data-bh-price-fee>' . esc_html( number_format( $fee_quote['booking_fee_pence'] / 100, 2 ) ) . '</span></p>';
+            echo '<p><strong>Estimated total to pay:</strong> £<span data-bh-price-total>' . esc_html( number_format( $fee_quote['parent_total_pence'] / 100, 2 ) ) . '</span></p>';
+            echo '<p><small>One combined fee covers the Bubba Hub platform fee and estimated card-processing costs. The class leader receives the advertised class price. Final amounts are confirmed at Stripe Checkout.</small></p>';
             echo '</div>';
         } else {
             echo '<p><strong>Price per place:</strong> £' . esc_html( number_format( $quote['unit_price_pence'] / 100, 2 ) ) . '</p>';
@@ -1560,6 +1571,7 @@ final class BH_Marketplace_Settings_3 {
             $previous_session_context = $GLOBALS['bh3_form7_session_id'] ?? null;
             $GLOBALS['bh3_form7_session_id'] = $session_id;
             echo do_shortcode( '[fluentform id="' . $form_id . '"]' );
+            echo '<script>(function(){const root=document.getElementById(' . wp_json_encode( $id ) . ');if(!root)return;const box=root.querySelector(".bh3-booking-fee-preview"),field=root.querySelector("[name=places]");if(!box||!field)return;let quotes={};try{quotes=JSON.parse(box.dataset.priceQuotes||"{}");}catch(e){return;}const update=function(){const count=String(Math.max(1,Math.min(20,parseInt(field.value||"1",10)||1)));const q=quotes[count];if(!q)return;box.querySelector("[data-bh-price-class]").textContent=(q.class/100).toFixed(2);box.querySelector("[data-bh-price-fee]").textContent=(q.fee/100).toFixed(2);box.querySelector("[data-bh-price-total]").textContent=(q.total/100).toFixed(2);};field.addEventListener("input",update);field.addEventListener("change",update);update();})();</script>';
             if ( $previous_session_context === null ) { unset( $GLOBALS['bh3_form7_session_id'] ); }
             else { $GLOBALS['bh3_form7_session_id'] = $previous_session_context; }
             echo '<p class="bh3-booking-note">Submitting your details does not reserve a place or confirm a booking. Your place is only held when secure checkout confirms the reservation.</p></div>';
