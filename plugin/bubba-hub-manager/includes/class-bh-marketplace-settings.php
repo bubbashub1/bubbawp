@@ -18,6 +18,7 @@ final class BH_Marketplace_Settings_3 {
         add_shortcode( 'bh_parent_booking', array( __CLASS__, 'parent_booking_widget' ) );
         add_filter( 'fluentform/rendering_field_data_input_checkbox', array( __CLASS__, 'filter_form7_checkbox_field' ), 10, 2 );
         add_filter( 'fluentform/rendering_field_data_input_hidden', array( __CLASS__, 'filter_form7_hidden_field' ), 10, 2 );
+        add_filter( 'fluentform/submission_confirmation', array( __CLASS__, 'filter_form7_checkout_confirmation' ), 20, 5 );
         add_shortcode( 'bh_booking_readiness', array( __CLASS__, 'booking_readiness_preview' ) );
         add_shortcode( 'bh_leader_email_verification', array( __CLASS__, 'leader_email_verification_widget' ) );
         add_shortcode( 'bh_leader_account_setup', array( __CLASS__, 'leader_account_setup_widget' ) );
@@ -891,6 +892,41 @@ final class BH_Marketplace_Settings_3 {
      * values. Admin must map actual Fluent Forms input names first.
      * No payment or capacity reservation is authorised by this check alone.
      */
+    /**
+     * Fluent Forms confirmation is the hand-off point: after Form 7 has
+     * successfully saved, validate that exact saved submission, reserve its
+     * selected occurrence, bind attendees/consent, then redirect to Stripe.
+     */
+    public static function filter_form7_checkout_confirmation( $return_data, $form, $confirmation, $submission_id, $form_data ) {
+        $form_id = absint( get_option( 'bh3_booking_form_id', 7 ) );
+        if ( absint( $form->id ?? 0 ) !== $form_id ) { return $return_data; }
+        if ( ! is_user_logged_in() || ! is_array( $form_data ) ) {
+            $return_data['message'] = 'Your details were received, but you must be signed in to continue to secure checkout.';
+            return $return_data;
+        }
+        $request = new WP_REST_Request( 'POST', '/bubba-hub/v3/parent-bound-test-checkout' );
+        $request->set_param( 'submission_id', absint( $submission_id ) );
+        $request->set_param( 'session_id', absint( $form_data['session_id'] ?? 0 ) );
+        $request->set_param( 'occurrence_date', sanitize_text_field( (string) ( $form_data['occurrence_date'] ?? '' ) ) );
+        $request->set_param( 'places', absint( $form_data['places'] ?? 0 ) );
+        $result = self::start_bound_parent_test_checkout( $request );
+        if ( is_wp_error( $result ) ) {
+            $return_data['message'] = 'Your booking details have been saved, but secure checkout could not start: '
+                . esc_html( $result->get_error_message() ) . ' Please contact Bubba Hub before submitting again.';
+            return $return_data;
+        }
+        $payload = $result instanceof WP_REST_Response ? $result->get_data() : $result;
+        if ( ! is_array( $payload ) || empty( $payload['checkout_url'] )
+            || ! wp_http_validate_url( $payload['checkout_url'] )
+            || strpos( $payload['checkout_url'], 'https://checkout.stripe.com/' ) !== 0 ) {
+            $return_data['message'] = 'Your booking details were saved, but a secure checkout link could not be verified. Please contact Bubba Hub.';
+            return $return_data;
+        }
+        $return_data['redirectUrl'] = esc_url_raw( $payload['checkout_url'] );
+        $return_data['message'] = 'Your booking details are saved. Taking you to secure Stripe checkout…';
+        return $return_data;
+    }
+
     public static function filter_form7_checkbox_field( $data, $form ) {
         if ( absint( $form->id ?? 0 ) !== absint( get_option( 'bh3_booking_form_id', 7 ) )
             || ( $data['attributes']['name'] ?? '' ) !== 'family_profile_ids'
