@@ -104,6 +104,9 @@ final class BH_Activity_Detail_3 {
             $schedule[] = array(
                 'booking_url' => $external_url ?: '',
                 'enquiry_url' => $enquiry_enabled && shortcode_exists( 'fluentform' ) ? '#bh-activity-enquiry' : '',
+                // Session booking is configured but the payment/reservation journey is not yet verified.
+                // Expose a non-actionable state; never link directly to Form #7 as a confirmed booking.
+                'booking_pending' => $booking_enabled && ! $external_url,
                 'name' => (string) ( $names[$sid] ?? $activity['title'] ),
                 'day' => $days[(int) $session['day_of_week']] ?? 'Other',
                 'start' => substr( (string) $session['start_time'], 0, 5 ),
@@ -276,7 +279,7 @@ final class BH_Activity_Detail_3 {
                 $details = array_filter( array( $session['frequency'], (int) $session['term_time_only'] ? 'Term time' : '', $session['status'] ) );
                 $session_id = (int) $session['id'];
                 $details[] = ! empty( $enquiry_flags[$session_id] ) ? 'Enquiries available' : '';
-                $details[] = ! empty( $booking_flags[$session_id]['enabled'] ) ? 'Bookings planned' : '';
+                $details[] = ! empty( $booking_flags[$session_id]['enabled'] ) ? 'Online booking coming soon — enquire for now' : '';
                 $details = array_filter( $details );
                 echo '<tr><td>' . esc_html( $session_titles[$session_id] ?? $activity['title'] ) . '</td><td>' . esc_html( $day ) . '</td><td>' . esc_html( $time ) . '</td><td>' . esc_html( $session['venue_name'] ) . '</td><td>' . esc_html( implode( ' · ', $details ) ) . '</td></tr>';
             }
