@@ -846,10 +846,25 @@ final class BH_Marketplace_Settings_3 {
      * values. Admin must map actual Fluent Forms input names first.
      * No payment or capacity reservation is authorised by this check alone.
      */
+    public static function booking_form_field_map() {
+        // Matches the published Bubba Hub Fluent Form #7 export. Administrators
+        // can override these names if the form is customised.
+        $defaults = array(
+            'session_id' => 'session_id',
+            'occurrence_date' => 'occurrence_date',
+            'places' => 'places',
+            'consent' => 'booking_terms_consent',
+            'profile_ids' => 'family_profile_ids',
+            'share_consent' => 'share_child_details_consent',
+        );
+        $saved = get_option( 'bh3_booking_form_field_map', array() );
+        return wp_parse_args( is_array( $saved ) ? $saved : array(), $defaults );
+    }
+
     public static function inspect_booking_form_fields( $submission_id, $customer_user_id, $expected_session_id, $expected_date, $expected_places ) {
         $owned = self::inspect_booking_form_submission( $submission_id, $customer_user_id );
         if ( is_wp_error( $owned ) ) { return $owned; }
-        $map = get_option( 'bh3_booking_form_field_map', array() );
+        $map = self::booking_form_field_map();
         $required = array( 'session_id', 'occurrence_date', 'places', 'consent' );
         if ( ! is_array( $map ) ) {
             return new WP_Error( 'booking_fields_unmapped', 'Booking form field mapping is missing.' );
@@ -1030,8 +1045,7 @@ final class BH_Marketplace_Settings_3 {
     public static function inspect_booking_form_attendees( $submission_id, $customer_user_id, $expected_session_id, $expected_date, $expected_places ) {
         $verified = self::inspect_booking_form_fields( $submission_id, $customer_user_id, $expected_session_id, $expected_date, $expected_places );
         if ( is_wp_error( $verified ) ) { return $verified; }
-        $map = get_option( 'bh3_booking_form_field_map', array() );
-        if ( ! is_array( $map ) ) { return new WP_Error( 'attendee_fields_unmapped', 'Attendee fields are not configured.' ); }
+        $map = self::booking_form_field_map();
         foreach ( array( 'profile_ids', 'share_consent' ) as $field ) {
             if ( empty( $map[ $field ] ) || ! is_string( $map[ $field ] )
                 || ! preg_match( '/^[A-Za-z][A-Za-z0-9_]*$/', $map[ $field ] ) ) {
@@ -1343,14 +1357,14 @@ final class BH_Marketplace_Settings_3 {
             echo '<div class="bh3-booking-attendees"><h4>Who is attending?</h4>';
             echo '<p>Select the children attending, or choose a pregnancy profile for an antenatal class.</p>';
             if ( $profiles ) {
-                echo '<fieldset><legend>Family profiles</legend>';
+                echo '<fieldset class="bh3-booking-profile-preview"><legend>Family profiles</legend>';
                 foreach ( $profiles as $profile ) {
                     $type = $profile['profile_type'] === 'bump' ? 'Pregnancy' : 'Child';
                     echo '<label style="display:block;margin:8px 0"><input type="checkbox" name="bh3_preview_profile_ids[]" value="' .
                         esc_attr( $profile['id'] ) . '" disabled> ' .
                         esc_html( $profile['display_name'] ) . ' (' . esc_html( $type ) . ')</label>';
                 }
-                echo '</fieldset><p><small>Selection preview only. Booking submission linking is still being developed.</small></p>';
+                echo '</fieldset><p><small>Profile selection is currently a preview. Complete the updated Form 7 field setup before enabling checkout.</small></p>';
             } else {
                 echo '<p>No child or pregnancy profiles found.</p>';
             }
