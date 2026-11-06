@@ -75,14 +75,35 @@ Constraints: prefer existing WordPress infrastructure, no AI or additional paid 
 
 | Phase | Workstream | Candidate features | Dependencies |
 | --- | --- | --- | --- |
-| 4.1 | Data Quality & Automation | Listing health dashboard, missing fields/schedules, broken booking links, organiser re-verification, duplicate activity/venue/organiser detection, safe merge preview, stale listing flags | 3.0 directory and data integrity |
-| 4.2 | Smart Booking & Timetables | Waiting lists, space-available notifications, session cancellation/rescheduling, quick bulk timetable editor, recurring schedule patterns, parent booking history improvements | 3.0 booking consent, enrolment, session and notification QA |
-| 4.3 | Family Hub Plus | Planner Pro parity review, age-appropriate recommendations, school application tracker, pregnancy reminders, enhanced personal calendar and booking history | 3.0 family profiles, planner and privacy controls |
-| 4.4 | Leader Business Tools | Performance dashboard, leader onboarding checklist, social tools parity review, optional listing boosts, leader articles/FAQs and entitlement rules | 3.0 leader permissions, storefront, memberships |
-| 4.5 | Communications Centre | Delivery history, notification preferences, message templates, newsletter roundups, opt-in and unsubscribe controls, automated operational reminders | 3.0 FluentSMTP, consent and verified recipient handling |
-| 4.6 | Events & Expo Plus | Recurring events, ticketing enhancements, QR check-in, volunteer tools, exhibitors, sponsor packages, raffle/reporting review | 3.0 Events sector templates and shared booking foundation |
+| 4.1 | Data Quality & Automation | Listing health dashboard, missing fields/schedules, broken booking links, organiser re-verification, duplicate activity/venue/organiser detection, safe merge preview, stale listing flags | 4.0 core directory and data integrity |
+| 4.2 | Smart Booking & Timetables | Waiting lists, space-available notifications, session cancellation/rescheduling, quick bulk timetable editor, recurring schedule patterns, parent booking history improvements | 4.0 core booking consent, enrolment, session and notification QA |
+| 4.3 | Family Hub Plus | Planner Pro parity review, age-appropriate recommendations, school application tracker, pregnancy reminders, enhanced personal calendar and booking history | 4.0 core family profiles, planner and privacy controls |
+| 4.4 | Leader Business Tools | Performance dashboard, leader onboarding checklist, social tools parity review, optional listing boosts, leader articles/FAQs and entitlement rules | 4.0 core leader permissions, storefront, memberships |
+| 4.5 | Communications Centre | Delivery history, notification preferences, message templates, newsletter roundups, opt-in and unsubscribe controls, automated operational reminders | 4.0 core FluentSMTP, consent and verified recipient handling |
+| 4.6 | Events & Expo Plus | Recurring events, ticketing enhancements, QR check-in, volunteer tools, exhibitors, sponsor packages, raffle/reporting review | 4.0 core Events sector templates and shared booking foundation |
 | 4.7 | Platform & Administration | Audit trails, advanced exports, team roles, accessibility/SEN metadata and filters, admin reporting, safe legacy redirect monitoring | 4.0 core launch and migration controls |
 | 4.8 | Family Inspiration & Discovery | Rainy Day Rescue, Weekend Finder, Free & Under £5, School Holiday Hub, Inspire Me, Family Trails, Bubba Brief, Little Explorers Passport | Core directory, session dates, family preferences and planner |
+
+## Core feature inventory — explicit acceptance checklist
+
+This is the consolidated functional inventory for **4.0 Core**, not an assertion that every item is implemented. Each journey needs evidence from staging before being marked complete.
+
+| Area | Core capabilities to preserve or complete |
+| --- | --- |
+| Directory | Live/AJAX search and filters (category, age, day, price, region, town, session, term-time, free); list/map/calendar/planner results; near-me/postcode; sorting; mobile navigation; accessible results |
+| Activity & organiser | Dynamic /activity/{slug}/ and /organiser/{slug}/, maps, timetable, save/planner/visited/compare, booking/enquiry CTA, verified organiser, claims and edit history |
+| Family Hub | WordPress family profiles for children and bumps, gender/year-of-birth sharing controls, interests/days/location, favourites, planner, visited, school application and pregnancy reminders, privacy and user ownership |
+| Leader Portal | Front-end listings wizard, existing/new venues, timetable editor, leader storefront, bookings calendar/list, messages, enquiries, payouts, reminders, ownership and Free/Pro permissions |
+| Bookings | One canonical booking record, occurrence/capacity checks, guest and logged-in parent flows, consent Form #7 mapping and version snapshots, child/bump selection, reservation vs payment status, leader confirmation/enrolment/cancellation, Stripe webhook idempotency, booking legal terms |
+| Membership | Family and Leader Free/Pro tiers, annual plans, tier comparison, registration/login, membership entitlements, renewal/expiry handling |
+| Support & Community | Public/private moderated Ask a Question Form #4, family support Form #5, resource library, leader opt-in replies, verified routing, safe community participation |
+| Events & Expo | Public events and calendar, event detail templates, visitor tickets, timed entry, QR check-in, exhibitor/sponsor/volunteer flows, raffle/legal review and capacity |
+| Communications | FluentSMTP verified delivery, transactional vs marketing consent, email templates, notifications/reminders, newsletter subscription/unsubscribe, delivery history |
+| Platform & Team | WP admin Developments single roadmap, team roles, data quality/claim tools, legacy URL redirects, data backups, privacy, security, accessibility and staging-to-live rollback |
+
+**No new duplicate admin trackers:** retain existing saved `bh3_development_statuses` and `bhs_development_readiness` options; unify their presentation before retiring any legacy tracker screen. Preserve existing historical status values.
+
+**Naming:** new identifiers use `bhs` where applicable; do not rename existing `bh_`, `bh3_`, shortcode, class, or table identifiers as part of roadmap consolidation.
 
 ## Legacy feature parity watchlist
 
@@ -93,7 +114,7 @@ Explicitly compare the old `bubbaplugin` implementations before designing replac
 - `api/organiser-terms.php`, admin import/export, organiser claims, listing verification and data export
 - Expo visitor tickets, QR check-in, volunteers, sponsors, exhibitors and raffle tools
 
-**Parity rule:** If a legacy feature is essential for the 3.0 launch, keep it in the 3.0 parity backlog; 4.0 may extend it but must not replace the migration requirement.
+**Parity rule:** If a legacy feature is essential for launch, keep it in the 4.0 core parity backlog; later enhancements must not replace the migration requirement.
 
 ## Candidate acceptance criteria
 
@@ -104,10 +125,11 @@ Explicitly compare the old `bubbaplugin` implementations before designing replac
 - 4.5: email logs avoid exposing private family details; users can control marketing preferences separately from transactional messages.
 - 4.6: ticket allocation and QR check-in prevent duplicate entry; event-specific roles are scoped.
 - 4.7: audit logs and exports are access-controlled, retained appropriately and support safe migration.
+- 4.8: rainy-day and weekend suggestions use verified indoor tags and actual session dates; no invented weather or availability; free and low-cost filters are accurate; suggestions are useful without AI.
 
 ## Priority / sequencing
 
-1. Finish and test 3.0 first (especially booking, permissions, consent, directory and leader workflows).
+1. Finish and test the 4.0 core launch foundation first (especially booking, permissions, consent, directory and leader workflows).
 2. Start 4.1 and 4.2 when the core is stable; these have the strongest reliability and leader time-saving benefits.
 3. Develop 4.3–4.5 incrementally after the underlying services are proven.
 4. Align 4.6 with the Events templates roadmap; leave optional monetisation and advanced analytics until later.
@@ -118,9 +140,9 @@ Explicitly compare the old `bubbaplugin` implementations before designing replac
 - Which legacy Planner Pro features should remain free versus premium.
 - Waiting-list release rules, expiry and consent wording.
 - Notification channels and opt-in defaults.
-- Events feature split between the initial 3.0 templates and later 4.0 enhancements.
+- Events feature split between the initial 4.0 core templates and later 4.0 enhancements.
 - Whether public leader analytics should include views, enquiries, bookings or all three.
 
 ## Status
 
-**Captured for future development.** No feature PRs, schema changes or deployment work authorised by this roadmap.
+**Unified roadmap captured.** Core functionality is in mixed states of implementation and QA; enhancements are proposals. This document does not authorise schema changes or deployment.
