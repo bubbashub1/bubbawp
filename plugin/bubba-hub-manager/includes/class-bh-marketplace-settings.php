@@ -1587,7 +1587,8 @@ final class BH_Marketplace_Settings_3 {
         if ( ! is_string( $event_id ) || ! preg_match( '/^evt_[A-Za-z0-9]+$/', $event_id ) ) {
             return new WP_Error( 'invalid_event', 'Invalid Stripe event ID.' );
         }
-        $lock = 'bh3_payment_' . md5( $wpdb->prefix . ':' . $preflight['booking_id'] );
+        // Share the booking-level lock with lifecycle transitions to prevent expiry/payment races.
+        $lock = 'bh3_status_' . md5( $wpdb->prefix . ':' . $preflight['booking_id'] );
         if ( (int) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, 5)', $lock ) ) !== 1 ) {
             return new WP_Error( 'payment_busy', 'Payment confirmation is busy.' );
         }
@@ -1596,12 +1597,15 @@ final class BH_Marketplace_Settings_3 {
             $checked = self::inspect_verified_checkout_payment( $event );
             if ( is_wp_error( $checked ) ) { return $checked; }
             $record = $wpdb->get_row( $wpdb->prepare(
-                "SELECT id,payment_status,reservation_expires_at FROM `{$bookings}` WHERE id=%d LIMIT 1",
+                "SELECT id,booking_status,payment_status,reservation_expires_at FROM `{$bookings}` WHERE id=%d LIMIT 1",
                 $checked['booking_id']
             ), ARRAY_A );
             if ( ! $record ) { return new WP_Error( 'booking_missing', 'Booking not found.' ); }
             if ( $record['payment_status'] === 'paid' ) {
                 return array( 'booking_id' => $checked['booking_id'], 'already_paid' => true, 'confirmed' => false );
+            }
+            if ( $record['booking_status'] !== 'reserved' ) {
+                return new WP_Error( 'hold_not_active', 'Reservation is no longer active; manual payment review required.' );
             }
             // Expired holds require manual review to avoid overselling.
             if ( empty( $record['reservation_expires_at'] ) || strtotime( $record['reservation_expires_at'] . ' UTC' ) <= time() ) {
@@ -1615,7 +1619,7 @@ final class BH_Marketplace_Settings_3 {
             }
             $updated = $wpdb->query( $wpdb->prepare(
                 "UPDATE `{$bookings}` SET payment_status='paid', stripe_payment_intent_id=%s, updated_at=%s
-                 WHERE id=%d AND payment_status='pending' AND reservation_expires_at > %s",
+                 WHERE id=%d AND booking_status='reserved' AND payment_status='pending' AND reservation_expires_at > %s",
                 $checked['payment_intent_id'], current_time( 'mysql', true ),
                 $checked['booking_id'], current_time( 'mysql', true )
             ) );
