@@ -212,7 +212,7 @@ final class BH_Developments_Admin_3 {
         $statuses = array();
         $posted = isset( $_POST['bh3_statuses'] ) && is_array( $_POST['bh3_statuses'] )
             ? wp_unslash( $_POST['bh3_statuses'] ) : array();
-        foreach ( array( '4.1', '4.2', '4.3', '4.4', '4.5', '4.6', '4.7' ) as $phase ) {
+        foreach ( array( '4.1', '4.2', '4.3', '4.4', '4.5', '4.6', '4.7', '4.8' ) as $phase ) {
             $value = isset( $posted[ $phase ] ) && is_string( $posted[ $phase ] ) ? sanitize_key( $posted[ $phase ] ) : 'planned';
             $statuses[ $phase ] = in_array( $value, $allowed, true ) ? $value : 'planned';
         }
@@ -234,6 +234,7 @@ final class BH_Developments_Admin_3 {
             array( '4.5', 'Communications Centre', 'Email delivery logs, notification preferences, templates and newsletter roundups.', 'FluentSMTP, verified recipients and consent' ),
             array( '4.6', 'Events & Expo Plus', 'Recurring events, ticketing enhancements, QR check-in, volunteers, sponsors and exhibitors.', 'Events templates and shared booking system' ),
             array( '4.7', 'Platform & Administration', 'Audit history, data exports, team roles, accessibility filters and reporting.', '3.0 migration and permissions' ),
+            array( '4.8', 'Family Inspiration & Discovery', 'Rainy Day Rescue, What’s On This Weekend?, Free & Under £5 Finder, School Holiday Hub, Inspire Me, Family Trails, Bubba Brief and Little Explorers Passport.', 'Verified directory, sessions, family preferences and planner; no AI or paid dependency' ),
         );
         $statuses = get_option( 'bh3_development_statuses', array() );
         $statuses = is_array( $statuses ) ? $statuses : array();
@@ -247,8 +248,11 @@ final class BH_Developments_Admin_3 {
         echo '<h1>' . esc_html__( 'Developments', 'bubba-hub-manager' ) . '</h1>';
         echo '<p class="description">Planning and progress dashboard. Changing a status does not deploy or enable a feature.</p>';
         echo '<div class="notice notice-info inline"><p><strong>Our guiding principle:</strong> Does it save time, make family life easier, or help people connect? If it doesn\'t, it probably isn\'t a priority.</p></div>';
-        echo '<h2>Bubba Hub 3.0 — Current delivery</h2>';
-        echo '<p>Complete WordPress migration, legacy feature parity, security and staging testing across Directory, Family Hub, Leader Portal, Bookings and Support. Essential unfinished migration work stays in 3.0.</p>';
+        echo '<h2>Bubba Hub 4.0 — Core launch foundation (formerly 3.0)</h2>';
+        echo '<p>Complete WordPress migration, legacy feature parity, security and staging testing across Directory, Family Hub, Leader Portal, Bookings and Support. All essential unfinished migration and parity work remains part of the 4.0 launch foundation; the 4.1–4.8 enhancement phases retain their existing saved status IDs.</p>';
+        echo '<h3>Family inspiration — captured requirements</h3>';
+        echo '<p>These are roadmap requirements, not proof of deployed functionality. Suggestions must use real directory data and deterministic filters without requiring AI or paid services.</p>';
+        echo '<ul style="list-style:disc;padding-left:24px"><li><strong>Rainy Day Rescue:</strong> indoor and covered ideas, nearby activities and curated at-home resources.</li><li><strong>What\'s On This Weekend?:</strong> age-, budget- and location-aware weekend sessions.</li><li><strong>Free &amp; Under £5 Finder:</strong> verified affordable activities.</li><li><strong>School Holiday Hub:</strong> date-specific holiday events and clubs.</li><li><strong>Inspire Me / Surprise Me:</strong> rule-based family suggestions.</li><li><strong>Family Trails, Bubba Adventures, Bubba Brief, Family Week, Little Explorers Passport and Memories:</strong> planned family experiences.</li></ul>';
         echo '<h2>Read-only staging schema comparison</h2>';
         echo '<p>Compares the plugin\'s declared core and family table columns against the connected WordPress database. No records are read and no SQL changes are executed. A match here does not verify indexes, data types, form fields or migration safety.</p>';
         $site_host = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
