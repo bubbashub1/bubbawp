@@ -266,6 +266,23 @@ final class BH_Developments_Admin_3 {
             }
             echo '</tbody></table></div>';
             echo '<p class="description">Missing columns are observations, not permission to alter tables. Existing additional fields are preserved. Review all differences before proposing an explicit migration.</p>';
+            if ( class_exists( 'BH_Family_DB_Setup_3' ) ) {
+                $family_names = BH_Family_DB_Setup_3::names();
+                $missing_family = array();
+                foreach ( $family_names as $family_table ) {
+                    if ( ! BH_Family_DB_Setup_3::exists( $family_table ) ) {
+                        $missing_family[] = $family_table;
+                    }
+                }
+                if ( $missing_family ) {
+                    echo '<div class="notice notice-warning inline" style="padding:10px 14px;margin:15px 0">';
+                    echo '<p><strong>Family Hub setup needed:</strong> ' . esc_html( count( $missing_family ) ) . ' family table(s) missing: <code>' . esc_html( implode( ', ', $missing_family ) ) . '</code>.</p>';
+                    echo '<p>The existing Database Setup screen can create missing empty family tables after you confirm a staging backup. It does not migrate family records or modify existing tables.</p>';
+                    echo '<p><a class="button button-secondary" href="' . esc_url( admin_url( 'admin.php?page=bh3-family-database' ) ) . '">Review family database setup</a></p></div>';
+                } else {
+                    echo '<p class="description">All five declared Family Hub tables exist. This does not confirm their column types or indexes.</p>';
+                }
+            }
         }
         echo '<h2>Sector implementation blueprints</h2>';
         echo '<p>Read-only planning references. Shortcodes and pages listed here may require verification on staging; nothing below creates a table, form or page.</p>';
