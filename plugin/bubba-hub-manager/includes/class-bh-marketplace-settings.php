@@ -430,6 +430,65 @@ final class BH_Marketplace_Settings_3 {
      * Destination charges make the platform responsible for Stripe processing fees,
      * so refuse the default leader-pays policy until a compatible flow is built.
      */
+    /**
+     * Internal-only staging lifecycle transition. No route, shortcode or form action
+     * invokes this method. A separate reviewed controller is required for leaders.
+     */
+    public static function transition_booking_status( $booking_id, $target_status ) {
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
+            || ! defined( 'BH3_ENABLE_BOOKING_STATUS_TRANSITIONS' ) || BH3_ENABLE_BOOKING_STATUS_TRANSITIONS !== true
+            || ! current_user_can( 'manage_options' ) ) {
+            return new WP_Error( 'transition_disabled', 'Booking status changes are not enabled.' );
+        }
+        $booking_id = absint( $booking_id );
+        $target_status = sanitize_key( $target_status );
+        if ( ! $booking_id || ! in_array( $target_status, array( 'confirmed', 'enrolled', 'cancelled', 'expired' ), true ) ) {
+            return new WP_Error( 'invalid_transition', 'Unsupported booking status change.' );
+        }
+        global $wpdb;
+        $table = $wpdb->prefix . 'bh3_bookings';
+        $lock = 'bh3_status_' . md5( $wpdb->prefix . ':' . $booking_id );
+        if ( (int) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, 5)', $lock ) ) !== 1 ) {
+            return new WP_Error( 'booking_busy', 'Booking is busy. Try again.' );
+        }
+        try {
+            $booking = $wpdb->get_row( $wpdb->prepare(
+                "SELECT id,booking_status,payment_status,reservation_expires_at FROM `{$table}` WHERE id=%d LIMIT 1",
+                $booking_id
+            ), ARRAY_A );
+            if ( ! $booking ) { return new WP_Error( 'booking_missing', 'Booking not found.' ); }
+            $from = (string) $booking['booking_status'];
+            if ( $from === $target_status ) { return array( 'booking_id'=>$booking_id, 'status'=>$target_status, 'changed'=>false ); }
+            $allowed = array(
+                'reserved' => array( 'confirmed', 'cancelled', 'expired' ),
+                'confirmed' => array( 'enrolled', 'cancelled' ),
+                'enrolled' => array( 'cancelled' ),
+            );
+            if ( ! in_array( $target_status, $allowed[$from] ?? array(), true ) ) {
+                return new WP_Error( 'invalid_transition', 'This booking status change is not permitted.' );
+            }
+            if ( $target_status === 'confirmed' && $booking['payment_status'] !== 'paid' ) {
+                return new WP_Error( 'payment_not_verified', 'Payment must be verified before confirming this booking.' );
+            }
+            if ( $target_status === 'expired' ) {
+                if ( $booking['payment_status'] !== 'pending' || empty( $booking['reservation_expires_at'] )
+                    || strtotime( $booking['reservation_expires_at'] . ' UTC' ) > time() ) {
+                    return new WP_Error( 'not_expired', 'Only an elapsed unpaid reservation can expire.' );
+                }
+            }
+            $changed = $wpdb->update(
+                $table,
+                array( 'booking_status'=>$target_status, 'updated_at'=>current_time( 'mysql', true ) ),
+                array( 'id'=>$booking_id, 'booking_status'=>$from ),
+                array( '%s', '%s' ),
+                array( '%d', '%s' )
+            );
+            if ( $changed !== 1 ) { return new WP_Error( 'transition_conflict', 'Booking changed during update.' ); }
+            return array( 'booking_id'=>$booking_id, 'status'=>$target_status, 'changed'=>true );
+        } finally {
+            $wpdb->get_var( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $lock ) );
+        }
+    }
     public static function create_test_checkout( $booking_id, $customer_user_id ) {
         if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
             || ! defined( 'BH3_ENABLE_STRIPE_TEST_CHECKOUT' ) || BH3_ENABLE_STRIPE_TEST_CHECKOUT !== true ) {
@@ -1528,7 +1587,8 @@ final class BH_Marketplace_Settings_3 {
         if ( ! is_string( $event_id ) || ! preg_match( '/^evt_[A-Za-z0-9]+$/', $event_id ) ) {
             return new WP_Error( 'invalid_event', 'Invalid Stripe event ID.' );
         }
-        $lock = 'bh3_payment_' . md5( $wpdb->prefix . ':' . $preflight['booking_id'] );
+        // Share the booking-level lock with lifecycle transitions to prevent expiry/payment races.
+        $lock = 'bh3_status_' . md5( $wpdb->prefix . ':' . $preflight['booking_id'] );
         if ( (int) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, 5)', $lock ) ) !== 1 ) {
             return new WP_Error( 'payment_busy', 'Payment confirmation is busy.' );
         }
@@ -1537,12 +1597,15 @@ final class BH_Marketplace_Settings_3 {
             $checked = self::inspect_verified_checkout_payment( $event );
             if ( is_wp_error( $checked ) ) { return $checked; }
             $record = $wpdb->get_row( $wpdb->prepare(
-                "SELECT id,payment_status,reservation_expires_at FROM `{$bookings}` WHERE id=%d LIMIT 1",
+                "SELECT id,booking_status,payment_status,reservation_expires_at FROM `{$bookings}` WHERE id=%d LIMIT 1",
                 $checked['booking_id']
             ), ARRAY_A );
             if ( ! $record ) { return new WP_Error( 'booking_missing', 'Booking not found.' ); }
             if ( $record['payment_status'] === 'paid' ) {
                 return array( 'booking_id' => $checked['booking_id'], 'already_paid' => true, 'confirmed' => false );
+            }
+            if ( $record['booking_status'] !== 'reserved' ) {
+                return new WP_Error( 'hold_not_active', 'Reservation is no longer active; manual payment review required.' );
             }
             // Expired holds require manual review to avoid overselling.
             if ( empty( $record['reservation_expires_at'] ) || strtotime( $record['reservation_expires_at'] . ' UTC' ) <= time() ) {
@@ -1556,7 +1619,7 @@ final class BH_Marketplace_Settings_3 {
             }
             $updated = $wpdb->query( $wpdb->prepare(
                 "UPDATE `{$bookings}` SET payment_status='paid', stripe_payment_intent_id=%s, updated_at=%s
-                 WHERE id=%d AND payment_status='pending' AND reservation_expires_at > %s",
+                 WHERE id=%d AND booking_status='reserved' AND payment_status='pending' AND reservation_expires_at > %s",
                 $checked['payment_intent_id'], current_time( 'mysql', true ),
                 $checked['booking_id'], current_time( 'mysql', true )
             ) );
