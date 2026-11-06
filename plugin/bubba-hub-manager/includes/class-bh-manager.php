@@ -51,6 +51,7 @@ final class BH_Manager_3 {
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-schema.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-booking-lifecycle.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-booking-consent-contract.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-booking-form7-binding.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-family-db-setup.php';
         BH_Family_DB_Setup_3::register();
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activity-parity.php';
