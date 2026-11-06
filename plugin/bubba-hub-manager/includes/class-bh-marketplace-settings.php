@@ -1442,11 +1442,15 @@ final class BH_Marketplace_Settings_3 {
         if ( is_wp_error( $quote ) ) {
             return '<p role="status">' . esc_html( $quote->get_error_message() ) . '</p>';
         }
+        $stripe_readiness = self::stripe_status();
         $enabled = is_user_logged_in()
-            && defined( 'BH3_ENABLE_UNLINKED_BOOKING_TEST_UI' ) && BH3_ENABLE_UNLINKED_BOOKING_TEST_UI === true
-            && defined( 'BH3_ENABLE_PARENT_TEST_BOOKING' ) && BH3_ENABLE_PARENT_TEST_BOOKING === true
+            && defined( 'BH3_ENABLE_BOOKING_FORM_BINDING' ) && BH3_ENABLE_BOOKING_FORM_BINDING === true
             && defined( 'BH3_ENABLE_STRIPE_TEST_CHECKOUT' ) && BH3_ENABLE_STRIPE_TEST_CHECKOUT === true
-            && defined( 'BH3_ENABLE_BOOKING_RESERVATIONS' ) && BH3_ENABLE_BOOKING_RESERVATIONS === true;
+            && defined( 'BH3_ENABLE_STRIPE_TEST_WEBHOOK' ) && BH3_ENABLE_STRIPE_TEST_WEBHOOK === true
+            && defined( 'BH3_ENABLE_TEST_BOOKING_CONFIRMATION' ) && BH3_ENABLE_TEST_BOOKING_CONFIRMATION === true
+            && defined( 'BH3_ENABLE_BOOKING_RESERVATIONS' ) && BH3_ENABLE_BOOKING_RESERVATIONS === true
+            && $stripe_readiness['mode'] === 'test' && $stripe_readiness['keys_configured']
+            && self::policy()['processing_fees'] === 'platform';
         $id = 'bh3-book-' . wp_unique_id();
         ob_start();
         echo '<section id="' . esc_attr( $id ) . '" class="bh3-parent-booking" aria-label="Class booking">';
@@ -1505,20 +1509,8 @@ final class BH_Marketplace_Settings_3 {
         } elseif ( ! $enabled ) {
             echo '<p role="status">Online checkout remains disabled until booking details are securely linked to the reservation. Booking preview only.</p>';
         } else {
-            echo '<form class="bh3-test-booking-form"><label>Session date <input name="occurrence_date" type="date" required min="' .
-                esc_attr( wp_date( 'Y-m-d' ) ) . '"></label> ';
-            echo '<label>Places <input name="places" type="number" min="1" max="20" value="1" required></label> ';
-            echo '<button type="submit">Continue to Stripe test checkout</button>';
-            echo '<p role="status" aria-live="polite" class="bh3-booking-message">Test mode — no real charges.</p></form>';
-            $endpoint = rest_url( 'bubba-hub/v3/test-booking-checkout' );
-            $nonce = wp_create_nonce( 'wp_rest' );
-            $script = '(function(){const root=document.getElementById(' . wp_json_encode( $id ) .
-                ');if(!root)return;const form=root.querySelector("form"),msg=root.querySelector(".bh3-booking-message"),btn=form.querySelector("button");form.addEventListener("submit",async function(e){e.preventDefault();btn.disabled=true;msg.textContent="Preparing secure test checkout…";try{const response=await fetch(' .
-                wp_json_encode( $endpoint ) . ',{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json","X-WP-Nonce":' .
-                wp_json_encode( $nonce ) . '},body:JSON.stringify({session_id:' . (int) $session_id .
-                ',occurrence_date:form.elements.occurrence_date.value,places:Number(form.elements.places.value)})});const data=await response.json();if(!response.ok||!data.checkout_url)throw new Error("Checkout unavailable. Please try again later.");const target=new URL(data.checkout_url);if(target.protocol!=="https:"||target.hostname!=="checkout.stripe.com")throw new Error("Invalid checkout destination.");window.location.assign(target.href);}catch(error){msg.textContent=error.message;btn.disabled=false;}});})();';
-            wp_add_inline_script( 'wp-api-fetch', $script );
-            wp_enqueue_script( 'wp-api-fetch' );
+            echo '<p role="status">Complete the booking details form above. Once your details and consent have been saved and verified, you will be taken to secure Stripe test checkout. No payment is taken until you confirm payment with Stripe.</p>';
+        }
         }
         echo '</section>';
         return ob_get_clean();
