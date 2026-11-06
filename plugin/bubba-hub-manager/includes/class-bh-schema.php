@@ -121,6 +121,7 @@ final class BH_Schema_3 {
                 commission_pence bigint(20) unsigned NOT NULL,
                 leader_before_fees_pence bigint(20) unsigned NOT NULL,
                 commission_rate_percent decimal(5,2) NOT NULL,
+                booking_status varchar(30) NOT NULL DEFAULT 'reserved',
                 payment_status varchar(30) NOT NULL DEFAULT 'pending',
                 reservation_expires_at datetime NULL,
                 stripe_checkout_session_id varchar(255) NULL,
@@ -132,6 +133,7 @@ final class BH_Schema_3 {
                 UNIQUE KEY booking_submission_id (booking_submission_id),
                 UNIQUE KEY stripe_checkout_session_id (stripe_checkout_session_id),
                 KEY session_occurrence (session_id,occurrence_date),
+                KEY booking_status (booking_status),
                 KEY payment_status (payment_status),
                 KEY organiser_id (organiser_id)
             ) $charset;",
