@@ -1542,6 +1542,7 @@ final class BH_Marketplace_Settings_3 {
         $form_id = absint( get_option( 'bh3_booking_form_id', 7 ) );
         if ( $form_id && shortcode_exists( 'fluentform' ) ) {
             echo '<div class="bh3-booking-details"><h4>Booking details</h4>';
+            echo '<p>Please read our <a href="' . esc_url( home_url( '/legal/bookings/' ) ) . '" target="_blank" rel="noopener">Booking Terms &amp; Conditions</a> before continuing. Your booking is confirmed only after Stripe verifies payment.</p>';
             $previous_session_context = $GLOBALS['bh3_form7_session_id'] ?? null;
             $GLOBALS['bh3_form7_session_id'] = $session_id;
             echo do_shortcode( '[fluentform id="' . $form_id . '"]' );
