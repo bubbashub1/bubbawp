@@ -146,6 +146,37 @@ final class BH_Leader_Bookings_3 {
               }
           }
           ?>
+          <?php
+          // Read-only occurrence inspector. Resolve only from the organiser-scoped,
+          // date-validated calendar results above; never trust query parameters alone.
+          $inspect_session = isset( $_GET['bh_occurrence_session'] ) ? absint( $_GET['bh_occurrence_session'] ) : 0;
+          $inspect_date = isset( $_GET['bh_occurrence_date'] ) && is_scalar( $_GET['bh_occurrence_date'] )
+              ? sanitize_text_field( wp_unslash( $_GET['bh_occurrence_date'] ) ) : '';
+          $inspected = null;
+          if ( $inspect_session && preg_match( '/^20[0-9]{2}-[0-9]{2}-[0-9]{2}$/', $inspect_date ) ) {
+              $candidate = DateTimeImmutable::createFromFormat( '!Y-m-d', $inspect_date, $tz );
+              if ( $candidate && $candidate->format( 'Y-m-d' ) === $inspect_date && $candidate->format( 'Y-m' ) === $first->format( 'Y-m' ) ) {
+                  $candidate_day = (int) $candidate->format( 'j' );
+                  foreach ( $occurrences[$candidate_day] ?? array() as $occurrence ) {
+                      if ( (int) $occurrence['id'] === $inspect_session ) { $inspected = $occurrence; break; }
+                  }
+              }
+          }
+          ?>
+          <?php if ( $inspected ) :
+              $inspect_id = (int) $inspected['id'];
+              $inspect_config = $booking_flags[$inspect_id] ?? array();
+              $inspect_config = is_array( $inspect_config ) ? $inspect_config : array();
+              $inspect_capacity = isset( $inspect_config['capacity'] ) ? absint( $inspect_config['capacity'] ) : 0;
+          ?>
+          <section class="bh-bookings-panel bh-occurrence-inspector" aria-label="Selected session date">
+            <h2><?php echo esc_html( $session_titles[$inspect_id] ?? $inspected['title'] ); ?> — <?php echo esc_html( wp_date( get_option( 'date_format' ), strtotime( $inspect_date . ' 12:00:00' ) ) ); ?></h2>
+            <p><strong>Time:</strong> <?php echo esc_html( substr( (string) $inspected['start_time'], 0, 5 ) . '–' . substr( (string) $inspected['end_time'], 0, 5 ) ); ?></p>
+            <p><strong>Configured capacity:</strong> <?php echo $inspect_capacity ? esc_html( (string) $inspect_capacity ) : 'Not set'; ?></p>
+            <p role="status">This is a schedule preview. Reserved, confirmed and remaining places cannot be calculated until the reservation records and status rules are validated. No booking or payment action is available here.</p>
+            <p><a href="<?php echo esc_url( remove_query_arg( array( 'bh_occurrence_session', 'bh_occurrence_date' ) ) ); ?>">Close session details</a></p>
+          </section>
+          <?php endif; ?>
           <form method="get" class="bh-bookings-filters" role="search" aria-label="Filter sessions">
             <?php if ( $admin_preview ) : ?><input type="hidden" name="bh_preview_organiser" value="<?php echo esc_attr( $organiser ); ?>"><?php endif; ?>
             <label>Search sessions <input type="search" name="session_search" value="<?php echo esc_attr( $search ); ?>" placeholder="Search sessions or listings"></label>
@@ -185,8 +216,9 @@ final class BH_Leader_Bookings_3 {
                      $capacity = isset( $booking_config['capacity'] ) ? absint( $booking_config['capacity'] ) : 0;
                      ?>
                      <div class="bh-calendar-session">
-                       <a href="<?php echo esc_url( add_query_arg( array( 'activity_id'=>(int) $session['activity_id'], 'edit_session'=>$session_id ), home_url( '/leader/timetable/' ) ) ); ?>"><?php echo esc_html( substr( $session['start_time'], 0, 5 ) . ' ' . ( $session_titles[$session_id] ?? $session['title'] ) ); ?></a>
+                       <a href="<?php echo esc_url( add_query_arg( array( 'bh_occurrence_session'=>$session_id, 'bh_occurrence_date'=>$first->modify( '+' . ( $day - 1 ) . ' days' )->format( 'Y-m-d' ) ) ) ); ?>" aria-label="<?php echo esc_attr( 'View session details for ' . $day . ' ' . $first->format( 'F' ) ); ?>"><?php echo esc_html( substr( $session['start_time'], 0, 5 ) . ' ' . ( $session_titles[$session_id] ?? $session['title'] ) ); ?></a>
                        <?php if ( ! empty( $session['term_time_only'] ) ) : ?> · Term<?php endif; ?>
+                       <small><a href="<?php echo esc_url( add_query_arg( array( 'activity_id'=>(int) $session['activity_id'], 'edit_session'=>$session_id ), home_url( '/leader/timetable/' ) ) ); ?>">Edit timetable</a></small>
                        <?php if ( $booking_configured ) : ?>
                          <small class="bh-calendar-capacity"><?php echo $capacity ? esc_html( 'Capacity: ' . $capacity ) : 'Capacity not set'; ?> · Booking setup only</small>
                        <?php endif; ?>
