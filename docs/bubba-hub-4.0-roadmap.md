@@ -1,8 +1,38 @@
-# Bubba Hub 4.0 — Future Development Roadmap
+# Bubba Hub 4.0 — Unified Development Roadmap
 
-Status: **Planned / backlog only**  
+Status: **Unified delivery and future roadmap; statuses require independent verification**  
 Created: 2026-11-05  
 Owner: Bubba Hub South West
+
+## Unified scope and delivery rule (2026-11-06)
+
+**Bubba Hub 4.0 is the single project roadmap.** The former 3.0 migration, parity, booking, family, leader, admin and QA work is now the **4.0 Core / Launch Foundation** workstream, not a second product or abandoned backlog. The previous 4.1–4.7 roadmap identifiers remain stable to preserve saved WordPress tracker statuses; additional inspiration scope is tracked as 4.8.
+
+This is a roadmap consolidation only: retain the `bubbawp` plugin, `bubbatheme`, existing plugin version, database tables, class names, routes, shortcodes, forms, option keys and Git history. Do not rename or migrate data as a side effect. Existing status records in both WP development trackers must be retained until a verified, lossless consolidation.
+
+**4.0 Core / Launch Foundation (formerly 3.0):** dynamic directory and activity pages, organiser/venue/session relationships, calendar and location search, family profiles and planner, leader portal and booking management, consent/payment lifecycle, memberships, support, events parity, communications, security, accessibility, deployment and staging QA. Source presence is not proof of completion. Track every journey as planned → built → staging-tested → deployed.
+
+**Launch gates:** activity discovery → session → booking/enquiry; family profile → saved/planner; leader ownership → listing/timetable → reservation; verified consent/recipient handling; payments and membership access; legacy link/data parity; admin backup/rollback; mobile and accessibility testing. Essential unfinished parity remains a launch requirement, not deferred to enhancements.
+
+### Family inspiration — named features to preserve
+
+These are explicit product requirements, **not yet verified as implemented**. Build with deterministic directory filters, real timetables, manually curated content and existing family preferences; no required AI or paid weather service.
+
+| Feature | Family experience | Data / rules | Priority |
+| --- | --- | --- | --- |
+| **Rainy Day Rescue** | Indoor, covered and weather-friendly nearby activities, plus curated at-home rainy-day ideas | Indoor/weather suitability tag; location, age, opening/session times, budget; no fabricated live weather | Core inspiration |
+| **What's On This Weekend?** | Nearby weekend sessions/events matching ages, budget and location; save to planner | Actual Saturday/Sunday occurrences, availability caveat, free filter | Core inspiration |
+| **Free & Under £5 Finder** | Affordable activities for families | Explicit per-person/per-session pricing and free category; avoid unknown-price claims | Core inspiration |
+| **School Holiday Hub** | Holiday clubs, one-off events and family outings | Verified date ranges, school-holiday region, age and cost | Core inspiration |
+| **What Can We Do Right Now?** | Quick options today/soon | Verified published opening times and session occurrences, not invented real-time availability | Enhancement |
+| **Inspire Me / Surprise Me** | Rule-based discovery and family-friendly suggestions | Age, location, interests, days, accessibility and budget; optional user control | Core inspiration |
+| **Bubba Adventures / Family Trails & Days Out** | Curated trails, themed days out and printable guides | Curated local routes and accessible descriptions | Enhancement |
+| **Family Week and Bubba Brief** | Weekly personalised ideas, planner items, reminders and saved activities | Family preferences, saved/planned/booking signals; opt-in notifications | Enhancement |
+| **Little Explorers Passport / Memories** | Visited places, milestones and optional private memories | Explicit family ownership, privacy and retention | Future |
+| **Family Activity Lists** | Rainy Day Ideas, Weekend Ideas, Places to Try | Family-managed saved lists; discoverability free | Enhancement |
+| **Sibling matching and accessibility** | Ideas suitable for multiple children's ages and needs | Consent-minimised profiles, inclusive accessibility filters | Enhancement |
+
+Discovery and basic suggestions stay available to Free users. Pro can add convenience (advanced lists, brief, planning tools), but must not lock basic local activity discovery behind a paywall. No birthday-party finder in this scope.
 
 ## Product vision and decision principles
 
@@ -35,9 +65,9 @@ Apply this principle to all Bubba Hub development, including 3.0 parity work and
 
 ## Scope and release boundary
 
-Bubba Hub **3.0** remains the WordPress migration, legacy feature parity, security, staging QA, and reliable core Directory, Family Hub, Leader Portal and Booking system. Do not defer critical legacy parity or safety fixes to 4.0 simply because they are unfinished.
+Bubba Hub **4.0 Core / Launch Foundation** includes the existing WordPress migration, legacy feature parity, security, staging QA, and reliable core Directory, Family Hub, Leader Portal and Booking system. Do not defer critical legacy parity or safety fixes to later enhancement phases simply because they are unfinished.
 
-Bubba Hub **4.0** is a separate future-development roadmap for enhancements, automation, time-saving workflows, family experience and sustainable revenue. This document is planning only: no feature here is implemented or approved for immediate deployment by virtue of inclusion.
+Bubba Hub **4.0 enhancement phases** cover automation, time-saving workflows, family inspiration and sustainable revenue. This document is planning only: no feature here is implemented or approved for immediate deployment by virtue of inclusion.
 
 Constraints: prefer existing WordPress infrastructure, no AI or additional paid services at this stage; preserve established data tables and access boundaries; prioritise low admin overhead, mobile usability and privacy.
 
@@ -51,7 +81,8 @@ Constraints: prefer existing WordPress infrastructure, no AI or additional paid 
 | 4.4 | Leader Business Tools | Performance dashboard, leader onboarding checklist, social tools parity review, optional listing boosts, leader articles/FAQs and entitlement rules | 3.0 leader permissions, storefront, memberships |
 | 4.5 | Communications Centre | Delivery history, notification preferences, message templates, newsletter roundups, opt-in and unsubscribe controls, automated operational reminders | 3.0 FluentSMTP, consent and verified recipient handling |
 | 4.6 | Events & Expo Plus | Recurring events, ticketing enhancements, QR check-in, volunteer tools, exhibitors, sponsor packages, raffle/reporting review | 3.0 Events sector templates and shared booking foundation |
-| 4.7 | Platform & Administration | Audit trails, advanced exports, team roles, accessibility/SEN metadata and filters, admin reporting, safe legacy redirect monitoring | 3.0 launch and migration controls |
+| 4.7 | Platform & Administration | Audit trails, advanced exports, team roles, accessibility/SEN metadata and filters, admin reporting, safe legacy redirect monitoring | 4.0 core launch and migration controls |
+| 4.8 | Family Inspiration & Discovery | Rainy Day Rescue, Weekend Finder, Free & Under £5, School Holiday Hub, Inspire Me, Family Trails, Bubba Brief, Little Explorers Passport | Core directory, session dates, family preferences and planner |
 
 ## Legacy feature parity watchlist
 
