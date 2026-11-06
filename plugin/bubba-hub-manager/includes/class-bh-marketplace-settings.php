@@ -1002,6 +1002,7 @@ final class BH_Marketplace_Settings_3 {
             'session_id' => 'session_id', 'occurrence_date' => 'occurrence_date',
             'places' => 'places', 'consent' => 'booking_terms_consent',
             'profile_ids' => 'family_profile_ids', 'share_consent' => 'share_child_details_consent',
+            'parent_name' => 'parent_name', 'parent_email' => 'parent_email',
         );
         $saved = get_option( 'bh3_booking_form_field_map', array() );
         return wp_parse_args( is_array( $saved ) ? $saved : array(), $defaults );
@@ -1011,7 +1012,7 @@ final class BH_Marketplace_Settings_3 {
         $owned = self::inspect_booking_form_submission( $submission_id, $customer_user_id );
         if ( is_wp_error( $owned ) ) { return $owned; }
         $map = self::booking_form_field_map();
-        $required = array( 'session_id', 'occurrence_date', 'places', 'consent' );
+        $required = array( 'session_id', 'occurrence_date', 'places', 'consent', 'parent_name', 'parent_email' );
         if ( ! is_array( $map ) ) {
             return new WP_Error( 'booking_fields_unmapped', 'Booking form field mapping is missing.' );
         }
@@ -1046,6 +1047,15 @@ final class BH_Marketplace_Settings_3 {
             || (int) $places !== absint( $expected_places )
             || (int) $places < 1 || (int) $places > 20 ) {
             return new WP_Error( 'booking_selection_mismatch', 'Booking details do not match the selected class, date and places.' );
+        }
+        $parent_name = $data[ $map['parent_name'] ] ?? '';
+        $parent_email = $data[ $map['parent_email'] ] ?? '';
+        $account = get_userdata( absint( $customer_user_id ) );
+        if ( ! is_string( $parent_name ) || trim( $parent_name ) === ''
+            || ! is_string( $parent_email ) || ! is_email( $parent_email )
+            || ! $account || ! is_email( $account->user_email )
+            || ! hash_equals( strtolower( trim( $account->user_email ) ), strtolower( trim( $parent_email ) ) ) ) {
+            return new WP_Error( 'booking_contact_mismatch', 'Enter your name and use the email address linked to your Bubba Hub account.' );
         }
         // Consent must be an explicit affirmative value, never a non-empty
         // arbitrary string, unchecked checkbox, or inferred default.
