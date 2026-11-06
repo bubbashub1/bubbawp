@@ -88,14 +88,21 @@ final class BH_Family_DB_Setup_3 {
         echo '<div class="wrap"><h1>Bubba Hub · Database Setup</h1><p>New WordPress-native family tables. This does not migrate or restore legacy family records.</p>';
         if (!self::staging()) { echo '<p>Table creation is disabled outside staging.</p></div>';return; }
         if (isset($_GET['bh3_db_result'])) echo '<div class="notice notice-info"><p>'.esc_html($_GET['bh3_db_result']==='created'?'Missing family tables created. Please review the status below.':'Setup did not complete. Review the table status and server logs.').'</p></div>';
-        echo '<table class="widefat striped"><thead><tr><th>Table</th><th>Status</th></tr></thead><tbody>';
+        echo '<table class="widefat striped"><thead><tr><th>Table / field</th><th>Status</th></tr></thead><tbody>';
         $missing=0;
-        foreach (self::names() as $table) {
+        foreach (self::names() as $key=>$table) {
             $exists=self::exists($table);
             if (!$exists) $missing++;
-            echo '<tr><td>'.esc_html($table).'</td><td>'.($exists?'Exists — untouched':'Missing — can create').'</td></tr>';
+            echo '<tr><td>'.esc_html($table).'</td><td>'.($exists?'Exists — existing records preserved':'Missing — can create').'</td></tr>';
+            if ($key === 'profiles' && $exists) {
+                global $wpdb;
+                $columns = $wpdb->get_col("SHOW COLUMNS FROM `{$table}`",0);
+                $has_gender = is_array($columns) && in_array('gender',$columns,true);
+                if (!$has_gender) $missing++;
+                echo '<tr><td>'.esc_html($table.'.gender').'</td><td>'.($has_gender?'Exists':'Missing — add optional attendee gender field').'</td></tr>';
+            }
         }
-        echo '</tbody></table><p><strong>'.esc_html($missing).' missing table(s).</strong> Existing tables will not be modified.</p>';
+        echo '</tbody></table><p><strong>'.esc_html($missing).' schema item(s) need attention.</strong> Existing family records are preserved; only missing tables or the missing gender column will be added.</p>';
         if ($missing) {
             echo '<form method="post" action="'.esc_url(admin_url('admin-post.php')).'">';
             echo '<input type="hidden" name="action" value="bh3_create_family_tables">';
@@ -112,11 +119,22 @@ final class BH_Family_DB_Setup_3 {
         if (!isset($_POST['confirm']) || $_POST['confirm']!=='1') wp_die('Confirm backup first.','',array('response'=>400));
         require_once ABSPATH.'wp-admin/includes/upgrade.php';
         $failed=false;
+        $names = self::names();
         foreach (self::definitions() as $key=>$sql) {
-            $table=self::names()[$key];
+            $table=$names[$key];
             if (self::exists($table)) continue;
             dbDelta($sql);
             if (!self::exists($table)) $failed=true;
+        }
+        // Additive, staging-only compatibility migration. Never rebuild or
+        // overwrite existing family profile rows.
+        $profiles = $names['profiles'];
+        if (self::exists($profiles)) {
+            $columns = $wpdb->get_col("SHOW COLUMNS FROM `{$profiles}`",0);
+            if (is_array($columns) && !in_array('gender',$columns,true)) {
+                $added = $wpdb->query("ALTER TABLE `{$profiles}` ADD COLUMN gender varchar(40) NOT NULL DEFAULT '' AFTER display_name");
+                if ($added === false) $failed=true;
+            }
         }
         wp_safe_redirect(add_query_arg('bh3_db_result',$failed?'error':'created',admin_url('admin.php?page=bh3-family-database')));
         exit;
