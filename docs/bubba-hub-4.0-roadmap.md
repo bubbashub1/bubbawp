@@ -84,6 +84,34 @@ Constraints: prefer existing WordPress infrastructure, no AI or additional paid 
 | 4.7 | Platform & Administration | Audit trails, advanced exports, team roles, accessibility/SEN metadata and filters, admin reporting, safe legacy redirect monitoring | 4.0 core launch and migration controls |
 | 4.8 | Family Inspiration & Discovery | Rainy Day Rescue, Weekend Finder, Free & Under £5, School Holiday Hub, Inspire Me, Family Trails, Bubba Brief, Little Explorers Passport | Core directory, session dates, family preferences and planner |
 
+## PR delivery audit — 2026-11-06
+
+**Source:** recent GitHub pull request states reviewed on 2026-11-06. A merged PR proves code landed in main, **not** that staging or live functionality was tested.
+
+| PR | State at review | Scope | Next gate |
+| --- | --- | --- | --- |
+| #156 | Merged | Booking lifecycle transition and organiser-scoped authorisation helpers | Enforce in actual write endpoints |
+| #157 | Merged | Lifecycle and organiser-isolation PHP smoke tests | Extend to real booking persistence |
+| #158 | Merged | CI runner for booking lifecycle smoke tests | Keep CI passing on subsequent PRs |
+| #159 | Merged | Fluent Form #7 consent field contract | Verify deployed form definition |
+| #160 | Merged | Form #7 trusted booking binding validator | Add authorised integration tests |
+| #161 | Merged | Dormant optional Turnstile server verifier | Configure/test only when needed |
+| #162 | Merged | Read-only authenticated Form #7 booking ownership resolver | Guest token design, consent persistence and hook still missing |
+| #163 | Open draft | Additive booking_status schema declaration and manual staging migration plan | Review legacy records, backup, schema diff and migration approval |
+| #164 | Open draft | One 4.0 roadmap, inspiration and core requirements | CI, review, merge, staging admin verification |
+
+### Immediate development sequence
+
+1. **Merge and validate roadmap PR #164**, without schema or user-data changes; confirm existing saved development statuses still display.
+2. **Review PR #163** independently. Do not assume schema declaration implies an installed column; no automatic SQL and no historical booking status assumptions.
+3. **Consolidate two Developments admin screens** after comparing their option keys and current UI. Preserve `bh_development_tracker_statuses`, `bh3_development_statuses` and `bhs_development_readiness` if present; avoid deleting or silently overwriting saved status data.
+4. **Booking read-only integration first:** leader-scoped booking list/calendar and parent-facing booking state, with tests for permissions and no child details leaked.
+5. **Booking writes only after staging sign-off:** explicit canonical booking authority, capacity/concurrency, trusted Form #7 mapping, guest-token design, versioned consent, booking/payment separation, payment webhook idempotency and notification failure handling.
+6. **Family inspiration data foundation:** add verified indoor/covered suitability, facilities, age and price metadata contracts before surfacing Rainy Day Rescue or weekend recommendations. No invented weather/availability.
+7. **Staging journey tests:** family discovery → timetable → enquiry/booking → planner; leader listing → booking → enrolment; consent, membership and email flows; then controlled deployment.
+
+**No feature is marked QA-passed or deployed solely from PR merge.** Do not run migrations, Stripe writes or send customer emails from roadmap work.
+
 ## Core feature inventory — explicit acceptance checklist
 
 This is the consolidated functional inventory for **4.0 Core**, not an assertion that every item is implemented. Each journey needs evidence from staging before being marked complete.
