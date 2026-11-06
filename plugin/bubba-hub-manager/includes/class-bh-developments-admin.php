@@ -253,6 +253,36 @@ final class BH_Developments_Admin_3 {
         echo '<h3>Family inspiration — captured requirements</h3>';
         echo '<p>These are roadmap requirements, not proof of deployed functionality. Suggestions must use real directory data and deterministic filters without requiring AI or paid services.</p>';
         echo '<ul style="list-style:disc;padding-left:24px"><li><strong>Rainy Day Rescue:</strong> indoor and covered ideas, nearby activities and curated at-home resources.</li><li><strong>What\'s On This Weekend?:</strong> age-, budget- and location-aware weekend sessions.</li><li><strong>Free &amp; Under £5 Finder:</strong> verified affordable activities.</li><li><strong>School Holiday Hub:</strong> date-specific holiday events and clubs.</li><li><strong>Inspire Me / Surprise Me:</strong> rule-based family suggestions.</li><li><strong>Family Trails, Bubba Adventures, Bubba Brief, Family Week, Little Explorers Passport and Memories:</strong> planned family experiences.</li></ul>';
+        if ( 'staging.bubbahub.co.uk' === $site_host ) {
+            global $wpdb;
+            echo '<h2>4.0 SQL audit — physical table inventory</h2>';
+            echo '<p>Read-only staging metadata only. This checks table names and never queries booking, family, payment, or form submission records. A present table does not mean its columns, relationships or data have passed QA.</p>';
+            $sql_contracts = array(
+                'Legacy family' => array( 'bh_children', 'bh_bumps', 'bh_saved_activities', 'bh_planner', 'bh_user_preferences' ),
+                'Legacy booking' => array( 'bh_bookings', 'bh_booking_reservations' ),
+                'Native family' => array( 'bh_family_profiles', 'bh_family_reminders' ),
+                'Native support' => array( 'bh_support_enquiry_status', 'bh_support_enquiry_history' ),
+                'Fluent Forms' => array( 'fluentform_forms', 'fluentform_submissions' ),
+            );
+            $sql_prefix = $wpdb->prefix;
+            echo '<p><strong>Configured WordPress table prefix:</strong> <code>' . esc_html( $sql_prefix ) . '</code>. Legacy standalone names are checked separately from WP-prefixed names; neither is assumed canonical.</p>';
+            echo '<div style="max-width:1250px;overflow-x:auto"><table class="widefat striped"><thead><tr><th>Contract</th><th>Physical table</th><th>Present</th><th>Interpretation</th></tr></thead><tbody>';
+            foreach ( $sql_contracts as $contract => $stems ) {
+                foreach ( $stems as $stem ) {
+                    $candidates = array( $sql_prefix . $stem );
+                    if ( 0 === strpos( $stem, 'bh_' ) ) {
+                        $candidates[] = $stem;
+                    }
+                    foreach ( array_unique( $candidates ) as $candidate ) {
+                        // Candidate identifiers are generated solely from hard-coded stems and the WP prefix.
+                        $present = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $candidate ) ) ) === $candidate;
+                        echo '<tr><td>' . esc_html( $contract ) . '</td><td><code>' . esc_html( $candidate ) . '</code></td><td>' . ( $present ? 'Yes' : 'No' ) . '</td><td>' . ( $present ? 'Schema and owner still need review' : 'Not found; may be unused or differently named' ) . '</td></tr>';
+                    }
+                }
+            }
+            echo '</tbody></table></div>';
+            echo '<p class="description">Events, Expo, membership and communications tables are intentionally not guessed. Their exact table names must be confirmed from installed module definitions before a completeness claim.</p>';
+        }
         echo '<h3>4.0 delivery gates — source audit</h3>';
         echo '<p>These are manual acceptance gates. A merged GitHub PR does not establish staging QA or a deployed feature. This panel does not automatically change saved statuses.</p>';
         $delivery_gates = array(
