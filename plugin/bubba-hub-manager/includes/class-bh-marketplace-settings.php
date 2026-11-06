@@ -1316,8 +1316,18 @@ final class BH_Marketplace_Settings_3 {
         $id = 'bh3-book-' . wp_unique_id();
         ob_start();
         echo '<section id="' . esc_attr( $id ) . '" class="bh3-parent-booking" aria-label="Class booking">';
-        echo '<h3>Book a class</h3><p><strong>Price per place:</strong> £' .
-            esc_html( number_format( $quote['unit_price_pence'] / 100, 2 ) ) . '</p>';
+        echo '<h3>Book a class</h3>';
+        $fee_quote = $quote['parent_paid_fee_quote'] ?? null;
+        if ( is_array( $fee_quote ) && ! empty( $fee_quote['preview_only'] ) ) {
+            echo '<div class="bh3-booking-fee-preview" aria-label="Estimated booking total">';
+            echo '<p><strong>Class price:</strong> £' . esc_html( number_format( $fee_quote['leader_price_pence'] / 100, 2 ) ) . '</p>';
+            echo '<p><strong>Bubba Hub Booking Fee:</strong> £' . esc_html( number_format( $fee_quote['booking_fee_pence'] / 100, 2 ) ) . '</p>';
+            echo '<p><strong>Estimated total:</strong> £' . esc_html( number_format( $fee_quote['parent_total_pence'] / 100, 2 ) ) . '</p>';
+            echo '<p><small>Fee estimate only; final payment pricing is not yet enabled. The class leader receives the advertised class price. No payment is taken here.</small></p>';
+            echo '</div>';
+        } else {
+            echo '<p><strong>Price per place:</strong> £' . esc_html( number_format( $quote['unit_price_pence'] / 100, 2 ) ) . '</p>';
+        }
         if ( is_user_logged_in() ) {
             $profiles = self::booking_profile_choices( get_current_user_id() );
             echo '<div class="bh3-booking-attendees"><h4>Who is attending?</h4>';
