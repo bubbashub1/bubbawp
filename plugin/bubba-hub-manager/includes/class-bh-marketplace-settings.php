@@ -463,6 +463,34 @@ final class BH_Marketplace_Settings_3 {
         return true;
     }
 
+    /**
+     * Read-only eligibility check for a future leader enrolment action.
+     * Recheck all conditions under the booking lock before any actual mutation.
+     */
+    public static function leader_enrolment_eligibility( $booking_id ) {
+        $ownership = self::leader_can_manage_booking( $booking_id );
+        if ( is_wp_error( $ownership ) ) { return $ownership; }
+        if ( ! defined( 'BH3_ENABLE_LEADER_BOOKING_ACTIONS' ) || BH3_ENABLE_LEADER_BOOKING_ACTIONS !== true ) {
+            return new WP_Error( 'leader_actions_disabled', 'Leader booking actions are not enabled.' );
+        }
+        global $wpdb;
+        $table = $wpdb->prefix . 'bh3_bookings';
+        $booking = $wpdb->get_row( $wpdb->prepare(
+            "SELECT booking_status,payment_status,organiser_id,session_id,occurrence_date
+             FROM `{$table}` WHERE id=%d LIMIT 1", absint( $booking_id )
+        ), ARRAY_A );
+        if ( ! $booking || (int) $booking['organiser_id'] !== absint( get_user_meta( get_current_user_id(), 'bh3_organiser_id', true ) ) ) {
+            return new WP_Error( 'leader_booking_unauthorised', 'Booking access denied.' );
+        }
+        if ( $booking['booking_status'] !== 'confirmed' || $booking['payment_status'] !== 'paid' ) {
+            return new WP_Error( 'not_ready_for_enrolment', 'Only confirmed, paid bookings can be enrolled.' );
+        }
+        if ( absint( $booking['session_id'] ) < 1 || ! preg_match( '/^20[0-9]{2}-[0-9]{2}-[0-9]{2}$/', (string) $booking['occurrence_date'] ) ) {
+            return new WP_Error( 'invalid_booking_occurrence', 'Booking occurrence needs review.' );
+        }
+        return true;
+    }
+
     public static function transition_booking_status( $booking_id, $target_status ) {
         if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
             || ! defined( 'BH3_ENABLE_BOOKING_STATUS_TRANSITIONS' ) || BH3_ENABLE_BOOKING_STATUS_TRANSITIONS !== true
