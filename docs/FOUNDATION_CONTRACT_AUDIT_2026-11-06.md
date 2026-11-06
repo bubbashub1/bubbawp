@@ -138,3 +138,43 @@ This section compares identified feature requirements to source-defined storage.
 **Canonical decisions pending:** whether a session is a reusable timetable definition vs an occurrence; whether enquiries become bookings or remain separate records; native WP profile IDs vs legacy child/bump IDs; whether support Form 4 creates a Q&A record; whether event tickets reuse booking infrastructure. Do not create tables until those decisions and existing legacy schemas are verified.
 
 **Development-stage form inventory:** Existing user-reported IDs 4 (Ask Question), 5 (Family Support), 6 (Interested in Joining), 7 (Booking Consent). New possible forms: event visitor registration, exhibitor application, sponsor enquiry; claim/venue submissions may be better native wizard workflows. All are *requirements to assess*, not requests to create duplicate forms.
+
+## Legacy SQL source review — 26 core tables plus separate migrations (2026-11-06)
+**Source:** `bubbaplugin/database/schema.sql` contains 26 `CREATE TABLE IF NOT EXISTS` definitions. These are definitions, **not evidence of deployment**. Additional SQL files below expand the legacy inventory.
+
+### Reuse classification
+- **Listings:** `bh_organisers`, `bh_activities`, `bh_venues`, `bh_sessions`. Reuse content and field intent; new WP `{prefix}activities`, `{prefix}venues`, `{prefix}activity_venues`, `{prefix}sessions` have different relationships. Legacy `bh_venues.activity_id` is not equivalent to a reusable many-to-many venue link.
+- **Identity/family:** `bh_users`, `bh_user_preferences`, `bh_children`, `bh_bumps`, `bh_saved_activities`, `bh_planner`, `bh_hidden_planner_days`. Keep legacy IDs namespaced, map verified WP identity, and reconcile native `bh_family_profiles`/preferences/saved/planner before copying.
+- **Bookings/consent:** `bh_bookings`, `bh_booking_sources`, `bh_booking_slots`, `bh_booking_reservations`, `bh_consent_profiles`, `bh_booking_consent_snapshots`. Strong reuse of provider/slot/reservation/consent semantics; avoid competing booking authorities with `{prefix}bh3_bookings`. Consent profiles include sensitive medical/emergency fields; minimise collection, enforce per-field sharing and retention; do not place these in generic admin registry logs.
+- **Support/leader:** `bh_guidance_topics`, `bh_guidance_offers`, `bh_support_questions`, `bh_support_answers`, `bh_leader_faqs`, `bh_leader_expertise`. Reconcile with native Ask Support tables and Fluent Forms; choose a single question/answer source of truth.
+- **Notifications/newsletters:** `bh_push_subscriptions`, `bh_push_notifications`, `bh_newsletter_subscribers`; `database/migrations/003_newsletter_roundup.sql` extends `bh_user_preferences` with newsletter preferences. Reuse subscriber/consent and delivery history concepts, but add a dedicated email delivery/idempotency ledger only if no existing table covers it.
+
+### Additional legacy SQL files located and inspected
+| File | Defined table(s) | Purpose |
+|---|---|---|
+| `database/migrations/2026-10-18-expo-foundation-staging.sql` | `bh_expo_reservations`, `bh_expo_tickets`, `bh_expo_exhibitors`, `bh_expo_tables` | Expo visitor/ticket/exhibitor/floor tables |
+| `database/expo-booking-qr.sql` | `bh_expo_booking_qrs` | Hashed QR per reservation |
+| `database/expo-family-checkins.sql` | `bh_expo_family_checkins` | Attendance counts per reservation |
+| `database/expo-giveaway-claims.sql` | `bh_expo_giveaway_claims` | Giveaway claim deduplication |
+| `sql/expo-raffle-prizes-2027.sql` | `bh_expo_raffle_prizes` | Raffle prizes |
+| `database/sponsor-receipts.sql` | `wp_bh_sponsor_receipts` | Sponsor receipt ledger; hard-coded `wp_` prefix needs reconciliation |
+| `database/leader-messages.sql` | `bh_leader_messages` | Leader inbox/messages |
+| `sql/volunteer-assignments.sql` | `bh_volunteer_assignments` | Regional volunteer roles |
+
+**Correction to earlier gap matrix:** Expo tickets, QR, exhibitors, check-ins and raffle are **not greenfield candidate tables**; legacy definitions already exist. Assess their schema, event scoping, data and actual staging deployment before proposing `bhs_events` etc. `bh_expo_*` tables are Expo-specific and may need an event-id/key strategy before use for general events.
+
+### Data still needed — proposed minimal additions, not yet approved
+1. **Cross-system identity/link registry:** verified mappings between legacy IDs and WP IDs for organisers, activities, sessions, families, bookings; prefer a deterministic mapping/import audit only if existing IDs/meta cannot provide a robust contract.
+2. **Occurrence and capacity contract:** session recurrence, cancellations, exceptions, capacity/remaining seats, external provider slot key, last sync and provenance. Extend existing `bh_booking_slots` or native session/booking tables rather than inventing parallel slots.
+3. **Booking lifecycle:** reservation vs confirmed enrolment, payment state, reminder delivery, status changes, consent version, source submission and idempotency keys. Extend existing booking schema; add a minimal history ledger only if needed.
+4. **Event generalisation:** event identity, timed entry, tickets per email, QR check-in, exhibitor applications/approval, sponsor payments, raffle/giveaway consent; map onto existing Expo tables before new tables.
+5. **Claims and venue moderation:** requester identity, record ownership, verification proof, approval status, timestamps and reviewer; check existing approval modules and schemas first.
+6. **Communications:** opt-in evidence, template version, recipient, trigger, scheduled/sent status, retries and delivery result; reuse newsletter and push tables, consider new `bhs_message_delivery_log` only if required.
+7. **Developments registry:** no SQL table initially; PHP feature manifest + WP options for status/notes/dependencies, with backward-compatible reads from both current trackers.
+
+### Required pre-migration gates
+- Inspect `SHOW CREATE TABLE`, indexes, counts and foreign keys in **staging read-only**; do not assume SQL file was run.
+- Inventory remaining `database/`, `sql/`, and `migrations/` files, particularly Expo sponsors/raffle/volunteers and import tooling; this is not yet exhaustive.
+- Compare column-by-column with native WP tables and confirm single authoritative write path for every entity.
+- For forms 4–7 and Expo forms, inspect actual JSON definitions, notifications, consent versions, submission IDs and server-side validation.
+- No implicit schema updates, global `bh3` replacement or data migrations under this documentation PR.
