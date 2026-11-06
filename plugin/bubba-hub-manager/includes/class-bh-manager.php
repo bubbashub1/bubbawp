@@ -133,6 +133,7 @@ final class BH_Manager_3 {
         BH_Activity_Detail_3::register();
         add_action( 'admin_menu', array( __CLASS__, 'register_admin_page' ) );
         add_action( 'admin_menu', array( __CLASS__, 'register_workstreams_page' ), 30 );
+        add_action( 'admin_menu', array( __CLASS__, 'register_booking_test_generator_page' ), 30 );
         add_action( 'admin_menu', array( 'BH_Developments_Admin_3', 'register' ), 30 );
         add_action( 'admin_post_bh3_save_development_statuses', array( 'BH_Developments_Admin_3', 'save_statuses' ) );
         add_action( 'admin_post_bh3_save_development_readiness', array( 'BH_Developments_Admin_3', 'save_readiness' ) );
@@ -246,6 +247,19 @@ final class BH_Manager_3 {
     public static function consolidate_leader_admin_menus() {
         remove_menu_page( 'bh3-my-listings' );
         remove_menu_page( 'bh3-leader-dashboard' );
+    }
+
+    /** Register the staging QA screen independently of marketplace feature boot guards. */
+    public static function register_booking_test_generator_page() {
+        if ( ! class_exists( 'BH_Marketplace_Settings_3' ) ) { return; }
+        add_submenu_page(
+            'bubba-hub-3-status',
+            'Booking Test Generator',
+            'Booking Test Generator',
+            'manage_options',
+            'bh3-booking-test-generator',
+            array( 'BH_Marketplace_Settings_3', 'test_booking_page' )
+        );
     }
 
     /** Read-only navigation and implementation inventory; no feature activation. */
