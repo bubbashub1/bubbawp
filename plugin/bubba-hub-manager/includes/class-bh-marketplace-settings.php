@@ -1511,7 +1511,6 @@ final class BH_Marketplace_Settings_3 {
         } else {
             echo '<p role="status">Complete the booking details form above. Once your details and consent have been saved and verified, you will be taken to secure Stripe test checkout. No payment is taken until you confirm payment with Stripe.</p>';
         }
-        }
         echo '</section>';
         return ob_get_clean();
     }
