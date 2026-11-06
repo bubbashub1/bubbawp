@@ -1851,6 +1851,100 @@ final class BH_Marketplace_Settings_3 {
         );
     }
     /**
+     * Send one parent receipt and, only to a verified leader address, a minimal
+     * attendee notification. Per-recipient markers make webhook retries safe.
+     */
+    public static function send_booking_confirmation_notifications( $booking_id ) {
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) {
+            return new WP_Error( 'notifications_disabled', 'Booking notifications are staging-only.' );
+        }
+        global $wpdb;
+        $bookings = $wpdb->prefix . 'bh3_bookings';
+        $booking = $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM `{$bookings}` WHERE id=%d AND payment_status='paid' LIMIT 1", absint( $booking_id )
+        ), ARRAY_A );
+        if ( ! $booking || empty( $booking['customer_user_id'] ) || empty( $booking['booking_submission_id'] ) ) {
+            return new WP_Error( 'notification_booking_missing', 'Paid booking details are unavailable.' );
+        }
+        $parent = get_userdata( (int) $booking['customer_user_id'] );
+        if ( ! $parent || ! is_email( $parent->user_email ) ) {
+            return new WP_Error( 'notification_parent_email_missing', 'Parent account email is unavailable.' );
+        }
+        $activity_table = $wpdb->prefix . 'activities';
+        $activity = $wpdb->get_var( $wpdb->prepare(
+            "SELECT title FROM `{$activity_table}` WHERE id=%d LIMIT 1", (int) $booking['activity_id']
+        ) );
+        $title = is_string( $activity ) && $activity !== '' ? $activity : 'Your Bubba Hub class';
+        $attendees_table = $wpdb->prefix . 'bh3_booking_attendees';
+        $attendees = $wpdb->get_results( $wpdb->prepare(
+            "SELECT attendee_type,attendee_name,gender,year_of_birth FROM `{$attendees_table}` WHERE booking_id=%d ORDER BY attendee_number ASC",
+            (int) $booking['id']
+        ), ARRAY_A );
+        $attendee_lines = array();
+        foreach ( (array) $attendees as $person ) {
+            $line = ( $person['attendee_type'] === 'bump' ? 'Pregnancy profile' : (string) $person['attendee_name'] );
+            if ( $person['attendee_type'] !== 'bump' && ! empty( $person['year_of_birth'] ) ) {
+                $line .= ' (born ' . (int) $person['year_of_birth'] . ')';
+            }
+            $attendee_lines[] = $line;
+        }
+        $reference = (string) $booking['public_reference'];
+        $date = (string) $booking['occurrence_date'];
+        $amount = '£' . number_format( (int) $booking['gross_pence'] / 100, 2 );
+        $parent_subject = 'Booking confirmed – ' . $title;
+        $parent_message = "Your Bubba Hub booking is confirmed.\n\n"
+            . "Class: {$title}\nDate: {$date}\nPlaces: " . (int) $booking['places']
+            . "\nBooking reference: {$reference}\nClass price: {$amount}\n\n"
+            . "You can view your family bookings in My Hub: " . home_url( '/my-hub/' )
+            . "\nBooking terms: " . home_url( '/legal/bookings/' )
+            . "\n\nThank you for booking with Bubba Hub.";
+        $parent_sent = self::send_booking_confirmation_email_once(
+            (int) $booking['id'], 'parent', $parent->user_email, $parent_subject, $parent_message
+        );
+        if ( is_wp_error( $parent_sent ) ) { return $parent_sent; }
+
+        $leader_sent = false;
+        $recipient = self::verified_booking_leader_recipient( (int) $booking['organiser_id'] );
+        if ( ! is_wp_error( $recipient ) ) {
+            $leader_subject = 'New paid booking – ' . $title;
+            $leader_message = "A parent booking has been paid and confirmed.\n\n"
+                . "Class: {$title}\nDate: {$date}\nPlaces: " . (int) $booking['places']
+                . "\nBooking reference: {$reference}\nAttendees:\n- "
+                . implode( "\n- ", $attendee_lines )
+                . "\n\nView your bookings: " . home_url( '/leader/bookings/' )
+                . "\n\nPlease handle attendee information in accordance with Bubba Hub's privacy and safeguarding requirements.";
+            $leader_result = self::send_booking_confirmation_email_once(
+                (int) $booking['id'], 'leader', $recipient['email'], $leader_subject, $leader_message
+            );
+            if ( is_wp_error( $leader_result ) ) { return $leader_result; }
+            $leader_sent = true;
+        }
+        return array( 'parent_sent' => true, 'leader_sent' => $leader_sent,
+            'leader_skipped_unverified' => is_wp_error( $recipient ) );
+    }
+
+    public static function send_booking_confirmation_email_once( $booking_id, $recipient_key, $to, $subject, $message ) {
+        if ( ! in_array( $recipient_key, array( 'parent', 'leader' ), true ) || ! is_email( $to ) ) {
+            return new WP_Error( 'notification_recipient_invalid', 'Booking notification recipient is invalid.' );
+        }
+        global $wpdb;
+        $lock = 'bh3_email_' . md5( $wpdb->prefix . ':' . absint( $booking_id ) . ':' . $recipient_key );
+        if ( (int) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, 5)', $lock ) ) !== 1 ) {
+            return new WP_Error( 'notification_busy', 'Booking confirmation email is being prepared.' );
+        }
+        try {
+            $marker = 'bh3_booking_email_' . absint( $booking_id ) . '_' . $recipient_key . '_sent';
+            if ( get_option( $marker, false ) ) { return true; }
+            $sent = wp_mail( $to, $subject, $message, array( 'Content-Type: text/plain; charset=UTF-8' ) );
+            if ( ! $sent ) { return new WP_Error( 'notification_send_failed', 'Booking confirmation email could not be sent.' ); }
+            update_option( $marker, current_time( 'mysql', true ), false );
+            return true;
+        } finally {
+            $wpdb->get_var( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $lock ) );
+        }
+    }
+
+    /**
      * Explicitly gated staging payment transition. Caller MUST supply an event
      * already authenticated by verify_test_webhook(), not untrusted request JSON.
      * The webhook controller does not invoke this until end-to-end QA is approved.
@@ -1885,7 +1979,10 @@ final class BH_Marketplace_Settings_3 {
             ), ARRAY_A );
             if ( ! $record ) { return new WP_Error( 'booking_missing', 'Booking not found.' ); }
             if ( $record['payment_status'] === 'paid' ) {
-                return array( 'booking_id' => $checked['booking_id'], 'already_paid' => true, 'confirmed' => false );
+                $notifications = self::send_booking_confirmation_notifications( $checked['booking_id'] );
+                if ( is_wp_error( $notifications ) ) { return $notifications; }
+                return array( 'booking_id' => $checked['booking_id'], 'already_paid' => true,
+                    'confirmed' => false, 'notifications' => $notifications );
             }
             if ( $record['booking_status'] !== 'reserved' ) {
                 return new WP_Error( 'hold_not_active', 'Reservation is no longer active; manual payment review required.' );
@@ -1912,7 +2009,10 @@ final class BH_Marketplace_Settings_3 {
             $wpdb->update( $events, array( 'processing_status' => 'processed',
                 'processed_at' => current_time( 'mysql', true ) ),
                 array( 'stripe_event_id' => $event_id, 'processing_status' => 'received' ) );
-            return array( 'booking_id' => $checked['booking_id'], 'already_paid' => false, 'confirmed' => true );
+            $notifications = self::send_booking_confirmation_notifications( $checked['booking_id'] );
+            if ( is_wp_error( $notifications ) ) { return $notifications; }
+            return array( 'booking_id' => $checked['booking_id'], 'already_paid' => false,
+                'confirmed' => true, 'notifications' => $notifications );
         } finally {
             $wpdb->get_var( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $lock ) );
         }
