@@ -9,6 +9,7 @@ final class BH_Marketplace_Settings_3 {
         add_action( 'rest_api_init', array( __CLASS__, 'register_parent_booking_binding_route' ) );
         add_action( 'rest_api_init', array( __CLASS__, 'register_bound_parent_checkout_route' ) );
         add_action( 'admin_post_bh3_save_commission', array( __CLASS__, 'save_commission' ) );
+        add_action( 'admin_post_bh3_leader_enrol_booking', array( __CLASS__, 'handle_leader_enrol_booking' ) );
         add_action( 'admin_post_bh3_verify_stripe', array( __CLASS__, 'verify_stripe' ) );
         add_action( 'admin_post_bh3_stripe_onboard', array( __CLASS__, 'stripe_onboard' ) );
         add_action( 'admin_post_bh3_save_payout_method', array( __CLASS__, 'save_method' ) );
@@ -489,6 +490,50 @@ final class BH_Marketplace_Settings_3 {
             return new WP_Error( 'invalid_booking_occurrence', 'Booking occurrence needs review.' );
         }
         return true;
+    }
+
+    /**
+     * Staging-only enrolment POST handler. The booking-level lock protects
+     * ownership and paid/confirmed status from changing between checks and write.
+     */
+    public static function handle_leader_enrol_booking() {
+        if ( $_SERVER['REQUEST_METHOD'] !== 'POST'
+            || strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
+            || ! defined( 'BH3_ENABLE_LEADER_BOOKING_ACTIONS' ) || BH3_ENABLE_LEADER_BOOKING_ACTIONS !== true
+            || ! is_user_logged_in() ) {
+            wp_die( 'Booking action unavailable.', '', array( 'response'=>403 ) );
+        }
+        $booking_id = isset( $_POST['booking_id'] ) ? absint( wp_unslash( $_POST['booking_id'] ) ) : 0;
+        $nonce = isset( $_POST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ) : '';
+        if ( ! $booking_id || ! wp_verify_nonce( $nonce, 'bh3_enrol_booking_' . $booking_id ) ) {
+            wp_die( 'Booking action denied.', '', array( 'response'=>403 ) );
+        }
+        global $wpdb;
+        $table = $wpdb->prefix . 'bh3_bookings';
+        $lock = 'bh3_status_' . md5( $wpdb->prefix . ':' . $booking_id );
+        if ( (int) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, 5)', $lock ) ) !== 1 ) {
+            wp_die( 'Booking is busy. Please try again.', '', array( 'response'=>409 ) );
+        }
+        try {
+            $allowed = self::leader_enrolment_eligibility( $booking_id );
+            if ( is_wp_error( $allowed ) ) {
+                wp_die( esc_html( $allowed->get_error_message() ), '', array( 'response'=>403 ) );
+            }
+            $changed = $wpdb->update(
+                $table,
+                array( 'booking_status'=>'enrolled', 'updated_at'=>current_time( 'mysql', true ) ),
+                array( 'id'=>$booking_id, 'organiser_id'=>absint( get_user_meta( get_current_user_id(), 'bh3_organiser_id', true ) ), 'booking_status'=>'confirmed', 'payment_status'=>'paid' ),
+                array( '%s', '%s' ),
+                array( '%d', '%d', '%s', '%s' )
+            );
+            if ( $changed !== 1 ) {
+                wp_die( 'Booking changed. Please refresh and try again.', '', array( 'response'=>409 ) );
+            }
+        } finally {
+            $wpdb->get_var( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $lock ) );
+        }
+        wp_safe_redirect( home_url( '/leader/bookings/?bh_booking_updated=enrolled' ) );
+        exit;
     }
 
     public static function transition_booking_status( $booking_id, $target_status ) {
