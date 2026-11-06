@@ -46,3 +46,76 @@ User approved **`bhs`** as the stable naming prefix for **new Bubba Hub developm
 - **Do not rename** existing `bh_*`, `bh3_*`, WordPress-prefixed tables, hooks, option keys, shortcodes, admin slugs, form IDs or external endpoints as part of the naming decision.
 - Provide compatibility aliases/adapters where public identifiers change. For database renames, require verified staging schema and data, a migration and rollback plan, and explicit approval before executing.
 - Audit the `bh3` references and produce an old → new mapping before implementation. Naming approval is **not** approval to execute database migrations.
+
+## Second pass — source-level integration inventory (2026-11-06)
+This is a **targeted source/code-search inventory**, not an exhaustive recursive repository scan or staging verification. GitHub code search returns bounded matches; additional files may exist.
+
+### Naming decision: BHS
+- **New** identifiers should use `bhs` / `bhs_` consistently, without a version number.
+- Preserve existing `bh_`, `bh3_`, `BH3_*`, `BH_*_3`, shortcodes, WP option/meta keys and admin-post actions until compatibility is tested.
+- Audit usages before aliases/renames; do **not** globally search-and-replace. Existing `bh3_organiser_id`, `bh3_booking_form_id`, `bh3_session_booking_config`, `bh3_development_statuses` and `bh3_bookings` are active data contracts.
+- New WP table names must be assembled from `$wpdb->prefix` plus a documented `bhs_*` suffix, after checking for existing tables and avoiding `wp_bhs_*` vs standalone `bh_*` collisions.
+
+### Confirmed shortcode registrations (selected modules)
+| Area | Shortcodes | Source |
+|---|---|---|
+| Directory/activity | `bubbahub_directory`, `bubbahub_directory_preview`, `bubbahub_activity`, `bh_admin_activity_wizard` | directory, preview, activity-detail, manager |
+| Leader | `bh_leader_dashboard`, `bh_leader_bookings`, `bh_leader_booking_dashboard`, `bh_leader_support`, `bh_leader_account`, `bh_leader_statistics`, `bh_leader_venues`, `bh_leader_business` | Leader modules |
+| Marketplace | `bh_leader_payout_settings`, `bh_parent_booking`, `bh_booking_readiness`, `bh_leader_email_verification`, `bh_leader_account_setup` | marketplace settings |
+| Family | `bubbahub_family_hub`, `bubbahub_family_add_profile`, `bubbahub_family_profile`, `bubbahub_family_profiles`, `bubbahub_family_favourites`, `bubbahub_save_activity`, `bubbahub_family_settings`, `bubbahub_family_schema_audit` | Families modules |
+| Support | `bh_ask_question`, `bh_support_hub`, `bh_support_articles`, `bh_support_resources`, `bh_website_help`, `bh_leader_ask_inbox`, `bh_leader_ask_support` | Support and Ask Support modules |
+| Membership | `bh_membership_registration` | membership registration |
+| Theme | `bh_compare_activities`, `bh_header_search` | bubbatheme/functions.php |
+
+Some are staging-only, feature-flagged, or fallback registrations; presence in source does **not** establish availability on a particular page.
+
+### Confirmed write/action handlers (selected)
+- Activities/venues/sessions: `admin_post_bh3_update_activity`, `admin_post_bh3_change_activity_status`, `admin_post_bh3_save_venue`, `admin_post_bh3_attach_venue`, `admin_post_bh3_detach_venue`, `admin_post_bh3_save_session`, `admin_post_bh3_delete_session`.
+- Leader/booking: `admin_post_bh3_leader_account_save`, `admin_post_bh3_save_commission`, `admin_post_bh3_verify_stripe`, `admin_post_bh3_stripe_onboard`, `admin_post_bh3_save_payout_method`, `admin_post_bh3_admin_link_leader`, `admin_post_bh3_request_leader_email_verification`, `admin_post_bh3_confirm_leader_email_verification`.
+- Family: `admin_post_bh3_native_family_profile`, `admin_post_bh3_native_family_update`, `admin_post_bh3_native_family_delete`, `admin_post_bh3_family_reminder_save`, `admin_post_bh3_family_reminder_delete`.
+- Support: `admin_post_bh3_support_install_schema`, `admin_post_bh3_save_ask_support`.
+- Developments: `admin_post_bh3_save_development_statuses`; another tracker saves by direct admin form POST.
+**Important:** Retain existing handler names during initial BHS adoption; forms may post directly to them.
+
+### Source-confirmed tables and dependencies
+| Contract | Source-defined storage | Integration concern |
+|---|---|---|
+| WP listings | `{prefix}organisers`, `{prefix}activities`, `{prefix}venues`, `{prefix}activity_venues`, `{prefix}sessions`, `{prefix}session_listing_links` | Reconcile legacy `bh_*` IDs, schema and relationships |
+| WP bookings | `{prefix}bh3_bookings`, `{prefix}bh3_booking_attendees`, `{prefix}bh3_booking_consents`, `{prefix}bh3_stripe_events` | Canonical booking/payment records not yet approved |
+| Native family | `{prefix}bh_family_profiles`, `{prefix}bh_family_reminders` | Distinct from legacy `bh_children`/`bh_bumps`; map profiles before booking consent |
+| Support workflow | `{prefix}fluentform_submissions`, `{prefix}bh_support_enquiry_status`, `{prefix}bh_support_enquiry_history` | Support statuses reference Fluent Forms entry ID + form ID, without duplicating answer text |
+| Identity | WP user metadata `bh3_organiser_id`; legacy `bh_legacy_user_id` bridge; legacy `bh_users` | Never assume WP user ID equals legacy user ID |
+
+### Forms and third-party integrations
+- Booking marketplace code reads `{prefix}fluentform_submissions`, defaults `bh3_booking_form_id` to **7**, and uses `bh3_booking_form_field_map` to bind submissions. Form 7's actual field keys and hooks still need verification from staging.
+- Support inbox uses configured `bh_support_fluent_form_ids` and separate workflow tables; verify form 4/5 configuration and admin access.
+- Marketplace registers staging-only REST routes for test webhook, parent booking binding and bound checkout. Stripe test account, webhook verification, idempotency, payout and permission review remain release gates.
+- `docs/FAMILY_ACCOUNT_LINKING.md` documents the legacy MU bridge `bh_wp_resolve_legacy_identity()` and `bh_legacy_user_id` metadata; it explicitly warns against automatic email-only linking. FluentAuth does not automatically create legacy PHP sessions.
+- Simple Membership registration is a separate shortcode. Verify tier/role mapping and payment state independently.
+- Theme search and comparison are registered in `bubbatheme`; the plugin remains responsible for protected data operations.
+
+### High-priority safety finding
+`modules/Families/class-bh-family-native-profiles.php` hooks `maybe_add_gender_column` on `admin_init` and, on staging for an administrator, directly executes `ALTER TABLE {prefix}bh_family_profiles ADD COLUMN gender ...` if missing. **This is an implicit schema mutation on admin page load**, unlike the explicitly confirmed schema installers. Before merging a unified admin screen, move this to an explicit, backed-up, versioned staging migration with a dry-run preview and audit trail. Do not trigger it as part of a read-only inventory.
+
+### Proposed canonical relationship contract (requires staging validation)
+```
+WP user --verified link--> organiser
+organiser 1--N activities
+activities N--N venues (activity_venues)
+activities N--N sessions (session_listing_links) [verify actual semantics]
+session + occurrence_date 1--N booking
+booking 1--N attendees
+booking 1--N consent records / snapshots
+WP user 1--N native family profiles (child/bump)
+booking attendee 0..1 --> family profile
+Fluent Forms submission (form_id + entry_id) --> booking/enquiry/support workflow
+WP user --verified legacy bridge--> legacy bh_users --> bh_children/bh_bumps
+```
+Use explicit ID namespaces in registry records: `wp_user_id`, `legacy_user_id`, `organiser_id`, `activity_id`, `session_id`, `booking_id`, `form_id`, `submission_id`. A shared numeric value does not prove identity across namespaces.
+
+### Next checks
+1. Read-only staging schema comparison and form 4–7 JSON export, including actual field names, notifications and hook configuration.
+2. Verify `session_listing_links` cardinality, occurrence uniqueness, and booking-to-Fluent-Forms idempotency.
+3. Inventory all remaining files/routes/actions; current table is selected source evidence, not exhaustive.
+4. Consolidate two admin tracker screens without losing `bh_development_tracker_statuses` or `bh3_development_statuses`.
+5. Write BHS compatibility adapter tests before changing existing persistent keys.
