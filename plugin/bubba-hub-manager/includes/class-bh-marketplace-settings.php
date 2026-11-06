@@ -5,6 +5,7 @@ final class BH_Marketplace_Settings_3 {
     public static function register() {
         if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) { return; }
         add_action( 'admin_menu', array( __CLASS__, 'menu' ) );
+        add_action( 'admin_post_bh3_create_test_booking', array( __CLASS__, 'create_test_booking' ) );
         add_action( 'rest_api_init', array( __CLASS__, 'register_test_webhook_route' ) );
         add_action( 'rest_api_init', array( __CLASS__, 'register_parent_booking_binding_route' ) );
         add_action( 'rest_api_init', array( __CLASS__, 'register_bound_parent_checkout_route' ) );
@@ -1850,7 +1851,60 @@ final class BH_Marketplace_Settings_3 {
     }
     public static function menu() {
         add_submenu_page( 'bubba-hub-3-status', 'Marketplace Commission', 'Marketplace Commission', 'manage_options', 'bh3-marketplace', array( __CLASS__, 'admin_form' ) );
+        add_submenu_page( 'bubba-hub-3-status', 'Booking Test Generator', 'Booking Test Generator', 'manage_options', 'bh3-booking-test-generator', array( __CLASS__, 'test_booking_page' ) );
     }
+    /**
+     * Staging-only administrator QA: uses the normal reservation path, not a
+     * direct INSERT, to preserve capacity, occurrence and price safeguards.
+     * No test payment is fabricated and no customer details are collected.
+     */
+    public static function test_booking_page() {
+        if ( ! current_user_can( 'manage_options' ) ) { wp_die( 'Forbidden', '', array( 'response'=>403 ) ); }
+        echo '<div class="wrap"><h1>Booking test generator</h1>';
+        echo '<p>Staging QA only. Creates one unpaid 35-minute reservation through the normal capacity-checked reservation service. The current administrator account is used as the required customer reference; no new account or customer/child details are created. No payment is taken or marked paid.</p>';
+        if ( ! defined( 'BH3_ENABLE_BOOKING_RESERVATIONS' ) || BH3_ENABLE_BOOKING_RESERVATIONS !== true ) {
+            echo '<div class="notice notice-warning"><p>Reservations are disabled. Enable BH3_ENABLE_BOOKING_RESERVATIONS in staging wp-config.php to use this tool.</p></div>';
+        }
+        if ( isset( $_GET['bh3_test_booking_id'] ) ) {
+            echo '<div class="notice notice-success"><p>Test reservation created: #' . esc_html( (string) absint( $_GET['bh3_test_booking_id'] ) ) . '. View it in the matching leader calendar session date.</p></div>';
+        }
+        if ( isset( $_GET['bh3_test_booking_error'] ) ) {
+            echo '<div class="notice notice-error"><p>Reservation could not be created: ' . esc_html( sanitize_key( wp_unslash( $_GET['bh3_test_booking_error'] ) ) ) . '</p></div>';
+        }
+        echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+        wp_nonce_field( 'bh3_create_test_booking' );
+        echo '<input type="hidden" name="action" value="bh3_create_test_booking">';
+        echo '<p><label>Session ID <input type="number" name="session_id" min="1" required value="2"></label></p>';
+        echo '<p><label>Occurrence date <input type="date" name="occurrence_date" required value="2026-11-16"></label></p>';
+        echo '<p><label>Places <input type="number" name="places" min="1" max="10" required value="1"></label></p>';
+        submit_button( 'Create unpaid test reservation' );
+        echo '</form><p><strong>Important:</strong> This generator does not create paid or confirmed bookings. Enrolment testing needs a separately verified test payment flow.</p></div>';
+    }
+
+    public static function create_test_booking() {
+        if ( ! current_user_can( 'manage_options' )
+            || strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
+            || ! defined( 'BH3_ENABLE_BOOKING_RESERVATIONS' ) || BH3_ENABLE_BOOKING_RESERVATIONS !== true
+            || ( $_SERVER['REQUEST_METHOD'] ?? '' ) !== 'POST' ) {
+            wp_die( 'Test booking generator unavailable.', '', array( 'response'=>403 ) );
+        }
+        check_admin_referer( 'bh3_create_test_booking' );
+        $session_id = isset( $_POST['session_id'] ) ? absint( wp_unslash( $_POST['session_id'] ) ) : 0;
+        $places = isset( $_POST['places'] ) ? absint( wp_unslash( $_POST['places'] ) ) : 0;
+        $date = isset( $_POST['occurrence_date'] ) ? sanitize_text_field( wp_unslash( $_POST['occurrence_date'] ) ) : '';
+        if ( ! $session_id || $places < 1 || $places > 10 ) {
+            wp_die( 'Invalid test reservation inputs.', '', array( 'response'=>400 ) );
+        }
+        $result = self::reserve_occurrence( $session_id, $date, $places, get_current_user_id() );
+        $url = admin_url( 'admin.php?page=bh3-booking-test-generator' );
+        if ( is_wp_error( $result ) ) {
+            wp_safe_redirect( add_query_arg( 'bh3_test_booking_error', sanitize_key( $result->get_error_code() ), $url ) );
+        } else {
+            wp_safe_redirect( add_query_arg( 'bh3_test_booking_id', absint( $result['booking_id'] ), $url ) );
+        }
+        exit;
+    }
+
     public static function admin_form() {
         if ( ! current_user_can( 'manage_options' ) ) { wp_die( 'Forbidden', '', array( 'response' => 403 ) ); }
         echo '<div class="wrap"><h1>Marketplace commission</h1><p>Default 3%. No live charges or payouts are enabled.</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
