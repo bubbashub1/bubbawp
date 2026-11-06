@@ -105,6 +105,39 @@ This is the consolidated functional inventory for **4.0 Core**, not an assertion
 
 **Naming:** new identifiers use `bhs` where applicable; do not rename existing `bh_`, `bh3_`, shortcode, class, or table identifiers as part of roadmap consolidation.
 
+## Final scope-completeness register — avoid later feature surprises
+
+The following are **explicit acceptance requirements or deferred enhancements**, not commitments to build all of them before launch. Where functionality already exists, verify and reuse it; do not create competing modules.
+
+| Requirement | Scope / acceptance test | Target |
+| --- | --- | --- |
+| Family onboarding | A new user can set location, interests, preferred days and optional child/bump profiles; skip nonessential questions | Core |
+| Facilities and accessibility | Structured, searchable buggy access, toilets, changing, feeding, parking and sensory/access needs; unknown values shown as unknown | Core data contract; filters staged |
+| Multi-child matching | Show activities fitting one or more selected children with clear age suitability and no public disclosure of child data | Enhancement |
+| Cancellation and reschedule alerts | Leaders can cancel an occurrence, affected bookers get appropriate transactional notices and an audit trail; no false confirmed bookings | Core safety |
+| Waiting list | Opt-in queue, capacity-safe offer/expiry and explicit parent confirmation | Enhancement |
+| Leader leave and holiday exceptions | Skip or pause recurring sessions without deleting history or modifying unrelated dates | Core timetable |
+| Listing corrections | Families can flag stale time, price, venue or closed activities for moderation; no public auto-edits | Core data quality |
+| Recently viewed | Private, opt-in/local-only history with clear control to clear it | Enhancement |
+| Collections and sharing | Save custom activity lists; sharing requires deliberate action and never exposes private family profiles | Enhancement |
+| Seasonal campaigns | Curated half-term, summer, Halloween, Christmas and rainy-day collections with verified dates | Enhancement |
+| Notification controls | Separate essential booking notices from optional reminders and marketing; unsubscribe and consent records respected | Core |
+| Leader onboarding and verification | Claim/verify email, organisation, listings, payout preferences and consent to terms; clear progress steps | Core |
+| Admin operational overview | Pending claims, failed notifications, booking exceptions, stale listings and audit trails without exposing unnecessary family data | Core |
+| Retention and safeguarding | Document retention/deletion/export, moderator access, consent withdrawal, child data minimisation and private communications | Essential |
+| Failure and recovery journeys | Clear empty states, broken-link handling, duplicate booking protection, email failure retry, backups and rollback | Essential |
+| Data provenance | Store last independently verified listing evidence/date, owner and update source; flag unconfirmed rather than guessing | Core |
+| Analytics and success criteria | Track search-to-booking and leader time saved using privacy-aware aggregate reporting; no new paid analytics requirement | Enhancement |
+
+### Scope freeze discipline
+
+- **Core / Essential:** required for safe, reliable launch, subject to existing implementation and staged QA.
+- **Enhancement:** explicitly recorded but not a launch blocker unless a safety dependency makes it essential.
+- **Future:** revisit only after core journeys are reliable.
+- Do not add new phases for individual ideas. Add them under an existing sector with a measurable acceptance criterion and dependency.
+- After this inventory, new suggestions should normally replace or simplify an existing feature, not expand the launch scope. Exceptions: demonstrated legal, safeguarding, security, accessibility or data-integrity gaps.
+- Any future addition must pass: *Does it save time, make family life easier, or help people connect?*
+
 ## Legacy feature parity watchlist
 
 Explicitly compare the old `bubbaplugin` implementations before designing replacements:
