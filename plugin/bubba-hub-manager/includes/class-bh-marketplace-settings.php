@@ -2292,6 +2292,41 @@ final class BH_Marketplace_Settings_3 {
         echo '<div class="wrap"><h1>Marketplace commission</h1><p>Booking fee preview only. No live charges or payouts are enabled.</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
         wp_nonce_field( 'bh3_save_commission' );
         echo '<input type="hidden" name="action" value="bh3_save_commission"><label>Commission (%) <input type="number" name="rate" required min="0" max="100" step="0.01" value="' . esc_attr( number_format( self::rate(), 2, '.', '' ) ) . '"></label>';
+        echo '<h2>Staging checkout readiness</h2>';
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) === 'staging.bubbahub.co.uk' ) {
+            $readiness_flags = array(
+                'Reservations' => 'BH3_ENABLE_BOOKING_RESERVATIONS',
+                'Form binding' => 'BH3_ENABLE_BOOKING_FORM_BINDING',
+                'Stripe test checkout' => 'BH3_ENABLE_STRIPE_TEST_CHECKOUT',
+                'Stripe test webhook' => 'BH3_ENABLE_STRIPE_TEST_WEBHOOK',
+                'Test confirmation emails' => 'BH3_ENABLE_TEST_BOOKING_CONFIRMATION',
+            );
+            echo '<table class="widefat striped" style="max-width:680px"><thead><tr><th>Requirement</th><th>Status</th></tr></thead><tbody>';
+            foreach ( $readiness_flags as $label => $constant_name ) {
+                $ready = defined( $constant_name ) && constant( $constant_name ) === true;
+                echo '<tr><td>' . esc_html( $label ) . '</td><td>' . esc_html( $ready ? 'Enabled' : 'Disabled' ) . '</td></tr>';
+            }
+            $stripe_readiness = self::stripe_status();
+            $readiness_items = array(
+                'Stripe test mode' => $stripe_readiness['mode'] === 'test',
+                'Stripe test API keys' => ! empty( $stripe_readiness['keys_configured'] ),
+                'Webhook signing secret' => defined( 'BH3_STRIPE_TEST_WEBHOOK_SECRET' )
+                    && is_string( constant( 'BH3_STRIPE_TEST_WEBHOOK_SECRET' ) )
+                    && constant( 'BH3_STRIPE_TEST_WEBHOOK_SECRET' ) !== '',
+                'Processing fees paid by Bubba Hub' => self::policy()['processing_fees'] === 'platform',
+                'Fluent Forms booking form exists' => (bool) $GLOBALS['wpdb']->get_var( $GLOBALS['wpdb']->prepare(
+                    "SELECT id FROM `{$GLOBALS['wpdb']->prefix}fluentform_forms` WHERE id=%d LIMIT 1",
+                    absint( get_option( 'bh3_booking_form_id', 8 ) )
+                ) ),
+            );
+            foreach ( $readiness_items as $label => $ready ) {
+                echo '<tr><td>' . esc_html( $label ) . '</td><td>' . esc_html( $ready ? 'Ready' : 'Needs setup' ) . '</td></tr>';
+            }
+            echo '</tbody></table>';
+            echo '<p class="description">Read-only staging checks. No keys or signing secrets are displayed, and no test payment is created.</p>';
+        } else {
+            echo '<p>Checkout diagnostics are available on staging only.</p>';
+        }
         echo '<h2>Parent booking form</h2>';
         $booking_form_id = absint( get_option( 'bh3_booking_form_id', 8 ) );
         echo '<p><label for="bh3-booking-form-id">Fluent Forms booking form ID</label><br><input id="bh3-booking-form-id" type="number" name="booking_form_id" min="1" max="999999" step="1" required value="' . esc_attr( $booking_form_id ) . '"></p>';
@@ -2308,7 +2343,7 @@ final class BH_Marketplace_Settings_3 {
                 . ' = parent total £' . esc_html( number_format( $example['parent_total_pence'] / 100, 2 ) )
                 . '; leader receives £5.00.</p>';
         }
-        echo '<p><em>Illustrative processing assumption: ' . esc_html( $fee_settings['processing_percent'] ) . '% + ' . esc_html( (string) $fee_settings['processing_fixed_pence'] ) . 'p. Actual Stripe pricing depends on card and payment method; confirm your account rates before activation. Existing Stripe checkout is not yet compatible with this pricing model and remains disabled.</em></p>';
+        echo '<p><em>Illustrative processing assumption: ' . esc_html( $fee_settings['processing_percent'] ) . '% + ' . esc_html( (string) $fee_settings['processing_fixed_pence'] ) . 'p. Actual Stripe pricing depends on card and payment method; confirm your account rates before activation. Stripe test checkout remains gated by the staging readiness checks below; live payments are disabled.</em></p>';
         $policy = self::policy();
         echo '<p><strong>Parent-facing disclosure:</strong> Class price + one Bubba Hub Booking Fee = total payable. The leader receives the full class price. Stripe charges the platform under destination charges; the booking fee is intended to cover estimated processing costs and Bubba Hub commission.</p>';
         $choices = array(
