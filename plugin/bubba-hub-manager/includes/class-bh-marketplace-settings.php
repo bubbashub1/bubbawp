@@ -1851,7 +1851,7 @@ final class BH_Marketplace_Settings_3 {
     }
     public static function menu() {
         add_submenu_page( 'bubba-hub-3-status', 'Marketplace Commission', 'Marketplace Commission', 'manage_options', 'bh3-marketplace', array( __CLASS__, 'admin_form' ) );
-        add_submenu_page( 'bubba-hub-3-status', 'Booking Test Generator', 'Booking Test Generator', 'manage_options', 'bh3-booking-test-generator', array( __CLASS__, 'test_booking_page' ) );
+        // Booking QA menu is registered by BH_Manager_3 after the parent menu.
     }
     /**
      * Staging-only administrator QA: uses the normal reservation path, not a
@@ -1859,6 +1859,7 @@ final class BH_Marketplace_Settings_3 {
      * No test payment is fabricated and no customer details are collected.
      */
     public static function test_booking_page() {
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) { wp_die( 'Staging only.', '', array( 'response'=>403 ) ); }
         if ( ! current_user_can( 'manage_options' ) ) { wp_die( 'Forbidden', '', array( 'response'=>403 ) ); }
         echo '<div class="wrap"><h1>Booking test generator</h1>';
         echo '<p>Staging QA only. Creates one unpaid 35-minute reservation through the normal capacity-checked reservation service. The current administrator account is used as the required customer reference; no new account or customer/child details are created. No payment is taken or marked paid.</p>';
