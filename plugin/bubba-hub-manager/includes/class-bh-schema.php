@@ -133,6 +133,7 @@ final class BH_Schema_3 {
                 UNIQUE KEY booking_submission_id (booking_submission_id),
                 UNIQUE KEY stripe_checkout_session_id (stripe_checkout_session_id),
                 KEY session_occurrence (session_id,occurrence_date),
+                KEY booking_status (booking_status),
                 KEY payment_status (payment_status),
                 KEY organiser_id (organiser_id)
             ) $charset;",
