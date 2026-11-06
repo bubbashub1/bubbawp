@@ -904,6 +904,13 @@ final class BH_Marketplace_Settings_3 {
             $return_data['message'] = 'Your details were received, but you must be signed in to continue to secure checkout.';
             return $return_data;
         }
+        $submitted_session_id = absint( $form_data['session_id'] ?? 0 );
+        if ( ! self::verify_booking_form_context_token(
+            $form_data['booking_context_token'] ?? '', $submitted_session_id, get_current_user_id()
+        ) ) {
+            $return_data['message'] = 'This booking form has expired or does not match the selected class. Please refresh the class page and try again.';
+            return $return_data;
+        }
         $request = new WP_REST_Request( 'POST', '/bubba-hub/v3/parent-bound-test-checkout' );
         $request->set_param( 'submission_id', absint( $submission_id ) );
         $request->set_param( 'session_id', absint( $form_data['session_id'] ?? 0 ) );
@@ -943,11 +950,40 @@ final class BH_Marketplace_Settings_3 {
         return $data;
     }
 
+    public static function create_booking_form_context_token( $session_id, $user_id, $expires = 0 ) {
+        $session_id = absint( $session_id );
+        $user_id = absint( $user_id );
+        $expires = $expires ? absint( $expires ) : time() + 2 * HOUR_IN_SECONDS;
+        if ( ! $session_id || ! $user_id || $expires <= time() || $expires > time() + 2 * HOUR_IN_SECONDS ) { return ''; }
+        $payload = $session_id . '|' . $user_id . '|' . $expires;
+        $signature = hash_hmac( 'sha256', $payload, wp_salt( 'auth' ) );
+        return $payload . '|' . $signature;
+    }
+
+    public static function verify_booking_form_context_token( $token, $session_id, $user_id ) {
+        if ( ! is_string( $token ) || ! preg_match( '/^([1-9][0-9]*)\\|([1-9][0-9]*)\\|([1-9][0-9]*)\\|([a-f0-9]{64})$/', $token, $match ) ) {
+            return false;
+        }
+        $payload = $match[1] . '|' . $match[2] . '|' . $match[3];
+        $expected = hash_hmac( 'sha256', $payload, wp_salt( 'auth' ) );
+        return (int) $match[1] === absint( $session_id )
+            && (int) $match[2] === absint( $user_id )
+            && (int) $match[3] >= time()
+            && (int) $match[3] <= time() + 2 * HOUR_IN_SECONDS
+            && hash_equals( $expected, $match[4] );
+    }
+
     public static function filter_form7_hidden_field( $data, $form ) {
         if ( absint( $form->id ?? 0 ) !== absint( get_option( 'bh3_booking_form_id', 7 ) )
-            || ( $data['attributes']['name'] ?? '' ) !== 'session_id'
-            || empty( $GLOBALS['bh3_form7_session_id'] ) ) { return $data; }
-        $data['attributes']['value'] = (string) absint( $GLOBALS['bh3_form7_session_id'] );
+            || empty( $GLOBALS['bh3_form7_session_id'] ) || ! is_user_logged_in() ) { return $data; }
+        $field_name = $data['attributes']['name'] ?? '';
+        if ( $field_name === 'session_id' ) {
+            $data['attributes']['value'] = (string) absint( $GLOBALS['bh3_form7_session_id'] );
+        } elseif ( $field_name === 'booking_context_token' ) {
+            $data['attributes']['value'] = self::create_booking_form_context_token(
+                $GLOBALS['bh3_form7_session_id'], get_current_user_id()
+            );
+        }
         return $data;
     }
 
