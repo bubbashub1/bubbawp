@@ -219,7 +219,8 @@ final class BH_Developments_Admin_3 {
             foreach ( $blueprint[$sector_key] as $field_label => $field_value ) {
                 echo '<dt>' . esc_html( $field_label ) . '</dt><dd>' . esc_html( $field_value ) . '</dd>';
             }
-            echo '</dl></details>';
+            $contract_url = 'https://github.com/bubbashub1/bubbawp/blob/main/docs/data-foundation/' . strtoupper( $sector_key ) . '_FIELD_MAP.md';
+            echo '</dl><p style="margin:0 15px 15px"><a href="' . esc_url( $contract_url ) . '" target="_blank" rel="noopener noreferrer">View field-by-field contract</a></p></details>';
         }
         echo '<h2>Sector readiness — SQL, forms, shortcodes, pages and delivery</h2>';
         echo '<p>Manually maintained planning statuses. These are not deployment or test results. Existing 3.0 tracker statuses and 4.0 phase statuses are preserved separately.</p>';
@@ -239,17 +240,38 @@ final class BH_Developments_Admin_3 {
             'blocked' => 'Blocked',
         );
         $readiness_dimensions = array( 'sql' => 'SQL', 'forms' => 'Forms', 'shortcodes' => 'Shortcodes', 'pages' => 'Pages', 'code' => 'Code', 'testing' => 'Testing', 'deployment' => 'Deployment' );
+        // Counts reflect saved manual statuses only; repository drafts do not imply staging verification.
+        $summary = array_fill_keys( array_keys( $readiness_labels ), 0 );
+        foreach ( self::readiness_areas() as $sector_key => $sector_name ) {
+            foreach ( $readiness_dimensions as $dimension_key => $dimension_label ) {
+                $status = isset( $readiness[$sector_key][$dimension_key] ) && isset( $readiness_labels[$readiness[$sector_key][$dimension_key]] )
+                    ? $readiness[$sector_key][$dimension_key] : 'not_assessed';
+                $summary[$status]++;
+            }
+        }
+        $total_checks = count( self::readiness_areas() ) * count( $readiness_dimensions );
+        $assessed_checks = $total_checks - $summary['not_assessed'];
+        echo '<div class="bh3-readiness-summary" aria-label="Saved readiness status summary">';
+        echo '<div><strong>' . esc_html( $assessed_checks ) . ' / ' . esc_html( $total_checks ) . '</strong><span>Assessed fields</span></div>';
+        echo '<div><strong>' . esc_html( $summary['draft'] ) . '</strong><span>Draft prepared</span></div>';
+        echo '<div><strong>' . esc_html( $summary['staging_validated'] ) . '</strong><span>Staging validated</span></div>';
+        echo '<div><strong>' . esc_html( $summary['tested'] ) . '</strong><span>Tested</span></div>';
+        echo '<div><strong>' . esc_html( $summary['deployed'] ) . '</strong><span>Deployed</span></div>';
+        echo '<div><strong>' . esc_html( $summary['blocked'] ) . '</strong><span>Blocked</span></div>';
+        echo '</div>';
+        echo '<p class="description">Summary counts saved selections, not independent deployment or test evidence. The SQL mapping documents are drafted, but staging schema validation remains pending.</p>';
+        echo '<style>.bh3-readiness-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px;max-width:1250px;margin:16px 0}.bh3-readiness-summary>div{background:#fff;border:1px solid #dcdcde;border-radius:6px;padding:12px}.bh3-readiness-summary strong{display:block;font-size:21px;line-height:1.5}.bh3-readiness-summary span{color:#50575e}.bh3-readiness-table select{max-width:100%;min-width:120px}@media(max-width:782px){.bh3-readiness-table,.bh3-readiness-table tbody,.bh3-readiness-table tr,.bh3-readiness-table td,.bh3-readiness-table th{display:block;width:100%;box-sizing:border-box}.bh3-readiness-table thead{display:none}.bh3-readiness-table tr{margin:12px 0;background:#fff;border:1px solid #dcdcde;border-radius:6px;padding:8px}.bh3-readiness-table th[scope=row]{font-size:15px;border:0}.bh3-readiness-table td{display:flex;align-items:center;justify-content:space-between;gap:10px;border:0;padding:7px 8px}.bh3-readiness-table td:before{content:attr(data-label);font-weight:600}.bh3-readiness-table select{width:min(55%,230px);min-width:0}}</style>';
         echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
         echo '<input type="hidden" name="action" value="bh3_save_development_readiness">';
         wp_nonce_field( 'bh3_save_development_readiness' );
-        echo '<div style="overflow-x:auto"><table class="widefat striped"><thead><tr><th>Sector</th>';
+        echo '<div style="max-width:100%;overflow-x:auto"><table class="widefat striped bh3-readiness-table"><thead><tr><th>Sector</th>';
         foreach ( $readiness_dimensions as $label ) { echo '<th>' . esc_html( $label ) . '</th>'; }
         echo '</tr></thead><tbody>';
         foreach ( self::readiness_areas() as $key => $sector ) {
             echo '<tr><th scope="row">' . esc_html( $sector ) . '</th>';
             foreach ( $readiness_dimensions as $dimension => $label ) {
                 $current = isset( $readiness[$key][$dimension] ) && isset( $readiness_labels[$readiness[$key][$dimension]] ) ? $readiness[$key][$dimension] : 'not_assessed';
-                echo '<td><label class="screen-reader-text" for="bhs-' . esc_attr( $key . '-' . $dimension ) . '">' . esc_html( $sector . ' ' . $label ) . '</label><select id="bhs-' . esc_attr( $key . '-' . $dimension ) . '" name="bhs_readiness[' . esc_attr( $key ) . '][' . esc_attr( $dimension ) . ']">';
+                echo '<td data-label="' . esc_attr( $label ) . '"><label class="screen-reader-text" for="bhs-' . esc_attr( $key . '-' . $dimension ) . '">' . esc_html( $sector . ' ' . $label ) . '</label><select id="bhs-' . esc_attr( $key . '-' . $dimension ) . '" name="bhs_readiness[' . esc_attr( $key ) . '][' . esc_attr( $dimension ) . ']">';
                 foreach ( $readiness_labels as $value => $option_label ) {
                     echo '<option value="' . esc_attr( $value ) . '"' . selected( $current, $value, false ) . '>' . esc_html( $option_label ) . '</option>';
                 }
@@ -278,7 +300,7 @@ final class BH_Developments_Admin_3 {
             echo '</select></td></tr>';
         }
         echo '</tbody></table><p><button type="submit" class="button button-secondary">Save 3.0 feature statuses</button></p></form></details>';
-        echo '<p><a href="' . esc_url( 'https://github.com/bubbashub1/bubbawp/blob/audit/foundation-contracts-2026-11-06/docs/data-foundation/DEVELOPMENT_BLUEPRINT.md' ) . '" target="_blank" rel="noopener noreferrer">Read the full development blueprint (SQL, forms, shortcodes and page hierarchy)</a></p>';
+        echo '<p><a href="' . esc_url( 'https://github.com/bubbashub1/bubbawp/blob/main/docs/data-foundation/DEVELOPMENT_BLUEPRINT.md' ) . '" target="_blank" rel="noopener noreferrer">Read the full development blueprint (SQL, forms, shortcodes and page hierarchy)</a></p>';
         echo '<h2>SQL &amp; forms development register</h2>';
         echo '<p>Source-code assessment only. Reuse and extension proposals are not approved migrations. Confirm staging schemas and Fluent Forms exports before creating or changing tables.</p>';
         $data_register = array(
