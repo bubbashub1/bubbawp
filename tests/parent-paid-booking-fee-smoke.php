@@ -63,6 +63,25 @@ check_fee( BH_Marketplace_Settings_3::verify_booking_form_context_token( $contex
 check_fee( ! BH_Marketplace_Settings_3::verify_booking_form_context_token( $context_token, 43, 7 ), 'signed Form 7 context cannot be reused for another session' );
 check_fee( ! BH_Marketplace_Settings_3::verify_booking_form_context_token( $context_token, 42, 8 ), 'signed Form 7 context cannot be reused by another parent' );
 
+$form_exports = json_decode( file_get_contents( dirname( __DIR__ ) . '/docs/imports/fluent-form-7-booking-update.json' ), true );
+$form7 = null;
+foreach ( (array) $form_exports as $candidate ) {
+    if ( isset( $candidate['id'] ) && (int) $candidate['id'] === 7 ) { $form7 = $candidate; break; }
+}
+check_fee( is_array( $form7 ), 'updated Form 7 import exists' );
+$form_fields = array();
+foreach ( (array) ( $form7['form_fields']['fields'] ?? array() ) as $field ) {
+    $name = $field['attributes']['name'] ?? '';
+    if ( $name !== '' ) { $form_fields[$name] = $field; }
+}
+foreach ( array( 'parent_name', 'parent_email', 'session_id', 'booking_context_token', 'places', 'occurrence_date', 'family_profile_ids', 'share_child_details_consent', 'booking_terms_consent' ) as $required_name ) {
+    check_fee( isset( $form_fields[$required_name] ), 'Form 7 contains required field ' . $required_name );
+}
+check_fee( ( $form_fields['places']['attributes']['min'] ?? '' ) === '1'
+    && ( $form_fields['places']['attributes']['max'] ?? '' ) === '20', 'Form 7 places input has safe bounds' );
+$family_setup = file_get_contents( dirname( __DIR__ ) . '/plugin/bubba-hub-manager/includes/class-bh-family-db-setup.php' );
+check_fee( strpos( $family_setup, 'ADD COLUMN gender varchar(40)' ) !== false, 'staging family profile migration adds the gender field without replacing rows' );
+
 $source = file_get_contents( dirname( __DIR__ ) . '/plugin/bubba-hub-manager/includes/class-bh-marketplace-settings.php' );
 check_fee( strpos( $source, "'unit_amount' => $parent_total" ) !== false, 'Stripe Checkout charges parent total including fee' );
 check_fee( strpos( $source, "'application_fee_amount' => $customer_fee" ) !== false, 'platform application fee receives the single parent fee' );
