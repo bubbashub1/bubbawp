@@ -705,6 +705,19 @@ final class BH_Marketplace_Settings_3 {
         if ( $gross < 50 || $commission < 0 || $commission > $gross || $booking['currency'] !== 'gbp' ) {
             return new WP_Error( 'invalid_payment_amount', 'Invalid booking amount.' );
         }
+        // The parent pays one combined booking fee. The destination transfer
+        // remains exactly the advertised class price; the platform application
+        // fee is the parent-facing fee, from which Stripe processing is paid.
+        $parent_fee_quote = self::parent_paid_fee_preview( $gross );
+        if ( is_wp_error( $parent_fee_quote )
+            || (int) $parent_fee_quote['parent_total_pence'] <= $gross
+            || (int) $parent_fee_quote['booking_fee_pence'] !== (int) $parent_fee_quote['parent_total_pence'] - $gross
+            || (int) $parent_fee_quote['platform_component_pence'] !== $commission ) {
+            return new WP_Error( 'booking_fee_quote_invalid', 'Combined booking fee could not be calculated safely.' );
+        }
+        $parent_total = (int) $parent_fee_quote['parent_total_pence'];
+        $customer_fee = (int) $parent_fee_quote['booking_fee_pence'];
+        $estimated_processing = (int) $parent_fee_quote['estimated_processing_pence'];
         $expiry = strtotime( $booking['reservation_expires_at'] . ' UTC' );
         // Reserve a minimum 30-minute Checkout window; leave a safety margin.
         if ( $expiry < time() + 30 * MINUTE_IN_SECONDS ) {
@@ -740,17 +753,29 @@ final class BH_Marketplace_Settings_3 {
                 'line_items' => array( array(
                     'price_data' => array(
                         'currency' => 'gbp',
-                        'unit_amount' => $gross,
+                        'unit_amount' => $parent_total,
                         'product_data' => array( 'name' => 'Bubba Hub class booking ' . $booking['public_reference'] ),
                     ),
                     'quantity' => 1,
                 ) ),
                 'payment_intent_data' => array(
-                    'application_fee_amount' => $commission,
+                    'application_fee_amount' => $customer_fee,
                     'transfer_data' => array( 'destination' => $account ),
-                    'metadata' => array( 'bh3_booking_id' => (string) $booking['id'] ),
+                    'metadata' => array(
+                        'bh3_booking_id' => (string) $booking['id'],
+                        'bh3_class_price_pence' => (string) $gross,
+                        'bh3_booking_fee_pence' => (string) $customer_fee,
+                        'bh3_platform_component_pence' => (string) $commission,
+                        'bh3_estimated_processing_pence' => (string) $estimated_processing,
+                    ),
                 ),
-                'metadata' => array( 'bh3_booking_id' => (string) $booking['id'] ),
+                'metadata' => array(
+                    'bh3_booking_id' => (string) $booking['id'],
+                    'bh3_class_price_pence' => (string) $gross,
+                    'bh3_booking_fee_pence' => (string) $customer_fee,
+                    'bh3_platform_component_pence' => (string) $commission,
+                    'bh3_estimated_processing_pence' => (string) $estimated_processing,
+                ),
             );
             $response = wp_remote_post( 'https://api.stripe.com/v1/checkout/sessions', array(
                 'timeout' => 25,
@@ -767,7 +792,7 @@ final class BH_Marketplace_Settings_3 {
                 || ! isset( $data['url'] ) || ! wp_http_validate_url( $data['url'] )
                 || strtolower( (string) wp_parse_url( $data['url'], PHP_URL_HOST ) ) !== 'checkout.stripe.com'
                 || ( $data['livemode'] ?? null ) !== false
-                || (int) ( $data['amount_total'] ?? -1 ) !== $gross
+                || (int) ( $data['amount_total'] ?? -1 ) !== $parent_total
                 || ( $data['currency'] ?? '' ) !== 'gbp' ) {
                 return new WP_Error( 'stripe_checkout_rejected', 'Stripe did not return a valid test Checkout session.' );
             }
@@ -1704,14 +1729,23 @@ final class BH_Marketplace_Settings_3 {
         global $wpdb;
         $table = $wpdb->prefix . 'bh3_bookings';
         $booking = $wpdb->get_row( $wpdb->prepare(
-            "SELECT id,public_reference,payment_status,currency,gross_pence,stripe_checkout_session_id,stripe_payment_intent_id
+            "SELECT id,public_reference,payment_status,currency,gross_pence,commission_pence,stripe_checkout_session_id,stripe_payment_intent_id
              FROM `{$table}` WHERE stripe_checkout_session_id=%s LIMIT 1", $checkout_id
         ), ARRAY_A );
+        $metadata = isset( $object['metadata'] ) && is_array( $object['metadata'] ) ? $object['metadata'] : array();
+        $class_price = isset( $metadata['bh3_class_price_pence'] ) ? absint( $metadata['bh3_class_price_pence'] ) : 0;
+        $booking_fee = isset( $metadata['bh3_booking_fee_pence'] ) ? absint( $metadata['bh3_booking_fee_pence'] ) : 0;
+        $platform_component = isset( $metadata['bh3_platform_component_pence'] ) ? absint( $metadata['bh3_platform_component_pence'] ) : -1;
+        $processing_estimate = isset( $metadata['bh3_estimated_processing_pence'] ) ? absint( $metadata['bh3_estimated_processing_pence'] ) : -1;
+        $parent_total = isset( $object['amount_total'] ) && is_numeric( $object['amount_total'] ) ? (int) $object['amount_total'] : -1;
         if ( ! $booking || ! in_array( $booking['payment_status'], array( 'pending', 'paid' ), true )
             || strtolower( (string) ( $object['currency'] ?? '' ) ) !== $booking['currency']
-            || ! isset( $object['amount_total'] ) || ! is_numeric( $object['amount_total'] )
-            || (int) $object['amount_total'] !== (int) $booking['gross_pence'] ) {
-            return new WP_Error( 'payment_mismatch', 'Checkout does not match a pending booking and amount.' );
+            || $class_price !== (int) $booking['gross_pence']
+            || $platform_component !== (int) $booking['commission_pence']
+            || $booking_fee < 1 || $processing_estimate < 0
+            || $booking_fee !== $platform_component + $processing_estimate
+            || $parent_total !== $class_price + $booking_fee ) {
+            return new WP_Error( 'payment_mismatch', 'Checkout does not match the saved class price and combined booking fee.' );
         }
         $intent = $object['payment_intent'] ?? '';
         if ( ! is_string( $intent ) || ! preg_match( '/^pi_[A-Za-z0-9]+$/', $intent )
