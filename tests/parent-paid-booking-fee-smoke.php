@@ -88,6 +88,7 @@ $family_setup = file_get_contents( dirname( __DIR__ ) . '/plugin/bubba-hub-manag
 check_fee( strpos( $family_setup, 'ADD COLUMN gender varchar(40)' ) !== false, 'staging family profile migration adds the gender field without replacing rows' );
 
 $source = file_get_contents( dirname( __DIR__ ) . '/plugin/bubba-hub-manager/includes/class-bh-marketplace-settings.php' );
+check_fee( strpos( $source, "get_option( 'bh3_booking_form_id', 8 )" ) !== false, 'checkout defaults to imported Form 8' );
 check_fee( strpos( $source, "'unit_amount' => $parent_total" ) !== false, 'Stripe Checkout charges parent total including fee' );
 check_fee( strpos( $source, "'application_fee_amount' => $customer_fee" ) !== false, 'platform application fee receives the single parent fee' );
 check_fee( strpos( $source, '!== $parent_total' ) !== false, 'Stripe Checkout response is checked against parent total' );
