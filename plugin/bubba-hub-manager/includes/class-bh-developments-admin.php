@@ -307,10 +307,19 @@ final class BH_Developments_Admin_3 {
             $booking_checks[] = array( 'Session timetable table', BH_Family_DB_Setup_3::exists( $session_table ), 'Confirm a scheduled occurrence can be selected on the activity page.' );
             $booking_checks[] = array( 'Leader bookings page', (bool) get_page_by_path( 'leader/bookings' ), 'Check the booking dashboard shortcode and leader permissions.' );
             $booking_checks[] = array( 'Leader payment page', (bool) get_page_by_path( 'leader/payment' ), 'Confirm payout settings are available to the correct leader.' );
-            $booking_checks[] = array( 'Booking terms page', (bool) get_page_by_path( 'legal/bookings' ), 'Verify the consent form links to the correct terms.' );
-            $consent_form_available = false;
+            $booking_checks[] = array( 'Booking terms page (planned: /legal/bookings/)', (bool) get_page_by_path( 'legal/bookings', OBJECT, 'page' ), 'Create and legally review this page before accepting live bookings; then link it from the consent form.' );
             $consent_form_available = shortcode_exists( 'fluentform' );
-            $booking_checks[] = array( 'Fluent Forms integration', $consent_form_available, 'Verify form #7 exists, is published and maps consent responses correctly; this check does not inspect its submissions.' );
+            $booking_checks[] = array( 'Fluent Forms integration', $consent_form_available, 'Shortcode registered; this does not prove a booking form is configured.' );
+            $form_table = $wpdb->prefix . 'fluentform_forms';
+            $form_seven_status = 'Not detected';
+            // Only inspect the form definition's publication status, never submissions or responses.
+            if ( $consent_form_available && BH_Family_DB_Setup_3::exists( $form_table ) ) {
+                $form_status = $wpdb->get_var( $wpdb->prepare( "SELECT status FROM `{$form_table}` WHERE id = %d LIMIT 1", 7 ) );
+                if ( null !== $form_status ) {
+                    $form_seven_status = 'published' === $form_status ? 'Yes' : 'Draft/inactive';
+                }
+            }
+            $booking_checks[] = array( 'Booking consent form #7 (published)', 'Yes' === $form_seven_status, 'Form status: ' . $form_seven_status . '. Confirm consent field names, version, booking link and submission mapping manually.' );
             echo '<div style="max-width:1250px;overflow-x:auto"><table class="widefat striped"><thead><tr><th>Checkpoint</th><th>Detected</th><th>Manual verification</th></tr></thead><tbody>';
             foreach ( $booking_checks as $check ) {
                 echo '<tr><th scope="row">' . esc_html( $check[0] ) . '</th><td>' . ( $check[1] ? 'Yes' : 'Not detected' ) . '</td><td>' . esc_html( $check[2] ) . '</td></tr>';
