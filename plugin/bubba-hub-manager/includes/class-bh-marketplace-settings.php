@@ -1850,7 +1850,7 @@ final class BH_Marketplace_Settings_3 {
         return array( 'state' => 'pending', 'label' => 'Onboarding incomplete or under review' );
     }
     public static function menu() {
-        add_submenu_page( 'bubba-hub-3-status', 'Marketplace Commission', 'Marketplace Commission', 'manage_options', 'bh3-marketplace', array( __CLASS__, 'admin_form' ) );
+        // Registered by BH_Manager_3 after the parent admin menu.
         // Booking QA menu is registered by BH_Manager_3 after the parent menu.
     }
     /**
