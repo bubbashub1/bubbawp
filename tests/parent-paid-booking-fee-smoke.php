@@ -8,6 +8,7 @@
  */
 define( 'ABSPATH', __DIR__ );
 class WP_Error {}
+function absint( $value ) { return abs( (int) $value ); }
 function is_wp_error( $value ) { return $value instanceof WP_Error; }
 function get_option( $key, $default = false ) {
     return $key === 'bh3_commission_percent' ? '2.50' : $default;
