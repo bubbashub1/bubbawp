@@ -7,6 +7,8 @@
  * Stripe integration contract. They do not contact Stripe or WordPress.
  */
 define( 'ABSPATH', __DIR__ );
+class WP_Error {}
+function is_wp_error( $value ) { return $value instanceof WP_Error; }
 function get_option( $key, $default = false ) {
     return $key === 'bh3_commission_percent' ? '2.50' : $default;
 }
@@ -28,7 +30,7 @@ check_fee( $quote['parent_total_pence'] - $quote['booking_fee_pence'] === 500, '
 $source = file_get_contents( dirname( __DIR__ ) . '/plugin/bubba-hub-manager/includes/class-bh-marketplace-settings.php' );
 check_fee( strpos( $source, "'unit_amount' => $parent_total" ) !== false, 'Stripe Checkout charges parent total including fee' );
 check_fee( strpos( $source, "'application_fee_amount' => $customer_fee" ) !== false, 'platform application fee receives the single parent fee' );
-check_fee( strpos( $source, "!== $parent_total" ) !== false, 'Stripe Checkout response is checked against parent total' );
+check_fee( strpos( $source, '!== $parent_total' ) !== false, 'Stripe Checkout response is checked against parent total' );
 check_fee( strpos( $source, 'Checkout does not match the saved class price and combined booking fee.' ) !== false, 'webhook reconciliation validates fee metadata and total' );
 
-echo "Parent-paid booking fee smoke tests passed.\\n";
+echo "Parent-paid booking fee smoke tests passed.\n";
