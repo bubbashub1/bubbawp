@@ -16,6 +16,8 @@ final class BH_Marketplace_Settings_3 {
         add_action( 'admin_post_bh3_save_payout_method', array( __CLASS__, 'save_method' ) );
         add_shortcode( 'bh_leader_payout_settings', array( __CLASS__, 'leader_form' ) );
         add_shortcode( 'bh_parent_booking', array( __CLASS__, 'parent_booking_widget' ) );
+        add_filter( 'fluentform/rendering_field_data_input_checkbox', array( __CLASS__, 'filter_form7_checkbox_field' ), 10, 2 );
+        add_filter( 'fluentform/rendering_field_data_input_hidden', array( __CLASS__, 'filter_form7_hidden_field' ), 10, 2 );
         add_shortcode( 'bh_booking_readiness', array( __CLASS__, 'booking_readiness_preview' ) );
         add_shortcode( 'bh_leader_email_verification', array( __CLASS__, 'leader_email_verification_widget' ) );
         add_shortcode( 'bh_leader_account_setup', array( __CLASS__, 'leader_account_setup_widget' ) );
@@ -846,6 +848,42 @@ final class BH_Marketplace_Settings_3 {
      * values. Admin must map actual Fluent Forms input names first.
      * No payment or capacity reservation is authorised by this check alone.
      */
+    /**
+     * Populate Form 7 attendee choices from the currently signed-in parent's
+     * own family profiles. Fluent Forms validates and stores the checkbox array.
+     */
+    public static function filter_form7_checkbox_field( $data, $form ) {
+        if ( absint( $form->id ?? 0 ) !== absint( get_option( 'bh3_booking_form_id', 7 ) )
+            || ( $data['attributes']['name'] ?? '' ) !== 'family_profile_ids'
+            || ! is_user_logged_in() ) {
+            return $data;
+        }
+        $options = array();
+        foreach ( self::booking_profile_choices( get_current_user_id() ) as $profile ) {
+            $type = ( $profile['profile_type'] ?? '' ) === 'bump' ? 'Pregnancy' : 'Child';
+            $options[] = array(
+                'label' => sanitize_text_field( $profile['display_name'] . ' (' . $type . ')' ),
+                'value' => (string) absint( $profile['id'] ),
+                'calc_value' => '',
+            );
+        }
+        if ( isset( $data['settings'] ) && is_array( $data['settings'] ) ) {
+            $data['settings']['advanced_options'] = $options;
+        }
+        return $data;
+    }
+
+    /** Set the hidden session ID from the server-rendered booking widget context. */
+    public static function filter_form7_hidden_field( $data, $form ) {
+        if ( absint( $form->id ?? 0 ) !== absint( get_option( 'bh3_booking_form_id', 7 ) )
+            || ( $data['attributes']['name'] ?? '' ) !== 'session_id'
+            || empty( $GLOBALS['bh3_form7_session_id'] ) ) {
+            return $data;
+        }
+        $data['attributes']['value'] = (string) absint( $GLOBALS['bh3_form7_session_id'] );
+        return $data;
+    }
+
     public static function booking_form_field_map() {
         // Matches the published Bubba Hub Fluent Form #7 export. Administrators
         // can override these names if the form is customised.
@@ -1388,8 +1426,15 @@ final class BH_Marketplace_Settings_3 {
         $form_id = absint( get_option( 'bh3_booking_form_id', 7 ) );
         if ( $form_id && shortcode_exists( 'fluentform' ) ) {
             echo '<div class="bh3-booking-details"><h4>Booking details</h4>';
+            $previous_session_context = $GLOBALS['bh3_form7_session_id'] ?? null;
+            $GLOBALS['bh3_form7_session_id'] = $session_id;
             echo do_shortcode( '[fluentform id="' . $form_id . '"]' );
-            echo '<p class="bh3-booking-note">Submitting your details does not reserve a place or confirm a booking.</p></div>';
+            if ( $previous_session_context === null ) {
+                unset( $GLOBALS['bh3_form7_session_id'] );
+            } else {
+                $GLOBALS['bh3_form7_session_id'] = $previous_session_context;
+            }
+            echo '<p class="bh3-booking-note">Submitting your details does not reserve a place or confirm a booking. Your place is only held when the secure checkout journey confirms the reservation.</p></div>';
         } else {
             echo '<p role="status">Booking details form is not available.</p>';
         }
