@@ -254,7 +254,8 @@ final class BH_Marketplace_Settings_3 {
         ) );
     }
     /**
-     * Read availability for one occurrence. Pending reservations count only until expiry.
+     * Read conservative availability for one occurrence. Reserved places remain held
+     * until a verified expiry transition changes booking_status to expired.
      * This is a read-only preview; reservation creation must use an atomic DB lock.
      */
     public static function occurrence_availability( $session_id, $occurrence_date ) {
@@ -275,12 +276,23 @@ final class BH_Marketplace_Settings_3 {
         if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ) !== $table ) {
             return new WP_Error( 'bookings_table_missing', 'Booking storage has not been installed.' );
         }
-        $used = (int) $wpdb->get_var( $wpdb->prepare(
-            "SELECT COALESCE(SUM(places),0) FROM `{$table}`
-             WHERE session_id=%d AND occurrence_date=%s
-             AND (payment_status='paid' OR (payment_status='pending' AND reservation_expires_at > UTC_TIMESTAMP()))",
+        // Booking status is authoritative for occupancy, not payment status.
+        // Fail closed for unknown statuses or invalid place quantities; do not
+        // accidentally reopen capacity while expiry/cancellation is unverified.
+        $totals = $wpdb->get_row( $wpdb->prepare(
+            "SELECT
+                COALESCE(SUM(CASE WHEN booking_status IN ('reserved','confirmed','enrolled') THEN places ELSE 0 END),0) AS occupied,
+                COALESCE(SUM(CASE WHEN booking_status NOT IN ('reserved','confirmed','enrolled','cancelled','canceled','expired','rejected') OR booking_status IS NULL OR places < 1 THEN 1 ELSE 0 END),0) AS invalid_rows
+             FROM `{$table}` WHERE session_id=%d AND occurrence_date=%s",
             $session_id, $occurrence_date
-        ) );
+        ), ARRAY_A );
+        if ( ! is_array( $totals ) || $wpdb->last_error || (int) $totals['invalid_rows'] > 0 ) {
+            return new WP_Error( 'booking_status_review_required', 'Booking records need review before availability can be calculated.' );
+        }
+        $used = (int) $totals['occupied'];
+        if ( $used > $capacity ) {
+            return new WP_Error( 'over_capacity', 'Recorded bookings exceed session capacity.' );
+        }
         return array(
             'session_id' => $session_id, 'occurrence_date' => $occurrence_date,
             'capacity' => $capacity, 'reserved_or_paid' => $used,
@@ -398,6 +410,7 @@ final class BH_Marketplace_Settings_3 {
                 'commission_pence' => $quote['commission_pence'],
                 'leader_before_fees_pence' => $quote['leader_before_fees_pence'],
                 'commission_rate_percent' => $quote['commission_rate_percent'],
+                'booking_status' => 'reserved',
                 'payment_status' => 'pending',
                 'reservation_expires_at' => $expires,
                 'created_at' => $now,
