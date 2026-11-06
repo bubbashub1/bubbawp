@@ -284,6 +284,20 @@ final class BH_Developments_Admin_3 {
                 }
             }
         }
+        if ( 'staging.bubbahub.co.uk' === $site_host && class_exists( 'BH_Schema_3' ) ) {
+            echo '<h2>Booking structure — columns and indexes</h2>';
+            echo '<p>Read-only check of booking table structures. Missing indexes may affect performance or uniqueness; this report does not change them or validate foreign-key relationships.</p>';
+            $booking_audit = BH_Schema_3::booking_structure_audit();
+            echo '<div style="max-width:1250px;overflow-x:auto"><table class="widefat striped"><thead><tr><th>Booking table</th><th>Present</th><th>Missing columns</th><th>Missing indexes</th></tr></thead><tbody>';
+            foreach ( $booking_audit as $booking_item ) {
+                echo '<tr><th scope="row"><code>' . esc_html( $booking_item['table'] ) . '</code></th>';
+                echo '<td>' . ( $booking_item['exists'] ? 'Yes' : 'No' ) . '</td>';
+                echo '<td>' . esc_html( implode( ', ', $booking_item['missing_columns'] ) ?: 'None' ) . '</td>';
+                echo '<td>' . esc_html( implode( ', ', $booking_item['missing_indexes'] ) ?: 'None' ) . '</td></tr>';
+            }
+            echo '</tbody></table></div>';
+            echo '<p class="description">This structural check does not inspect bookings, attendees, consent submissions, payment events or user data. Functional and permissions testing is still required.</p>';
+        }
         echo '<h2>Sector implementation blueprints</h2>';
         echo '<p>Read-only planning references. Shortcodes and pages listed here may require verification on staging; nothing below creates a table, form or page.</p>';
         echo '<style>.bh3-sector-details{max-width:1250px;margin:8px 0;background:#fff;border:1px solid #dcdcde;border-radius:6px}.bh3-sector-details summary{cursor:pointer;padding:12px 15px;font-weight:600}.bh3-sector-details[open] summary{border-bottom:1px solid #dcdcde}.bh3-sector-details dl{display:grid;grid-template-columns:minmax(110px,170px) minmax(0,1fr);gap:9px 16px;margin:15px}.bh3-sector-details dt{font-weight:600}.bh3-sector-details dd{margin:0;overflow-wrap:anywhere}@media(max-width:782px){.bh3-sector-details dl{grid-template-columns:1fr;gap:4px}.bh3-sector-details dd{margin-bottom:12px}}</style>';
