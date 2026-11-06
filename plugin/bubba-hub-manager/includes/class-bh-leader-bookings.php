@@ -227,6 +227,29 @@ final class BH_Leader_Bookings_3 {
                <?php endif; ?>
                <p role="status">Read-only record totals. Expired reservations remain counted until the expiry process is verified. These numbers do not guarantee live availability or permit checkout.</p>
             <?php endif; ?>
+            <?php if ( $booking_table_ready && is_array( $booking_totals ) && ! $capacity_counts['unknown'] ) :
+                $record_rows = $wpdb->get_results( $wpdb->prepare(
+                    "SELECT id,booking_status,payment_status,places FROM `{$booking_table}`
+                     WHERE organiser_id=%d AND session_id=%d AND occurrence_date=%s
+                     ORDER BY id DESC LIMIT 25",
+                    $organiser, $inspect_id, $inspect_date
+                ), ARRAY_A );
+            ?>
+            <h3>Booking records (read-only preview)</h3>
+            <?php if ( ! $record_rows ) : ?>
+              <p>No booking records for this date.</p>
+            <?php else : ?>
+              <div style="overflow-x:auto"><table><thead><tr><th scope="col">Reference</th><th scope="col">Places</th><th scope="col">Booking status</th><th scope="col">Payment status</th></tr></thead><tbody>
+              <?php foreach ( $record_rows as $record_row ) : ?>
+                <tr><td><?php echo esc_html( '#' . absint( $record_row['id'] ) ); ?></td>
+                <td><?php echo esc_html( (string) absint( $record_row['places'] ) ); ?></td>
+                <td><?php echo esc_html( sanitize_text_field( $record_row['booking_status'] ) ); ?></td>
+                <td><?php echo esc_html( sanitize_text_field( $record_row['payment_status'] ) ); ?></td></tr>
+              <?php endforeach; ?>
+              </tbody></table></div>
+              <p><small>Showing up to 25 records. No customer or child information is shown. Status changes remain disabled.</small></p>
+            <?php endif; ?>
+            <?php endif; ?>
             <p><a href="<?php echo esc_url( remove_query_arg( array( 'bh_occurrence_session', 'bh_occurrence_date' ) ) ); ?>">Close session details</a></p>
           </section>
           <?php endif; ?>
