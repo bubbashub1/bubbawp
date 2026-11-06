@@ -1965,7 +1965,7 @@ final class BH_Marketplace_Settings_3 {
 
     public static function admin_form() {
         if ( ! current_user_can( 'manage_options' ) ) { wp_die( 'Forbidden', '', array( 'response' => 403 ) ); }
-        echo '<div class="wrap"><h1>Marketplace commission</h1><p>Default 3%. No live charges or payouts are enabled.</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+        echo '<div class="wrap"><h1>Marketplace commission</h1><p>Booking fee preview only. No live charges or payouts are enabled.</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
         wp_nonce_field( 'bh3_save_commission' );
         echo '<input type="hidden" name="action" value="bh3_save_commission"><label>Commission (%) <input type="number" name="rate" required min="0" max="100" step="0.01" value="' . esc_attr( number_format( self::rate(), 2, '.', '' ) ) . '"></label>';
         echo '<h2>Parent-paid booking fee (preview only)</h2>';
@@ -1979,8 +1979,9 @@ final class BH_Marketplace_Settings_3 {
         }
         echo '<p><em>Illustrative processing assumption: 1.5% + 20p. Actual Stripe pricing depends on card and payment method; confirm your account rates before activation. Existing Stripe checkout is not yet compatible with this pricing model and remains disabled.</em></p>';
         $policy = self::policy();
+        echo '<p><strong>Parent-facing disclosure:</strong> Class price + one Bubba Hub Booking Fee = total payable. The leader receives the full class price. Stripe charges the platform under destination charges; the booking fee is intended to cover estimated processing costs and Bubba Hub commission.</p>';
         $choices = array(
-            'processing_fees' => array( 'Processing fees paid by', array( 'leader' => 'Leader (recommended)', 'platform' => 'Bubba Hub' ) ),
+            'processing_fees' => array( 'Stripe processing costs charged to', array( 'leader' => 'Leader (legacy; incompatible with current checkout)', 'platform' => 'Bubba Hub (recovered through parent booking fee)' ) ),
             'payout_schedule' => array( 'Preferred payout schedule', array( 'weekly' => 'Weekly', 'monthly' => 'Monthly', 'manual' => 'Manual review' ) ),
             'refund_policy' => array( 'Refund handling', array( 'manual_review' => 'Manual review before refund', 'leader_approval' => 'Leader approval required' ) ),
         );
