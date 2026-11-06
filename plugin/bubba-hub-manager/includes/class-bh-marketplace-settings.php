@@ -884,6 +884,16 @@ final class BH_Marketplace_Settings_3 {
         return $data;
     }
 
+    public static function is_affirmative_booking_consent( $value ) {
+        if ( is_array( $value ) ) {
+            foreach ( $value as $choice ) {
+                if ( in_array( $choice, array( 'yes', '1', 1, true ), true ) ) { return true; }
+            }
+            return false;
+        }
+        return in_array( $value, array( 'yes', '1', 1, true ), true );
+    }
+
     public static function booking_form_field_map() {
         // Matches the published Bubba Hub Fluent Form #7 export. Administrators
         // can override these names if the form is customised.
@@ -941,7 +951,7 @@ final class BH_Marketplace_Settings_3 {
         }
         // Consent must be an explicit affirmative value, never a non-empty
         // arbitrary string, unchecked checkbox, or inferred default.
-        if ( ! in_array( $consent, array( 'yes', '1', 1, true ), true ) ) {
+        if ( ! self::is_affirmative_booking_consent( $consent ) ) {
             return new WP_Error( 'booking_consent_missing', 'Booking consent is required.' );
         }
         $owned['session_selection_verified'] = true;
@@ -1106,7 +1116,7 @@ final class BH_Marketplace_Settings_3 {
         $data = json_decode( (string) $raw, true );
         if ( ! is_array( $data ) ) { return new WP_Error( 'attendee_form_invalid', 'Attendee form could not be read.' ); }
         $consent = $data[ $map['share_consent'] ] ?? null;
-        if ( ! in_array( $consent, array( 'yes', '1', 1, true ), true ) ) {
+        if ( ! self::is_affirmative_booking_consent( $consent ) ) {
             return new WP_Error( 'attendee_sharing_consent_missing', 'Explicit consent to share selected attendee details is required.' );
         }
         $ids = $data[ $map['profile_ids'] ] ?? null;
