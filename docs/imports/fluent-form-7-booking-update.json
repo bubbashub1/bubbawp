@@ -1,0 +1,257 @@
+[
+  {
+    "id": 7,
+    "title": "Bubba Hub – Session Booking & Payment (Form 7 – updated)",
+    "status": "published",
+    "appearance_settings": null,
+    "form_fields": {
+      "fields": [
+        {
+          "element": "input_hidden",
+          "attributes": {
+            "name": "session_id",
+            "id": "",
+            "class": ""
+          },
+          "settings": {
+            "container_class": "",
+            "label": "Session ID",
+            "admin_field_label": "Session ID",
+            "validation_rules": {
+              "required": {
+                "value": true,
+                "message": "Please refresh the booking form and try again."
+              }
+            }
+          }
+        },
+        {
+          "element": "input_hidden",
+          "attributes": {
+            "name": "booking_context_token",
+            "id": "",
+            "class": ""
+          },
+          "settings": {
+            "container_class": "",
+            "label": "Booking context token",
+            "admin_field_label": "Booking context token",
+            "validation_rules": {
+              "required": {
+                "value": true,
+                "message": "Please refresh the booking form and try again."
+              }
+            }
+          }
+        },
+        {
+          "element": "input_numeric",
+          "attributes": {
+            "name": "places",
+            "id": "",
+            "class": "",
+            "min": "1",
+            "max": "20",
+            "step": "1"
+          },
+          "settings": {
+            "container_class": "",
+            "label": "Number of places",
+            "admin_field_label": "Number of places",
+            "validation_rules": {
+              "required": {
+                "value": true,
+                "message": "This field is required."
+              }
+            }
+          }
+        },
+        {
+          "element": "input_date",
+          "attributes": {
+            "name": "occurrence_date",
+            "id": "",
+            "class": ""
+          },
+          "settings": {
+            "container_class": "",
+            "label": "Session date",
+            "admin_field_label": "Session date",
+            "validation_rules": {
+              "required": {
+                "value": true,
+                "message": "Please choose a session date."
+              }
+            }
+          }
+        },
+        {
+          "element": "input_checkbox",
+          "attributes": {
+            "name": "family_profile_ids",
+            "id": "",
+            "class": ""
+          },
+          "settings": {
+            "container_class": "",
+            "label": "Who is attending?",
+            "admin_field_label": "Who is attending?",
+            "validation_rules": {
+              "required": {
+                "value": true,
+                "message": "Please select one child or pregnancy profile for each place."
+              }
+            },
+            "advanced_options": []
+          }
+        },
+        {
+          "element": "input_text",
+          "attributes": {
+            "name": "parent_name",
+            "id": "",
+            "class": ""
+          },
+          "settings": {
+            "container_class": "",
+            "label": "Parent / carer name",
+            "admin_field_label": "Parent / carer name",
+            "validation_rules": {
+              "required": {
+                "value": true,
+                "message": "This field is required."
+              }
+            }
+          }
+        },
+        {
+          "element": "input_email",
+          "attributes": {
+            "name": "parent_email",
+            "id": "",
+            "class": ""
+          },
+          "settings": {
+            "container_class": "",
+            "label": "Email address",
+            "admin_field_label": "Email address",
+            "validation_rules": {
+              "required": {
+                "value": true,
+                "message": "This field is required."
+              }
+            }
+          }
+        },
+        {
+          "element": "input_text",
+          "attributes": {
+            "name": "parent_phone",
+            "id": "",
+            "class": ""
+          },
+          "settings": {
+            "container_class": "",
+            "label": "Phone number",
+            "admin_field_label": "Phone number",
+            "validation_rules": {
+              "required": {
+                "value": false,
+                "message": ""
+              }
+            }
+          }
+        },
+        {
+          "element": "textarea",
+          "attributes": {
+            "name": "booking_notes",
+            "id": "",
+            "class": ""
+          },
+          "settings": {
+            "container_class": "",
+            "label": "Anything the leader should know?",
+            "admin_field_label": "Anything the leader should know?",
+            "validation_rules": {
+              "required": {
+                "value": false,
+                "message": ""
+              }
+            }
+          }
+        },
+        {
+          "element": "input_checkbox",
+          "attributes": {
+            "name": "share_child_details_consent",
+            "id": "",
+            "class": ""
+          },
+          "settings": {
+            "container_class": "",
+            "label": "Child details consent",
+            "admin_field_label": "Child details consent",
+            "validation_rules": {
+              "required": {
+                "value": true,
+                "message": "Please confirm whether the selected child details can be shared with the class leader."
+              }
+            },
+            "advanced_options": [
+              {
+                "label": "I am happy for my selected child's gender and year of birth to be shared with the class leader.",
+                "value": "yes"
+              }
+            ]
+          }
+        },
+        {
+          "element": "input_checkbox",
+          "attributes": {
+            "name": "booking_terms_consent",
+            "id": "",
+            "class": ""
+          },
+          "settings": {
+            "container_class": "",
+            "label": "Booking Terms & Conditions",
+            "admin_field_label": "Booking Terms & Conditions",
+            "validation_rules": {
+              "required": {
+                "value": true,
+                "message": "This field is required."
+              }
+            },
+            "advanced_options": [
+              {
+                "label": "I have read and agree to the Bubba Hub Booking Terms & Conditions.",
+                "value": "yes"
+              }
+            ]
+          }
+        }
+      ],
+      "submitButton": {
+        "element": "button",
+        "attributes": {
+          "type": "submit"
+        },
+        "settings": {
+          "button_ui": {
+            "type": "default",
+            "text": "Continue booking"
+          }
+        }
+      }
+    },
+    "has_payment": "0",
+    "type": "form",
+    "conditions": null,
+    "created_by": "1",
+    "created_at": null,
+    "updated_at": null,
+    "form_meta": [],
+    "metas": []
+  }
+]

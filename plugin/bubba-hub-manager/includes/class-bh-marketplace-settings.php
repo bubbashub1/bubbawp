@@ -16,6 +16,9 @@ final class BH_Marketplace_Settings_3 {
         add_action( 'admin_post_bh3_save_payout_method', array( __CLASS__, 'save_method' ) );
         add_shortcode( 'bh_leader_payout_settings', array( __CLASS__, 'leader_form' ) );
         add_shortcode( 'bh_parent_booking', array( __CLASS__, 'parent_booking_widget' ) );
+        add_filter( 'fluentform/rendering_field_data_input_checkbox', array( __CLASS__, 'filter_form7_checkbox_field' ), 10, 2 );
+        add_filter( 'fluentform/rendering_field_data_input_hidden', array( __CLASS__, 'filter_form7_hidden_field' ), 10, 2 );
+        add_filter( 'fluentform/submission_confirmation', array( __CLASS__, 'filter_form7_checkout_confirmation' ), 20, 5 );
         add_shortcode( 'bh_booking_readiness', array( __CLASS__, 'booking_readiness_preview' ) );
         add_shortcode( 'bh_leader_email_verification', array( __CLASS__, 'leader_email_verification_widget' ) );
         add_shortcode( 'bh_leader_account_setup', array( __CLASS__, 'leader_account_setup_widget' ) );
@@ -192,12 +195,30 @@ final class BH_Marketplace_Settings_3 {
         return array( 'gross_pence' => $gross, 'commission_pence' => $commission, 'leader_before_fees_pence' => $gross - $commission );
     }
     /**
+     * Administrator-controlled estimate used for the single parent-facing fee.
+     * Values are assumptions only; actual Stripe fees can vary by payment method.
+     */
+    public static function parent_booking_fee_settings() {
+        $defaults = array( 'processing_percent' => '1.50', 'processing_fixed_pence' => 20 );
+        $saved = get_option( 'bh3_parent_booking_fee_settings', array() );
+        $saved = is_array( $saved ) ? $saved : array();
+        $percent = isset( $saved['processing_percent'] ) && is_numeric( $saved['processing_percent'] )
+            ? (float) $saved['processing_percent'] : (float) $defaults['processing_percent'];
+        $fixed = isset( $saved['processing_fixed_pence'] ) ? absint( $saved['processing_fixed_pence'] ) : $defaults['processing_fixed_pence'];
+        if ( $percent < 0 || $percent >= 100 ) { $percent = (float) $defaults['processing_percent']; }
+        if ( $fixed > 10000 ) { $fixed = $defaults['processing_fixed_pence']; }
+        return array( 'processing_percent' => number_format( $percent, 2, '.', '' ), 'processing_fixed_pence' => $fixed );
+    }
+    /**
      * Illustrative parent-paid quote in integer pence. The leader's class price
      * is preserved; the single customer fee covers platform commission and an
      * estimated Stripe processing allowance. This is NOT a payment instruction.
      * Configure real processing rates and review fee disclosure before launch.
      */
-    public static function parent_paid_fee_preview( $leader_price_pence, $processing_percent = 1.5, $processing_fixed_pence = 20 ) {
+    public static function parent_paid_fee_preview( $leader_price_pence, $processing_percent = null, $processing_fixed_pence = null ) {
+        $settings = self::parent_booking_fee_settings();
+        $processing_percent = $processing_percent === null ? (float) $settings['processing_percent'] : (float) $processing_percent;
+        $processing_fixed_pence = $processing_fixed_pence === null ? (int) $settings['processing_fixed_pence'] : absint( $processing_fixed_pence );
         $leader_price_pence = absint( $leader_price_pence );
         if ( $leader_price_pence < 1 || $leader_price_pence > 10000000 ) {
             return new WP_Error( 'invalid_leader_price', 'Invalid class price.' );
@@ -663,7 +684,7 @@ final class BH_Marketplace_Settings_3 {
         // reservation may proceed to Stripe Checkout, even via QA routes.
         if ( defined( 'BH3_ENABLE_BOOKING_FORM_BINDING' ) && BH3_ENABLE_BOOKING_FORM_BINDING === true ) {
             if ( empty( $booking['booking_submission_id'] ) || empty( $booking['booking_form_id'] )
-                || (int) $booking['booking_form_id'] !== absint( get_option( 'bh3_booking_form_id', 7 ) ) ) {
+                || (int) $booking['booking_form_id'] !== absint( get_option( 'bh3_booking_form_id', 8 ) ) ) {
                 return new WP_Error( 'booking_form_not_bound', 'Complete and verify the booking form before payment.' );
             }
             $attendees_table = $wpdb->prefix . 'bh3_booking_attendees';
@@ -680,8 +701,13 @@ final class BH_Marketplace_Settings_3 {
                 "SELECT COUNT(*) FROM `{$consents_table}` WHERE booking_id=%d AND consent_key=%s AND consent_version=%s AND response=%s",
                 (int) $booking['id'], 'share_attendee_details', 'v1', 'yes'
             ) );
-            if ( $attendee_count !== (int) $booking['places'] || $sharing_consent !== 1 ) {
-                return new WP_Error( 'booking_details_incomplete', 'Attendees and sharing consent must be saved before payment.' );
+            $terms_version = sanitize_key( (string) get_option( 'bh3_booking_terms_version', 'v1' ) );
+            $terms_consent = (int) $wpdb->get_var( $wpdb->prepare(
+                "SELECT COUNT(*) FROM `{$consents_table}` WHERE booking_id=%d AND consent_key=%s AND consent_version=%s AND response=%s",
+                (int) $booking['id'], 'booking_terms', $terms_version, 'yes'
+            ) );
+            if ( $attendee_count !== (int) $booking['places'] || $sharing_consent !== 1 || $terms_consent !== 1 ) {
+                return new WP_Error( 'booking_details_incomplete', 'Attendees, booking terms and sharing consent must be saved before payment.' );
             }
         }
         $valid = self::validate_occurrence( (int) $booking['session_id'], $booking['occurrence_date'] );
@@ -705,6 +731,19 @@ final class BH_Marketplace_Settings_3 {
         if ( $gross < 50 || $commission < 0 || $commission > $gross || $booking['currency'] !== 'gbp' ) {
             return new WP_Error( 'invalid_payment_amount', 'Invalid booking amount.' );
         }
+        // The parent pays one combined booking fee. The destination transfer
+        // remains exactly the advertised class price; the platform application
+        // fee is the parent-facing fee, from which Stripe processing is paid.
+        $parent_fee_quote = self::parent_paid_fee_preview( $gross );
+        if ( is_wp_error( $parent_fee_quote )
+            || (int) $parent_fee_quote['parent_total_pence'] <= $gross
+            || (int) $parent_fee_quote['booking_fee_pence'] !== (int) $parent_fee_quote['parent_total_pence'] - $gross
+            || (int) $parent_fee_quote['platform_component_pence'] !== $commission ) {
+            return new WP_Error( 'booking_fee_quote_invalid', 'Combined booking fee could not be calculated safely.' );
+        }
+        $parent_total = (int) $parent_fee_quote['parent_total_pence'];
+        $customer_fee = (int) $parent_fee_quote['booking_fee_pence'];
+        $estimated_processing = (int) $parent_fee_quote['estimated_processing_pence'];
         $expiry = strtotime( $booking['reservation_expires_at'] . ' UTC' );
         // Reserve a minimum 30-minute Checkout window; leave a safety margin.
         if ( $expiry < time() + 30 * MINUTE_IN_SECONDS ) {
@@ -740,17 +779,29 @@ final class BH_Marketplace_Settings_3 {
                 'line_items' => array( array(
                     'price_data' => array(
                         'currency' => 'gbp',
-                        'unit_amount' => $gross,
+                        'unit_amount' => $parent_total,
                         'product_data' => array( 'name' => 'Bubba Hub class booking ' . $booking['public_reference'] ),
                     ),
                     'quantity' => 1,
                 ) ),
                 'payment_intent_data' => array(
-                    'application_fee_amount' => $commission,
+                    'application_fee_amount' => $customer_fee,
                     'transfer_data' => array( 'destination' => $account ),
-                    'metadata' => array( 'bh3_booking_id' => (string) $booking['id'] ),
+                    'metadata' => array(
+                        'bh3_booking_id' => (string) $booking['id'],
+                        'bh3_class_price_pence' => (string) $gross,
+                        'bh3_booking_fee_pence' => (string) $customer_fee,
+                        'bh3_platform_component_pence' => (string) $commission,
+                        'bh3_estimated_processing_pence' => (string) $estimated_processing,
+                    ),
                 ),
-                'metadata' => array( 'bh3_booking_id' => (string) $booking['id'] ),
+                'metadata' => array(
+                    'bh3_booking_id' => (string) $booking['id'],
+                    'bh3_class_price_pence' => (string) $gross,
+                    'bh3_booking_fee_pence' => (string) $customer_fee,
+                    'bh3_platform_component_pence' => (string) $commission,
+                    'bh3_estimated_processing_pence' => (string) $estimated_processing,
+                ),
             );
             $response = wp_remote_post( 'https://api.stripe.com/v1/checkout/sessions', array(
                 'timeout' => 25,
@@ -767,7 +818,7 @@ final class BH_Marketplace_Settings_3 {
                 || ! isset( $data['url'] ) || ! wp_http_validate_url( $data['url'] )
                 || strtolower( (string) wp_parse_url( $data['url'], PHP_URL_HOST ) ) !== 'checkout.stripe.com'
                 || ( $data['livemode'] ?? null ) !== false
-                || (int) ( $data['amount_total'] ?? -1 ) !== $gross
+                || (int) ( $data['amount_total'] ?? -1 ) !== $parent_total
                 || ( $data['currency'] ?? '' ) !== 'gbp' ) {
                 return new WP_Error( 'stripe_checkout_rejected', 'Stripe did not return a valid test Checkout session.' );
             }
@@ -816,7 +867,7 @@ final class BH_Marketplace_Settings_3 {
         }
         global $wpdb;
         $table = $wpdb->prefix . 'fluentform_submissions';
-        $form_id = absint( get_option( 'bh3_booking_form_id', 7 ) );
+        $form_id = absint( get_option( 'bh3_booking_form_id', 8 ) );
         if ( ! $form_id ) {
             return new WP_Error( 'booking_form_missing', 'Booking form is not configured.' );
         }
@@ -846,11 +897,127 @@ final class BH_Marketplace_Settings_3 {
      * values. Admin must map actual Fluent Forms input names first.
      * No payment or capacity reservation is authorised by this check alone.
      */
+    /**
+     * Fluent Forms confirmation is the hand-off point: after Form 7 has
+     * successfully saved, validate that exact saved submission, reserve its
+     * selected occurrence, bind attendees/consent, then redirect to Stripe.
+     */
+    public static function filter_form7_checkout_confirmation( $return_data, $form, $confirmation, $submission_id, $form_data ) {
+        $form_id = absint( get_option( 'bh3_booking_form_id', 8 ) );
+        if ( absint( $form->id ?? 0 ) !== $form_id ) { return $return_data; }
+        if ( ! is_user_logged_in() || ! is_array( $form_data ) ) {
+            $return_data['message'] = 'Your details were received, but you must be signed in to continue to secure checkout.';
+            return $return_data;
+        }
+        $submitted_session_id = absint( $form_data['session_id'] ?? 0 );
+        if ( ! self::verify_booking_form_context_token(
+            $form_data['booking_context_token'] ?? '', $submitted_session_id, get_current_user_id()
+        ) ) {
+            $return_data['message'] = 'This booking form has expired or does not match the selected class. Please refresh the class page and try again.';
+            return $return_data;
+        }
+        $request = new WP_REST_Request( 'POST', '/bubba-hub/v3/parent-bound-test-checkout' );
+        $request->set_param( 'submission_id', absint( $submission_id ) );
+        $request->set_param( 'session_id', absint( $form_data['session_id'] ?? 0 ) );
+        $request->set_param( 'occurrence_date', sanitize_text_field( (string) ( $form_data['occurrence_date'] ?? '' ) ) );
+        $request->set_param( 'places', absint( $form_data['places'] ?? 0 ) );
+        $result = self::start_bound_parent_test_checkout( $request );
+        if ( is_wp_error( $result ) ) {
+            $return_data['message'] = 'Your booking details have been saved, but secure checkout could not start: '
+                . esc_html( $result->get_error_message() ) . ' Please contact Bubba Hub before submitting again.';
+            return $return_data;
+        }
+        $payload = $result instanceof WP_REST_Response ? $result->get_data() : $result;
+        if ( ! is_array( $payload ) || empty( $payload['checkout_url'] )
+            || ! wp_http_validate_url( $payload['checkout_url'] )
+            || strpos( $payload['checkout_url'], 'https://checkout.stripe.com/' ) !== 0 ) {
+            $return_data['message'] = 'Your booking details were saved, but a secure checkout link could not be verified. Please contact Bubba Hub.';
+            return $return_data;
+        }
+        $return_data['redirectUrl'] = esc_url_raw( $payload['checkout_url'] );
+        $return_data['message'] = 'Your booking details are saved. Taking you to secure Stripe checkout…';
+        return $return_data;
+    }
+
+    public static function filter_form7_checkbox_field( $data, $form ) {
+        if ( absint( $form->id ?? 0 ) !== absint( get_option( 'bh3_booking_form_id', 8 ) )
+            || ( $data['attributes']['name'] ?? '' ) !== 'family_profile_ids'
+            || ! is_user_logged_in() ) { return $data; }
+        $options = array();
+        foreach ( self::booking_profile_choices( get_current_user_id() ) as $profile ) {
+            $type = ( $profile['profile_type'] ?? '' ) === 'bump' ? 'Pregnancy' : 'Child';
+            $options[] = array( 'label' => sanitize_text_field( $profile['display_name'] . ' (' . $type . ')' ),
+                'value' => (string) absint( $profile['id'] ), 'calc_value' => '' );
+        }
+        if ( isset( $data['settings'] ) && is_array( $data['settings'] ) ) {
+            $data['settings']['advanced_options'] = $options;
+        }
+        return $data;
+    }
+
+    public static function create_booking_form_context_token( $session_id, $user_id, $expires = 0 ) {
+        $session_id = absint( $session_id );
+        $user_id = absint( $user_id );
+        $expires = $expires ? absint( $expires ) : time() + 2 * HOUR_IN_SECONDS;
+        if ( ! $session_id || ! $user_id || $expires <= time() || $expires > time() + 2 * HOUR_IN_SECONDS ) { return ''; }
+        $payload = $session_id . '|' . $user_id . '|' . $expires;
+        $signature = hash_hmac( 'sha256', $payload, wp_salt( 'auth' ) );
+        return $payload . '|' . $signature;
+    }
+
+    public static function verify_booking_form_context_token( $token, $session_id, $user_id ) {
+        if ( ! is_string( $token ) || ! preg_match( '/^([1-9][0-9]*)\\|([1-9][0-9]*)\\|([1-9][0-9]*)\\|([a-f0-9]{64})$/', $token, $match ) ) {
+            return false;
+        }
+        $payload = $match[1] . '|' . $match[2] . '|' . $match[3];
+        $expected = hash_hmac( 'sha256', $payload, wp_salt( 'auth' ) );
+        return (int) $match[1] === absint( $session_id )
+            && (int) $match[2] === absint( $user_id )
+            && (int) $match[3] >= time()
+            && (int) $match[3] <= time() + 2 * HOUR_IN_SECONDS
+            && hash_equals( $expected, $match[4] );
+    }
+
+    public static function filter_form7_hidden_field( $data, $form ) {
+        if ( absint( $form->id ?? 0 ) !== absint( get_option( 'bh3_booking_form_id', 8 ) )
+            || empty( $GLOBALS['bh3_form7_session_id'] ) || ! is_user_logged_in() ) { return $data; }
+        $field_name = $data['attributes']['name'] ?? '';
+        if ( $field_name === 'session_id' ) {
+            $data['attributes']['value'] = (string) absint( $GLOBALS['bh3_form7_session_id'] );
+        } elseif ( $field_name === 'booking_context_token' ) {
+            $data['attributes']['value'] = self::create_booking_form_context_token(
+                $GLOBALS['bh3_form7_session_id'], get_current_user_id()
+            );
+        }
+        return $data;
+    }
+
+    public static function is_affirmative_booking_consent( $value ) {
+        if ( is_array( $value ) ) {
+            foreach ( $value as $choice ) {
+                if ( in_array( $choice, array( 'yes', '1', 1, true ), true ) ) { return true; }
+            }
+            return false;
+        }
+        return in_array( $value, array( 'yes', '1', 1, true ), true );
+    }
+
+    public static function booking_form_field_map() {
+        $defaults = array(
+            'session_id' => 'session_id', 'occurrence_date' => 'occurrence_date',
+            'places' => 'places', 'consent' => 'booking_terms_consent',
+            'profile_ids' => 'family_profile_ids', 'share_consent' => 'share_child_details_consent',
+            'parent_name' => 'parent_name', 'parent_email' => 'parent_email',
+        );
+        $saved = get_option( 'bh3_booking_form_field_map', array() );
+        return wp_parse_args( is_array( $saved ) ? $saved : array(), $defaults );
+    }
+
     public static function inspect_booking_form_fields( $submission_id, $customer_user_id, $expected_session_id, $expected_date, $expected_places ) {
         $owned = self::inspect_booking_form_submission( $submission_id, $customer_user_id );
         if ( is_wp_error( $owned ) ) { return $owned; }
-        $map = get_option( 'bh3_booking_form_field_map', array() );
-        $required = array( 'session_id', 'occurrence_date', 'places', 'consent' );
+        $map = self::booking_form_field_map();
+        $required = array( 'session_id', 'occurrence_date', 'places', 'consent', 'parent_name', 'parent_email' );
         if ( ! is_array( $map ) ) {
             return new WP_Error( 'booking_fields_unmapped', 'Booking form field mapping is missing.' );
         }
@@ -886,9 +1053,18 @@ final class BH_Marketplace_Settings_3 {
             || (int) $places < 1 || (int) $places > 20 ) {
             return new WP_Error( 'booking_selection_mismatch', 'Booking details do not match the selected class, date and places.' );
         }
+        $parent_name = $data[ $map['parent_name'] ] ?? '';
+        $parent_email = $data[ $map['parent_email'] ] ?? '';
+        $account = get_userdata( absint( $customer_user_id ) );
+        if ( ! is_string( $parent_name ) || trim( $parent_name ) === ''
+            || ! is_string( $parent_email ) || ! is_email( $parent_email )
+            || ! $account || ! is_email( $account->user_email )
+            || ! hash_equals( strtolower( trim( $account->user_email ) ), strtolower( trim( $parent_email ) ) ) ) {
+            return new WP_Error( 'booking_contact_mismatch', 'Enter your name and use the email address linked to your Bubba Hub account.' );
+        }
         // Consent must be an explicit affirmative value, never a non-empty
         // arbitrary string, unchecked checkbox, or inferred default.
-        if ( ! in_array( $consent, array( 'yes', '1', 1, true ), true ) ) {
+        if ( ! self::is_affirmative_booking_consent( $consent ) ) {
             return new WP_Error( 'booking_consent_missing', 'Booking consent is required.' );
         }
         $owned['session_selection_verified'] = true;
@@ -962,6 +1138,7 @@ final class BH_Marketplace_Settings_3 {
                 foreach ( $checked['attendees'] as $index => $person ) {
                     $success = $wpdb->insert( $attendees_table, array(
                         'booking_id' => $booking_id, 'attendee_number' => $index + 1,
+                        'family_profile_id' => absint( $person['profile_id'] ?? 0 ) ?: null,
                         'attendee_type' => $person['type'], 'attendee_name' => $person['name'],
                         'gender' => $person['gender'], 'year_of_birth' => $person['year_of_birth'],
                         'created_at' => $now,
@@ -973,6 +1150,15 @@ final class BH_Marketplace_Settings_3 {
                 $success = $wpdb->insert( $consents_table, array(
                     'booking_id' => $booking_id, 'consent_key' => 'share_attendee_details',
                     'consent_version' => 'v1', 'response' => 'yes',
+                    'response_at' => $now, 'actor_user_id' => $customer_user_id,
+                    'source' => 'booking', 'created_at' => $now,
+                ) ) === 1;
+            }
+            if ( $success ) {
+                $terms_version = sanitize_key( (string) get_option( 'bh3_booking_terms_version', 'v1' ) );
+                $success = $wpdb->insert( $consents_table, array(
+                    'booking_id' => $booking_id, 'consent_key' => 'booking_terms',
+                    'consent_version' => $terms_version, 'response' => 'yes',
                     'response_at' => $now, 'actor_user_id' => $customer_user_id,
                     'source' => 'booking', 'created_at' => $now,
                 ) ) === 1;
@@ -1030,8 +1216,7 @@ final class BH_Marketplace_Settings_3 {
     public static function inspect_booking_form_attendees( $submission_id, $customer_user_id, $expected_session_id, $expected_date, $expected_places ) {
         $verified = self::inspect_booking_form_fields( $submission_id, $customer_user_id, $expected_session_id, $expected_date, $expected_places );
         if ( is_wp_error( $verified ) ) { return $verified; }
-        $map = get_option( 'bh3_booking_form_field_map', array() );
-        if ( ! is_array( $map ) ) { return new WP_Error( 'attendee_fields_unmapped', 'Attendee fields are not configured.' ); }
+        $map = self::booking_form_field_map();
         foreach ( array( 'profile_ids', 'share_consent' ) as $field ) {
             if ( empty( $map[ $field ] ) || ! is_string( $map[ $field ] )
                 || ! preg_match( '/^[A-Za-z][A-Za-z0-9_]*$/', $map[ $field ] ) ) {
@@ -1054,7 +1239,7 @@ final class BH_Marketplace_Settings_3 {
         $data = json_decode( (string) $raw, true );
         if ( ! is_array( $data ) ) { return new WP_Error( 'attendee_form_invalid', 'Attendee form could not be read.' ); }
         $consent = $data[ $map['share_consent'] ] ?? null;
-        if ( ! in_array( $consent, array( 'yes', '1', 1, true ), true ) ) {
+        if ( ! self::is_affirmative_booking_consent( $consent ) ) {
             return new WP_Error( 'attendee_sharing_consent_missing', 'Explicit consent to share selected attendee details is required.' );
         }
         $ids = $data[ $map['profile_ids'] ] ?? null;
@@ -1121,10 +1306,10 @@ final class BH_Marketplace_Settings_3 {
                 }
                 $name = trim( (string) $row['display_name'] );
                 if ( $name === '' ) { return new WP_Error( 'child_name_missing', 'Child name is missing.' ); }
-                $attendees[] = array( 'type' => 'child', 'name' => $name,
+                $attendees[] = array( 'profile_id' => $id, 'type' => 'child', 'name' => $name,
                     'gender' => (string) $row['gender'], 'year_of_birth' => (int) $year );
             } else {
-                $attendees[] = array( 'type' => 'bump', 'name' => 'Pregnancy', 'gender' => '', 'year_of_birth' => null );
+                $attendees[] = array( 'profile_id' => $id, 'type' => 'bump', 'name' => 'Pregnancy', 'gender' => '', 'year_of_birth' => null );
             }
         }
         return $attendees;
@@ -1318,22 +1503,37 @@ final class BH_Marketplace_Settings_3 {
         if ( is_wp_error( $quote ) ) {
             return '<p role="status">' . esc_html( $quote->get_error_message() ) . '</p>';
         }
+        $stripe_readiness = self::stripe_status();
         $enabled = is_user_logged_in()
-            && defined( 'BH3_ENABLE_UNLINKED_BOOKING_TEST_UI' ) && BH3_ENABLE_UNLINKED_BOOKING_TEST_UI === true
-            && defined( 'BH3_ENABLE_PARENT_TEST_BOOKING' ) && BH3_ENABLE_PARENT_TEST_BOOKING === true
+            && defined( 'BH3_ENABLE_BOOKING_FORM_BINDING' ) && BH3_ENABLE_BOOKING_FORM_BINDING === true
             && defined( 'BH3_ENABLE_STRIPE_TEST_CHECKOUT' ) && BH3_ENABLE_STRIPE_TEST_CHECKOUT === true
-            && defined( 'BH3_ENABLE_BOOKING_RESERVATIONS' ) && BH3_ENABLE_BOOKING_RESERVATIONS === true;
+            && defined( 'BH3_ENABLE_STRIPE_TEST_WEBHOOK' ) && BH3_ENABLE_STRIPE_TEST_WEBHOOK === true
+            && defined( 'BH3_ENABLE_TEST_BOOKING_CONFIRMATION' ) && BH3_ENABLE_TEST_BOOKING_CONFIRMATION === true
+            && defined( 'BH3_ENABLE_BOOKING_RESERVATIONS' ) && BH3_ENABLE_BOOKING_RESERVATIONS === true
+            && $stripe_readiness['mode'] === 'test' && $stripe_readiness['keys_configured']
+            && self::policy()['processing_fees'] === 'platform';
         $id = 'bh3-book-' . wp_unique_id();
         ob_start();
         echo '<section id="' . esc_attr( $id ) . '" class="bh3-parent-booking" aria-label="Class booking">';
         echo '<h3>Book a class</h3>';
         $fee_quote = $quote['parent_paid_fee_quote'] ?? null;
         if ( is_array( $fee_quote ) && ! empty( $fee_quote['preview_only'] ) ) {
-            echo '<div class="bh3-booking-fee-preview" aria-label="Estimated booking total">';
-            echo '<p><strong>Class price:</strong> £' . esc_html( number_format( $fee_quote['leader_price_pence'] / 100, 2 ) ) . '</p>';
-            echo '<p><strong>Bubba Hub Booking Fee:</strong> £' . esc_html( number_format( $fee_quote['booking_fee_pence'] / 100, 2 ) ) . '</p>';
-            echo '<p><strong>Estimated total:</strong> £' . esc_html( number_format( $fee_quote['parent_total_pence'] / 100, 2 ) ) . '</p>';
-            echo '<p><small>Fee estimate only; final payment pricing is not yet enabled. The class leader receives the advertised class price. No payment is taken here.</small></p>';
+            $price_quotes = array();
+            for ( $place_count = 1; $place_count <= 20; $place_count++ ) {
+                $calculated = self::parent_paid_fee_preview( (int) $quote['unit_price_pence'] * $place_count );
+                if ( ! is_wp_error( $calculated ) ) {
+                    $price_quotes[ $place_count ] = array(
+                        'class' => (int) $calculated['leader_price_pence'],
+                        'fee' => (int) $calculated['booking_fee_pence'],
+                        'total' => (int) $calculated['parent_total_pence'],
+                    );
+                }
+            }
+            echo '<div class="bh3-booking-fee-preview" aria-label="Estimated booking total" data-price-quotes="' . esc_attr( wp_json_encode( $price_quotes ) ) . '">';
+            echo '<p><strong>Class price:</strong> £<span data-bh-price-class>' . esc_html( number_format( $fee_quote['leader_price_pence'] / 100, 2 ) ) . '</span></p>';
+            echo '<p><strong>Bubba Hub Booking Fee:</strong> £<span data-bh-price-fee>' . esc_html( number_format( $fee_quote['booking_fee_pence'] / 100, 2 ) ) . '</span></p>';
+            echo '<p><strong>Estimated total to pay:</strong> £<span data-bh-price-total>' . esc_html( number_format( $fee_quote['parent_total_pence'] / 100, 2 ) ) . '</span></p>';
+            echo '<p><small>One combined fee covers the Bubba Hub platform fee and estimated card-processing costs. The class leader receives the advertised class price. Final amounts are confirmed at Stripe Checkout.</small></p>';
             echo '</div>';
         } else {
             echo '<p><strong>Price per place:</strong> £' . esc_html( number_format( $quote['unit_price_pence'] / 100, 2 ) ) . '</p>';
@@ -1343,16 +1543,9 @@ final class BH_Marketplace_Settings_3 {
             echo '<div class="bh3-booking-attendees"><h4>Who is attending?</h4>';
             echo '<p>Select the children attending, or choose a pregnancy profile for an antenatal class.</p>';
             if ( $profiles ) {
-                echo '<fieldset><legend>Family profiles</legend>';
-                foreach ( $profiles as $profile ) {
-                    $type = $profile['profile_type'] === 'bump' ? 'Pregnancy' : 'Child';
-                    echo '<label style="display:block;margin:8px 0"><input type="checkbox" name="bh3_preview_profile_ids[]" value="' .
-                        esc_attr( $profile['id'] ) . '" disabled> ' .
-                        esc_html( $profile['display_name'] ) . ' (' . esc_html( $type ) . ')</label>';
-                }
-                echo '</fieldset><p><small>Selection preview only. Booking submission linking is still being developed.</small></p>';
+                echo '<p>Your saved child and pregnancy profiles will appear as selectable options in the booking form below.</p>';
             } else {
-                echo '<p>No child or pregnancy profiles found.</p>';
+                echo '<p>No child or pregnancy profiles found. <a href="' . esc_url( home_url( '/my-hub/children/' ) ) . '">Add a family profile in My Hub</a> before booking.</p>';
             }
             echo '<p><a href="' . esc_url( home_url( '/my-hub/children/' ) ) . '">Add or edit a child in My Hub</a></p></div>';
         }
@@ -1368,36 +1561,28 @@ final class BH_Marketplace_Settings_3 {
             echo '<p><label>Year of birth <input type="number" min="1900" max="' . esc_attr( wp_date( 'Y' ) ) . '" disabled></label></p>';
             echo '</fieldset><p><small>Preview only — these fields cannot be submitted yet. Guest consent and booking verification are being built.</small></p></div>';
         }
-        // Fluent Forms Free captures details, but its submission is not yet
-        // cryptographically bound to this booking. Never imply form completion
-        // authorises payment until the server-side binding is implemented.
-        $form_id = absint( get_option( 'bh3_booking_form_id', 7 ) );
-        if ( $form_id && shortcode_exists( 'fluentform' ) ) {
+        // Do not display a submittable Form 7 when booking is disabled.
+        // A submission without a configured checkout would strand the parent.
+        $form_id = absint( get_option( 'bh3_booking_form_id', 8 ) );
+        if ( $enabled && $form_id && shortcode_exists( 'fluentform' ) ) {
             echo '<div class="bh3-booking-details"><h4>Booking details</h4>';
+            echo '<p>Please read our <a href="' . esc_url( home_url( '/legal/bookings/' ) ) . '" target="_blank" rel="noopener">Booking Terms &amp; Conditions</a> before continuing. Your booking is confirmed only after Stripe verifies payment.</p>';
+            $previous_session_context = $GLOBALS['bh3_form7_session_id'] ?? null;
+            $GLOBALS['bh3_form7_session_id'] = $session_id;
             echo do_shortcode( '[fluentform id="' . $form_id . '"]' );
-            echo '<p class="bh3-booking-note">Submitting your details does not reserve a place or confirm a booking.</p></div>';
-        } else {
-            echo '<p role="status">Booking details form is not available.</p>';
+            echo '<script>(function(){const root=document.getElementById(' . wp_json_encode( $id ) . ');if(!root)return;const box=root.querySelector(".bh3-booking-fee-preview"),field=root.querySelector("[name=places]");if(!box||!field)return;let quotes={};try{quotes=JSON.parse(box.dataset.priceQuotes||"{}");}catch(e){return;}const update=function(){const count=String(Math.max(1,Math.min(20,parseInt(field.value||"1",10)||1)));const q=quotes[count];if(!q)return;box.querySelector("[data-bh-price-class]").textContent=(q.class/100).toFixed(2);box.querySelector("[data-bh-price-fee]").textContent=(q.fee/100).toFixed(2);box.querySelector("[data-bh-price-total]").textContent=(q.total/100).toFixed(2);};field.addEventListener("input",update);field.addEventListener("change",update);update();})();</script>';
+            if ( $previous_session_context === null ) { unset( $GLOBALS['bh3_form7_session_id'] ); }
+            else { $GLOBALS['bh3_form7_session_id'] = $previous_session_context; }
+            echo '<p class="bh3-booking-note">Submitting your details creates a temporary place hold and opens Stripe test checkout. Your booking is confirmed only after payment is verified.</p></div>';
+        } elseif ( $enabled ) {
+            echo '<p role="status">Booking details form is not available. Please contact Bubba Hub before attempting payment.</p>';
         }
         if ( ! is_user_logged_in() ) {
             echo '<p>Please <a href="' . esc_url( wp_login_url( get_permalink() ) ) . '">sign in</a> to book.</p>';
         } elseif ( ! $enabled ) {
             echo '<p role="status">Online checkout remains disabled until booking details are securely linked to the reservation. Booking preview only.</p>';
         } else {
-            echo '<form class="bh3-test-booking-form"><label>Session date <input name="occurrence_date" type="date" required min="' .
-                esc_attr( wp_date( 'Y-m-d' ) ) . '"></label> ';
-            echo '<label>Places <input name="places" type="number" min="1" max="20" value="1" required></label> ';
-            echo '<button type="submit">Continue to Stripe test checkout</button>';
-            echo '<p role="status" aria-live="polite" class="bh3-booking-message">Test mode — no real charges.</p></form>';
-            $endpoint = rest_url( 'bubba-hub/v3/test-booking-checkout' );
-            $nonce = wp_create_nonce( 'wp_rest' );
-            $script = '(function(){const root=document.getElementById(' . wp_json_encode( $id ) .
-                ');if(!root)return;const form=root.querySelector("form"),msg=root.querySelector(".bh3-booking-message"),btn=form.querySelector("button");form.addEventListener("submit",async function(e){e.preventDefault();btn.disabled=true;msg.textContent="Preparing secure test checkout…";try{const response=await fetch(' .
-                wp_json_encode( $endpoint ) . ',{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json","X-WP-Nonce":' .
-                wp_json_encode( $nonce ) . '},body:JSON.stringify({session_id:' . (int) $session_id .
-                ',occurrence_date:form.elements.occurrence_date.value,places:Number(form.elements.places.value)})});const data=await response.json();if(!response.ok||!data.checkout_url)throw new Error("Checkout unavailable. Please try again later.");const target=new URL(data.checkout_url);if(target.protocol!=="https:"||target.hostname!=="checkout.stripe.com")throw new Error("Invalid checkout destination.");window.location.assign(target.href);}catch(error){msg.textContent=error.message;btn.disabled=false;}});})();';
-            wp_add_inline_script( 'wp-api-fetch', $script );
-            wp_enqueue_script( 'wp-api-fetch' );
+            echo '<p role="status">Complete the booking details form above. Once your details and consent have been saved and verified, you will be taken to secure Stripe test checkout. No payment is taken until you confirm payment with Stripe.</p>';
         }
         echo '</section>';
         return ob_get_clean();
@@ -1597,6 +1782,7 @@ final class BH_Marketplace_Settings_3 {
                 'duplicate' => $result['duplicate'],
                 'booking_confirmed' => ! empty( $confirmed['confirmed'] ),
                 'already_paid' => ! empty( $confirmed['already_paid'] ),
+                'notifications' => $confirmed['notifications'] ?? array(),
             ) );
         }
         return rest_ensure_response( array(
@@ -1704,14 +1890,23 @@ final class BH_Marketplace_Settings_3 {
         global $wpdb;
         $table = $wpdb->prefix . 'bh3_bookings';
         $booking = $wpdb->get_row( $wpdb->prepare(
-            "SELECT id,public_reference,payment_status,currency,gross_pence,stripe_checkout_session_id,stripe_payment_intent_id
+            "SELECT id,public_reference,payment_status,currency,gross_pence,commission_pence,stripe_checkout_session_id,stripe_payment_intent_id
              FROM `{$table}` WHERE stripe_checkout_session_id=%s LIMIT 1", $checkout_id
         ), ARRAY_A );
+        $metadata = isset( $object['metadata'] ) && is_array( $object['metadata'] ) ? $object['metadata'] : array();
+        $class_price = isset( $metadata['bh3_class_price_pence'] ) ? absint( $metadata['bh3_class_price_pence'] ) : 0;
+        $booking_fee = isset( $metadata['bh3_booking_fee_pence'] ) ? absint( $metadata['bh3_booking_fee_pence'] ) : 0;
+        $platform_component = isset( $metadata['bh3_platform_component_pence'] ) ? absint( $metadata['bh3_platform_component_pence'] ) : -1;
+        $processing_estimate = isset( $metadata['bh3_estimated_processing_pence'] ) ? absint( $metadata['bh3_estimated_processing_pence'] ) : -1;
+        $parent_total = isset( $object['amount_total'] ) && is_numeric( $object['amount_total'] ) ? (int) $object['amount_total'] : -1;
         if ( ! $booking || ! in_array( $booking['payment_status'], array( 'pending', 'paid' ), true )
             || strtolower( (string) ( $object['currency'] ?? '' ) ) !== $booking['currency']
-            || ! isset( $object['amount_total'] ) || ! is_numeric( $object['amount_total'] )
-            || (int) $object['amount_total'] !== (int) $booking['gross_pence'] ) {
-            return new WP_Error( 'payment_mismatch', 'Checkout does not match a pending booking and amount.' );
+            || $class_price !== (int) $booking['gross_pence']
+            || $platform_component !== (int) $booking['commission_pence']
+            || $booking_fee < 1 || $processing_estimate < 0
+            || $booking_fee !== $platform_component + $processing_estimate
+            || $parent_total !== $class_price + $booking_fee ) {
+            return new WP_Error( 'payment_mismatch', 'Checkout does not match the saved class price and combined booking fee.' );
         }
         $intent = $object['payment_intent'] ?? '';
         if ( ! is_string( $intent ) || ! preg_match( '/^pi_[A-Za-z0-9]+$/', $intent )
@@ -1729,6 +1924,101 @@ final class BH_Marketplace_Settings_3 {
             'safe_to_auto_confirm' => false,
         );
     }
+    /**
+     * Send one parent receipt and, only to a verified leader address, a minimal
+     * attendee notification. Per-recipient markers make webhook retries safe.
+     */
+    public static function send_booking_confirmation_notifications( $booking_id ) {
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) {
+            return new WP_Error( 'notifications_disabled', 'Booking notifications are staging-only.' );
+        }
+        global $wpdb;
+        $bookings = $wpdb->prefix . 'bh3_bookings';
+        $booking = $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM `{$bookings}` WHERE id=%d AND payment_status='paid' LIMIT 1", absint( $booking_id )
+        ), ARRAY_A );
+        if ( ! $booking || empty( $booking['customer_user_id'] ) || empty( $booking['booking_submission_id'] ) ) {
+            return new WP_Error( 'notification_booking_missing', 'Paid booking details are unavailable.' );
+        }
+        $parent = get_userdata( (int) $booking['customer_user_id'] );
+        if ( ! $parent || ! is_email( $parent->user_email ) ) {
+            return new WP_Error( 'notification_parent_email_missing', 'Parent account email is unavailable.' );
+        }
+        $activity_table = $wpdb->prefix . 'activities';
+        $activity = $wpdb->get_var( $wpdb->prepare(
+            "SELECT title FROM `{$activity_table}` WHERE id=%d LIMIT 1", (int) $booking['activity_id']
+        ) );
+        $title = is_string( $activity ) && $activity !== '' ? $activity : 'Your Bubba Hub class';
+        $attendees_table = $wpdb->prefix . 'bh3_booking_attendees';
+        $attendees = $wpdb->get_results( $wpdb->prepare(
+            "SELECT attendee_type,attendee_name,gender,year_of_birth FROM `{$attendees_table}` WHERE booking_id=%d ORDER BY attendee_number ASC",
+            (int) $booking['id']
+        ), ARRAY_A );
+        $attendee_lines = array();
+        foreach ( (array) $attendees as $person ) {
+            $line = ( $person['attendee_type'] === 'bump' ? 'Pregnancy profile' : (string) $person['attendee_name'] );
+            if ( $person['attendee_type'] !== 'bump' ) {
+                if ( ! empty( $person['gender'] ) ) { $line .= ' — ' . sanitize_text_field( $person['gender'] ); }
+                if ( ! empty( $person['year_of_birth'] ) ) { $line .= ', born ' . (int) $person['year_of_birth']; }
+            }
+            $attendee_lines[] = $line;
+        }
+        $reference = (string) $booking['public_reference'];
+        $date = (string) $booking['occurrence_date'];
+        $amount = '£' . number_format( (int) $booking['gross_pence'] / 100, 2 );
+        $parent_subject = 'Booking confirmed – ' . $title;
+        $parent_message = "Your Bubba Hub booking is confirmed.\n\n"
+            . "Class: {$title}\nDate: {$date}\nPlaces: " . (int) $booking['places']
+            . "\nBooking reference: {$reference}\nClass price: {$amount}\n\n"
+            . "You can view your family bookings in My Hub: " . home_url( '/my-hub/' )
+            . "\nBooking terms: " . home_url( '/legal/bookings/' )
+            . "\n\nThank you for booking with Bubba Hub.";
+        $parent_sent = self::send_booking_confirmation_email_once(
+            (int) $booking['id'], 'parent', $parent->user_email, $parent_subject, $parent_message
+        );
+        if ( is_wp_error( $parent_sent ) ) { return $parent_sent; }
+
+        $leader_sent = false;
+        $recipient = self::verified_booking_leader_recipient( (int) $booking['organiser_id'] );
+        if ( ! is_wp_error( $recipient ) ) {
+            $leader_subject = 'New paid booking – ' . $title;
+            $leader_message = "A parent booking has been paid and confirmed.\n\n"
+                . "Class: {$title}\nDate: {$date}\nPlaces: " . (int) $booking['places']
+                . "\nBooking reference: {$reference}\nAttendees:\n- "
+                . implode( "\n- ", $attendee_lines )
+                . "\n\nView your bookings: " . home_url( '/leader/bookings/' )
+                . "\n\nPlease handle attendee information in accordance with Bubba Hub's privacy and safeguarding requirements.";
+            $leader_result = self::send_booking_confirmation_email_once(
+                (int) $booking['id'], 'leader', $recipient['email'], $leader_subject, $leader_message
+            );
+            if ( is_wp_error( $leader_result ) ) { return $leader_result; }
+            $leader_sent = true;
+        }
+        return array( 'parent_sent' => true, 'leader_sent' => $leader_sent,
+            'leader_skipped_unverified' => is_wp_error( $recipient ) );
+    }
+
+    public static function send_booking_confirmation_email_once( $booking_id, $recipient_key, $to, $subject, $message ) {
+        if ( ! in_array( $recipient_key, array( 'parent', 'leader' ), true ) || ! is_email( $to ) ) {
+            return new WP_Error( 'notification_recipient_invalid', 'Booking notification recipient is invalid.' );
+        }
+        global $wpdb;
+        $lock = 'bh3_email_' . md5( $wpdb->prefix . ':' . absint( $booking_id ) . ':' . $recipient_key );
+        if ( (int) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, 5)', $lock ) ) !== 1 ) {
+            return new WP_Error( 'notification_busy', 'Booking confirmation email is being prepared.' );
+        }
+        try {
+            $marker = 'bh3_booking_email_' . absint( $booking_id ) . '_' . $recipient_key . '_sent';
+            if ( get_option( $marker, false ) ) { return true; }
+            $sent = wp_mail( $to, $subject, $message, array( 'Content-Type: text/plain; charset=UTF-8' ) );
+            if ( ! $sent ) { return new WP_Error( 'notification_send_failed', 'Booking confirmation email could not be sent.' ); }
+            update_option( $marker, current_time( 'mysql', true ), false );
+            return true;
+        } finally {
+            $wpdb->get_var( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $lock ) );
+        }
+    }
+
     /**
      * Explicitly gated staging payment transition. Caller MUST supply an event
      * already authenticated by verify_test_webhook(), not untrusted request JSON.
@@ -1764,7 +2054,10 @@ final class BH_Marketplace_Settings_3 {
             ), ARRAY_A );
             if ( ! $record ) { return new WP_Error( 'booking_missing', 'Booking not found.' ); }
             if ( $record['payment_status'] === 'paid' ) {
-                return array( 'booking_id' => $checked['booking_id'], 'already_paid' => true, 'confirmed' => false );
+                $notifications = self::send_booking_confirmation_notifications( $checked['booking_id'] );
+                if ( is_wp_error( $notifications ) ) { return $notifications; }
+                return array( 'booking_id' => $checked['booking_id'], 'already_paid' => true,
+                    'confirmed' => false, 'notifications' => $notifications );
             }
             if ( $record['booking_status'] !== 'reserved' ) {
                 return new WP_Error( 'hold_not_active', 'Reservation is no longer active; manual payment review required.' );
@@ -1780,7 +2073,7 @@ final class BH_Marketplace_Settings_3 {
                 return new WP_Error( 'event_not_ready', 'Verified event is not ready for processing.' );
             }
             $updated = $wpdb->query( $wpdb->prepare(
-                "UPDATE `{$bookings}` SET payment_status='paid', stripe_payment_intent_id=%s, updated_at=%s
+                "UPDATE `{$bookings}` SET booking_status='confirmed', payment_status='paid', stripe_payment_intent_id=%s, updated_at=%s
                  WHERE id=%d AND booking_status='reserved' AND payment_status='pending' AND reservation_expires_at > %s",
                 $checked['payment_intent_id'], current_time( 'mysql', true ),
                 $checked['booking_id'], current_time( 'mysql', true )
@@ -1791,7 +2084,10 @@ final class BH_Marketplace_Settings_3 {
             $wpdb->update( $events, array( 'processing_status' => 'processed',
                 'processed_at' => current_time( 'mysql', true ) ),
                 array( 'stripe_event_id' => $event_id, 'processing_status' => 'received' ) );
-            return array( 'booking_id' => $checked['booking_id'], 'already_paid' => false, 'confirmed' => true );
+            $notifications = self::send_booking_confirmation_notifications( $checked['booking_id'] );
+            if ( is_wp_error( $notifications ) ) { return $notifications; }
+            return array( 'booking_id' => $checked['booking_id'], 'already_paid' => false,
+                'confirmed' => true, 'notifications' => $notifications );
         } finally {
             $wpdb->get_var( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $lock ) );
         }
@@ -1996,8 +2292,15 @@ final class BH_Marketplace_Settings_3 {
         echo '<div class="wrap"><h1>Marketplace commission</h1><p>Booking fee preview only. No live charges or payouts are enabled.</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
         wp_nonce_field( 'bh3_save_commission' );
         echo '<input type="hidden" name="action" value="bh3_save_commission"><label>Commission (%) <input type="number" name="rate" required min="0" max="100" step="0.01" value="' . esc_attr( number_format( self::rate(), 2, '.', '' ) ) . '"></label>';
+        echo '<h2>Parent booking form</h2>';
+        $booking_form_id = absint( get_option( 'bh3_booking_form_id', 8 ) );
+        echo '<p><label for="bh3-booking-form-id">Fluent Forms booking form ID</label><br><input id="bh3-booking-form-id" type="number" name="booking_form_id" min="1" max="999999" step="1" required value="' . esc_attr( $booking_form_id ) . '"></p>';
+        echo '<p class="description">The updated checkout form is ID 8 on staging. Keep the checkout page shortcode [bh_parent_booking]; do not embed the Fluent Form separately.</p>';
         echo '<h2>Parent-paid booking fee (preview only)</h2>';
-        echo '<p>Parents will see one Bubba Hub Booking Fee on top of the class price. Leaders retain their advertised class price. This preview does not change checkout, charge cards or alter existing bookings.</p>';
+        echo '<p>Parents will see one Bubba Hub Booking Fee on top of the class price. Leaders retain their advertised class price. The processing assumptions below are editable and are used in the server-side fee quote; they do not change existing bookings.</p>';
+        $fee_settings = self::parent_booking_fee_settings();
+        echo '<p><label for="bh3-processing-percent">Estimated Stripe processing (%)</label><br><input id="bh3-processing-percent" type="number" name="processing_percent" min="0" max="99.99" step="0.01" required value="' . esc_attr( $fee_settings['processing_percent'] ) . '"></p>';
+        echo '<p><label for="bh3-processing-fixed">Estimated fixed processing charge (pence)</label><br><input id="bh3-processing-fixed" type="number" name="processing_fixed_pence" min="0" max="10000" step="1" required value="' . esc_attr( (string) $fee_settings['processing_fixed_pence'] ) . '"></p>';
         $example = self::parent_paid_fee_preview( 500 );
         if ( ! is_wp_error( $example ) ) {
             echo '<p><strong>Example £5.00 class:</strong> class £5.00 + one booking fee £'
@@ -2005,7 +2308,7 @@ final class BH_Marketplace_Settings_3 {
                 . ' = parent total £' . esc_html( number_format( $example['parent_total_pence'] / 100, 2 ) )
                 . '; leader receives £5.00.</p>';
         }
-        echo '<p><em>Illustrative processing assumption: 1.5% + 20p. Actual Stripe pricing depends on card and payment method; confirm your account rates before activation. Existing Stripe checkout is not yet compatible with this pricing model and remains disabled.</em></p>';
+        echo '<p><em>Illustrative processing assumption: ' . esc_html( $fee_settings['processing_percent'] ) . '% + ' . esc_html( (string) $fee_settings['processing_fixed_pence'] ) . 'p. Actual Stripe pricing depends on card and payment method; confirm your account rates before activation. Existing Stripe checkout is not yet compatible with this pricing model and remains disabled.</em></p>';
         $policy = self::policy();
         echo '<p><strong>Parent-facing disclosure:</strong> Class price + one Bubba Hub Booking Fee = total payable. The leader receives the full class price. Stripe charges the platform under destination charges; the booking fee is intended to cover estimated processing costs and Bubba Hub commission.</p>';
         $choices = array(
@@ -2055,6 +2358,33 @@ final class BH_Marketplace_Settings_3 {
             if ( ! in_array( $input, $values, true ) ) { wp_die( 'Invalid payment policy', '', array( 'response' => 400 ) ); }
             $policy[$key] = $input;
         }
+        $processing_raw = isset( $_POST['processing_percent'] ) && is_scalar( $_POST['processing_percent'] ) ? trim( (string) wp_unslash( $_POST['processing_percent'] ) ) : '';
+        $fixed_raw = isset( $_POST['processing_fixed_pence'] ) && is_scalar( $_POST['processing_fixed_pence'] ) ? trim( (string) wp_unslash( $_POST['processing_fixed_pence'] ) ) : '';
+        if ( ! preg_match( '/^(?:0|[1-9][0-9]?)(?:\\.[0-9]{1,2})?$/', $processing_raw )
+            || (float) $processing_raw >= 100
+            || ! preg_match( '/^(?:0|[1-9][0-9]{0,4})$/', $fixed_raw )
+            || (int) $fixed_raw > 10000 ) {
+            wp_die( 'Invalid processing fee assumptions', '', array( 'response' => 400 ) );
+        }
+        $booking_form_raw = isset( $_POST['booking_form_id'] ) && is_scalar( $_POST['booking_form_id'] )
+            ? trim( (string) wp_unslash( $_POST['booking_form_id'] ) ) : '';
+        if ( ! preg_match( '/^[1-9][0-9]{0,5}$/', $booking_form_raw ) ) {
+            wp_die( 'Invalid Fluent Forms booking form ID', '', array( 'response' => 400 ) );
+        }
+        $booking_form_id = (int) $booking_form_raw;
+        global $wpdb;
+        $form_table = $wpdb->prefix . 'fluentform_forms';
+        $form_exists = $wpdb->get_var( $wpdb->prepare(
+            "SELECT id FROM `{$form_table}` WHERE id=%d LIMIT 1", $booking_form_id
+        ) );
+        if ( (int) $form_exists !== $booking_form_id ) {
+            wp_die( 'Booking form ID not found in Fluent Forms', '', array( 'response' => 400 ) );
+        }
+        update_option( 'bh3_booking_form_id', $booking_form_id, false );
+        update_option( 'bh3_parent_booking_fee_settings', array(
+            'processing_percent' => number_format( (float) $processing_raw, 2, '.', '' ),
+            'processing_fixed_pence' => (int) $fixed_raw,
+        ), false );
         update_option( 'bh3_commission_percent', number_format( (float) $raw, 2, '.', '' ), false );
         update_option( 'bh3_marketplace_policy', $policy, false );
         $mode = isset( $_POST['stripe_mode'] ) && is_scalar( $_POST['stripe_mode'] ) ? sanitize_key( wp_unslash( $_POST['stripe_mode'] ) ) : '';
