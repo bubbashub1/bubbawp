@@ -9,6 +9,7 @@
 define( 'ABSPATH', __DIR__ );
 class WP_Error {}
 function absint( $value ) { return abs( (int) $value ); }
+function wp_parse_args( $args, $defaults ) { return array_merge( $defaults, is_array( $args ) ? $args : array() ); }
 function is_wp_error( $value ) { return $value instanceof WP_Error; }
 $fee_test_options = array();
 function get_option( $key, $default = false ) {
