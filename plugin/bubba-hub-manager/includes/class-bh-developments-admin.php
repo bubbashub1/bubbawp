@@ -253,6 +253,23 @@ final class BH_Developments_Admin_3 {
         echo '<h3>Family inspiration — captured requirements</h3>';
         echo '<p>These are roadmap requirements, not proof of deployed functionality. Suggestions must use real directory data and deterministic filters without requiring AI or paid services.</p>';
         echo '<ul style="list-style:disc;padding-left:24px"><li><strong>Rainy Day Rescue:</strong> indoor and covered ideas, nearby activities and curated at-home resources.</li><li><strong>What\'s On This Weekend?:</strong> age-, budget- and location-aware weekend sessions.</li><li><strong>Free &amp; Under £5 Finder:</strong> verified affordable activities.</li><li><strong>School Holiday Hub:</strong> date-specific holiday events and clubs.</li><li><strong>Inspire Me / Surprise Me:</strong> rule-based family suggestions.</li><li><strong>Family Trails, Bubba Adventures, Bubba Brief, Family Week, Little Explorers Passport and Memories:</strong> planned family experiences.</li></ul>';
+        echo '<h3>4.0 delivery gates — source audit</h3>';
+        echo '<p>These are manual acceptance gates. A merged GitHub PR does not establish staging QA or a deployed feature. This panel does not automatically change saved statuses.</p>';
+        $delivery_gates = array(
+            array( 'Core directory and activity journey', 'Search, filter, open an activity, view real sessions, save and plan; check mobile and legacy links.' ),
+            array( 'Family profiles and privacy', 'Children/bumps, owner isolation, planner, favourites and optional sharing controls.' ),
+            array( 'Leader management', 'Verified ownership, listing and timetable edits, enquiries, bookings, payouts and membership access.' ),
+            array( 'Booking safety', 'Canonical booking record, separate reservation/payment status, capacity, consent Form #7, guest access, Stripe idempotency and legal terms.' ),
+            array( 'Support and communications', 'Forms #4–#6, private/public moderation, verified email routing, notification preferences and delivery failures.' ),
+            array( 'Events and inspiration', 'Event ticket/QR parity; Rainy Day Rescue, weekend, free/low-cost and school-holiday suggestions use verified dates and prices.' ),
+            array( 'Release readiness', 'Backups, rollback, access checks, accessibility, staged end-to-end QA and explicit deployment sign-off.' ),
+        );
+        echo '<div style="max-width:1250px;overflow-x:auto"><table class="widefat striped"><thead><tr><th>Delivery gate</th><th>Acceptance evidence to collect</th></tr></thead><tbody>';
+        foreach ( $delivery_gates as $gate ) {
+            echo '<tr><th scope="row">' . esc_html( $gate[0] ) . '</th><td>' . esc_html( $gate[1] ) . '</td></tr>';
+        }
+        echo '</tbody></table></div>';
+        echo '<p class="description">Development references: <a href="' . esc_url( 'https://github.com/bubbashub1/bubbawp/blob/main/docs/bubba-hub-4.0-roadmap.md' ) . '" target="_blank" rel="noopener noreferrer">Unified 4.0 roadmap</a> · <a href="' . esc_url( 'https://github.com/bubbashub1/bubbawp/pull/163' ) . '" target="_blank" rel="noopener noreferrer">Booking schema review #163</a>. Existing feature and readiness status options remain unchanged.</p>';
         echo '<h2>Read-only staging schema comparison</h2>';
         echo '<p>Compares the plugin\'s declared core and family table columns against the connected WordPress database. No records are read and no SQL changes are executed. A match here does not verify indexes, data types, form fields or migration safety.</p>';
         $site_host = strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
