@@ -1142,7 +1142,7 @@ final class BH_Marketplace_Settings_3 {
         $data = json_decode( (string) $raw, true );
         if ( ! is_array( $data ) ) { return new WP_Error( 'attendee_form_invalid', 'Attendee form could not be read.' ); }
         $consent = $data[ $map['share_consent'] ] ?? null;
-        if ( ! in_array( $consent, array( 'yes', '1', 1, true ), true ) ) {
+        if ( ! self::is_affirmative_booking_consent( $consent ) ) {
             return new WP_Error( 'attendee_sharing_consent_missing', 'Explicit consent to share selected attendee details is required.' );
         }
         $ids = $data[ $map['profile_ids'] ] ?? null;
