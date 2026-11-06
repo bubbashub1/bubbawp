@@ -434,6 +434,35 @@ final class BH_Marketplace_Settings_3 {
      * Internal-only staging lifecycle transition. No route, shortcode or form action
      * invokes this method. A separate reviewed controller is required for leaders.
      */
+    /**
+     * Staging-only, read-only leader ownership gate for future booking actions.
+     * This does not grant leaders access to the administrator-only transition method.
+     */
+    public static function leader_can_manage_booking( $booking_id, $user_id = 0 ) {
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) {
+            return new WP_Error( 'leader_booking_disabled', 'Leader booking actions are not enabled.' );
+        }
+        $user_id = absint( $user_id ?: get_current_user_id() );
+        $booking_id = absint( $booking_id );
+        if ( ! $user_id || ! $booking_id || ! is_user_logged_in() || $user_id !== get_current_user_id() ) {
+            return new WP_Error( 'leader_booking_unauthorised', 'Booking access denied.' );
+        }
+        // Admin organisation preview never grants leader mutation rights.
+        $organiser_id = absint( get_user_meta( $user_id, 'bh3_organiser_id', true ) );
+        if ( ! $organiser_id ) {
+            return new WP_Error( 'leader_booking_unauthorised', 'Booking access denied.' );
+        }
+        global $wpdb;
+        $table = $wpdb->prefix . 'bh3_bookings';
+        $owner = $wpdb->get_var( $wpdb->prepare(
+            "SELECT organiser_id FROM `{$table}` WHERE id=%d LIMIT 1", $booking_id
+        ) );
+        if ( $owner === null || (int) $owner !== $organiser_id ) {
+            return new WP_Error( 'leader_booking_unauthorised', 'Booking access denied.' );
+        }
+        return true;
+    }
+
     public static function transition_booking_status( $booking_id, $target_status ) {
         if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
             || ! defined( 'BH3_ENABLE_BOOKING_STATUS_TRANSITIONS' ) || BH3_ENABLE_BOOKING_STATUS_TRANSITIONS !== true
