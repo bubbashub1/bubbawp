@@ -192,12 +192,30 @@ final class BH_Marketplace_Settings_3 {
         return array( 'gross_pence' => $gross, 'commission_pence' => $commission, 'leader_before_fees_pence' => $gross - $commission );
     }
     /**
+     * Administrator-controlled estimate used for the single parent-facing fee.
+     * Values are assumptions only; actual Stripe fees can vary by payment method.
+     */
+    public static function parent_booking_fee_settings() {
+        $defaults = array( 'processing_percent' => '1.50', 'processing_fixed_pence' => 20 );
+        $saved = get_option( 'bh3_parent_booking_fee_settings', array() );
+        $saved = is_array( $saved ) ? $saved : array();
+        $percent = isset( $saved['processing_percent'] ) && is_numeric( $saved['processing_percent'] )
+            ? (float) $saved['processing_percent'] : (float) $defaults['processing_percent'];
+        $fixed = isset( $saved['processing_fixed_pence'] ) ? absint( $saved['processing_fixed_pence'] ) : $defaults['processing_fixed_pence'];
+        if ( $percent < 0 || $percent >= 100 ) { $percent = (float) $defaults['processing_percent']; }
+        if ( $fixed > 10000 ) { $fixed = $defaults['processing_fixed_pence']; }
+        return array( 'processing_percent' => number_format( $percent, 2, '.', '' ), 'processing_fixed_pence' => $fixed );
+    }
+    /**
      * Illustrative parent-paid quote in integer pence. The leader's class price
      * is preserved; the single customer fee covers platform commission and an
      * estimated Stripe processing allowance. This is NOT a payment instruction.
      * Configure real processing rates and review fee disclosure before launch.
      */
-    public static function parent_paid_fee_preview( $leader_price_pence, $processing_percent = 1.5, $processing_fixed_pence = 20 ) {
+    public static function parent_paid_fee_preview( $leader_price_pence, $processing_percent = null, $processing_fixed_pence = null ) {
+        $settings = self::parent_booking_fee_settings();
+        $processing_percent = $processing_percent === null ? (float) $settings['processing_percent'] : (float) $processing_percent;
+        $processing_fixed_pence = $processing_fixed_pence === null ? (int) $settings['processing_fixed_pence'] : absint( $processing_fixed_pence );
         $leader_price_pence = absint( $leader_price_pence );
         if ( $leader_price_pence < 1 || $leader_price_pence > 10000000 ) {
             return new WP_Error( 'invalid_leader_price', 'Invalid class price.' );
@@ -2031,7 +2049,10 @@ final class BH_Marketplace_Settings_3 {
         wp_nonce_field( 'bh3_save_commission' );
         echo '<input type="hidden" name="action" value="bh3_save_commission"><label>Commission (%) <input type="number" name="rate" required min="0" max="100" step="0.01" value="' . esc_attr( number_format( self::rate(), 2, '.', '' ) ) . '"></label>';
         echo '<h2>Parent-paid booking fee (preview only)</h2>';
-        echo '<p>Parents will see one Bubba Hub Booking Fee on top of the class price. Leaders retain their advertised class price. This preview does not change checkout, charge cards or alter existing bookings.</p>';
+        echo '<p>Parents will see one Bubba Hub Booking Fee on top of the class price. Leaders retain their advertised class price. The processing assumptions below are editable and are used in the server-side fee quote; they do not change existing bookings.</p>';
+        $fee_settings = self::parent_booking_fee_settings();
+        echo '<p><label for="bh3-processing-percent">Estimated Stripe processing (%)</label><br><input id="bh3-processing-percent" type="number" name="processing_percent" min="0" max="99.99" step="0.01" required value="' . esc_attr( $fee_settings['processing_percent'] ) . '"></p>';
+        echo '<p><label for="bh3-processing-fixed">Estimated fixed processing charge (pence)</label><br><input id="bh3-processing-fixed" type="number" name="processing_fixed_pence" min="0" max="10000" step="1" required value="' . esc_attr( (string) $fee_settings['processing_fixed_pence'] ) . '"></p>';
         $example = self::parent_paid_fee_preview( 500 );
         if ( ! is_wp_error( $example ) ) {
             echo '<p><strong>Example £5.00 class:</strong> class £5.00 + one booking fee £'
@@ -2039,7 +2060,7 @@ final class BH_Marketplace_Settings_3 {
                 . ' = parent total £' . esc_html( number_format( $example['parent_total_pence'] / 100, 2 ) )
                 . '; leader receives £5.00.</p>';
         }
-        echo '<p><em>Illustrative processing assumption: 1.5% + 20p. Actual Stripe pricing depends on card and payment method; confirm your account rates before activation. Existing Stripe checkout is not yet compatible with this pricing model and remains disabled.</em></p>';
+        echo '<p><em>Illustrative processing assumption: ' . esc_html( $fee_settings['processing_percent'] ) . '% + ' . esc_html( (string) $fee_settings['processing_fixed_pence'] ) . 'p. Actual Stripe pricing depends on card and payment method; confirm your account rates before activation. Existing Stripe checkout is not yet compatible with this pricing model and remains disabled.</em></p>';
         $policy = self::policy();
         echo '<p><strong>Parent-facing disclosure:</strong> Class price + one Bubba Hub Booking Fee = total payable. The leader receives the full class price. Stripe charges the platform under destination charges; the booking fee is intended to cover estimated processing costs and Bubba Hub commission.</p>';
         $choices = array(
@@ -2089,6 +2110,18 @@ final class BH_Marketplace_Settings_3 {
             if ( ! in_array( $input, $values, true ) ) { wp_die( 'Invalid payment policy', '', array( 'response' => 400 ) ); }
             $policy[$key] = $input;
         }
+        $processing_raw = isset( $_POST['processing_percent'] ) && is_scalar( $_POST['processing_percent'] ) ? trim( (string) wp_unslash( $_POST['processing_percent'] ) ) : '';
+        $fixed_raw = isset( $_POST['processing_fixed_pence'] ) && is_scalar( $_POST['processing_fixed_pence'] ) ? trim( (string) wp_unslash( $_POST['processing_fixed_pence'] ) ) : '';
+        if ( ! preg_match( '/^(?:0|[1-9][0-9]?)(?:\\.[0-9]{1,2})?$/', $processing_raw )
+            || (float) $processing_raw >= 100
+            || ! preg_match( '/^(?:0|[1-9][0-9]{0,4})$/', $fixed_raw )
+            || (int) $fixed_raw > 10000 ) {
+            wp_die( 'Invalid processing fee assumptions', '', array( 'response' => 400 ) );
+        }
+        update_option( 'bh3_parent_booking_fee_settings', array(
+            'processing_percent' => number_format( (float) $processing_raw, 2, '.', '' ),
+            'processing_fixed_pence' => (int) $fixed_raw,
+        ), false );
         update_option( 'bh3_commission_percent', number_format( (float) $raw, 2, '.', '' ), false );
         update_option( 'bh3_marketplace_policy', $policy, false );
         $mode = isset( $_POST['stripe_mode'] ) && is_scalar( $_POST['stripe_mode'] ) ? sanitize_key( wp_unslash( $_POST['stripe_mode'] ) ) : '';
