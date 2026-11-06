@@ -701,8 +701,13 @@ final class BH_Marketplace_Settings_3 {
                 "SELECT COUNT(*) FROM `{$consents_table}` WHERE booking_id=%d AND consent_key=%s AND consent_version=%s AND response=%s",
                 (int) $booking['id'], 'share_attendee_details', 'v1', 'yes'
             ) );
-            if ( $attendee_count !== (int) $booking['places'] || $sharing_consent !== 1 ) {
-                return new WP_Error( 'booking_details_incomplete', 'Attendees and sharing consent must be saved before payment.' );
+            $terms_version = sanitize_key( (string) get_option( 'bh3_booking_terms_version', 'v1' ) );
+            $terms_consent = (int) $wpdb->get_var( $wpdb->prepare(
+                "SELECT COUNT(*) FROM `{$consents_table}` WHERE booking_id=%d AND consent_key=%s AND consent_version=%s AND response=%s",
+                (int) $booking['id'], 'booking_terms', $terms_version, 'yes'
+            ) );
+            if ( $attendee_count !== (int) $booking['places'] || $sharing_consent !== 1 || $terms_consent !== 1 ) {
+                return new WP_Error( 'booking_details_incomplete', 'Attendees, booking terms and sharing consent must be saved before payment.' );
             }
         }
         $valid = self::validate_occurrence( (int) $booking['session_id'], $booking['occurrence_date'] );
@@ -1145,6 +1150,15 @@ final class BH_Marketplace_Settings_3 {
                 $success = $wpdb->insert( $consents_table, array(
                     'booking_id' => $booking_id, 'consent_key' => 'share_attendee_details',
                     'consent_version' => 'v1', 'response' => 'yes',
+                    'response_at' => $now, 'actor_user_id' => $customer_user_id,
+                    'source' => 'booking', 'created_at' => $now,
+                ) ) === 1;
+            }
+            if ( $success ) {
+                $terms_version = sanitize_key( (string) get_option( 'bh3_booking_terms_version', 'v1' ) );
+                $success = $wpdb->insert( $consents_table, array(
+                    'booking_id' => $booking_id, 'consent_key' => 'booking_terms',
+                    'consent_version' => $terms_version, 'response' => 'yes',
                     'response_at' => $now, 'actor_user_id' => $customer_user_id,
                     'source' => 'booking', 'created_at' => $now,
                 ) ) === 1;
