@@ -456,7 +456,7 @@ final class BH_Developments_Admin_3 {
             }
             echo '</select></td></tr>';
         }
-        echo '</tbody></table><p><button type="submit" class="button button-secondary">Save 3.0 feature statuses</button></p></form></details>';
+        echo '</tbody></table><p><button type="submit" class="button button-secondary">Save core feature statuses</button></p></form></details>';
         echo '<p><a href="' . esc_url( 'https://github.com/bubbashub1/bubbawp/blob/main/docs/data-foundation/DEVELOPMENT_BLUEPRINT.md' ) . '" target="_blank" rel="noopener noreferrer">Read the full development blueprint (SQL, forms, shortcodes and page hierarchy)</a></p>';
         echo '<h2>SQL &amp; forms development register</h2>';
         echo '<p>Source-code assessment only. Reuse and extension proposals are not approved migrations. Confirm staging schemas and Fluent Forms exports before creating or changing tables.</p>';
@@ -481,7 +481,7 @@ final class BH_Developments_Admin_3 {
         }
         echo '</tbody></table></div>';
         echo '<p class="description">Source: legacy SQL schema and Expo migrations, native schema/family setup, and foundation audit. No database changes are performed by this register.</p>';
-        echo '<h2>Bubba Hub 4.0 — Future roadmap</h2>';
+        echo '<h2>Bubba Hub 4.0 — Enhancement phases</h2>';
         echo '<p>Less AI dependence, less administration for leaders, and a family portal to use, connect and be inspired. Track the progress of each phase below. Statuses are manually updated, not linked to deployments.</p>';
         echo '<style>.bh3-development-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px;max-width:1250px}.bh3-development-card{background:#fff;border:1px solid #d6e0db;border-radius:12px;padding:20px;box-sizing:border-box}.bh3-development-card h3{margin:8px 0}.bh3-development-card p{line-height:1.5}.bh3-development-card small{color:#505c57}.bh3-development-tag{display:inline-block;background:#eef5f0;color:#215b43;border-radius:20px;padding:4px 10px;font-weight:600}</style>';
         if ( isset( $_GET['updated'] ) && '1' === $_GET['updated'] ) {
