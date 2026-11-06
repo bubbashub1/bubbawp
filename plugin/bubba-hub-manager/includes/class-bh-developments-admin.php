@@ -219,7 +219,8 @@ final class BH_Developments_Admin_3 {
             foreach ( $blueprint[$sector_key] as $field_label => $field_value ) {
                 echo '<dt>' . esc_html( $field_label ) . '</dt><dd>' . esc_html( $field_value ) . '</dd>';
             }
-            echo '</dl></details>';
+            $contract_url = 'https://github.com/bubbashub1/bubbawp/blob/main/docs/data-foundation/' . strtoupper( $sector_key ) . '_FIELD_MAP.md';
+            echo '</dl><p style="margin:0 15px 15px"><a href="' . esc_url( $contract_url ) . '" target="_blank" rel="noopener noreferrer">View field-by-field contract</a></p></details>';
         }
         echo '<h2>Sector readiness — SQL, forms, shortcodes, pages and delivery</h2>';
         echo '<p>Manually maintained planning statuses. These are not deployment or test results. Existing 3.0 tracker statuses and 4.0 phase statuses are preserved separately.</p>';
