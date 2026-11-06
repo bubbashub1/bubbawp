@@ -65,5 +65,9 @@ check_fee( strpos( $source, 'name="processing_fixed_pence"' ) !== false, 'admini
 check_fee( strpos( $source, 'fluentform/rendering_field_data_input_checkbox' ) !== false, 'Form 7 family profile checkbox choices are populated dynamically' );
 check_fee( strpos( $source, 'fluentform/rendering_field_data_input_hidden' ) !== false, 'Form 7 session ID is populated from server-side widget context' );
 check_fee( strpos( $source, 'family_profile_ids' ) !== false, 'Form 7 family profile selection is mapped' );
+check_fee( strpos( $source, 'fluentform/submission_confirmation' ) !== false, 'successful Form 7 submission is handed off through its confirmation hook' );
+check_fee( strpos( $source, 'parent-bound-test-checkout' ) !== false, 'Form 7 confirmation invokes the bound checkout route' );
+check_fee( strpos( $source, 'redirectUrl' ) !== false, 'successful bound checkout redirects to Stripe' );
+check_fee( strpos( $source, 'bh3-test-booking-form' ) === false, 'duplicate standalone checkout form is removed' );
 
 echo "Parent-paid booking fee smoke tests passed.\n";
