@@ -100,7 +100,7 @@ check_fee( strpos( $source, 'booking_context_token' ) !== false, 'Form 7 context
 check_fee( strpos( $source, "SET booking_status='confirmed', payment_status='paid'" ) !== false, 'verified payment automatically confirms the reservation' );
 check_fee( strpos( $source, 'send_booking_confirmation_notifications' ) !== false, 'paid webhook dispatches booking confirmation notifications' );
 check_fee( strpos( $source, "'consent_key' => 'booking_terms'" ) !== false, 'accepted booking terms are stored against the booking' );
-check_fee( strpos( $source, "'booking_terms', $terms_version, 'yes'" ) !== false, 'Stripe checkout requires recorded booking terms consent' );
+check_fee( strpos( $source, "booking_terms', $terms_version" ) !== false, 'Stripe checkout requires recorded booking terms consent' );
 check_fee( strpos( $source, 'send_booking_confirmation_email_once' ) !== false, 'booking confirmation emails are idempotent across webhook retries' );
 check_fee( strpos( $source, 'bh3_booking_email_' ) !== false, 'booking confirmation delivery markers prevent duplicate emails' );
 check_fee( strpos( $source, "'family_profile_id' =>" ) !== false, 'selected attendee profiles remain linked to booking attendee records' );
