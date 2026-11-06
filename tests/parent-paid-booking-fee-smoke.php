@@ -79,6 +79,11 @@ foreach ( array( 'parent_name', 'parent_email', 'session_id', 'booking_context_t
 }
 check_fee( ( $form_fields['places']['attributes']['min'] ?? '' ) === '1'
     && ( $form_fields['places']['attributes']['max'] ?? '' ) === '20', 'Form 7 places input has safe bounds' );
+$form_order = array_keys( $form_fields );
+check_fee( array_search( 'family_profile_ids', $form_order, true ) < array_search( 'parent_name', $form_order, true )
+    && array_search( 'parent_name', $form_order, true ) < array_search( 'booking_terms_consent', $form_order, true ),
+    'Form 7 follows attendee selection, parent details, then booking terms' );
+check_fee( ! isset( $form_fields['child_details'] ), 'logged-in Form 7 does not ask parents to re-enter saved child details' );
 $family_setup = file_get_contents( dirname( __DIR__ ) . '/plugin/bubba-hub-manager/includes/class-bh-family-db-setup.php' );
 check_fee( strpos( $family_setup, 'ADD COLUMN gender varchar(40)' ) !== false, 'staging family profile migration adds the gender field without replacing rows' );
 
