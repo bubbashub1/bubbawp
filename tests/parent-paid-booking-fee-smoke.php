@@ -7,10 +7,12 @@
  * Stripe integration contract. They do not contact Stripe or WordPress.
  */
 define( 'ABSPATH', __DIR__ );
+define( 'HOUR_IN_SECONDS', 3600 );
 class WP_Error {}
 function absint( $value ) { return abs( (int) $value ); }
 function wp_parse_args( $args, $defaults ) { return array_merge( $defaults, is_array( $args ) ? $args : array() ); }
 function is_wp_error( $value ) { return $value instanceof WP_Error; }
+function wp_salt( $scheme = 'auth' ) { return 'booking-test-salt-' . $scheme; }
 $fee_test_options = array();
 function get_option( $key, $default = false ) {
     global $fee_test_options;
@@ -54,6 +56,10 @@ check_fee( BH_Marketplace_Settings_3::is_affirmative_booking_consent( 'yes' ), '
 check_fee( BH_Marketplace_Settings_3::is_affirmative_booking_consent( array( 'yes' ) ), 'checkbox-array affirmative consent is accepted' );
 check_fee( ! BH_Marketplace_Settings_3::is_affirmative_booking_consent( array() ), 'empty consent is rejected' );
 check_fee( ! BH_Marketplace_Settings_3::is_affirmative_booking_consent( 'no' ), 'negative consent is rejected' );
+$context_token = BH_Marketplace_Settings_3::create_booking_form_context_token( 42, 7 );
+check_fee( BH_Marketplace_Settings_3::verify_booking_form_context_token( $context_token, 42, 7 ), 'signed Form 7 context token verifies for its session and parent' );
+check_fee( ! BH_Marketplace_Settings_3::verify_booking_form_context_token( $context_token, 43, 7 ), 'signed Form 7 context cannot be reused for another session' );
+check_fee( ! BH_Marketplace_Settings_3::verify_booking_form_context_token( $context_token, 42, 8 ), 'signed Form 7 context cannot be reused by another parent' );
 
 $source = file_get_contents( dirname( __DIR__ ) . '/plugin/bubba-hub-manager/includes/class-bh-marketplace-settings.php' );
 check_fee( strpos( $source, "'unit_amount' => $parent_total" ) !== false, 'Stripe Checkout charges parent total including fee' );
@@ -69,5 +75,11 @@ check_fee( strpos( $source, 'fluentform/submission_confirmation' ) !== false, 's
 check_fee( strpos( $source, 'parent-bound-test-checkout' ) !== false, 'Form 7 confirmation invokes the bound checkout route' );
 check_fee( strpos( $source, 'redirectUrl' ) !== false, 'successful bound checkout redirects to Stripe' );
 check_fee( strpos( $source, 'bh3-test-booking-form' ) === false, 'duplicate standalone checkout form is removed' );
+check_fee( strpos( $source, 'booking_context_token' ) !== false, 'Form 7 context token is generated and checked' );
+check_fee( strpos( $source, "SET booking_status='confirmed', payment_status='paid'" ) !== false, 'verified payment automatically confirms the reservation' );
+check_fee( strpos( $source, 'send_booking_confirmation_notifications' ) !== false, 'paid webhook dispatches booking confirmation notifications' );
+check_fee( strpos( $source, 'send_booking_confirmation_email_once' ) !== false, 'booking confirmation emails are idempotent across webhook retries' );
+check_fee( strpos( $source, 'bh3_booking_email_' ) !== false, 'booking confirmation delivery markers prevent duplicate emails' );
+check_fee( strpos( $source, "'family_profile_id' => absint( $person['profile_id'] ?? 0 ) ?: null" ) !== false, 'selected attendee profiles remain linked to booking attendee records' );
 
 echo "Parent-paid booking fee smoke tests passed.\n";
