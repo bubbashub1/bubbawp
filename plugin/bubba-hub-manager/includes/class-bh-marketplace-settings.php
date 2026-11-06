@@ -1431,16 +1431,9 @@ final class BH_Marketplace_Settings_3 {
             echo '<div class="bh3-booking-attendees"><h4>Who is attending?</h4>';
             echo '<p>Select the children attending, or choose a pregnancy profile for an antenatal class.</p>';
             if ( $profiles ) {
-                echo '<fieldset><legend>Family profiles</legend>';
-                foreach ( $profiles as $profile ) {
-                    $type = $profile['profile_type'] === 'bump' ? 'Pregnancy' : 'Child';
-                    echo '<label style="display:block;margin:8px 0"><input type="checkbox" name="bh3_preview_profile_ids[]" value="' .
-                        esc_attr( $profile['id'] ) . '" disabled> ' .
-                        esc_html( $profile['display_name'] ) . ' (' . esc_html( $type ) . ')</label>';
-                }
-                echo '</fieldset><p><small>Selection preview only. Booking submission linking is still being developed.</small></p>';
+                echo '<p>Your saved child and pregnancy profiles will appear as selectable options in the booking form below.</p>';
             } else {
-                echo '<p>No child or pregnancy profiles found.</p>';
+                echo '<p>No child or pregnancy profiles found. <a href="' . esc_url( home_url( '/my-hub/children/' ) ) . '">Add a family profile in My Hub</a> before booking.</p>';
             }
             echo '<p><a href="' . esc_url( home_url( '/my-hub/children/' ) ) . '">Add or edit a child in My Hub</a></p></div>';
         }
