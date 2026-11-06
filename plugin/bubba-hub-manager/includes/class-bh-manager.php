@@ -134,6 +134,7 @@ final class BH_Manager_3 {
         add_action( 'admin_menu', array( __CLASS__, 'register_admin_page' ) );
         add_action( 'admin_menu', array( __CLASS__, 'register_workstreams_page' ), 30 );
         add_action( 'admin_menu', array( __CLASS__, 'register_booking_test_generator_page' ), 30 );
+        add_action( 'admin_menu', array( __CLASS__, 'register_marketplace_commission_page' ), 30 );
         add_action( 'admin_menu', array( 'BH_Developments_Admin_3', 'register' ), 30 );
         add_action( 'admin_post_bh3_save_development_statuses', array( 'BH_Developments_Admin_3', 'save_statuses' ) );
         add_action( 'admin_post_bh3_save_development_readiness', array( 'BH_Developments_Admin_3', 'save_readiness' ) );
@@ -247,6 +248,22 @@ final class BH_Manager_3 {
     public static function consolidate_leader_admin_menus() {
         remove_menu_page( 'bh3-my-listings' );
         remove_menu_page( 'bh3-leader-dashboard' );
+    }
+
+    /** Register marketplace settings after the Bubba Hub parent admin menu exists. */
+    public static function register_marketplace_commission_page() {
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
+            || ! class_exists( 'BH_Marketplace_Settings_3' ) ) {
+            return;
+        }
+        add_submenu_page(
+            'bubba-hub-3-status',
+            'Marketplace Commission',
+            'Marketplace Commission',
+            'manage_options',
+            'bh3-marketplace',
+            array( 'BH_Marketplace_Settings_3', 'admin_form' )
+        );
     }
 
     /** Register the staging QA screen independently of marketplace feature boot guards. */
