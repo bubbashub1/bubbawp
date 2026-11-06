@@ -16,6 +16,8 @@ final class BH_Marketplace_Settings_3 {
         add_action( 'admin_post_bh3_save_payout_method', array( __CLASS__, 'save_method' ) );
         add_shortcode( 'bh_leader_payout_settings', array( __CLASS__, 'leader_form' ) );
         add_shortcode( 'bh_parent_booking', array( __CLASS__, 'parent_booking_widget' ) );
+        add_filter( 'fluentform/rendering_field_data_input_checkbox', array( __CLASS__, 'filter_form7_checkbox_field' ), 10, 2 );
+        add_filter( 'fluentform/rendering_field_data_input_hidden', array( __CLASS__, 'filter_form7_hidden_field' ), 10, 2 );
         add_shortcode( 'bh_booking_readiness', array( __CLASS__, 'booking_readiness_preview' ) );
         add_shortcode( 'bh_leader_email_verification', array( __CLASS__, 'leader_email_verification_widget' ) );
         add_shortcode( 'bh_leader_account_setup', array( __CLASS__, 'leader_account_setup_widget' ) );
@@ -889,10 +891,54 @@ final class BH_Marketplace_Settings_3 {
      * values. Admin must map actual Fluent Forms input names first.
      * No payment or capacity reservation is authorised by this check alone.
      */
+    public static function filter_form7_checkbox_field( $data, $form ) {
+        if ( absint( $form->id ?? 0 ) !== absint( get_option( 'bh3_booking_form_id', 7 ) )
+            || ( $data['attributes']['name'] ?? '' ) !== 'family_profile_ids'
+            || ! is_user_logged_in() ) { return $data; }
+        $options = array();
+        foreach ( self::booking_profile_choices( get_current_user_id() ) as $profile ) {
+            $type = ( $profile['profile_type'] ?? '' ) === 'bump' ? 'Pregnancy' : 'Child';
+            $options[] = array( 'label' => sanitize_text_field( $profile['display_name'] . ' (' . $type . ')' ),
+                'value' => (string) absint( $profile['id'] ), 'calc_value' => '' );
+        }
+        if ( isset( $data['settings'] ) && is_array( $data['settings'] ) ) {
+            $data['settings']['advanced_options'] = $options;
+        }
+        return $data;
+    }
+
+    public static function filter_form7_hidden_field( $data, $form ) {
+        if ( absint( $form->id ?? 0 ) !== absint( get_option( 'bh3_booking_form_id', 7 ) )
+            || ( $data['attributes']['name'] ?? '' ) !== 'session_id'
+            || empty( $GLOBALS['bh3_form7_session_id'] ) ) { return $data; }
+        $data['attributes']['value'] = (string) absint( $GLOBALS['bh3_form7_session_id'] );
+        return $data;
+    }
+
+    public static function is_affirmative_booking_consent( $value ) {
+        if ( is_array( $value ) ) {
+            foreach ( $value as $choice ) {
+                if ( in_array( $choice, array( 'yes', '1', 1, true ), true ) ) { return true; }
+            }
+            return false;
+        }
+        return in_array( $value, array( 'yes', '1', 1, true ), true );
+    }
+
+    public static function booking_form_field_map() {
+        $defaults = array(
+            'session_id' => 'session_id', 'occurrence_date' => 'occurrence_date',
+            'places' => 'places', 'consent' => 'booking_terms_consent',
+            'profile_ids' => 'family_profile_ids', 'share_consent' => 'share_child_details_consent',
+        );
+        $saved = get_option( 'bh3_booking_form_field_map', array() );
+        return wp_parse_args( is_array( $saved ) ? $saved : array(), $defaults );
+    }
+
     public static function inspect_booking_form_fields( $submission_id, $customer_user_id, $expected_session_id, $expected_date, $expected_places ) {
         $owned = self::inspect_booking_form_submission( $submission_id, $customer_user_id );
         if ( is_wp_error( $owned ) ) { return $owned; }
-        $map = get_option( 'bh3_booking_form_field_map', array() );
+        $map = self::booking_form_field_map();
         $required = array( 'session_id', 'occurrence_date', 'places', 'consent' );
         if ( ! is_array( $map ) ) {
             return new WP_Error( 'booking_fields_unmapped', 'Booking form field mapping is missing.' );
@@ -931,7 +977,7 @@ final class BH_Marketplace_Settings_3 {
         }
         // Consent must be an explicit affirmative value, never a non-empty
         // arbitrary string, unchecked checkbox, or inferred default.
-        if ( ! in_array( $consent, array( 'yes', '1', 1, true ), true ) ) {
+        if ( ! self::is_affirmative_booking_consent( $consent ) ) {
             return new WP_Error( 'booking_consent_missing', 'Booking consent is required.' );
         }
         $owned['session_selection_verified'] = true;
@@ -1073,8 +1119,7 @@ final class BH_Marketplace_Settings_3 {
     public static function inspect_booking_form_attendees( $submission_id, $customer_user_id, $expected_session_id, $expected_date, $expected_places ) {
         $verified = self::inspect_booking_form_fields( $submission_id, $customer_user_id, $expected_session_id, $expected_date, $expected_places );
         if ( is_wp_error( $verified ) ) { return $verified; }
-        $map = get_option( 'bh3_booking_form_field_map', array() );
-        if ( ! is_array( $map ) ) { return new WP_Error( 'attendee_fields_unmapped', 'Attendee fields are not configured.' ); }
+        $map = self::booking_form_field_map();
         foreach ( array( 'profile_ids', 'share_consent' ) as $field ) {
             if ( empty( $map[ $field ] ) || ! is_string( $map[ $field ] )
                 || ! preg_match( '/^[A-Za-z][A-Za-z0-9_]*$/', $map[ $field ] ) ) {
@@ -1417,8 +1462,12 @@ final class BH_Marketplace_Settings_3 {
         $form_id = absint( get_option( 'bh3_booking_form_id', 7 ) );
         if ( $form_id && shortcode_exists( 'fluentform' ) ) {
             echo '<div class="bh3-booking-details"><h4>Booking details</h4>';
+            $previous_session_context = $GLOBALS['bh3_form7_session_id'] ?? null;
+            $GLOBALS['bh3_form7_session_id'] = $session_id;
             echo do_shortcode( '[fluentform id="' . $form_id . '"]' );
-            echo '<p class="bh3-booking-note">Submitting your details does not reserve a place or confirm a booking.</p></div>';
+            if ( $previous_session_context === null ) { unset( $GLOBALS['bh3_form7_session_id'] ); }
+            else { $GLOBALS['bh3_form7_session_id'] = $previous_session_context; }
+            echo '<p class="bh3-booking-note">Submitting your details does not reserve a place or confirm a booking. Your place is only held when secure checkout confirms the reservation.</p></div>';
         } else {
             echo '<p role="status">Booking details form is not available.</p>';
         }
