@@ -1511,6 +1511,36 @@ final class BH_Marketplace_Settings_3 {
         );
     }
 
+    /** Read-only staging endpoint for pre-testing native form validation. */
+    public static function register_native_booking_preflight_route() {
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
+            || ! defined( 'BH3_PREVIEW_NATIVE_BOOKING_FORM' ) || BH3_PREVIEW_NATIVE_BOOKING_FORM !== true ) { return; }
+        register_rest_route( 'bubba-hub/v3', '/native-booking-preflight', array(
+            'methods' => 'POST',
+            'permission_callback' => function ( $request ) {
+                return is_user_logged_in() && wp_verify_nonce( (string) $request->get_header( 'X-WP-Nonce' ), 'wp_rest' );
+            },
+            'callback' => array( __CLASS__, 'native_booking_preflight' ),
+        ) );
+    }
+    public static function native_booking_preflight( $request ) {
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
+            || ! defined( 'BH3_PREVIEW_NATIVE_BOOKING_FORM' ) || BH3_PREVIEW_NATIVE_BOOKING_FORM !== true
+            || ! is_user_logged_in() || ! wp_verify_nonce( (string) $request->get_header( 'X-WP-Nonce' ), 'wp_rest' ) ) {
+            return new WP_Error( 'native_preflight_disabled', 'Native booking preflight is unavailable.', array( 'status' => 403 ) );
+        }
+        $data = $request->get_json_params();
+        $checked = self::validate_native_parent_booking_details( $data, get_current_user_id() );
+        if ( is_wp_error( $checked ) ) {
+            return new WP_Error( $checked->get_error_code(), $checked->get_error_message(), array( 'status' => 400 ) );
+        }
+        return rest_ensure_response( array(
+            'valid' => true, 'attendee_count' => $checked['attendee_count'],
+            'checkout_authorised' => false, 'reservation_created' => false,
+            'payment_started' => false,
+        ) );
+    }
+
     public static function booking_profile_choices( $customer_user_id ) {
         $customer_user_id = absint( $customer_user_id );
         if ( ! is_user_logged_in() || $customer_user_id !== get_current_user_id() ) { return array(); }
