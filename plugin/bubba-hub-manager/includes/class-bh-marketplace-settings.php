@@ -1556,6 +1556,33 @@ final class BH_Marketplace_Settings_3 {
         ), ARRAY_A );
         return is_array( $rows ) ? $rows : array();
     }
+    /** Administrator-only staging links to configured, quote-valid sessions. */
+    public static function staging_booking_test_links() {
+        if ( ! current_user_can( 'manage_options' )
+            || strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) {
+            return '';
+        }
+        global $wpdb;
+        $table = $wpdb->prefix . 'sessions';
+        if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ) !== $table ) {
+            return '<p>Sessions table is missing on staging.</p>';
+        }
+        $configs = get_option( 'bh3_session_booking_config', array() );
+        if ( ! is_array( $configs ) ) { $configs = array(); }
+        $links = array();
+        foreach ( $configs as $id => $config ) {
+            if ( count( $links ) >= 15 ) { break; }
+            if ( ! is_scalar( $id ) || ! ctype_digit( (string) $id ) || empty( $config['enabled'] ) ) { continue; }
+            $quote = self::quote_session( (int) $id, 1 );
+            if ( is_wp_error( $quote ) ) { continue; }
+            $links[] = '<li><a href="' . esc_url( add_query_arg( 'session_id', (int) $id, home_url( '/checkout/' ) ) ) . '">Session #' . absint( $id ) . ' — preview checkout</a></li>';
+        }
+        if ( ! $links ) {
+            return '<p>No quote-valid paid sessions found. Configure a scheduled session with a published activity, enabled booking and a positive price before testing checkout.</p>';
+        }
+        return '<p>Administrator-only staging test links. These do not reserve places or initiate payments.</p><ul>' . implode( '', $links ) . '</ul>';
+    }
+
     public static function parent_booking_widget( $atts ) {
         $atts = shortcode_atts( array( 'session_id' => 0 ), $atts, 'bh_parent_booking' );
         $session_id = absint( $atts['session_id'] );
@@ -1568,7 +1595,7 @@ final class BH_Marketplace_Settings_3 {
             }
         }
         if ( ! $session_id ) {
-            return '<p>Select a session on an activity page to see booking options.</p>';
+            return '<p>Select a session on an activity page to see booking options.</p>' . self::staging_booking_test_links();
         }
         $quote = self::quote_session( $session_id, 1 );
         if ( is_wp_error( $quote ) ) {
