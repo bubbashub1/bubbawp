@@ -1545,9 +1545,9 @@ final class BH_Marketplace_Settings_3 {
             if ( $profiles ) {
                 echo '<p>Your saved child and pregnancy profiles will appear as selectable options in the booking form below.</p>';
             } else {
-                echo '<p>No child or pregnancy profiles found. <a href="' . esc_url( home_url( '/my-hub/children/' ) ) . '">Add a family profile in My Hub</a> before booking.</p>';
+                echo '<p>No child or pregnancy profiles found. <a href="' . esc_url( home_url( '/family/children/' ) ) . '">Add a family profile in Family Hub</a> before booking.</p>';
             }
-            echo '<p><a href="' . esc_url( home_url( '/my-hub/children/' ) ) . '">Add or edit a child in My Hub</a></p></div>';
+            echo '<p><a href="' . esc_url( home_url( '/family/children/' ) ) . '">Add or edit a child in Family Hub</a></p></div>';
         }
         if ( ! is_user_logged_in() ) {
             // Guest details are local form inputs only. No guest checkout,
