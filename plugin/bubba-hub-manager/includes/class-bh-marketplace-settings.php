@@ -9,6 +9,7 @@ final class BH_Marketplace_Settings_3 {
         add_action( 'rest_api_init', array( __CLASS__, 'register_test_webhook_route' ) );
         add_action( 'rest_api_init', array( __CLASS__, 'register_parent_booking_binding_route' ) );
         add_action( 'rest_api_init', array( __CLASS__, 'register_bound_parent_checkout_route' ) );
+        add_action( 'rest_api_init', array( __CLASS__, 'register_native_booking_preflight_route' ) );
         add_action( 'admin_post_bh3_save_commission', array( __CLASS__, 'save_commission' ) );
         add_action( 'admin_post_bh3_leader_enrol_booking', array( __CLASS__, 'handle_leader_enrol_booking' ) );
         add_action( 'admin_post_bh3_verify_stripe', array( __CLASS__, 'verify_stripe' ) );
@@ -1471,6 +1472,76 @@ final class BH_Marketplace_Settings_3 {
         return $html . '<p>Read-only preview. No booking has been made and payments remain disabled.</p></section>';
     }
 
+    /**
+     * Validate native parent input without storing data or starting Checkout.
+     * Future handlers must independently verify the session, capacity, nonce,
+     * booking context and Stripe readiness before reserving any places.
+     */
+    public static function validate_native_parent_booking_details( $input, $user_id ) {
+        $user_id = absint( $user_id );
+        if ( ! is_array( $input ) || ! is_user_logged_in() || $user_id !== get_current_user_id() ) {
+            return new WP_Error( 'native_booking_auth_required', 'Please sign in to book.' );
+        }
+        $account = get_userdata( $user_id );
+        $name = $input['parent_name'] ?? null;
+        $email = $input['parent_email'] ?? null;
+        if ( ! is_string( $name ) || trim( $name ) === '' || strlen( $name ) > 200
+            || ! is_string( $email ) || ! is_email( $email ) || ! $account
+            || ! is_email( $account->user_email )
+            || ! hash_equals( strtolower( trim( $account->user_email ) ), strtolower( trim( $email ) ) ) ) {
+            return new WP_Error( 'native_booking_contact_invalid', 'Use your name and account email address.' );
+        }
+        if ( ! self::is_affirmative_booking_consent( $input['booking_terms_consent'] ?? null )
+            || ! self::is_affirmative_booking_consent( $input['share_child_details_consent'] ?? null ) ) {
+            return new WP_Error( 'native_booking_consent_missing', 'Both booking consents are required.' );
+        }
+        $profile_ids = $input['family_profile_ids'] ?? null;
+        if ( ! is_array( $profile_ids ) || count( $profile_ids ) < 1 || count( $profile_ids ) > 20 ) {
+            return new WP_Error( 'native_booking_attendees_missing', 'Select the family members attending.' );
+        }
+        $attendees = self::inspect_booking_attendees( $profile_ids, $user_id, count( $profile_ids ) );
+        if ( is_wp_error( $attendees ) ) { return $attendees; }
+        return array(
+            'parent_name' => sanitize_text_field( $name ),
+            'parent_email' => sanitize_email( $email ),
+            'attendees' => $attendees,
+            'attendee_count' => count( $attendees ),
+            'terms_consent_verified' => true,
+            'sharing_consent_verified' => true,
+            'checkout_authorised' => false,
+        );
+    }
+
+    /** Read-only staging endpoint for pre-testing native form validation. */
+    public static function register_native_booking_preflight_route() {
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
+            || ! defined( 'BH3_PREVIEW_NATIVE_BOOKING_FORM' ) || BH3_PREVIEW_NATIVE_BOOKING_FORM !== true ) { return; }
+        register_rest_route( 'bubba-hub/v3', '/native-booking-preflight', array(
+            'methods' => 'POST',
+            'permission_callback' => function ( $request ) {
+                return is_user_logged_in() && wp_verify_nonce( (string) $request->get_header( 'X-WP-Nonce' ), 'wp_rest' );
+            },
+            'callback' => array( __CLASS__, 'native_booking_preflight' ),
+        ) );
+    }
+    public static function native_booking_preflight( $request ) {
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk'
+            || ! defined( 'BH3_PREVIEW_NATIVE_BOOKING_FORM' ) || BH3_PREVIEW_NATIVE_BOOKING_FORM !== true
+            || ! is_user_logged_in() || ! wp_verify_nonce( (string) $request->get_header( 'X-WP-Nonce' ), 'wp_rest' ) ) {
+            return new WP_Error( 'native_preflight_disabled', 'Native booking preflight is unavailable.', array( 'status' => 403 ) );
+        }
+        $data = $request->get_json_params();
+        $checked = self::validate_native_parent_booking_details( $data, get_current_user_id() );
+        if ( is_wp_error( $checked ) ) {
+            return new WP_Error( $checked->get_error_code(), $checked->get_error_message(), array( 'status' => 400 ) );
+        }
+        return rest_ensure_response( array(
+            'valid' => true, 'attendee_count' => $checked['attendee_count'],
+            'checkout_authorised' => false, 'reservation_created' => false,
+            'payment_started' => false,
+        ) );
+    }
+
     public static function booking_profile_choices( $customer_user_id ) {
         $customer_user_id = absint( $customer_user_id );
         if ( ! is_user_logged_in() || $customer_user_id !== get_current_user_id() ) { return array(); }
@@ -1485,6 +1556,33 @@ final class BH_Marketplace_Settings_3 {
         ), ARRAY_A );
         return is_array( $rows ) ? $rows : array();
     }
+    /** Administrator-only staging links to configured, quote-valid sessions. */
+    public static function staging_booking_test_links() {
+        if ( ! current_user_can( 'manage_options' )
+            || strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) {
+            return '';
+        }
+        global $wpdb;
+        $table = $wpdb->prefix . 'sessions';
+        if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ) !== $table ) {
+            return '<p>Sessions table is missing on staging.</p>';
+        }
+        $configs = get_option( 'bh3_session_booking_config', array() );
+        if ( ! is_array( $configs ) ) { $configs = array(); }
+        $links = array();
+        foreach ( $configs as $id => $config ) {
+            if ( count( $links ) >= 15 ) { break; }
+            if ( ! is_scalar( $id ) || ! ctype_digit( (string) $id ) || empty( $config['enabled'] ) ) { continue; }
+            $quote = self::quote_session( (int) $id, 1 );
+            if ( is_wp_error( $quote ) ) { continue; }
+            $links[] = '<li><a href="' . esc_url( add_query_arg( 'session_id', (int) $id, home_url( '/checkout/' ) ) ) . '">Session #' . absint( $id ) . ' — preview checkout</a></li>';
+        }
+        if ( ! $links ) {
+            return '<p>No quote-valid paid sessions found. Configure a scheduled session with a published activity, enabled booking and a positive price before testing checkout.</p>';
+        }
+        return '<p>Administrator-only staging test links. These do not reserve places or initiate payments.</p><ul>' . implode( '', $links ) . '</ul>';
+    }
+
     public static function parent_booking_widget( $atts ) {
         $atts = shortcode_atts( array( 'session_id' => 0 ), $atts, 'bh_parent_booking' );
         $session_id = absint( $atts['session_id'] );
@@ -1497,7 +1595,7 @@ final class BH_Marketplace_Settings_3 {
             }
         }
         if ( ! $session_id ) {
-            return '<p>Select a session on an activity page to see booking options.</p>';
+            return '<p>Select a session on an activity page to see booking options.</p>' . self::staging_booking_test_links();
         }
         $quote = self::quote_session( $session_id, 1 );
         if ( is_wp_error( $quote ) ) {
@@ -1545,9 +1643,9 @@ final class BH_Marketplace_Settings_3 {
             if ( $profiles ) {
                 echo '<p>Your saved child and pregnancy profiles will appear as selectable options in the booking form below.</p>';
             } else {
-                echo '<p>No child or pregnancy profiles found. <a href="' . esc_url( home_url( '/my-hub/children/' ) ) . '">Add a family profile in My Hub</a> before booking.</p>';
+                echo '<p>No child or pregnancy profiles found. <a href="' . esc_url( home_url( '/family/children/' ) ) . '">Add a family profile in Family Hub</a> before booking.</p>';
             }
-            echo '<p><a href="' . esc_url( home_url( '/my-hub/children/' ) ) . '">Add or edit a child in My Hub</a></p></div>';
+            echo '<p><a href="' . esc_url( home_url( '/family/children/' ) ) . '">Add or edit a child in Family Hub</a></p></div>';
         }
         if ( ! is_user_logged_in() ) {
             // Guest details are local form inputs only. No guest checkout,
@@ -1560,6 +1658,32 @@ final class BH_Marketplace_Settings_3 {
             echo '<p><label>Gender (optional) <select disabled><option value="">Prefer not to say</option><option>Girl</option><option>Boy</option><option>Another identity</option></select></label></p>';
             echo '<p><label>Year of birth <input type="number" min="1900" max="' . esc_attr( wp_date( 'Y' ) ) . '" disabled></label></p>';
             echo '</fieldset><p><small>Preview only — these fields cannot be submitted yet. Guest consent and booking verification are being built.</small></p></div>';
+        }
+        // Staging-only preflight form. It validates only; it never reserves or charges.
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) === 'staging.bubbahub.co.uk'
+            && defined( 'BH3_PREVIEW_NATIVE_BOOKING_FORM' ) && BH3_PREVIEW_NATIVE_BOOKING_FORM === true ) {
+            echo '<div class="bh3-native-booking-preview" aria-label="Native booking preflight">';
+            echo '<h4>Native booking — pre-test</h4>';
+            echo '<p>This checks your details only. No reservation or payment will be made.</p>';
+            if ( is_user_logged_in() ) {
+                $account = wp_get_current_user();
+                echo '<form class="bh3-native-preflight-form">';
+                echo '<p><label>Parent or guardian name <input name="parent_name" type="text" maxlength="200" autocomplete="name" required></label></p>';
+                echo '<p><label>Account email <input name="parent_email" type="email" autocomplete="email" value="' . esc_attr( $account->user_email ) . '" readonly required></label></p>';
+                echo '<fieldset><legend>Who is attending?</legend>';
+                foreach ( self::booking_profile_choices( get_current_user_id() ) as $profile ) {
+                    echo '<p><label><input name="family_profile_ids[]" type="checkbox" value="' . esc_attr( $profile['id'] ) . '"> ' . esc_html( $profile['display_name'] ) . ' (' . esc_html( $profile['profile_type'] === 'bump' ? 'Pregnancy' : 'Child' ) . ')</label></p>';
+                }
+                echo '</fieldset>';
+                echo '<p><label><input name="share_child_details_consent" type="checkbox" value="yes" required> I agree to share the selected attendee details with the class leader for this booking.</label></p>';
+                echo '<p><label><input name="booking_terms_consent" type="checkbox" value="yes" required> I agree to the <a href="' . esc_url( home_url( '/legal/bookings/' ) ) . '">Booking Terms and Conditions</a>.</label></p>';
+                echo '<p><button type="submit">Validate details (no payment)</button></p>';
+                echo '<p class="bh3-native-preflight-result" role="status" aria-live="polite"></p></form>';
+                echo '<script>(function(){const root=document.getElementById(' . wp_json_encode( $id ) . ');if(!root)return;const form=root.querySelector(".bh3-native-preflight-form");if(!form)return;const result=form.querySelector(".bh3-native-preflight-result");form.addEventListener("submit",async function(event){event.preventDefault();const button=form.querySelector("button[type=submit]");button.disabled=true;result.textContent="Validating…";const data=new FormData(form);const body={parent_name:data.get("parent_name"),parent_email:data.get("parent_email"),family_profile_ids:data.getAll("family_profile_ids[]"),share_child_details_consent:data.get("share_child_details_consent"),booking_terms_consent:data.get("booking_terms_consent")};try{const response=await fetch(' . wp_json_encode( rest_url( 'bubba-hub/v3/native-booking-preflight' ) ) . ',{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json","X-WP-Nonce":' . wp_json_encode( wp_create_nonce( 'wp_rest' ) ) . '},body:JSON.stringify(body)});const payload=await response.json();result.textContent=response.ok&&payload.valid?"Details validated for "+payload.attendee_count+" attendee(s). No booking or payment has been made.":(payload.message||"Validation could not be completed.");}catch(error){result.textContent="Unable to validate details. Please try again.";}finally{button.disabled=false;}});})();</script>';
+            } else {
+                echo '<p>Please sign in to pre-test the booking form.</p>';
+            }
+            echo '</div>';
         }
         // Do not display a submittable Form 7 when booking is disabled.
         // A submission without a configured checkout would strand the parent.
