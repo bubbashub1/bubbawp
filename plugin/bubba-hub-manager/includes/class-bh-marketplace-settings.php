@@ -1471,6 +1471,46 @@ final class BH_Marketplace_Settings_3 {
         return $html . '<p>Read-only preview. No booking has been made and payments remain disabled.</p></section>';
     }
 
+    /**
+     * Validate native parent input without storing data or starting Checkout.
+     * Future handlers must independently verify the session, capacity, nonce,
+     * booking context and Stripe readiness before reserving any places.
+     */
+    public static function validate_native_parent_booking_details( $input, $user_id ) {
+        $user_id = absint( $user_id );
+        if ( ! is_array( $input ) || ! is_user_logged_in() || $user_id !== get_current_user_id() ) {
+            return new WP_Error( 'native_booking_auth_required', 'Please sign in to book.' );
+        }
+        $account = get_userdata( $user_id );
+        $name = $input['parent_name'] ?? null;
+        $email = $input['parent_email'] ?? null;
+        if ( ! is_string( $name ) || trim( $name ) === '' || strlen( $name ) > 200
+            || ! is_string( $email ) || ! is_email( $email ) || ! $account
+            || ! is_email( $account->user_email )
+            || ! hash_equals( strtolower( trim( $account->user_email ) ), strtolower( trim( $email ) ) ) ) {
+            return new WP_Error( 'native_booking_contact_invalid', 'Use your name and account email address.' );
+        }
+        if ( ! self::is_affirmative_booking_consent( $input['booking_terms_consent'] ?? null )
+            || ! self::is_affirmative_booking_consent( $input['share_child_details_consent'] ?? null ) ) {
+            return new WP_Error( 'native_booking_consent_missing', 'Both booking consents are required.' );
+        }
+        $profile_ids = $input['family_profile_ids'] ?? null;
+        if ( ! is_array( $profile_ids ) || count( $profile_ids ) < 1 || count( $profile_ids ) > 20 ) {
+            return new WP_Error( 'native_booking_attendees_missing', 'Select the family members attending.' );
+        }
+        $attendees = self::inspect_booking_attendees( $profile_ids, $user_id, count( $profile_ids ) );
+        if ( is_wp_error( $attendees ) ) { return $attendees; }
+        return array(
+            'parent_name' => sanitize_text_field( $name ),
+            'parent_email' => sanitize_email( $email ),
+            'attendees' => $attendees,
+            'attendee_count' => count( $attendees ),
+            'terms_consent_verified' => true,
+            'sharing_consent_verified' => true,
+            'checkout_authorised' => false,
+        );
+    }
+
     public static function booking_profile_choices( $customer_user_id ) {
         $customer_user_id = absint( $customer_user_id );
         if ( ! is_user_logged_in() || $customer_user_id !== get_current_user_id() ) { return array(); }
