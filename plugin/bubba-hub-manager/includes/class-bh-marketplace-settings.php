@@ -9,6 +9,7 @@ final class BH_Marketplace_Settings_3 {
         add_action( 'rest_api_init', array( __CLASS__, 'register_test_webhook_route' ) );
         add_action( 'rest_api_init', array( __CLASS__, 'register_parent_booking_binding_route' ) );
         add_action( 'rest_api_init', array( __CLASS__, 'register_bound_parent_checkout_route' ) );
+        add_action( 'rest_api_init', array( __CLASS__, 'register_native_booking_preflight_route' ) );
         add_action( 'admin_post_bh3_save_commission', array( __CLASS__, 'save_commission' ) );
         add_action( 'admin_post_bh3_leader_enrol_booking', array( __CLASS__, 'handle_leader_enrol_booking' ) );
         add_action( 'admin_post_bh3_verify_stripe', array( __CLASS__, 'verify_stripe' ) );
