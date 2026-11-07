@@ -1561,6 +1561,27 @@ final class BH_Marketplace_Settings_3 {
             echo '<p><label>Year of birth <input type="number" min="1900" max="' . esc_attr( wp_date( 'Y' ) ) . '" disabled></label></p>';
             echo '</fieldset><p><small>Preview only — these fields cannot be submitted yet. Guest consent and booking verification are being built.</small></p></div>';
         }
+        // Staging-only native checkout interface preview. This deliberately has no
+        // submit handler: the existing verified Fluent Forms binding remains the
+        // only route authorised to create reservations or Stripe sessions.
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) === 'staging.bubbahub.co.uk'
+            && defined( 'BH3_PREVIEW_NATIVE_BOOKING_FORM' ) && BH3_PREVIEW_NATIVE_BOOKING_FORM === true ) {
+            echo '<div class="bh3-native-booking-preview" aria-label="Native booking form preview">';
+            echo '<h4>Native booking form — preview only</h4>';
+            echo '<p role="status">This interface cannot submit a booking or initiate payment. The secure native submission handler is still in development.</p>';
+            echo '<fieldset disabled><legend>Parent and attendee details</legend>';
+            echo '<p><label>Parent or guardian name <input type="text" autocomplete="name"></label></p>';
+            echo '<p><label>Account email <input type="email" autocomplete="email" value="' . esc_attr( wp_get_current_user()->user_email ) . '"></label></p>';
+            if ( is_user_logged_in() ) {
+                foreach ( self::booking_profile_choices( get_current_user_id() ) as $profile ) {
+                    echo '<p><label><input type="checkbox"> ' . esc_html( $profile['display_name'] ) . ' (' . esc_html( $profile['profile_type'] === 'bump' ? 'Pregnancy' : 'Child' ) . ')</label></p>';
+                }
+            }
+            echo '<p><label><input type="checkbox"> I consent to sharing the selected attendee details with the class leader for this booking.</label></p>';
+            echo '<p><label><input type="checkbox"> I agree to the <a href="' . esc_url( home_url( '/legal/bookings/' ) ) . '">Booking Terms and Conditions</a>.</label></p>';
+            echo '<p><button type="button" disabled>Continue to secure checkout (coming soon)</button></p>';
+            echo '</fieldset></div>';
+        }
         // Do not display a submittable Form 7 when booking is disabled.
         // A submission without a configured checkout would strand the parent.
         $form_id = absint( get_option( 'bh3_booking_form_id', 8 ) );
