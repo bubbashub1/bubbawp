@@ -1632,26 +1632,31 @@ final class BH_Marketplace_Settings_3 {
             echo '<p><label>Year of birth <input type="number" min="1900" max="' . esc_attr( wp_date( 'Y' ) ) . '" disabled></label></p>';
             echo '</fieldset><p><small>Preview only — these fields cannot be submitted yet. Guest consent and booking verification are being built.</small></p></div>';
         }
-        // Staging-only native checkout interface preview. This deliberately has no
-        // submit handler: the existing verified Fluent Forms binding remains the
-        // only route authorised to create reservations or Stripe sessions.
+        // Staging-only preflight form. It validates only; it never reserves or charges.
         if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) === 'staging.bubbahub.co.uk'
             && defined( 'BH3_PREVIEW_NATIVE_BOOKING_FORM' ) && BH3_PREVIEW_NATIVE_BOOKING_FORM === true ) {
-            echo '<div class="bh3-native-booking-preview" aria-label="Native booking form preview">';
-            echo '<h4>Native booking form — preview only</h4>';
-            echo '<p role="status">This interface cannot submit a booking or initiate payment. The secure native submission handler is still in development.</p>';
-            echo '<fieldset disabled><legend>Parent and attendee details</legend>';
-            echo '<p><label>Parent or guardian name <input type="text" autocomplete="name"></label></p>';
-            echo '<p><label>Account email <input type="email" autocomplete="email" value="' . esc_attr( wp_get_current_user()->user_email ) . '"></label></p>';
+            echo '<div class="bh3-native-booking-preview" aria-label="Native booking preflight">';
+            echo '<h4>Native booking — pre-test</h4>';
+            echo '<p>This checks your details only. No reservation or payment will be made.</p>';
             if ( is_user_logged_in() ) {
+                $account = wp_get_current_user();
+                echo '<form class="bh3-native-preflight-form">';
+                echo '<p><label>Parent or guardian name <input name="parent_name" type="text" maxlength="200" autocomplete="name" required></label></p>';
+                echo '<p><label>Account email <input name="parent_email" type="email" autocomplete="email" value="' . esc_attr( $account->user_email ) . '" readonly required></label></p>';
+                echo '<fieldset><legend>Who is attending?</legend>';
                 foreach ( self::booking_profile_choices( get_current_user_id() ) as $profile ) {
-                    echo '<p><label><input type="checkbox"> ' . esc_html( $profile['display_name'] ) . ' (' . esc_html( $profile['profile_type'] === 'bump' ? 'Pregnancy' : 'Child' ) . ')</label></p>';
+                    echo '<p><label><input name="family_profile_ids[]" type="checkbox" value="' . esc_attr( $profile['id'] ) . '"> ' . esc_html( $profile['display_name'] ) . ' (' . esc_html( $profile['profile_type'] === 'bump' ? 'Pregnancy' : 'Child' ) . ')</label></p>';
                 }
+                echo '</fieldset>';
+                echo '<p><label><input name="share_child_details_consent" type="checkbox" value="yes" required> I agree to share the selected attendee details with the class leader for this booking.</label></p>';
+                echo '<p><label><input name="booking_terms_consent" type="checkbox" value="yes" required> I agree to the <a href="' . esc_url( home_url( '/legal/bookings/' ) ) . '">Booking Terms and Conditions</a>.</label></p>';
+                echo '<p><button type="submit">Validate details (no payment)</button></p>';
+                echo '<p class="bh3-native-preflight-result" role="status" aria-live="polite"></p></form>';
+                echo '<script>(function(){const root=document.getElementById(' . wp_json_encode( $id ) . ');if(!root)return;const form=root.querySelector(".bh3-native-preflight-form");if(!form)return;const result=form.querySelector(".bh3-native-preflight-result");form.addEventListener("submit",async function(event){event.preventDefault();const button=form.querySelector("button[type=submit]");button.disabled=true;result.textContent="Validating…";const data=new FormData(form);const body={parent_name:data.get("parent_name"),parent_email:data.get("parent_email"),family_profile_ids:data.getAll("family_profile_ids[]"),share_child_details_consent:data.get("share_child_details_consent"),booking_terms_consent:data.get("booking_terms_consent")};try{const response=await fetch(' . wp_json_encode( rest_url( 'bubba-hub/v3/native-booking-preflight' ) ) . ',{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json","X-WP-Nonce":' . wp_json_encode( wp_create_nonce( 'wp_rest' ) ) . '},body:JSON.stringify(body)});const payload=await response.json();result.textContent=response.ok&&payload.valid?"Details validated for "+payload.attendee_count+" attendee(s). No booking or payment has been made.":(payload.message||"Validation could not be completed.");}catch(error){result.textContent="Unable to validate details. Please try again.";}finally{button.disabled=false;}});})();</script>';
+            } else {
+                echo '<p>Please sign in to pre-test the booking form.</p>';
             }
-            echo '<p><label><input type="checkbox"> I consent to sharing the selected attendee details with the class leader for this booking.</label></p>';
-            echo '<p><label><input type="checkbox"> I agree to the <a href="' . esc_url( home_url( '/legal/bookings/' ) ) . '">Booking Terms and Conditions</a>.</label></p>';
-            echo '<p><button type="button" disabled>Continue to secure checkout (coming soon)</button></p>';
-            echo '</fieldset></div>';
+            echo '</div>';
         }
         // Do not display a submittable Form 7 when booking is disabled.
         // A submission without a configured checkout would strand the parent.
