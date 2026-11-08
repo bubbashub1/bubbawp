@@ -5,11 +5,13 @@ on:
       - 'plugin/bubba-hub-manager/**'
       - 'scripts/validate-plugin.php'
       - 'scripts/validate-wizard-js.cjs'
+      - 'tests/ninja-forms-diagnostics-smoke.php'
       - '.github/workflows/plugin-checks.yml'
   pull_request:
     paths:
       - 'plugin/bubba-hub-manager/**'
       - 'scripts/validate-plugin.php'
+      - 'tests/ninja-forms-diagnostics-smoke.php'
       - '.github/workflows/plugin-checks.yml'
   workflow_dispatch:
 permissions:
@@ -24,6 +26,7 @@ jobs:
           find plugin/bubba-hub-manager -type f -name '*.php' -print0 | xargs -0 -n1 php -l
           php -l scripts/validate-plugin.php
           php scripts/validate-plugin.php
+          php tests/ninja-forms-diagnostics-smoke.php
           php plugin/bubba-hub-manager/tests/activity-repository-contract.php
           node scripts/validate-wizard-js.cjs
       - name: Package plugin

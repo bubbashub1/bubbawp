@@ -16,26 +16,28 @@
 
 ## Current focus (2026-11-08)
 
-- **Active workstream:** Existing booking integration, not a new booking system.
+- **Active workstream:** BubbaWP + Ninja Forms booking adapter; BubbaWP remains the only booking authority.
 - **Main repository:** `bubbashub1/bubbawp`. `bubba4` is being retired only after comparison; `bubbaplugin` is legacy reference.
 - **Theme:** Preserve existing `bubbatheme`; do not rebuild theme from scratch.
-- **Latest verified GitHub milestone:** Events Manager Free/Ninja Forms read-only diagnostics merged in [PR #198](https://github.com/bubbashub1/bubbawp/pull/198), commit `4255bd0`. PHP lint passed before merge.
-- **Staging QA:** Booking diagnostics screen not yet verified on WordPress. No claim of a working Events Manager reservation/Stripe integration.
-- **Next task:** B-EM-01, inspect staging Events Manager Free and Ninja Forms versions/APIs, then verify real session schema before any writes.
-- **Preservation:** Existing checkout, Fluent Forms 7/8, Stripe code, family profiles, sessions, leader dashboards, SQL tables and data remain unchanged until tested replacement.
-- **Production changes:** None authorised by this checklist update.
+- **Latest verified GitHub milestone:** Read-only integration diagnostics merged in [PR #198](https://github.com/bubbashub1/bubbawp/pull/198), commit `4255bd0`.
+- **Architecture decision (2026-11-08):** Ninja Forms is the booking form interface; BubbaWP owns validation, reservations, attendee/consent records, capacity and booking lifecycle. Stripe remains behind the existing guarded BubbaWP payment flow. Events Manager is excluded from the core booking architecture; no event/session duplication.
+- **Code audit:** Existing checkout hand-off and submission validation are coupled to Fluent Forms storage. A direct Ninja Forms hook cannot safely reuse the current binding as-is. Ninja Forms WP Hook passes form ID, fields and settings; the documented payload does not establish a persisted submission ID. Adapter must verify the saved-submission API and form/action ordering before writing bookings.
+- **Next task:** B-NF-01, isolate a form-provider-neutral validated booking input/service, then implement a Ninja Forms adapter behind a staging-only feature flag (default off).
+- **Preservation:** Existing Fluent Forms 7/8, submissions, checkout, Stripe code, family profiles, sessions, leader dashboards, SQL tables and data remain unchanged until replacement is tested and approved.
+- **Production changes:** None authorised.
 
 ### Current booking integration gates
 
 - [x] **B-EM-00** Add passive, staging-only diagnostics to BubbaWP and pass PHP lint (PR #198).
-- [ ] **B-EM-01** Verify Events Manager Free/Ninja Forms on staging and inspect available APIs.
-- [ ] **B-EM-02** Map existing activity/session IDs to Events Manager event/recurrence IDs; no duplicate master listings.
-- [ ] **B-EM-03** Connect parent-owned native child/bump profile selection with server-side ownership validation.
-- [ ] **B-EM-04** Use Ninja Forms for enquiries and consent only; preserve Fluent Forms submissions until migration verified.
-- [ ] **B-EM-05** Validate free bookings, capacity, duplicates, recurrence, confirmation, cancellations and waitlists.
-- [ ] **B-EM-06** Validate one Stripe payment, a single disclosed parent-paid booking fee, advertised leader price, webhooks, refunds and payouts.
-- [ ] **B-EM-07** Connect booking records to Leader Portal and My Hub with correct permissions and privacy.
-- [ ] **B-EM-08** Run guest/member/leader end-to-end staging QA, backup/rollback and explicitly approve cutover.
+- [x] **B-NF-00** Agree architecture: Ninja Forms is the form interface; BubbaWP owns booking truth; Events Manager is not part of the core booking path.
+- [ ] **B-NF-01** Refactor the existing Fluent Forms-specific submission reader/binder into a provider-neutral validated booking-input service without changing current Fluent Forms behaviour.
+- [~] **B-NF-02** Read-only staging diagnostics panel and smoke test added; verify exact Ninja Forms version, form ID/field keys, saved-submission persistence and action timing on staging.
+- [ ] **B-NF-03** Add an isolated Ninja Forms adapter behind a staging-only feature flag (default off); resolve persisted submission identity and idempotency before any booking write.
+- [ ] **B-NF-04** Verify parent authentication, session/date/places match, native family-profile ownership, both consents and server-calculated price.
+- [ ] **B-NF-05** Validate free bookings, capacity locking, duplicate submissions, recurrence, confirmation, cancellations and waitlists.
+- [ ] **B-NF-06** Validate Stripe test checkout/webhooks, single disclosed parent-paid fee, refunds and payout reconciliation.
+- [ ] **B-NF-07** Connect canonical booking records to Leader Portal and My Hub with correct permissions and privacy.
+- [ ] **B-NF-08** Run guest/member/leader end-to-end staging QA, backup/rollback and explicitly approve cutover.
 
 ### Implementation status audit (not staging acceptance)
 
@@ -46,7 +48,7 @@
 | Directory and listings | Existing custom activity/venue/organiser modules | Search, permalink, schedule and mobile QA |
 | Leader Portal | Existing front-end/dashboard code | Role, save and booking integration QA |
 | Family Hub | Existing native child/bump, favourites, planner code | Ownership, privacy and end-to-end QA |
-| Booking | Existing booking lifecycle, checkout, Stripe and Form 7/8 code | Events Manager Free integration, payment parity |
+| Booking | Existing booking lifecycle, checkout, Stripe and Fluent Forms 7/8 code | Provider-neutral validation service, Ninja Forms adapter and payment parity |
 | Events/Expo | Existing earlier work to inventory | Ticket/QR and event integration QA |
 | Support | Existing support modules | Form platform migration and moderation QA |
 
@@ -149,7 +151,7 @@
 - [ ] **M-07** Family privacy controls, account access and data deletion/export pathways.
 - **Exit gate:** family journey works with existing data, no AI cost, child data access tested.
 
-## Stage 5 — Bubba Hub bookings (Events Manager Free integration; retain existing checkout until parity)
+## Stage 5 — Bubba Hub bookings (BubbaWP + Ninja Forms; retain existing checkout until parity)
 
 - [ ] **B-01** Design booking data model against existing tables; propose any **new** tables separately for approval, never alter existing tables implicitly.
 - [ ] **B-02** Single-session free/paid reservation flow.
@@ -244,8 +246,8 @@
 | ID | Decision | Status |
 | --- | --- | --- |
 | ADR-017 | `bubbawp` is the single development repository; retire `bubba4` after preservation audit | Agreed |
-| ADR-018 | Events Manager **Free** is proposed reservation authority, subject to verified APIs and end-to-end parity | Agreed direction; integration unverified |
-| ADR-019 | Ninja Forms **Free** handles enquiries/supplementary consent, not authoritative bookings or child records | Agreed direction |
+| ADR-018 | Events Manager is not part of the core booking architecture; do not duplicate activities/sessions or reservations | Agreed 2026-11-08 |
+| ADR-019 | Ninja Forms **Free** is the booking form interface; BubbaWP remains authoritative for booking validation, records, attendees, consent and lifecycle | Agreed 2026-11-08 |
 | ADR-020 | Existing native `bh_children` and `bh_bumps` profiles remain authoritative | Agreed |
 | ADR-021 | Preserve Fluent Forms and existing checkout until a tested, approved migration | Agreed |
 | ADR-022 | No paid plugin or new AI dependency; reuse existing free plugins and code | Agreed |
@@ -291,6 +293,7 @@ Copy for each substantial issue/PR:
 ## Change log
 
 | 2026-11-08 | Reconciled current work against existing BubbaWP source and PR #198; updated booking, forms, fees and single-repository decisions without claiming staging QA | PR #198; `docs/EVENTS_MANAGER_NINJA_FORMS_MIGRATION.md` |
+| 2026-11-08 | Agreed BubbaWP + Ninja Forms booking architecture; removed Events Manager from core booking path; recorded Fluent Forms storage coupling as the first adapter blocker | `docs/NINJA_FORMS_BOOKING_ADAPTER_PLAN.md` |
 
 | Date | Change | Evidence |
 | --- | --- | --- |
