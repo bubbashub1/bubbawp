@@ -1,7 +1,7 @@
 <?php
 /**
- * Activities custom post type.
- * Mirrors the CPT UI definition exactly so the switch-over changes nothing.
+ * Activities custom post type and its taxonomies.
+ * Mirrors the CPT UI definitions exactly so the switch-over changes nothing.
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
@@ -9,6 +9,7 @@ final class BH_Activities_CPT {
 
     public static function register() {
         add_action( 'init', array( __CLASS__, 'register_post_type' ) );
+        add_action( 'init', array( __CLASS__, 'register_taxonomies' ) );
     }
 
     public static function register_post_type() {
@@ -44,5 +45,49 @@ final class BH_Activities_CPT {
         );
 
         register_post_type( 'activities', $args );
+    }
+
+    public static function register_taxonomies() {
+        self::register_activity_taxonomy(
+            'activity_category',
+            __( 'Activity Categories', 'bubba-hub' ),
+            __( 'Activity Category', 'bubba-hub' )
+        );
+        self::register_activity_taxonomy(
+            'activity_region',
+            __( 'Regions', 'bubba-hub' ),
+            __( 'Region', 'bubba-hub' )
+        );
+    }
+
+    private static function register_activity_taxonomy( $slug, $plural, $singular ) {
+        $labels = array(
+            'name'          => esc_html( $plural ),
+            'singular_name' => esc_html( $singular ),
+        );
+
+        $args = array(
+            'label'                 => esc_html( $plural ),
+            'labels'                => $labels,
+            'public'                => true,
+            'publicly_queryable'    => true,
+            'hierarchical'          => false,
+            'show_ui'               => true,
+            'show_in_menu'          => true,
+            'show_in_nav_menus'     => true,
+            'query_var'             => true,
+            'rewrite'               => array( 'slug' => $slug, 'with_front' => true ),
+            'show_admin_column'     => false,
+            'show_in_rest'          => true,
+            'show_tagcloud'         => false,
+            'rest_base'             => $slug,
+            'rest_controller_class' => 'WP_REST_Terms_Controller',
+            'rest_namespace'        => 'wp/v2',
+            'show_in_quick_edit'    => false,
+            'sort'                  => false,
+            'show_in_graphql'       => false,
+        );
+
+        register_taxonomy( $slug, array( 'activities' ), $args );
     }
 }
