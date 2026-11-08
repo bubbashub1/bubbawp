@@ -1,7 +1,7 @@
 <?php
 /**
- * Read-only, opt-in family profile selector for future Events Manager / Ninja Forms integration.
- * No hooks, shortcodes, endpoints, migrations or booking writes are registered here.
+ * Read-only family profile selector for the existing Ninja Forms integration.
+ * Registers only a dynamic Select-options filter; no booking, payment or schema writes.
  */
 defined( 'ABSPATH' ) || exit;
 
