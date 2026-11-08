@@ -17,3 +17,10 @@ define( 'BUBBA_HUB_MANAGER_PATH', plugin_dir_path( __FILE__ ) );
 require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-manager.php';
 require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-development-tracker.php';
 add_action( 'plugins_loaded', array( 'BH_Manager_3', 'boot' ) );
+
+/* Staging-only, read-only booking integration diagnostics. */
+if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) === 'staging.bubbahub.co.uk' ) {
+    require_once plugin_dir_path( __FILE__ ) . 'includes/class-bh-events-manager-bridge.php';
+    require_once plugin_dir_path( __FILE__ ) . 'includes/class-bh-events-manager-diagnostics.php';
+    add_action( 'plugins_loaded', array( 'BH_Events_Manager_Diagnostics', 'register' ), 20 );
+}
