@@ -21,9 +21,9 @@
 
 ## Ninja Forms integration evidence
 
-The official Ninja Forms WP Hook documentation says the configured action invokes a WordPress action with a form_data array containing the form ID, submitted fields and form settings. It also states this is an action, not a filter, so it cannot rewrite submitted data. The documentation does not establish a persisted submission ID in that payload.
+The official [Ninja Forms WP Hook documentation](https://ninjaforms.com/docs/wp-hook/) says the configured action invokes a WordPress action with a form_data array containing the form ID, submitted fields and form settings. It also states this is an action, not a filter, so it cannot rewrite submitted data. The documentation does not establish a persisted submission ID in that payload.
 
-Ninja Forms developer resources document submission model access through Ninja_Forms()->form()->sub( $id ) / get_sub( $id ), including field-value retrieval. This API must be verified against the exact staging version and actual save/action order before implementation relies on it.
+The [Ninja Forms forms API](https://developer.ninjaforms.com/codex/forms/) and [submissions API](https://developer.ninjaforms.com/codex/submissions/) document form/field/action model access and saved-submission model access. These APIs must be verified against the exact staging version and actual save/action order before implementation relies on them.
 
 ## Implementation sequence
 
@@ -37,6 +37,7 @@ Ninja Forms developer resources document submission model access through Ninja_F
 
 ### B-NF-02 — Staging form/API verification
 
+- Add a read-only, administrator-only staging diagnostics panel that discovers the installed Ninja Forms version, form IDs/titles, field IDs/keys/types and configured action types without displaying submission contents or personal data.
 - Confirm installed Ninja Forms version from staging.
 - Confirm the exact form ID, field keys and field types for the current form (the visible “Who is attending?” label is not itself a field key).
 - Confirm whether Record Submission is enabled and how to retrieve the saved submission ID at the chosen custom action timing.
