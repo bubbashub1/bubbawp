@@ -1,8 +1,8 @@
-# Bubba Hub 3.0 — Master Work Checklist
+# Bubba Hub — Master Work Checklist
 
 > **Single source of truth for project scope and progress.**
 > Repository: `bubbashub1/bubbawp` · Product: **Bubba Hub Manager 3.0**
-> Status: **PLANNING / FOUNDATION NOT YET BUILT** · Last reviewed: 2026-11-03
+> Status: **EXISTING IMPLEMENTATION / STAGING PARITY IN PROGRESS** · Last reviewed: 2026-11-08
 
 ## How to use this file
 
@@ -14,14 +14,43 @@
 - A stage advances only when its **exit gate** passes. Never claim deployment or QA without evidence.
 - **Scope changes:** propose → record in Parking Lot → evaluate cost/dependencies → explicitly approve → schedule.
 
-## Current focus
+## Current focus (2026-11-08)
 
-- **Active stage:** Theme-first foundation (Stage T0; design before feature modules)
-- **Current task:** T0-01 — Build and preview initial native block theme
-- **Next task:** Verify expanded static checks in CI, then T0-04 WordPress/browser QA and T0-02 visual approval
-- **Last verified milestone:** Theme ZIP produced by passing GitHub Actions run 41639189965; WordPress activation and visual QA pending
-- **Staging QA:** Not started
-- **Production changes:** None authorised
+- **Active workstream:** Existing booking integration, not a new booking system.
+- **Main repository:** `bubbashub1/bubbawp`. `bubba4` is being retired only after comparison; `bubbaplugin` is legacy reference.
+- **Theme:** Preserve existing `bubbatheme`; do not rebuild theme from scratch.
+- **Latest verified GitHub milestone:** Events Manager Free/Ninja Forms read-only diagnostics merged in [PR #198](https://github.com/bubbashub1/bubbawp/pull/198), commit `4255bd0`. PHP lint passed before merge.
+- **Staging QA:** Booking diagnostics screen not yet verified on WordPress. No claim of a working Events Manager reservation/Stripe integration.
+- **Next task:** B-EM-01, inspect staging Events Manager Free and Ninja Forms versions/APIs, then verify real session schema before any writes.
+- **Preservation:** Existing checkout, Fluent Forms 7/8, Stripe code, family profiles, sessions, leader dashboards, SQL tables and data remain unchanged until tested replacement.
+- **Production changes:** None authorised by this checklist update.
+
+### Current booking integration gates
+
+- [x] **B-EM-00** Add passive, staging-only diagnostics to BubbaWP and pass PHP lint (PR #198).
+- [ ] **B-EM-01** Verify Events Manager Free/Ninja Forms on staging and inspect available APIs.
+- [ ] **B-EM-02** Map existing activity/session IDs to Events Manager event/recurrence IDs; no duplicate master listings.
+- [ ] **B-EM-03** Connect parent-owned native child/bump profile selection with server-side ownership validation.
+- [ ] **B-EM-04** Use Ninja Forms for enquiries and consent only; preserve Fluent Forms submissions until migration verified.
+- [ ] **B-EM-05** Validate free bookings, capacity, duplicates, recurrence, confirmation, cancellations and waitlists.
+- [ ] **B-EM-06** Validate one Stripe payment, a single disclosed parent-paid booking fee, advertised leader price, webhooks, refunds and payouts.
+- [ ] **B-EM-07** Connect booking records to Leader Portal and My Hub with correct permissions and privacy.
+- [ ] **B-EM-08** Run guest/member/leader end-to-end staging QA, backup/rollback and explicitly approve cutover.
+
+### Implementation status audit (not staging acceptance)
+
+| Workstream | Existing code/work | Outstanding acceptance |
+| --- | --- | --- |
+| Plugin foundation | Existing modular BubbaWP bootstrap, modules and CI | Full staging parity and activation checks |
+| Theme | Existing block-theme and BubbaTheme work | Editor/mobile visual QA |
+| Directory and listings | Existing custom activity/venue/organiser modules | Search, permalink, schedule and mobile QA |
+| Leader Portal | Existing front-end/dashboard code | Role, save and booking integration QA |
+| Family Hub | Existing native child/bump, favourites, planner code | Ownership, privacy and end-to-end QA |
+| Booking | Existing booking lifecycle, checkout, Stripe and Form 7/8 code | Events Manager Free integration, payment parity |
+| Events/Expo | Existing earlier work to inventory | Ticket/QR and event integration QA |
+| Support | Existing support modules | Form platform migration and moderation QA |
+
+**Rule:** Existing code does not mean a completed feature. Do not check off historic stages without source, CI and staging evidence. Avoid duplicate rewrites.
 
 ## Non-negotiable rules
 
@@ -120,7 +149,7 @@
 - [ ] **M-07** Family privacy controls, account access and data deletion/export pathways.
 - **Exit gate:** family journey works with existing data, no AI cost, child data access tested.
 
-## Stage 5 — Native Bubba Hub bookings
+## Stage 5 — Bubba Hub bookings (Events Manager Free integration; retain existing checkout until parity)
 
 - [ ] **B-01** Design booking data model against existing tables; propose any **new** tables separately for approval, never alter existing tables implicitly.
 - [ ] **B-02** Single-session free/paid reservation flow.
@@ -146,7 +175,7 @@
 
 ## Stage 7 — Revenue and payments (design now; paid processing later)
 
-- [ ] **P-01** Set **2.5% leader-paid commission** for paid bookings; no extra Bubba Hub checkout fee for parents.
+- [ ] **P-01** Implement and validate **one disclosed parent-paid Bubba Hub booking fee** that covers platform and estimated processing costs; leader receives the advertised class price. Actual fees, refunds and Stripe payouts require staging reconciliation.
 - [ ] **P-02** Pricing calculator: target leader net → suggested advertised class price, with clearly estimated processing costs.
 - [ ] **P-03** Payment architecture and legal/compliance review; evaluate Stripe Connect without activating costs in development.
 - [ ] **P-04** Commission ledger, payout/refund/dispute handling and reconciliation design.
@@ -195,11 +224,11 @@
 | --- | --- | --- |
 | ADR-001 | One **Bubba Hub-owned installable WordPress plugin** with modular components | Agreed |
 | ADR-002 | Existing `bh_` schema/IDs/relationships and PHP APIs preserved | Agreed |
-| ADR-003 | GeoDirectory/Directorist and booking products are inspiration, not installed dependencies | Agreed |
+| ADR-003 | Custom activity directory remains native; Events Manager Free is the selected booking integration dependency | Superseded 2026-11-08 |
 | ADR-004 | No AI and no new paid dependencies in current development | Agreed |
 | ADR-005 | Bookings support **individual sessions and full courses/terms** | Agreed |
-| ADR-006 | **2.5% commission**, charged to leader on paid native bookings | Agreed |
-| ADR-007 | No additional Bubba Hub fee charged to parents at checkout | Agreed |
+| ADR-006 | Single parent-paid booking fee; leader receives advertised class price (exact fee calculation to be validated) | Superseded 2026-11-08 |
+| ADR-007 | Show one clearly labelled Bubba Hub Booking Fee and full total before payment | Superseded 2026-11-08 |
 | ADR-008 | Leader-facing take-home pricing calculator | Agreed |
 | ADR-009 | My Hub includes Inspire Me, Planner, Sibling Match, Passport and Memories | Agreed |
 | ADR-010 | Stripe Connect/payment service configuration | Research later; not selected/activated |
@@ -209,6 +238,17 @@
 | ADR-014 | WordPress Site Editor, `theme.json`, templates, parts and patterns for visual editing; plugin owns business logic and dynamic blocks | Agreed 2026-11-03 |
 | ADR-015 | Legacy Astra/Elementor content must be inventoried and transitioned on staging; no live theme switch until approved | Agreed 2026-11-03 |
 | ADR-016 | **Theme-first sequencing:** establish and approve design system before implementing directory, leader and family features | Agreed 2026-11-03 |
+
+### Decisions updated 2026-11-08
+
+| ID | Decision | Status |
+| --- | --- | --- |
+| ADR-017 | `bubbawp` is the single development repository; retire `bubba4` after preservation audit | Agreed |
+| ADR-018 | Events Manager **Free** is proposed reservation authority, subject to verified APIs and end-to-end parity | Agreed direction; integration unverified |
+| ADR-019 | Ninja Forms **Free** handles enquiries/supplementary consent, not authoritative bookings or child records | Agreed direction |
+| ADR-020 | Existing native `bh_children` and `bh_bumps` profiles remain authoritative | Agreed |
+| ADR-021 | Preserve Fluent Forms and existing checkout until a tested, approved migration | Agreed |
+| ADR-022 | No paid plugin or new AI dependency; reuse existing free plugins and code | Agreed |
 
 ## Work item template
 
@@ -249,6 +289,8 @@ Copy for each substantial issue/PR:
 ```
 
 ## Change log
+
+| 2026-11-08 | Reconciled current work against existing BubbaWP source and PR #198; updated booking, forms, fees and single-repository decisions without claiming staging QA | PR #198; `docs/EVENTS_MANAGER_NINJA_FORMS_MIGRATION.md` |
 
 | Date | Change | Evidence |
 | --- | --- | --- |
