@@ -40,13 +40,21 @@ check( ! BH_Booking_Family_Profile_Reader::owns_profile( '14' ), 'Unknown type s
 check( ! BH_Booking_Family_Profile_Reader::owns_profile( '999' ), 'Foreign ID should be rejected' );
 check( BH_Booking_Family_Profile_Reader::owns_child_profile( '12' ), 'Owned child should be valid as an attendee' );
 check( ! BH_Booking_Family_Profile_Reader::owns_child_profile( '13' ), 'Pregnancy profiles must not be accepted as child attendees' );
+
 $options = BH_Booking_Family_Profile_Reader::filter_ninja_options( array(), array( 'key' => BH_Booking_Family_Profile_Reader::NINJA_FIELD_KEY ) );
 $values = array_column( $options, 'value' );
-check( in_array( '12', $values, true ), 'Owned child should appear in the Ninja Forms select' );
+check( in_array( '12', $values, true ), 'Owned child should appear when matched by Field Key' );
 check( ! in_array( '13', $values, true ), 'Bump profile must not appear as an attendee' );
 check( in_array( 'guest', $values, true ), 'Manual guest route should remain available' );
+
+$label_options = BH_Booking_Family_Profile_Reader::filter_ninja_options(
+    array(),
+    array( 'label' => BH_Booking_FAMILY_PROFILE_READER::NINJA_FIELD_LABEL )
+);
+check( in_array( '12', array_column( $label_options, 'value' ), true ), 'Modern builder exact-label fallback should populate child options' );
+
 $untouched = array( array( 'label' => 'Existing option', 'value' => 'existing' ) );
-check( BH_Booking_Family_Profile_Reader::filter_ninja_options( $untouched, array( 'key' => 'another_field' ) ) === $untouched, 'Unrelated Ninja Forms fields must remain unchanged' );
+check( BH_Booking_Family_Profile_Reader::filter_ninja_options( $untouched, array( 'key' => 'another_field', 'label' => 'Another field' ) ) === $untouched, 'Unrelated Ninja Forms fields must remain unchanged' );
 BH_Booking_Family_Profile_Reader::register();
 check( isset( $GLOBALS['test_hooks']['ninja_forms_render_options'] ), 'Ninja Forms options filter should register' );
 check( ! BH_Booking_Family_Profile_Reader::owns_profile( '12 OR 1=1' ), 'Injection must be rejected' );
