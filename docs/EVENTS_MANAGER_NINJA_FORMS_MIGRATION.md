@@ -6,7 +6,7 @@ BubbaWP is the **single source of truth** for activities, sessions, availability
 
 Ninja Forms is the **family-facing booking form interface**. Its submission is input to BubbaWP; it is not a second booking database and does not independently confirm a reservation.
 
-**Events Manager is excluded from the booking architecture.** Do not map BubbaWP activities/sessions into Events Manager or use Events Manager reservations. This avoids duplicate master records and competing booking lifecycles.
+**Events Manager is excluded from the booking architecture.** Do not map BubbaWP activities/sessions into Events Manager or use Events Manager reservations.
 
 ## Responsibilities
 
@@ -16,6 +16,25 @@ Ninja Forms is the **family-facing booking form interface**. Its submission is i
 | Ninja Forms | Render and collect the family booking form; provide a supported submission hook/payload to the BubbaWP adapter |
 | Stripe | Existing BubbaWP-controlled payment flow; test mode only until all payment and reconciliation gates pass |
 | Events Manager | Not used by the booking flow |
+
+## Confirmed staging form details (2026-11-08)
+
+The user confirmed the numeric form ID from the WordPress builder URL: **Ninja Forms Form ID 2**, titled **Booking Form**.
+
+Visible fields confirmed from the staging form screenshots:
+
+| Visible label | Visible type / behaviour | Notes |
+|---|---|---|
+| Parent / Guardian Name | Text; required | Asterisk visible |
+| Email | Email/text; no required asterisk visible | Existing BubbaWP validator currently requires it and requires it to match the signed-in WordPress account email |
+| Phone | Phone/text; no required asterisk visible | Optional in the visible form |
+| Who is attending? | Checkbox group; required | Current preview shows “Test Child” and “Test Pregnancy Profile”; not yet proven to be dynamic profile options |
+| Additional Information | Paragraph / textarea | Optional in the visible form |
+| Share selected attendee details with the class leader for the purpose of managing my booking | Required checkbox | Must be stored as its own explicit consent |
+| Agree to the Bubba Hub Booking Terms & Conditions | Required checkbox | Must be stored as its own explicit consent |
+| Submit Test Enquiry | Submit button | The label alone does not establish whether this is an enquiry or a booking; the server must decide the workflow |
+
+**Still unverified:** Ninja Forms field keys, internal field types/IDs, saved submission structure, installed Ninja Forms version, whether attendee options are dynamically populated from the signed-in parent's profiles, and the exact after-submission payload on this installation. Do not infer keys from labels or assume the two visible test options are live profile records.
 
 ## Existing functionality to preserve
 
@@ -31,23 +50,27 @@ Ninja Forms is the **family-facing booking form interface**. Its submission is i
 ## Current source audit
 
 - The existing checkout is wired to Fluent Forms through fluentform/submission_confirmation.
+- Existing dynamic attendee choices are injected through Fluent Forms-specific render filters. That code does **not** populate Ninja Forms fields; the current Ninja Forms test choices must not be treated as proof of a dynamic profile integration.
 - The existing submission inspection reads from the Fluent Forms submissions table; the binding path validates that exact stored submission and then writes attendees/consents to BubbaWP tables.
 - The existing booking writer/binding path has submission-scoped and booking-scoped locking/idempotency checks. Its current provenance field is booking_submission_id, with a unique index in the staging schema.
+- The existing profile ownership reader queries wp_bh_family_profiles by both profile IDs and the authenticated user_id; it expects a gender column and reads profile type, display name and profile date. This exact table/schema must be reconciled with the current family-profile writer before reuse. Do not silently substitute legacy child/bump tables or migrate profile data.
+- The current Form 7 field validator requires parent name and parent email, and requires the email to match the signed-in WordPress account. The visible Ninja Forms screenshot does not show Email as required. This mismatch must be resolved deliberately; do not weaken account verification or rely on an optional unverified email.
 - The existing reserve_occurrence() path is staging-gated and calls quote_session(); quote_session() currently returns free_session for a zero-price session. Therefore the present reservation primitive is not yet a complete free-booking path. Do not claim free bookings are supported until this is addressed and tested.
 - The current Stripe test-checkout guard expects booking_form_id and booking_submission_id when form binding is enabled. A Ninja Forms submission ID must not be written into this Fluent Forms-oriented provenance contract without a provider-aware design; numeric IDs from different form providers can collide.
-- Ninja Forms documents ninja_forms_after_submission and custom action hooks that receive $form_data containing form_id, fields and settings. This confirms a supported integration entry point, but does not prove the exact installed version, field mapping, persistence model or compatibility with BubbaWP's current Fluent Forms-specific submission reader.
+- Ninja Forms documents ninja_forms_after_submission and custom action hooks that receive form data containing form ID, fields and settings. This confirms a supported integration entry point, but does not prove the exact installed version, field mapping, persistence model or compatibility with BubbaWP's current Fluent Forms-specific submission reader.
 - The staging schema supplied on 2026-11-08 confirms wp_sessions, wp_bh3_bookings, wp_bh3_booking_attendees and wp_bh3_booking_consents. No table alteration is authorised.
 
 ## Implementation sequence
 
-1. Confirm the active Ninja Forms booking form's numeric ID, installed plugin version, exact field keys/types and actual $form_data structure on staging. The public form URL/slug is not assumed to be its numeric form ID.
+1. Confirm Form ID 2's exact field keys/types, installed Ninja Forms version and actual after-submission payload on staging. Confirm whether the attendee checkbox options are populated from the authenticated user's native family profiles. Do not require the user to find hidden field keys manually if a safe read-only inspection route can retrieve them.
 2. Implement a separate BH_Ninja_Forms_Booking_Adapter class in BubbaWP. Keep it behind a staging-only feature flag that defaults to disabled.
 3. Refactor only as needed to let the existing validated booking service consume a normalized, trusted submission payload from either supported form provider. Do not duplicate capacity, pricing, attendee, consent or Stripe logic. First separate form-provider verification from canonical booking binding so the core does not query the Fluent Forms table for Ninja Forms submissions.
 4. Preserve form provenance and idempotency. Do not assume a Ninja Forms submission ID can safely be written into the existing booking_submission_id field until uniqueness/collision semantics and provider identity have been designed and tested. If a separate provider-aware mapping is required, propose it separately; do not alter schema implicitly. Keep Stripe test checkout disabled until its binding guard accepts the verified provider-aware record.
-5. Test invalid/missing fields, stale form context, wrong session/date/places, guest/member permissions, forged or foreign child profile IDs, consent refusal, duplicate callbacks, concurrent final-place attempts, and failed payment hand-off.
-6. Verify free booking flow and Stripe test flow on staging. Keep live payments disabled.
-7. Compare leader/family views, confirmation emails, privacy export/erasure, cancellations and rollback.
-8. Only after all gates pass, request explicit approval to switch booking forms. Do not deactivate or delete Fluent Forms or its records before approval.
+5. Resolve the parent email requirement consistently between form UI and server validation; preserve authenticated-account verification.
+6. Test invalid/missing fields, stale form context, wrong session/date/places, guest/member permissions, forged or foreign child profile IDs, consent refusal, duplicate callbacks, concurrent final-place attempts, and failed payment hand-off.
+7. Verify free booking flow and Stripe test flow on staging. Keep live payments disabled.
+8. Compare leader/family views, confirmation emails, privacy export/erasure, cancellations and rollback.
+9. Only after all gates pass, request explicit approval to switch booking forms. Do not deactivate or delete Fluent Forms or its records before approval.
 
 ## Safety constraints
 
@@ -60,4 +83,4 @@ Ninja Forms is the **family-facing booking form interface**. Its submission is i
 
 ## Current status
 
-**Architecture agreed; adapter not yet implemented.** The next active task is B-NF-01: verify the exact staging form configuration and payload, then implement the isolated adapter. No code changes, database writes or staging booking tests are claimed by this document.
+**Architecture agreed; adapter not yet implemented.** Form ID 2 and visible labels have been confirmed from the staging builder. Field keys, internal types, saved payload, installed version and dynamic attendee-option behaviour remain unverified. No code changes, database writes or staging booking tests are claimed by this document.
