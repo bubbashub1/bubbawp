@@ -1,0 +1,23 @@
+name: Events Manager bridge PHP validation
+on:
+  pull_request:
+    paths:
+      - 'plugin/bubba-hub-manager/bubba-hub-manager.php'
+      - 'plugin/bubba-hub-manager/includes/class-bh-events-manager-*.php'
+      - '.github/workflows/events-manager-bridge-lint.yml'
+  push:
+    branches: [feature/events-manager-free-bridge]
+    paths:
+      - 'plugin/bubba-hub-manager/bubba-hub-manager.php'
+      - 'plugin/bubba-hub-manager/includes/class-bh-events-manager-*.php'
+      - '.github/workflows/events-manager-bridge-lint.yml'
+jobs:
+  php-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate PHP syntax
+        run: |
+          php -l plugin/bubba-hub-manager/bubba-hub-manager.php
+          php -l plugin/bubba-hub-manager/includes/class-bh-events-manager-bridge.php
+          php -l plugin/bubba-hub-manager/includes/class-bh-events-manager-diagnostics.php
