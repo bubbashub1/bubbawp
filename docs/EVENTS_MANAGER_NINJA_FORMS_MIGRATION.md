@@ -1,25 +1,61 @@
-# Events Manager Free + Ninja Forms migration plan (BubbaWP)
+# BubbaWP + Ninja Forms booking integration
 
-## Decision
-BubbaWP is the sole active development target. Keep existing native child/bump records and activity/session tables. Events Manager is the proposed reservation authority; Ninja Forms collects supplementary enquiries and consent, never an independent reservation.
+## Decision (2026-11-08)
+
+BubbaWP is the **single source of truth** for activities, sessions, availability, capacity, reservations, attendees, consent, payment state and booking lifecycle.
+
+Ninja Forms is the **family-facing booking form interface**. Its submission is input to BubbaWP; it is not a second booking database and does not independently confirm a reservation.
+
+**Events Manager is excluded from the booking architecture.** Do not map BubbaWP activities/sessions into Events Manager or use Events Manager reservations. This avoids duplicate master records and competing booking lifecycles.
+
+## Responsibilities
+
+| Component | Responsibility |
+|---|---|
+| BubbaWP | Validate session/occurrence, calculate price, reserve capacity, prevent duplicates, validate parent-owned family profiles, write attendees and versioned consents, own booking/payment status and lifecycle |
+| Ninja Forms | Render and collect the family booking form; provide a supported submission hook/payload to the BubbaWP adapter |
+| Stripe | Existing BubbaWP-controlled payment flow; test mode only until all payment and reconciliation gates pass |
+| Events Manager | Not used by the booking flow |
 
 ## Existing functionality to preserve
-- Existing `bh_parent_booking` checkout and Stripe fee calculation until parity is proven.
-- Booking lifecycle, leader dashboard, session editor and form 7/8 integrations.
-- Existing Fluent Forms and submissions until a tested migration completes.
-- All existing database tables and activity links; no automatic schema migration.
 
-## First implementation
-`BH_Events_Manager_Bridge::inspect()` is a passive admin-only compatibility inspector. It is intentionally not loaded by the plugin bootstrap, and must not be described as an active integration.
+- Existing native activity and wp_sessions records and IDs.
+- Native family/child/pregnancy profiles and parent ownership checks.
+- Existing wp_bh3_bookings, wp_bh3_booking_attendees and wp_bh3_booking_consents structures; no schema changes without separate approval.
+- Existing capacity locking, duplicate protection, booking lifecycle and payment validation.
+- Existing Stripe test checkout and webhook safeguards.
+- Existing Leader Portal and My Hub integrations.
+- Existing Fluent Forms Form 7/8 configuration, submissions, checkout hooks and data until a replacement has passed staging parity and cutover is explicitly approved.
+- All existing database tables, records and activity links; no automatic migration or deletion.
 
-## Gates before activation
-1. Verify actual Events Manager Free version and public APIs on staging.
-2. Verify exact BubbaWP session/activity schema and recurrence semantics.
-3. Map a test session to an event ID with idempotent mapping and no duplicates.
-4. Verify booking capacity locking, guest/member bookings, child ownership checks and consent.
-5. Verify Stripe one-payment checkout, single visible fee, webhook replay, refunds and payout accounting.
-6. Verify Ninja Forms submission hooks and permissions; never trust child IDs from the browser.
-7. Test confirmation emails, leader visibility, privacy export/erasure, cancellations.
-8. Enable only on staging behind an explicit administrator-controlled switch.
+## Current source audit
 
-No production change, payment migration or plugin deactivation is authorised by this plan.
+- The existing checkout is wired to Fluent Forms through fluentform/submission_confirmation.
+- The existing submission inspection reads from the Fluent Forms submissions table; the binding path validates that exact stored submission and then writes attendees/consents to BubbaWP tables.
+- The existing booking writer/binding path has submission-scoped and booking-scoped locking/idempotency checks. Its current provenance field is booking_submission_id, with a unique index in the staging schema.
+- Ninja Forms documents ninja_forms_after_submission and custom action hooks that receive $form_data containing form_id, fields and settings. This confirms a supported integration entry point, but does not prove the exact installed version, field mapping, persistence model or compatibility with BubbaWP's current Fluent Forms-specific submission reader.
+- The staging schema supplied on 2026-11-08 confirms wp_sessions, wp_bh3_bookings, wp_bh3_booking_attendees and wp_bh3_booking_consents. No table alteration is authorised.
+
+## Implementation sequence
+
+1. Confirm the active Ninja Forms booking form's numeric ID, installed plugin version, exact field keys/types and actual $form_data structure on staging. The public form URL/slug is not assumed to be its numeric form ID.
+2. Implement a separate BH_Ninja_Forms_Booking_Adapter class in BubbaWP. Keep it behind a staging-only feature flag that defaults to disabled.
+3. Refactor only as needed to let the existing validated booking service consume a normalized, trusted submission payload from either supported form provider. Do not duplicate capacity, pricing, attendee, consent or Stripe logic.
+4. Preserve form provenance and idempotency. Do not assume a Ninja Forms submission ID can safely be written into the existing booking_submission_id field until uniqueness/collision semantics and provider identity have been designed and tested. If a separate provider-aware mapping is required, propose it separately; do not alter schema implicitly.
+5. Test invalid/missing fields, stale form context, wrong session/date/places, guest/member permissions, forged or foreign child profile IDs, consent refusal, duplicate callbacks, concurrent final-place attempts, and failed payment hand-off.
+6. Verify free booking flow and Stripe test flow on staging. Keep live payments disabled.
+7. Compare leader/family views, confirmation emails, privacy export/erasure, cancellations and rollback.
+8. Only after all gates pass, request explicit approval to switch booking forms. Do not deactivate or delete Fluent Forms or its records before approval.
+
+## Safety constraints
+
+- No live changes, no production writes, no live payment activation.
+- No changes to existing tables or records, no migration, no deletion and no plugin deactivation.
+- Do not trust browser-supplied session, price, organiser or family profile IDs; validate server-side against authenticated ownership and the signed session context.
+- Never create a booking from an enquiry-only submission.
+- If the Ninja Forms payload or stored submission cannot be securely tied to the authenticated parent, stop the booking and return a safe error.
+- Do not send child medical/emergency details in ordinary notification emails.
+
+## Current status
+
+**Architecture agreed; adapter not yet implemented.** The next active task is B-NF-01: verify the exact staging form configuration and payload, then implement the isolated adapter. No code changes, database writes or staging booking tests are claimed by this document.
