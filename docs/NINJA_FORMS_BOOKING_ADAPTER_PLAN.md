@@ -75,4 +75,4 @@ The [Ninja Forms forms API](https://developer.ninjaforms.com/codex/forms/) and [
 
 ## Current status
 
-Architecture agreed and source/API audit started. The current code is still Fluent Forms-specific. The Ninja Forms adapter is not implemented or activated. Exact staging plugin version, form ID/field keys and saved-submission timing remain to be verified.
+Architecture agreed. A staging-only, read-only Ninja Forms diagnostics panel and smoke test have been added on the working branch; CI and staging verification are pending. The current booking code is still Fluent Forms-specific. The Ninja Forms booking adapter is not implemented or activated. Exact staging plugin version, form ID/field keys and saved-submission timing remain to be verified.
