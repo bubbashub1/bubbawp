@@ -49,7 +49,7 @@ check( in_array( 'guest', $values, true ), 'Manual guest route should remain ava
 
 $label_options = BH_Booking_Family_Profile_Reader::filter_ninja_options(
     array(),
-    array( 'label' => BH_Booking_FAMILY_PROFILE_READER::NINJA_FIELD_LABEL )
+    array( 'label' => BH_Booking_Family_Profile_Reader::NINJA_FIELD_LABEL )
 );
 check( in_array( '12', array_column( $label_options, 'value' ), true ), 'Modern builder exact-label fallback should populate child options' );
 
