@@ -21,21 +21,23 @@
 - **Theme:** Preserve existing `bubbatheme`; do not rebuild theme from scratch.
 - **Latest verified GitHub milestone:** Events Manager Free/Ninja Forms read-only diagnostics merged in [PR #198](https://github.com/bubbashub1/bubbawp/pull/198), commit `4255bd0`. PHP lint passed before merge.
 - **Staging QA:** Booking diagnostics screen not yet verified on WordPress. No claim of a working Events Manager reservation/Stripe integration.
-- **Next task:** B-EM-01, inspect staging Events Manager Free and Ninja Forms versions/APIs, then verify real session schema before any writes.
+- **Next task:** B-NF-01, confirm the active Ninja Forms form ID and field keys on staging, then build a staging-only adapter. BubbaWP remains the sole booking authority; Ninja Forms is the family-facing form interface. Events Manager is excluded from the booking architecture.
 - **Preservation:** Existing checkout, Fluent Forms 7/8, Stripe code, family profiles, sessions, leader dashboards, SQL tables and data remain unchanged until tested replacement.
 - **Production changes:** None authorised by this checklist update.
 
 ### Current booking integration gates
 
-- [x] **B-EM-00** Add passive, staging-only diagnostics to BubbaWP and pass PHP lint (PR #198).
-- [ ] **B-EM-01** Verify Events Manager Free/Ninja Forms on staging and inspect available APIs.
-- [ ] **B-EM-02** Map existing activity/session IDs to Events Manager event/recurrence IDs; no duplicate master listings.
-- [ ] **B-EM-03** Connect parent-owned native child/bump profile selection with server-side ownership validation.
-- [ ] **B-EM-04** Use Ninja Forms for enquiries and consent only; preserve Fluent Forms submissions until migration verified.
-- [ ] **B-EM-05** Validate free bookings, capacity, duplicates, recurrence, confirmation, cancellations and waitlists.
-- [ ] **B-EM-06** Validate one Stripe payment, a single disclosed parent-paid booking fee, advertised leader price, webhooks, refunds and payouts.
-- [ ] **B-EM-07** Connect booking records to Leader Portal and My Hub with correct permissions and privacy.
-- [ ] **B-EM-08** Run guest/member/leader end-to-end staging QA, backup/rollback and explicitly approve cutover.
+- [x] **B-NF-00** Confirm architecture: BubbaWP owns booking records and lifecycle; Ninja Forms is the family-facing form; Events Manager is excluded from the booking path.
+- [ ] **B-NF-01** Confirm the active Ninja Forms booking form ID, field keys/types and submission payload on staging; inspect installed Ninja Forms version and supported hooks.
+- [ ] **B-NF-02** Build an isolated Ninja Forms adapter in BubbaWP behind a staging-only feature flag, disabled by default; do not change the existing Fluent Forms checkout.
+- [ ] **B-NF-03** Reuse BubbaWP's existing session validation, capacity reservation, duplicate protection, native child-profile ownership checks and consent writer; do not duplicate booking logic or trust browser-supplied profile IDs.
+- [ ] **B-NF-04** Verify the adapter can safely associate the Ninja Forms submission with wp_bh3_bookings without assuming Fluent Forms storage or changing the existing unique submission field semantics.
+- [ ] **B-NF-05** Validate free bookings, capacity/concurrency, duplicate submissions, recurring dates, confirmation, cancellations and expiry behaviour.
+- [ ] **B-NF-06** Validate the existing Stripe test checkout path, one payment, fee disclosure, leader price, webhook replay, refunds and payout accounting; keep live payments disabled.
+- [ ] **B-NF-07** Connect canonical booking records to Leader Portal and My Hub with correct permissions and privacy.
+- [ ] **B-NF-08** Run member/guest/leader end-to-end staging QA, backup/rollback and obtain explicit cutover approval before replacing Fluent Forms.
+
+**Architecture rule:** Events Manager is not a booking dependency and must not create duplicate activity, session or reservation records.
 
 ### Implementation status audit (not staging acceptance)
 
@@ -244,11 +246,12 @@
 | ID | Decision | Status |
 | --- | --- | --- |
 | ADR-017 | `bubbawp` is the single development repository; retire `bubba4` after preservation audit | Agreed |
-| ADR-018 | Events Manager **Free** is proposed reservation authority, subject to verified APIs and end-to-end parity | Agreed direction; integration unverified |
-| ADR-019 | Ninja Forms **Free** handles enquiries/supplementary consent, not authoritative bookings or child records | Agreed direction |
+| ADR-018 | Events Manager Free is the booking/reservation authority | Superseded 2026-11-08; excluded from booking architecture |
+| ADR-019 | Ninja Forms Free is the family-facing booking form interface; BubbaWP remains authoritative for validation, reservations, attendees, consent and lifecycle | Superseded 2026-11-08; replaced by ADR-023 |
 | ADR-020 | Existing native `bh_children` and `bh_bumps` profiles remain authoritative | Agreed |
 | ADR-021 | Preserve Fluent Forms and existing checkout until a tested, approved migration | Agreed |
 | ADR-022 | No paid plugin or new AI dependency; reuse existing free plugins and code | Agreed |
+| ADR-023 | BubbaWP owns the canonical booking system; Ninja Forms is the form interface/transport only. No second booking database or Events Manager booking layer. Existing Fluent Forms checkout remains intact until staging parity and explicit cutover approval. | Agreed 2026-11-08 |
 
 ## Work item template
 
@@ -291,6 +294,7 @@ Copy for each substantial issue/PR:
 ## Change log
 
 | 2026-11-08 | Reconciled current work against existing BubbaWP source and PR #198; updated booking, forms, fees and single-repository decisions without claiming staging QA | PR #198; `docs/EVENTS_MANAGER_NINJA_FORMS_MIGRATION.md` |
+| 2026-11-08 | Confirmed BubbaWP + Ninja Forms booking architecture; removed Events Manager from booking path and defined B-NF adapter gates. No implementation or staging QA claimed. | ADR-023; docs/EVENTS_MANAGER_NINJA_FORMS_MIGRATION.md |
 
 | Date | Change | Evidence |
 | --- | --- | --- |
