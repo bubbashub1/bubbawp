@@ -31,7 +31,7 @@
 - [x] **B-EM-00** Add passive, staging-only diagnostics to BubbaWP and pass PHP lint (PR #198).
 - [x] **B-NF-00** Agree architecture: Ninja Forms is the form interface; BubbaWP owns booking truth; Events Manager is not part of the core booking path.
 - [ ] **B-NF-01** Refactor the existing Fluent Forms-specific submission reader/binder into a provider-neutral validated booking-input service without changing current Fluent Forms behaviour.
-- [ ] **B-NF-02** Verify Ninja Forms installed version, exact form ID/field keys, saved-submission persistence and action timing on staging.
+- [~] **B-NF-02** Read-only staging diagnostics panel and smoke test added; verify exact Ninja Forms version, form ID/field keys, saved-submission persistence and action timing on staging.
 - [ ] **B-NF-03** Add an isolated Ninja Forms adapter behind a staging-only feature flag (default off); resolve persisted submission identity and idempotency before any booking write.
 - [ ] **B-NF-04** Verify parent authentication, session/date/places match, native family-profile ownership, both consents and server-calculated price.
 - [ ] **B-NF-05** Validate free bookings, capacity locking, duplicate submissions, recurrence, confirmation, cancellations and waitlists.
