@@ -41,6 +41,20 @@ check( ! BH_Booking_Family_Profile_Reader::owns_profile( '999' ), 'Foreign ID sh
 check( BH_Booking_Family_Profile_Reader::owns_child_profile( '12' ), 'Owned child should be valid as an attendee' );
 check( ! BH_Booking_Family_Profile_Reader::owns_child_profile( '13' ), 'Pregnancy profiles must not be accepted as child attendees' );
 
+$static_test_options = array(
+    array( 'label' => 'Test Child', 'value' => 'test-child', 'calc' => 0, 'selected' => false ),
+    array( 'label' => 'Test Pregnancy Profile', 'value' => 'test-bump', 'calc' => 0, 'selected' => false ),
+);
+$replaced_options = BH_Booking_Family_Profile_Reader::filter_ninja_options(
+    $static_test_options,
+    array( 'label' => BH_Booking_Family_Profile_Reader::NINJA_FIELD_LABEL )
+);
+$replaced_values = array_column( $replaced_options, 'value' );
+check( ! in_array( 'test-child', $replaced_values, true ), 'Temporary manually entered test choices must be replaced' );
+check( ! in_array( 'test-bump', $replaced_values, true ), 'Temporary manually entered bump choice must be replaced' );
+check( in_array( '12', $replaced_values, true ), 'Owned child profile must replace static test choices' );
+check( ! in_array( '13', $replaced_values, true ), 'Bump profile must remain excluded after replacing static choices' );
+
 $options = BH_Booking_Family_Profile_Reader::filter_ninja_options( array(), array( 'key' => BH_Booking_Family_Profile_Reader::NINJA_FIELD_KEY ) );
 $values = array_column( $options, 'value' );
 check( in_array( '12', $values, true ), 'Owned child should appear when matched by Field Key' );
