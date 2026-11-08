@@ -239,6 +239,8 @@
 | ADR-015 | Legacy Astra/Elementor content must be inventoried and transitioned on staging; no live theme switch until approved | Agreed 2026-11-03 |
 | ADR-016 | **Theme-first sequencing:** establish and approve design system before implementing directory, leader and family features | Agreed 2026-11-03 |
 
+> **ADR-020 reconciliation blocker (2026-11-08):** Source inspection of the active `/family/profile/` manager and family read model shows `{prefix}bh_family_profiles` is queried when present, while ADR-020 names legacy `bh_children` / `bh_bumps` as authoritative. PR #197 reuses the table currently used by the profile manager and does not migrate, write, or alter either source. Confirm the intended canonical source and ownership mapping before connecting a booking writer or marking B-EM-03 complete.
+
 ### Decisions updated 2026-11-08
 
 | ID | Decision | Status |
@@ -246,7 +248,7 @@
 | ADR-017 | `bubbawp` is the single development repository; retire `bubba4` after preservation audit | Agreed |
 | ADR-018 | Events Manager **Free** is proposed reservation authority, subject to verified APIs and end-to-end parity | Agreed direction; integration unverified |
 | ADR-019 | Ninja Forms **Free** handles enquiries/supplementary consent, not authoritative bookings or child records | Agreed direction |
-| ADR-020 | Existing native `bh_children` and `bh_bumps` profiles remain authoritative | Agreed |
+| ADR-020 | Existing native `bh_children` and `bh_bumps` profiles remain authoritative | **Needs reconciliation** — the active `/family/profile/` manager and current read model use `{prefix}bh_family_profiles`; no data-source change or migration approved |
 | ADR-021 | Preserve Fluent Forms and existing checkout until a tested, approved migration | Agreed |
 | ADR-022 | No paid plugin or new AI dependency; reuse existing free plugins and code | Agreed |
 
