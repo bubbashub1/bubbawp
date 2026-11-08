@@ -9,7 +9,7 @@ final class BH_Booking_Family_Profile_Reader {
     /** Preferred internal field key when the builder exposes it. */
     const NINJA_FIELD_KEY = 'bh_family_profile_id';
     /** Exact, unique field label fallback for the modern builder. */
-    const NINJA_FIELD_LABEL = 'Which child is attending?';
+    const NINJA_FIELD_LABEL = 'Who is attending?';
 
     public static function register() {
         if ( function_exists( 'add_filter' ) ) {
