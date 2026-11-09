@@ -137,16 +137,6 @@ final class BH_Family_Hub_3 {
         ?>
         <section class="bh3-family bh3-family--sidebar" aria-labelledby="bh3-family-heading">
           <div class="bh3-family__shell">
-            <nav class="bh3-family__side" aria-label="Family Hub navigation">
-              <strong>My Hub</strong>
-              <a href="#bh3-family-heading">Overview</a>
-              <a href="#bh3-my-family">My family</a>
-              <a href="#bh3-saved">Favourites</a>
-              <a href="#bh3-planner">Planner</a>
-              <a href="#bh3-suggestions">Discover</a>
-              <a href="<?php echo esc_url( home_url( '/family/settings/' ) ); ?>">Settings</a>
-              <a href="<?php echo esc_url( home_url( '/support/' ) ); ?>">Help &amp; Support</a>
-            </nav>
             <div class="bh3-family__body">
           <div class="bh3-family__hero">
             <p class="bh3-family__eyebrow"><?php echo esc_html__( 'Bubba Hub · My Hub', 'bubba-hub-manager' ); ?></p>
@@ -173,15 +163,18 @@ final class BH_Family_Hub_3 {
             </div>
           <?php endif; ?>
           <?php if ($private_preview && !$family_read_error) : ?>
-            <nav class="bh3-family__quick-nav" aria-label="<?php echo esc_attr__('Family Hub sections', 'bubba-hub-manager'); ?>">
-              <a href="#bh3-my-family"><?php echo esc_html__('My family', 'bubba-hub-manager'); ?></a>
-              <a href="#bh3-saved"><?php echo esc_html__('Favourites', 'bubba-hub-manager'); ?></a>
-              <a href="<?php echo esc_url(home_url('/family/settings/')); ?>"><?php echo esc_html__('Settings', 'bubba-hub-manager'); ?></a>
-              <a href="#bh3-suggestions"><?php echo esc_html__('Suggested', 'bubba-hub-manager'); ?></a>
-              <a href="#bh3-planner"><?php echo esc_html__('Planner', 'bubba-hub-manager'); ?></a>
+            <nav class="bh3-family__tabs" aria-label="<?php echo esc_attr__('Your Family Hub sections', 'bubba-hub-manager'); ?>" role="tablist">
+              <button type="button" role="tab" id="bh3-tab-overview" aria-selected="true" aria-controls="bh3-panel-overview" data-bh3-tab="overview">Overview</button>
+              <button type="button" role="tab" id="bh3-tab-family" aria-selected="false" aria-controls="bh3-panel-family" data-bh3-tab="family">My Family</button>
+              <button type="button" role="tab" id="bh3-tab-activity" aria-selected="false" aria-controls="bh3-panel-activity" data-bh3-tab="activity">My Activity</button>
+              <button type="button" role="tab" id="bh3-tab-planner" aria-selected="false" aria-controls="bh3-panel-planner" data-bh3-tab="planner">My Planner</button>
+              <button type="button" role="tab" id="bh3-tab-bookings" aria-selected="false" aria-controls="bh3-panel-bookings" data-bh3-tab="bookings">My Bookings</button>
+              <button type="button" role="tab" id="bh3-tab-support" aria-selected="false" aria-controls="bh3-panel-support" data-bh3-tab="support">My Support</button>
+              <button type="button" role="tab" id="bh3-tab-messages" aria-selected="false" aria-controls="bh3-panel-messages" data-bh3-tab="messages">My Messages</button>
+              <button type="button" role="tab" id="bh3-tab-settings" aria-selected="false" aria-controls="bh3-panel-settings" data-bh3-tab="settings">Account Settings</button>
             </nav>
             <div class="bh3-family__grid bh3-family__private" aria-label="<?php echo esc_attr__('Your private family overview', 'bubba-hub-manager'); ?>">
-              <article id="bh3-my-family" class="bh3-family__card bh3-family__card--family">
+              <article id="bh3-my-family" class="bh3-family__card bh3-family__card--family" data-bh3-section="family">
                 <div class="bh3-family__section-heading"><div><span class="bh3-family__kicker"><?php echo esc_html__('YOUR HOUSEHOLD', 'bubba-hub-manager'); ?></span><h2><?php echo esc_html__('My family', 'bubba-hub-manager'); ?></h2></div><span class="bh3-family__count"><?php echo esc_html(sprintf(__('%d profiles', 'bubba-hub-manager'), count($profiles['children']) + count($profiles['bumps']))); ?></span></div>
                 <p><?php echo esc_html(sprintf(__('%1$d child profiles · %2$d pregnancy profiles', 'bubba-hub-manager'), count($profiles['children']), count($profiles['bumps']))); ?></p>
                 <div class="bh3-family__profiles">
@@ -287,7 +280,7 @@ final class BH_Family_Hub_3 {
           <div class="bh3-family__grid">
             <?php foreach ( $sections as $section ) : ?>
               <?php if ($private_preview && in_array($section[0], array('My family', 'Saved activities', 'Family planner'), true)) continue; ?>
-              <article id="bh3-suggestions" class="bh3-family__card bh3-family__card--suggestions">
+              <article id="bh3-suggestions" class="bh3-family__card bh3-family__card--suggestions" data-bh3-section="overview">
                 <div class="bh3-family__section-heading"><div><span class="bh3-family__kicker"><?php echo esc_html__('DISCOVER', 'bubba-hub-manager'); ?></span><h2><?php echo esc_html__('Suggested activities for your family', 'bubba-hub-manager'); ?></h2></div></div>
                 <p><?php echo esc_html__('Published activities matched against your chosen interests, days and area.', 'bubba-hub-manager'); ?></p>
                 <?php if ($admin_demo) : ?><p class="bh3-family__preview-note"><?php echo esc_html__('Admin preview: showing recently published activities without personal preferences.', 'bubba-hub-manager'); ?></p><?php endif; ?>
@@ -309,12 +302,12 @@ final class BH_Family_Hub_3 {
                 <p class="bh3-family__matching-note"><?php echo esc_html__('Child ages are matched when profiles are available. Travel radius applies only when your postcode can be matched to a unique venue location.', 'bubba-hub-manager'); ?></p>
               </article>
               <?php if (!$admin_demo && class_exists('BH_Family_Native_Favourites_3') && BH_Family_Native_Favourites_3::allowed()) : ?>
-                <article id="bh3-native-favourites" class="bh3-family__card bh3-family__card--saved">
+                <article id="bh3-native-favourites" class="bh3-family__card bh3-family__card--saved" data-bh3-section="activity">
                   <?php echo BH_Family_Native_Favourites_3::render(); ?>
                 </article>
               <?php endif; ?>
               <?php if (!class_exists('BH_Family_Native_Favourites_3') || !BH_Family_Native_Favourites_3::allowed()) : ?>
-              <article id="bh3-saved" class="bh3-family__card bh3-family__card--saved">
+              <article id="bh3-saved" class="bh3-family__card bh3-family__card--saved" data-bh3-section="activity">
                 <h2><?php echo esc_html__('Saved activities', 'bubba-hub-manager'); ?></h2>
                 <?php if (!empty($saved) || $saved_search !== '') : ?>
                 <form class="bh3-family__search" method="get" action="<?php echo esc_url($return_url); ?>">
@@ -368,7 +361,7 @@ final class BH_Family_Hub_3 {
                 <?php endif; ?>
               </article>
               <?php endif; ?>
-              <article id="bh3-planner" class="bh3-family__card bh3-family__card--planner">
+              <article id="bh3-planner" class="bh3-family__card bh3-family__card--planner" data-bh3-section="planner">
                 <h2><?php echo esc_html__('Family planner', 'bubba-hub-manager'); ?></h2>
                 <p class="bh3-family__planner-summary"><?php echo esc_html(sprintf(__('%1$d planned · %2$d visited', 'bubba-hub-manager'), count($planner), $visited_count)); ?></p>
                 <?php if (!empty($planner) || $planner_search !== '' || $planner_filter !== 'all') : ?>
@@ -422,12 +415,77 @@ final class BH_Family_Hub_3 {
                   <?php if (count($filtered_planner) > 8) : ?><p><a href="<?php echo esc_url(add_query_arg(array('bh3_show_planner' => $show_planner ? '0' : '1', 'bh3_planner_filter' => $planner_filter, 'bh3_planner_search' => $planner_search), $return_url)); ?>"><?php echo esc_html($show_planner ? __('Show fewer planned activities', 'bubba-hub-manager') : sprintf(__('View all %d matching activities', 'bubba-hub-manager'), count($filtered_planner))); ?></a></p><?php endif; ?>
                 <?php endif; ?>
               </article>
-              <article class="bh3-family__card">
-                <h2><?php echo esc_html( $section[0] ); ?></h2>
-                <p><?php echo esc_html( $section[1] ); ?></p>
-              </article>
             <?php endforeach; ?>
+              <article id="bh3-panel-bookings" class="bh3-family__card bh3-family__coming-soon" data-bh3-section="bookings" hidden>
+                <span class="bh3-family__kicker">MY BOOKINGS</span>
+                <h2><?php echo esc_html__('Your family bookings', 'bubba-hub-manager'); ?></h2>
+                <p><?php echo esc_html__('Your upcoming and previous Bubba Hub bookings will be brought together here. For now, keep your booking confirmation email handy.', 'bubba-hub-manager'); ?></p>
+              </article>
+              <article id="bh3-panel-support" class="bh3-family__card bh3-family__coming-soon" data-bh3-section="support" hidden>
+                <span class="bh3-family__kicker">MY SUPPORT</span>
+                <h2><?php echo esc_html__('How can we help?', 'bubba-hub-manager'); ?></h2>
+                <p><?php echo esc_html__('Find answers and get help with your Bubba Hub account or family activities.', 'bubba-hub-manager'); ?></p>
+                <p><a href="<?php echo esc_url(home_url('/support/')); ?>"><?php echo esc_html__('Visit Help &amp; Support', 'bubba-hub-manager'); ?> →</a></p>
+              </article>
+              <article id="bh3-panel-messages" class="bh3-family__card bh3-family__coming-soon" data-bh3-section="messages" hidden>
+                <span class="bh3-family__kicker">MY MESSAGES</span>
+                <h2><?php echo esc_html__('Your conversations', 'bubba-hub-manager'); ?></h2>
+                <p><?php echo esc_html__('Messages and replies from activity organisers will be gathered here when family messaging is connected.', 'bubba-hub-manager'); ?></p>
+              </article>
+              <article id="bh3-panel-settings" class="bh3-family__card bh3-family__coming-soon" data-bh3-section="settings" hidden>
+                <span class="bh3-family__kicker">ACCOUNT SETTINGS</span>
+                <h2><?php echo esc_html__('Your account and preferences', 'bubba-hub-manager'); ?></h2>
+                <p><?php echo esc_html__('Manage your family preferences and account details.', 'bubba-hub-manager'); ?></p>
+                <p><a href="<?php echo esc_url(home_url('/family/settings/')); ?>"><?php echo esc_html__('Open account settings', 'bubba-hub-manager'); ?> →</a></p>
+              </article>
           </div>
+          <script>
+          (function(){
+            function initFamilyHubTabs(){
+              document.querySelectorAll('.bh3-family__tabs').forEach(function(nav){
+                if(nav.dataset.bh3Ready==='1') return;
+                nav.dataset.bh3Ready='1';
+                var root=nav.closest('.bh3-family');
+                if(!root) return;
+                var tabs=Array.prototype.slice.call(nav.querySelectorAll('[data-bh3-tab]'));
+                var panels=Array.prototype.slice.call(root.querySelectorAll('[data-bh3-section]'));
+                function activate(name,focus){
+                  tabs.forEach(function(tab){
+                    var selected=tab.dataset.bh3Tab===name;
+                    tab.setAttribute('aria-selected',selected?'true':'false');
+                    tab.tabIndex=selected?0:-1;
+                  });
+                  panels.forEach(function(panel){
+                    var visible=panel.dataset.bh3Section===name;
+                    panel.hidden=!visible;
+                    if(visible) panel.setAttribute('role','tabpanel');
+                    else panel.removeAttribute('role');
+                  });
+                  if(focus){
+                    var active=nav.querySelector('[data-bh3-tab="'+name+'"]');
+                    if(active) active.focus();
+                  }
+                }
+                tabs.forEach(function(tab,index){
+                  tab.addEventListener('click',function(){activate(tab.dataset.bh3Tab,false);});
+                  tab.addEventListener('keydown',function(event){
+                    var next=index;
+                    if(event.key==='ArrowRight') next=(index+1)%tabs.length;
+                    else if(event.key==='ArrowLeft') next=(index-1+tabs.length)%tabs.length;
+                    else if(event.key==='Home') next=0;
+                    else if(event.key==='End') next=tabs.length-1;
+                    else return;
+                    event.preventDefault();
+                    activate(tabs[next].dataset.bh3Tab,true);
+                  });
+                });
+                activate('overview',false);
+              });
+            }
+            if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initFamilyHubTabs);
+            else initFamilyHubTabs();
+          })();
+          </script>
             </div>
           </div>
         </section>
