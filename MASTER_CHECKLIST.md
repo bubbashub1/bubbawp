@@ -21,9 +21,25 @@
 - **Theme:** Preserve existing `bubbatheme`; do not rebuild theme from scratch.
 - **Latest verified GitHub milestone:** Events Manager Free/Ninja Forms read-only diagnostics merged in [PR #198](https://github.com/bubbashub1/bubbawp/pull/198), commit `4255bd0`. PHP lint passed before merge.
 - **Staging QA:** Booking diagnostics screen not yet verified on WordPress. No claim of a working Events Manager reservation/Stripe integration.
-- **Next task:** B-EM-01, inspect staging Events Manager Free and Ninja Forms versions/APIs, then verify real session schema before any writes.
+- **Next booking task:** B-EM-01, inspect staging Events Manager Free and Ninja Forms versions/APIs, then verify real session schema before any writes. **Current separate task:** AUTH-G-01–10, Google sign-in foundation and staging integration.
 - **Preservation:** Existing checkout, Fluent Forms 7/8, Stripe code, family profiles, sessions, leader dashboards, SQL tables and data remain unchanged until tested replacement.
 - **Production changes:** None authorised by this checklist update.
+
+### Google sign-in workstream (2026-11-09)
+
+**User decision:** Allow both new Family and new Class Leader registration through Google. New leader accounts remain pending manual approval; existing WordPress accounts require confirmation through their existing email address before Google is linked.
+
+- [~] **AUTH-G-01** Add Google OpenID Connect server flow to the bubbawp feature branch: state/nonce, PKCE, HTTPS-only start, JWKS signature verification and claim validation.
+- [~] **AUTH-G-02** Add Family and Leader account creation paths; pending leaders receive no leader role/capabilities automatically.
+- [~] **AUTH-G-03** Prevent silent email matching; require a one-use email confirmation and explicit POST to link an existing WordPress account.
+- [x] **AUTH-G-04** Add setup notes and staging acceptance checklist in docs/GOOGLE_SIGN_IN_STAGING.md.
+- [ ] **AUTH-G-05** Configure Google OAuth Web client and staging-only credentials; never commit secrets.
+- [ ] **AUTH-G-06** Add the shortcode to the custom /auth/ page and verify the existing email/password login remains intact.
+- [ ] **AUTH-G-07** Integrate new WordPress identities with Simple Membership Free tiers after confirming the installed SWPM API and actual Family/Leader level IDs.
+- [ ] **AUTH-G-08** Build the admin approval workflow for pending Leader accounts using the site's confirmed existing role/capability model.
+- [ ] **AUTH-G-09** Run PHP lint, automated security checks and full Family/Leader/existing-account staging journeys.
+- [ ] **AUTH-G-10** Review FluentAuth session compatibility, legacy bh_users bridge boundaries, logout and account recovery.
+- **Exit gate:** all staging tests pass; Family/Leader accounts map to the correct membership tiers; existing accounts link safely; no private Family/Leader data is enabled prematurely. No live credentials or deployment until explicitly approved.
 
 ### Current booking integration gates
 
@@ -305,3 +321,5 @@ Copy for each substantial issue/PR:
 | 2026-11-03 | Verified successful GitHub Actions theme ZIP artifact (run 41639189965); drafted visual design brief; staging/browser QA still outstanding | `docs/THEME_DESIGN_BRIEF.md` |
 | 2026-11-03 | Added category grid, featured placeholder, event promo and directory shell patterns; homepage updated; browser review still pending | `theme/bubba-hub/patterns/` |
 | 2026-11-03 | Confirmed theme build passed run 41642060861; expanded static validation for pattern and template-part references, CI result pending | `scripts/validate-theme.php` |
+
+| 2026-11-09 | Added Google sign-in workstream after user approved both Family and Leader Google registration; implementation remains staging-only and not yet tested/deployed | feature/google-sign-in; docs/GOOGLE_SIGN_IN_STAGING.md |
