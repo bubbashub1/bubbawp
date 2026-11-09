@@ -18,7 +18,15 @@ final class BH_Family_Hub_3 {
     }
 
     public static function register_demo_route() {
-        add_rewrite_rule( '^hub-demo/?
+        add_rewrite_rule( '^hub-demo/?$', 'index.php?pagename=hub-demo', 'top' );
+        if ( get_option( 'bh3_family_hub_demo_route_version' ) !== '1' ) {
+            flush_rewrite_rules( false );
+            update_option( 'bh3_family_hub_demo_route_version', '1', false );
+        }
+    }
+
+    public static function ensure_demo_page() {
+        if ( ! current_user_can( 'manage_options' ) ) { return; }
         $existing = get_page_by_path( 'hub-demo', OBJECT, 'page' );
         if ( $existing ) { return; }
         wp_insert_post( array(
