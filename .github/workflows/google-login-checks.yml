@@ -1,0 +1,29 @@
+name: Google sign-in PHP checks
+
+on:
+  push:
+    branches:
+      - feature/google-sign-in
+  pull_request:
+    paths:
+      - 'plugin/bubba-hub-manager/includes/class-bh-google-login.php'
+      - 'plugin/bubba-hub-manager/includes/class-bh-manager.php'
+      - 'plugin/bubba-hub-manager/modules/Membership/class-bh-membership-registration.php'
+      - '.github/workflows/google-login-checks.yml'
+
+jobs:
+  php-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Install PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+      - name: Lint Google sign-in module
+        run: php -l plugin/bubba-hub-manager/includes/class-bh-google-login.php
+      - name: Lint plugin bootstrap
+        run: php -l plugin/bubba-hub-manager/includes/class-bh-manager.php
+      - name: Lint membership registration page
+        run: php -l plugin/bubba-hub-manager/modules/Membership/class-bh-membership-registration.php
