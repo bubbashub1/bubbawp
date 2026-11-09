@@ -11,8 +11,8 @@ final class BH_Activity_Duplicates_3 {
     }
 
     private static function allowed() {
-        return current_user_can( 'manage_options' )
-            && strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) === 'staging.bubbahub.co.uk';
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) { return false; }
+        return current_user_can( 'manage_options' ) || ( is_user_logged_in() && current_user_can( 'read' ) && absint( get_user_meta( get_current_user_id(), 'bh3_organiser_id', true ) ) > 0 );
     }
 
     /**
