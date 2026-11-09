@@ -29,7 +29,8 @@ final class BH_Google_Login_3 {
     }
 
     private static function configured(): bool {
-        return defined( 'BH_GOOGLE_CLIENT_ID' ) && is_string( BH_GOOGLE_CLIENT_ID )
+        return defined( 'BH_GOOGLE_LOGIN_ENABLED' ) && BH_GOOGLE_LOGIN_ENABLED === true
+            && defined( 'BH_GOOGLE_CLIENT_ID' ) && is_string( BH_GOOGLE_CLIENT_ID )
             && BH_GOOGLE_CLIENT_ID !== '' && defined( 'BH_GOOGLE_CLIENT_SECRET' )
             && is_string( BH_GOOGLE_CLIENT_SECRET ) && BH_GOOGLE_CLIENT_SECRET !== '';
     }
