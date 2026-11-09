@@ -60,6 +60,8 @@ final class BH_Manager_3 {
         BH_Family_DB_Setup_3::register();
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activity-parity.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activity-create.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-duplicate-reviews.php';
+        BH_Activity_Duplicate_Reviews_3::register();
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activity-edit.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-venues.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-activity-venues.php';
