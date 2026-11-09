@@ -10,12 +10,28 @@ final class BH_Family_Hub_3 {
         add_shortcode( 'bubbahub_family_hub', array( __CLASS__, 'render' ) );
         add_action( 'wp_enqueue_scripts', array( __CLASS__, 'styles' ) );
         add_action( 'template_redirect', array( __CLASS__, 'private_cache_headers' ), 0 );
+        add_action( 'admin_init', array( __CLASS__, 'ensure_demo_page' ) );
+    }
+
+    public static function ensure_demo_page() {
+        if ( ! current_user_can( 'manage_options' ) ) { return; }
+        $existing = get_page_by_path( 'hub-demo', OBJECT, 'page' );
+        if ( $existing ) { return; }
+        wp_insert_post( array(
+            'post_type'    => 'page',
+            'post_status'  => 'private',
+            'post_title'   => 'Hub Demo',
+            'post_name'    => 'hub-demo',
+            'post_content' => '[bubbahub_family_hub]',
+        ) );
     }
 
     public static function private_cache_headers() {
-        if (!defined('BH3_FAMILY_PRIVATE_PREVIEW') || BH3_FAMILY_PRIVATE_PREVIEW !== true || !is_singular()) return;
+        if ( ! is_singular() ) { return; }
         $post = get_post();
-        if ($post && has_shortcode($post->post_content, 'bubbahub_family_hub')) nocache_headers();
+        if ( ! $post || ! has_shortcode( $post->post_content, 'bubbahub_family_hub' ) ) { return; }
+        $preview_enabled = defined( 'BH3_FAMILY_PRIVATE_PREVIEW' ) && BH3_FAMILY_PRIVATE_PREVIEW === true;
+        if ( $preview_enabled || is_page( 'hub-demo' ) ) { nocache_headers(); }
     }
 
     public static function styles() {
@@ -41,7 +57,7 @@ final class BH_Family_Hub_3 {
         $preview_enabled = defined('BH3_FAMILY_PRIVATE_PREVIEW') && BH3_FAMILY_PRIVATE_PREVIEW === true;
         // Admins can inspect the complete front-end layout without impersonating a family
         // or reading or changing any real family records.
-        $admin_demo = $preview_enabled && $wp_signed_in && current_user_can('manage_options');
+        $admin_demo = $wp_signed_in && current_user_can( 'manage_options' ) && ( $preview_enabled || is_page( 'hub-demo' ) );
         $verified_family = $preview_enabled && $wp_signed_in && !$admin_demo && BH_Family_Identity_3::current_legacy_id() > 0;
         $private_preview = $preview_enabled && $wp_signed_in;
         $preferences = BH_Family_Preferences_3::read();
@@ -52,7 +68,7 @@ final class BH_Family_Hub_3 {
         // Read only that account's rows; do not rely on legacy identity mapping.
         $profiles = array('children' => array(), 'bumps' => array());
         $native_profile_error = false;
-        if ($wp_signed_in) {
+        if ($wp_signed_in && !$admin_demo) {
             global $wpdb;
             $native_table = $wpdb->prefix . 'bh_family_profiles';
             $native_exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($native_table))) === $native_table;
@@ -162,7 +178,7 @@ final class BH_Family_Hub_3 {
               <?php echo esc_html(sprintf('Your Hub: %d saved activities, %d planned activities, %d child profiles.', count($saved), count($planner), count($profiles['children']))); ?>
             </div>
           <?php endif; ?>
-          <?php if ($private_preview && !$family_read_error) : ?>
+          <?php if (($private_preview || $admin_demo) && !$family_read_error) : ?>
             <nav class="bh3-family__tabs" aria-label="<?php echo esc_attr__('Your Family Hub sections', 'bubba-hub-manager'); ?>" role="tablist">
               <button type="button" role="tab" id="bh3-tab-overview" aria-selected="true" aria-controls="bh3-panel-overview" data-bh3-tab="overview">Overview</button>
               <button type="button" role="tab" id="bh3-tab-family" aria-selected="false" aria-controls="bh3-panel-family" data-bh3-tab="family">My Family</button>
