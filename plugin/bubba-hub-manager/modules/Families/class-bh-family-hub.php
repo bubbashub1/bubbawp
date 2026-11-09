@@ -60,7 +60,8 @@ final class BH_Family_Hub_3 {
         $admin_demo = $wp_signed_in && current_user_can( 'manage_options' ) && ( $preview_enabled || is_page( 'hub-demo' ) );
         $verified_family = $preview_enabled && $wp_signed_in && !$admin_demo && BH_Family_Identity_3::current_legacy_id() > 0;
         $private_preview = $preview_enabled && $wp_signed_in;
-        $preferences = BH_Family_Preferences_3::read();
+        // The Hub Demo must not read any account preferences or personal family data.
+        $preferences = ($private_preview && !$admin_demo) ? BH_Family_Preferences_3::read() : array();
 
         $saved = $verified_family ? BH_Family_Read_Model_3::saved_ids() : array();
         $planner = $verified_family ? BH_Family_Read_Model_3::planner_items() : array();
