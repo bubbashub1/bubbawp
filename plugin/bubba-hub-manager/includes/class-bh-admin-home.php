@@ -8,6 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 final class BH_Admin_Home_3 {
     public static function register() {
         add_action( 'admin_menu', array( __CLASS__, 'replace_menu' ), 1000 );
+        add_action( 'admin_menu', array( __CLASS__, 'register_section_pages' ), 1001 );
         add_action( 'admin_enqueue_scripts', array( __CLASS__, 'styles' ) );
     }
 
@@ -39,6 +40,10 @@ final class BH_Admin_Home_3 {
         );
     }
 
+    public static function register_section_pages() {
+        add_submenu_page( null, 'Activities & Directory', 'Activities & Directory', 'manage_options', 'bh3-admin-section-directory', array( __CLASS__, 'render_directory_section' ) );
+    }
+
     private static function url( $page ) {
         return admin_url( 'admin.php?page=' . rawurlencode( $page ) );
     }
@@ -49,15 +54,15 @@ final class BH_Admin_Home_3 {
         }
 
         $sections = array(
-            array( 'Activities & Directory', 'Manage listings, sessions, venues and organisers.', 'dashicons-location', 'bh3-activities', 'Open activities', 'ready' ),
+            array( 'Activities & Directory', 'Manage listings, sessions, venues and organisers.', 'dashicons-location', 'bh3-admin-section-directory', 'Open directory tools', 'ready' ),
             array( 'Families & Accounts', 'Family Hub setup, profile display and account checks.', 'dashicons-groups', 'bh3-family-settings', 'Open family settings', 'limited' ),
             array( 'Class Leaders', 'Leader portal readiness and leader-facing tools.', 'dashicons-businessperson', 'bh3-leader-settings', 'Open leader settings', 'limited' ),
-            array( 'Bookings & Payments', 'Booking checks and payment configuration.', 'dashicons-calendar-alt', 'bh3-booking-test-generator', 'Open booking checks', 'check' ),
+            array( 'Bookings & Payments', 'Booking functionality is not enabled on the live site yet.', 'dashicons-calendar-alt', '', '', 'planned' ),
             array( 'Events & Expo', 'A home for event listings, tickets and exhibitor management.', 'dashicons-tickets-alt', '', '', 'planned' ),
-            array( 'Help & Content', 'Support resources, enquiries and article review.', 'dashicons-editor-help', 'bh3-support-help', 'Open support overview', 'limited' ),
+            array( 'Help & Content', 'Support administration is not connected to the live site yet.', 'dashicons-editor-help', '', '', 'planned' ),
             array( 'Marketing', 'Communications, newsletters and promotions.', 'dashicons-megaphone', '', '', 'planned' ),
             array( 'Reports', 'A clear view of directory, membership and booking performance.', 'dashicons-chart-bar', '', '', 'planned' ),
-            array( 'Website Settings', 'Directory presentation, fields and website configuration.', 'dashicons-admin-settings', 'bh3-settings', 'Open settings', 'ready' ),
+            array( 'Website Settings', 'Directory display preferences and site configuration.', 'dashicons-admin-settings', 'bh3-settings', 'Open settings', 'ready' ),
             array( 'Claims & Data Quality', 'Review directory readiness and keep records accurate.', 'dashicons-shield-alt', 'bh3-directory-audit', 'Open data checks', 'check' ),
             array( 'Developments', 'Roadmap, progress and technical checks for administrators.', 'dashicons-hammer', 'bh3-developments', 'Open developments', 'ready' ),
         );
@@ -93,8 +98,44 @@ final class BH_Admin_Home_3 {
         echo '</div>';
     }
 
+
+    public static function render_directory_section() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'You do not have permission to view this page.', 'bubba-hub-manager' ), '', array( 'response' => 403 ) );
+        }
+
+        $groups = array(
+            array( 'Activities', 'Create and manage the listings families see in the directory.', array(
+                array( 'Add an activity', 'Create a new listing using the activity form.', 'bh3-add-activity', 'Add activity' ),
+                array( 'Manage activities', 'Find existing listings, review details and make updates.', 'bh3-activities', 'View activities' ),
+            ) ),
+            array( 'Locations and organisers', 'Keep the places and people behind each activity accurate.', array(
+                array( 'Manage venues', 'Add and update activity locations.', 'bh3-venues', 'Manage venues' ),
+                array( 'Manage organisers', 'Review organiser records and contact details.', 'bh3-organisers', 'Manage organisers' ),
+            ) ),
+            array( 'Directory setup', 'Tools for shaping the listing form and checking directory data.', array(
+                array( 'Directory builder', 'Review the listing form structure and its seven-step workflow.', 'bh3-directory-builder', 'Open builder' ),
+                array( 'Field manager', 'Manage the fields available to activity listings.', 'bh3-field-manager', 'Manage fields' ),
+                array( 'Directory readiness', 'Run a read-only check of the existing directory tables.', 'bh3-directory-audit', 'Run data check' ),
+            ) ),
+        );
+
+        echo '<div class="wrap bh-admin-home">';
+        echo '<p><a href="' . esc_url( self::url( 'bubba-hub-3-status' ) ) . '">← Back to Bubba Hub home</a></p>';
+        echo '<header class="bh-admin-welcome"><p class="bh-admin-eyebrow">ADMIN AREA</p><h1>Activities &amp; Directory</h1><p>Everything you need to keep the family activity directory organised. Start with activity listings, then manage the venues and organisers connected to them.</p></header>';
+        foreach ( $groups as $group ) {
+            echo '<section class="bh-admin-tool-group"><h2>' . esc_html( $group[0] ) . '</h2><p>' . esc_html( $group[1] ) . '</p><div class="bh-admin-grid bh-admin-grid-tools">';
+            foreach ( $group[2] as $tool ) {
+                echo '<article class="bh-admin-card"><h3>' . esc_html( $tool[0] ) . '</h3><p>' . esc_html( $tool[1] ) . '</p><a href="' . esc_url( self::url( $tool[2] ) ) . '">' . esc_html( $tool[3] ) . ' <span aria-hidden="true">→</span></a></article>';
+            }
+            echo '</div></section>';
+        }
+        echo '<p class="bh-admin-note">Directory readiness is a read-only check. Field and builder changes should be tested before any public listing migration.</p>';
+        echo '</div>';
+    }
+
     public static function styles( $hook ) {
-        if ( $hook !== 'toplevel_page_bubba-hub-3-status' ) { return; }
+        if ( $hook !== 'toplevel_page_bubba-hub-3-status' && $hook !== 'admin_page_bh3-admin-section-directory' ) { return; }
         wp_register_style( 'bh-admin-home', false, array(), '1.0.0' );
         wp_enqueue_style( 'bh-admin-home' );
         wp_add_inline_style( 'bh-admin-home', '
@@ -129,7 +170,7 @@ final class BH_Admin_Home_3 {
             .bh-admin-card-planned .bh-admin-card-icon{background:#f3f1ec;color:#81745e}
             .bh-admin-card-limited .bh-admin-card-icon{background:#f1f3f8;color:#586b91}
             .bh-admin-card-check .bh-admin-card-icon{background:#f7f1e7;color:#8b7040}
-            .bh-admin-technical{margin:24px 0 10px;padding:16px 18px;background:#f7f8f7;border:1px solid #e4e9e5;border-radius:12px}
+            .bh-admin-tool-group{margin:24px 0}.bh-admin-tool-group>h2{font-size:18px;margin:0 0 4px}.bh-admin-tool-group>p{font-size:13px;color:#66736b;margin:0 0 12px}.bh-admin-grid-tools{grid-template-columns:repeat(2,minmax(0,1fr))}.bh-admin-grid-tools .bh-admin-card{min-height:150px}\n            .bh-admin-technical{margin:24px 0 10px;padding:16px 18px;background:#f7f8f7;border:1px solid #e4e9e5;border-radius:12px}
             .bh-admin-technical summary{font-weight:600;cursor:pointer}
             .bh-admin-technical p{font-size:13px;color:#66736b}
             .bh-admin-note{font-size:12px;color:#718078;margin-top:18px}
