@@ -106,7 +106,7 @@ final class BH_Family_Hub_3 {
         $planned_ids = array_map('absint', array_column($planner, 'activity_id'));
         $visited_count = count(array_filter($planner, static function($item) { return !empty($item['visited']); }));
         $profiles = is_array($profiles) && isset($profiles['children'], $profiles['bumps']) && is_array($profiles['children']) && is_array($profiles['bumps']) ? $profiles : array('children' => array(), 'bumps' => array());
-        $suggestions = $private_preview ? BH_Family_Recommendations_3::fetch($preferences, $verified_family ? $profiles : array()) : array();
+        $suggestions = ($private_preview || $admin_demo) ? BH_Family_Recommendations_3::fetch($preferences, $verified_family ? $profiles : array()) : array();
         $show_saved = $private_preview && isset($_GET['bh3_show_saved']) && is_scalar($_GET['bh3_show_saved']) && (string) $_GET['bh3_show_saved'] === '1';
         $show_planner = $private_preview && isset($_GET['bh3_show_planner']) && is_scalar($_GET['bh3_show_planner']) && (string) $_GET['bh3_show_planner'] === '1';
         $planner_filter = isset($_GET['bh3_planner_filter']) && is_scalar($_GET['bh3_planner_filter']) ? sanitize_key(wp_unslash($_GET['bh3_planner_filter'])) : 'all';
@@ -169,7 +169,7 @@ final class BH_Family_Hub_3 {
             <div class="bh3-family__notice" role="status"><?php echo esc_html__( 'Signed in. Family Hub is in preview mode; changes require staging verification.', 'bubba-hub-manager' ); ?></div>
           <?php endif; ?>
           <?php if ($admin_demo) : ?>
-            <div class="bh3-family__notice" role="status"><strong><?php echo esc_html__('Administrator layout preview', 'bubba-hub-manager'); ?></strong> — <?php echo esc_html__('No family account is linked. This is a read-only preview with empty sections; profile changes and activity actions are disabled.', 'bubba-hub-manager'); ?></div>
+            <div class="bh3-family__notice" role="status"><strong><?php echo esc_html__('Administrator layout preview', 'bubba-hub-manager'); ?></strong> — <?php echo esc_html__('Your own family profiles and published activities are shown where available. This preview is read-only; changes and account actions are disabled.', 'bubba-hub-manager'); ?></div>
           <?php endif; ?>
           <?php if ($family_read_error) : ?>
             <div class="bh3-family__notice" role="alert"><?php echo esc_html__('Your family information is temporarily unavailable. Please try again later.', 'bubba-hub-manager'); ?></div>
@@ -202,7 +202,7 @@ final class BH_Family_Hub_3 {
                     <ul class="bh3-family__profile-list">
                       <?php foreach ($profiles['children'] as $child) : ?>
                         <li><span class="bh3-family__avatar" aria-hidden="true">👶</span><strong><?php echo esc_html($child['name'] ?: __('Child profile', 'bubba-hub-manager')); ?></strong>
-                        <?php if (!empty($child['date_of_birth'])) : ?><span><?php echo esc_html(sprintf(__('Born %s', 'bubba-hub-manager'), wp_date(get_option('date_format'), strtotime($child['date_of_birth'])))); ?></span><?php endif; ?><?php if (class_exists('BH_Family_Native_Profiles_3')) echo BH_Family_Native_Profiles_3::render_reminders($child['id'],'child'); ?></li>
+                        <?php if (!empty($child['date_of_birth'])) : ?><span><?php echo esc_html(sprintf(__('Born %s', 'bubba-hub-manager'), wp_date(get_option('date_format'), strtotime($child['date_of_birth'])))); ?></span><?php endif; ?><?php if (!$admin_demo && class_exists('BH_Family_Native_Profiles_3')) echo BH_Family_Native_Profiles_3::render_reminders($child['id'],'child'); ?></li>
                       <?php endforeach; ?>
                     </ul>
                   <?php endif; ?>
@@ -213,12 +213,12 @@ final class BH_Family_Hub_3 {
                     <ul class="bh3-family__profile-list">
                       <?php foreach ($profiles['bumps'] as $bump) : ?>
                         <li><span class="bh3-family__avatar" aria-hidden="true">🍼</span><strong><?php echo esc_html($bump['nickname'] ?: __('Pregnancy profile', 'bubba-hub-manager')); ?></strong>
-                        <?php if (!empty($bump['due_date'])) : ?><span><?php echo esc_html(sprintf(__('Due %s', 'bubba-hub-manager'), wp_date(get_option('date_format'), strtotime($bump['due_date'])))); ?></span><?php endif; ?><?php if (class_exists('BH_Family_Native_Profiles_3')) echo BH_Family_Native_Profiles_3::render_reminders($bump['id'],'bump'); ?></li>
+                        <?php if (!empty($bump['due_date'])) : ?><span><?php echo esc_html(sprintf(__('Due %s', 'bubba-hub-manager'), wp_date(get_option('date_format'), strtotime($bump['due_date'])))); ?></span><?php endif; ?><?php if (!$admin_demo && class_exists('BH_Family_Native_Profiles_3')) echo BH_Family_Native_Profiles_3::render_reminders($bump['id'],'bump'); ?></li>
                       <?php endforeach; ?>
                     </ul>
                   <?php endif; ?>
                 </div>
-                <?php if ($wp_signed_in) : ?><p class="bh3-family__manage-profiles"><a href="<?php echo esc_url(home_url('/family/profile/')); ?>"><?php echo esc_html__('Manage family profiles', 'bubba-hub-manager'); ?> →</a></p><?php endif; ?>
+                <?php if ($wp_signed_in && !$admin_demo) : ?><p class="bh3-family__manage-profiles"><a href="<?php echo esc_url(home_url('/family/profile/')); ?>"><?php echo esc_html__('Manage family profiles', 'bubba-hub-manager'); ?> →</a></p><?php endif; ?>
                 <?php if (!$admin_demo && class_exists('BH_Family_Native_Profiles_3') && BH_Family_Native_Profiles_3::allowed()) : ?>
                   <div class="bh3-family__create-profiles">
                     <h3><?php echo esc_html__('Add a family profile', 'bubba-hub-manager'); ?></h3>
