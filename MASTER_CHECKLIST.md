@@ -1,16 +1,20 @@
-# Bubba Hub — Master Work Checklist
+# Bubba Hub — Technical Master Checklist
 
-> **Single source of truth for project scope and progress.**
+> **Technical reference:** architecture, implementation stages, schema safeguards and acceptance gates for Bubba Hub Manager 3.0.
+> **Operational progress tracker:** use [docs/WEEKLY_PLAN.md](docs/WEEKLY_PLAN.md) for the active weekly checklist, nightly progress checks and Sunday reviews.
+> **Future roadmap:** use [docs/FUTURE_DEVELOPMENTS.md](docs/FUTURE_DEVELOPMENTS.md) for consolidated future scope and selected Bubba4 ideas.
 > Repository: `bubbashub1/bubbawp` · Product: **Bubba Hub Manager 3.0**
-> Status: **EXISTING IMPLEMENTATION / STAGING PARITY IN PROGRESS** · Last reviewed: 2026-11-08
+> Status: **EXISTING IMPLEMENTATION / STAGING PARITY IN PROGRESS** · Technical baseline last reviewed: 2026-11-08
 
 ## How to use this file
 
+- This file remains the detailed technical/architecture checklist; it is not the day-to-day weekly tracker.
+- Use `docs/WEEKLY_PLAN.md` for current operational status. Avoid maintaining a competing second weekly checklist here.
 - `[ ]` Not started · `[x]` Completed **and verified** · `[~]` In progress (replace with `[ ]` or `[x]` before closing a stage).
 - A task is only complete when code, tests, documentation and any required staging checks are finished.
 - Work on **one active stage** at a time. Add unrelated ideas to **Parking Lot**, not the current stage.
 - Every change must reference a checklist ID (e.g. `F-03`) in its PR or commit.
-- Update **Current Focus**, **Decisions**, **Blockers** and **Change Log** after meaningful work.
+- Update **Current Focus**, **Decisions**, **Blockers** and **Change Log** after meaningful technical work.
 - A stage advances only when its **exit gate** passes. Never claim deployment or QA without evidence.
 - **Scope changes:** propose → record in Parking Lot → evaluate cost/dependencies → explicitly approve → schedule.
 
