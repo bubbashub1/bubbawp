@@ -80,6 +80,7 @@ final class BH_Activity_Create_3 {
         }
         global $wpdb;
         $edit_id = absint( $_GET['activity_id'] ?? 0 );
+        if ( $edit_id && ! current_user_can( 'manage_options' ) ) { wp_die( 'Please use the owner-scoped draft editor to edit an existing activity.', '', array( 'response' => 403 ) ); }
         $existing = null;
         $existing_venue_ids = array();
         $existing_sessions = array();
