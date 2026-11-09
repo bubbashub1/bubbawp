@@ -4,7 +4,8 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 require_once __DIR__ . '/class-bh-activity-duplicates.php';
 final class BH_Activity_Create_3 {
     private static function allowed() {
-        return current_user_can( 'manage_options' ) && strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) === 'staging.bubbahub.co.uk';
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) { return false; }
+        return current_user_can( 'manage_options' ) || ( is_user_logged_in() && current_user_can( 'read' ) && absint( get_user_meta( get_current_user_id(), 'bh3_organiser_id', true ) ) > 0 );
     }
     public static function register() {
         add_shortcode( 'bh_admin_activity_wizard', array( __CLASS__, 'render_frontend' ) );
@@ -69,10 +70,12 @@ final class BH_Activity_Create_3 {
         if ( $open ) { echo '</div></div>'; }
     }
     public static function render() {
-        if ( ! current_user_can( 'manage_options' ) ) { wp_die( 'Permission denied.' ); }
+        if ( ! self::allowed() ) { wp_die( 'Please sign in with an approved leader account to create an activity.', '', array( 'response' => 403 ) ); }
         echo '<div class="wrap bh3-wizard"><h1>' . ( absint( $_GET['activity_id'] ?? 0 ) ? 'Edit draft activity' : 'Add activity' ) . '</h1>';
-        if ( ! self::allowed() ) { echo '<p>Activity creation is restricted to staging administrators.</p></div>'; return; }
-        if ( isset( $_GET['created'] ) ) {
+        if ( ! self::allowed() ) { echo '<p>Activity creation is available to approved leaders and the Bubba Hub team on staging.</p></div>'; return; }
+        if ( isset( $_GET['duplicate_review'] ) && absint( $_GET['duplicate_review'] ) ) {
+            echo '<div class="notice notice-warning"><p>Your activity has been sent to the Bubba Hub team for duplicate review. It will remain unpublished until the team makes a decision.</p></div>';
+        } elseif ( isset( $_GET['created'] ) ) {
             echo '<div class="notice notice-success"><p>Draft created successfully. ID: ' . esc_html( (string) absint( $_GET['created'] ) ) . '</p></div>';
         }
         global $wpdb;
@@ -138,9 +141,15 @@ final class BH_Activity_Create_3 {
         if ( ! is_admin() ) { echo '<input type="hidden" name="bh3_frontend_wizard" value="1">'; }
         echo '<section class="bh3-panel" data-panel="0"><h2>Basics</h2><div class="bh3-fields">';
         self::field( 'title', 'Activity title', 'text', '', 'required maxlength="255"' );
-        echo '<label class="bh3-field"><span>Organiser</span><select name="organiser_id"><option value="0">Select organiser (optional)</option>';
-        foreach ( $organisers as $org ) { echo '<option value="' . esc_attr( (string) $org['id'] ) . '">' . esc_html( $org['name'] ) . '</option>'; }
-        echo '</select></label>';
+        $leader_organiser_id = current_user_can( 'manage_options' ) ? 0 : absint( get_user_meta( get_current_user_id(), 'bh3_organiser_id', true ) );
+        if ( $leader_organiser_id ) {
+            $leader_organiser_name = $wpdb->get_var( $wpdb->prepare( "SELECT name FROM `{$wpdb->prefix}organisers` WHERE id=%d", $leader_organiser_id ) );
+            echo '<label class="bh3-field"><span>Your organisation</span><input type="text" value="' . esc_attr( (string) $leader_organiser_name ) . '" readonly><input type="hidden" name="organiser_id" value="' . esc_attr( (string) $leader_organiser_id ) . '"></label>';
+        } else {
+            echo '<label class="bh3-field"><span>Organiser</span><select name="organiser_id"><option value="0">Select organiser (optional)</option>';
+            foreach ( $organisers as $org ) { echo '<option value="' . esc_attr( (string) $org['id'] ) . '">' . esc_html( $org['name'] ) . '</option>'; }
+            echo '</select></label>';
+        }
         self::field( 'slug', 'URL slug (leave blank to generate)', 'text', '', 'maxlength="255"' );
         self::custom_fields_for_step( 'basics', $bh3_custom_definitions, $bh3_custom_values );
         echo '</div></section>';
@@ -357,10 +366,12 @@ BH3_WIZARD_SCRIPT
         $title = self::text_value( 'title', 255 );
         if ( $title === '' ) { wp_die( 'Enter an activity title.', '', array( 'response' => 400 ) ); }
         $edit_id = absint( $_POST['activity_id'] ?? 0 );
+        if ( $edit_id && ! current_user_can( 'manage_options' ) ) { wp_die( 'Leaders must use the owner-scoped draft editor to change an existing activity.', '', array( 'response' => 403 ) ); }
         if ( $edit_id && ! $wpdb->get_var( $wpdb->prepare( "SELECT id FROM `{$table}` WHERE id=%d AND status='draft' LIMIT 1", $edit_id ) ) ) {
             wp_die( 'Draft activity not found or no longer editable.', '', array( 'response' => 409 ) );
         }
-        $organiser_id = absint( $_POST['organiser_id'] ?? 0 );
+        $organiser_id = current_user_can( 'manage_options' ) ? absint( $_POST['organiser_id'] ?? 0 ) : absint( get_user_meta( get_current_user_id(), 'bh3_organiser_id', true ) );
+        if ( ! $organiser_id ) { wp_die( 'Your leader account is not linked to an organisation. Please contact the Bubba Hub team.', '', array( 'response' => 403 ) ); }
         if ( $organiser_id ) {
             $org_table = $wpdb->prefix . 'organisers';
             if ( ! $wpdb->get_var( $wpdb->prepare( "SELECT id FROM `{$org_table}` WHERE id=%d", $organiser_id ) ) ) { wp_die( 'Selected organiser does not exist.', '', array( 'response' => 400 ) ); }
