@@ -69,6 +69,9 @@ final class BH_Google_Login_3 {
         if ( ! self::configured() ) {
             self::fail( 'Google sign-in has not been configured yet.' );
         }
+        if ( ! is_ssl() ) {
+            self::fail( 'Google sign-in requires HTTPS. Please use the secure Bubba Hub website address.' );
+        }
         $type = isset( $_GET['bh_account_type'] ) ? sanitize_key( wp_unslash( $_GET['bh_account_type'] ) ) : 'family';
         if ( ! in_array( $type, array( 'family', 'leader' ), true ) ) {
             $type = 'family';
@@ -191,7 +194,7 @@ final class BH_Google_Login_3 {
         }
         $now = time();
         $issuer_ok = isset( $claims['iss'] ) && in_array( $claims['iss'], array( 'https://accounts.google.com', 'accounts.google.com' ), true );
-        $aud_ok = isset( $claims['aud'] ) && ( is_string( $claims['aud'] ) ? hash_equals( BH_GOOGLE_CLIENT_ID, $claims['aud'] ) : ( is_array( $claims['aud'] ) && in_array( BH_GOOGLE_CLIENT_ID, $claims['aud'], true ) ) );
+        $aud_ok = isset( $claims['aud'] ) && ( is_string( $claims['aud'] ) ? hash_equals( BH_GOOGLE_CLIENT_ID, $claims['aud'] ) : ( is_array( $claims['aud'] ) && in_array( BH_GOOGLE_CLIENT_ID, $claims['aud'], true ) && isset( $claims['azp'] ) && hash_equals( BH_GOOGLE_CLIENT_ID, (string) $claims['azp'] ) ) );
         $email_ok = ! empty( $claims['email'] ) && ! empty( $claims['email_verified'] );
         $nonce_ok = isset( $claims['nonce'] ) && hash_equals( $expected_nonce, (string) $claims['nonce'] );
         if ( ! $issuer_ok || ! $aud_ok || ! $email_ok || ! $nonce_ok || empty( $claims['sub'] )
@@ -274,16 +277,26 @@ final class BH_Google_Login_3 {
     }
 
     public static function confirm_link(): void {
-        $token = isset( $_GET['token'] ) && is_string( $_GET['token'] ) ? sanitize_text_field( wp_unslash( $_GET['token'] ) ) : '';
+        $token = isset( $_REQUEST['token'] ) && is_string( $_REQUEST['token'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['token'] ) ) : '';
         if ( strlen( $token ) < 40 ) {
             self::fail( 'This account-link request is invalid or has expired.' );
         }
         $key = self::LINK_PREFIX . hash( 'sha256', $token );
         $data = get_transient( $key );
-        delete_transient( $key );
         if ( ! is_array( $data ) || empty( $data['user_id'] ) || empty( $data['subject'] ) ) {
             self::fail( 'This account-link request is invalid or has expired.' );
         }
+        if ( 'POST' !== strtoupper( $_SERVER['REQUEST_METHOD'] ?? 'GET' ) ) {
+            $html = '<p>Confirm that you want to connect Google sign-in to your existing Bubba Hub account.</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+            $html .= '<input type="hidden" name="action" value="bh_google_link_confirm"><input type="hidden" name="token" value="' . esc_attr( $token ) . '">';
+            ob_start();
+            wp_nonce_field( 'bh_google_link_confirm_' . hash( 'sha256', $token ) );
+            $html .= ob_get_clean();
+            $html .= '<button type="submit">Confirm Google account link</button></form>';
+            wp_die( $html, esc_html__( 'Confirm Bubba Hub account link', 'bubba-hub-manager' ), array( 'response' => 200 ) );
+        }
+        check_admin_referer( 'bh_google_link_confirm_' . hash( 'sha256', $token ) );
+        delete_transient( $key );
         $user = get_user_by( 'id', absint( $data['user_id'] ) );
         if ( ! $user || get_user_meta( $user->ID, self::META_SUB, true ) ) {
             self::fail( 'This Bubba Hub account can no longer be linked. Please sign in normally or contact support.' );
