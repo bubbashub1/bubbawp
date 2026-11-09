@@ -199,7 +199,8 @@ final class BH_Google_Login_3 {
         $nonce_ok = isset( $claims['nonce'] ) && hash_equals( $expected_nonce, (string) $claims['nonce'] );
         if ( ! $issuer_ok || ! $aud_ok || ! $email_ok || ! $nonce_ok || empty( $claims['sub'] )
             || empty( $claims['exp'] ) || (int) $claims['exp'] <= $now
-            || ( isset( $claims['iat'] ) && (int) $claims['iat'] > $now + 60 ) ) {
+            || empty( $claims['iat'] ) || (int) $claims['iat'] > $now + 60
+            || (int) $claims['iat'] < $now - 3600 ) {
             return new WP_Error( 'bh_google_claims', 'Identity claims did not pass validation.' );
         }
         return $claims;
@@ -228,7 +229,8 @@ final class BH_Google_Login_3 {
         if ( $existing ) {
             self::send_link_confirmation( (int) $existing->ID, $subject, $email );
         }
-        $username_base = sanitize_user( current( explode( '@', $email ) ), true );
+        $email_parts = explode( '@', $email );
+        $username_base = sanitize_user( $email_parts[0] ?? '', true );
         if ( $username_base === '' ) {
             $username_base = 'bubba-member';
         }
