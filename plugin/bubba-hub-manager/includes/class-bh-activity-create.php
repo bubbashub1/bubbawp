@@ -208,7 +208,7 @@ final class BH_Activity_Create_3 {
         wp_enqueue_script( 'bh3-activity-wizard' );
         wp_add_inline_script( 'bh3-activity-wizard',
             'const bh3DuplicateCheck=' . wp_json_encode( array( 'ajaxUrl' => admin_url( 'admin-ajax.php' ), 'nonce' => wp_create_nonce( 'bh3_activity_duplicate_check' ) ) ) . ';' .
-            'const bh3SavedListing=' . wp_json_encode( $existing ?: array() ) .';'
+            'const bh3SavedListing=' . wp_json_encode( $existing ?: array() ) . ';' .
             'const bh3SavedVenues=' . wp_json_encode( $existing_venue_ids ) . ';' .
             'const bh3SavedSessions=' . wp_json_encode( $existing_sessions ) . ';',
             'before'
@@ -381,6 +381,13 @@ BH3_WIZARD_SCRIPT
             if ( ! filter_var( $image_url, FILTER_VALIDATE_URL ) || ! in_array( strtolower( (string) wp_parse_url( $image_url, PHP_URL_SCHEME ) ), array( 'http', 'https' ), true ) ) { wp_die( 'One of the gallery image URLs is invalid.', '', array( 'response' => 400 ) ); }
         }
         $venue_ids = array_values( array_unique( array_filter( array_map( 'absint', (array) ( $_POST['venue_ids'] ?? array() ) ) ) ) );
+        $submitted_sessions_for_match = isset( $_POST['sessions'] ) && is_array( $_POST['sessions'] ) ? wp_unslash( $_POST['sessions'] ) : array();
+        foreach ( $submitted_sessions_for_match as $submitted_session ) {
+            if ( is_array( $submitted_session ) && ! empty( $submitted_session['venue_id'] ) ) {
+                $venue_ids[] = absint( $submitted_session['venue_id'] );
+            }
+        }
+        $venue_ids = array_values( array_unique( array_filter( $venue_ids ) ) );
         $duplicate_matches = BH_Activity_Duplicates_3::find_matches( $title, $venue_ids, $edit_id );
         if ( is_wp_error( $duplicate_matches ) ) {
             wp_die( esc_html( $duplicate_matches->get_error_message() ), '', array( 'response' => 503 ) );
