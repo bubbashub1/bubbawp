@@ -214,3 +214,22 @@ body .bh3-family__settings-page .bh3-family__settings-content > .bh3-family__gri
 body .bh3-family__settings-page .bh3-family__settings-content > .bh3-family__grid.bh3-family__private > article{display:block!important;flex:none!important;width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;margin:0!important}
 body .bh3-family__settings-page .bh3-family__settings-content{display:block!important;min-width:0!important}
 @media(max-width:850px){body .bh3-family__settings-page .bh3-family__settings-content > .bh3-family__grid.bh3-family__private{width:100%!important}}
+
+
+/* Family Hub eight-section navigation refresh. */
+.bh3-family__tabs{display:flex;gap:8px;align-items:center;overflow-x:auto;overscroll-behavior-inline:contain;scrollbar-width:thin;padding:5px 2px 12px;margin:18px 0 8px;border-bottom:1px solid #e4ebe5}
+.bh3-family__tabs [role=tab]{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:10px 16px;border:1px solid #dce7df;border-radius:13px;background:#fff;color:#315747;font:inherit;font-size:.9rem;font-weight:700;white-space:nowrap;cursor:pointer;transition:background .15s ease,border-color .15s ease,color .15s ease}
+.bh3-family__tabs [role=tab][aria-selected=true]{background:#e7f2e9;border-color:#8fb69b;color:#194b35;box-shadow:inset 0 0 0 1px #b8d2bf}
+.bh3-family__tabs [role=tab]:hover{background:#f0f6f1}
+.bh3-family__tabs [role=tab]:focus-visible{outline:3px solid #4b8967;outline-offset:3px}
+.bh3-family [data-bh3-section][hidden]{display:none!important}
+.bh3-family__coming-soon{min-height:210px;grid-column:1/-1;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:12px}
+.bh3-family__coming-soon h2{font-size:1.45rem;margin:0}
+.bh3-family__coming-soon p{max-width:680px;line-height:1.65}
+.bh3-family__coming-soon a{display:inline-flex;align-items:center;min-height:44px;padding:9px 15px;border:1px solid #cbded0;border-radius:11px;color:#245b45;font-weight:700;text-decoration:none}
+.bh3-family__coming-soon a:hover{background:#f0f6f1}
+@media(max-width:700px){
+ .bh3-family__tabs{margin-inline:-2px;padding-inline:2px;scroll-snap-type:x proximity}
+ .bh3-family__tabs [role=tab]{scroll-snap-align:start;min-height:48px;padding-inline:14px}
+}
+@media(prefers-reduced-motion:reduce){.bh3-family__tabs [role=tab]{transition:none}}
