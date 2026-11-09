@@ -458,8 +458,16 @@ final class BH_Family_Hub_3 {
                   panels.forEach(function(panel){
                     var visible=panel.dataset.bh3Section===name;
                     panel.hidden=!visible;
-                    if(visible) panel.setAttribute('role','tabpanel');
-                    else panel.removeAttribute('role');
+                    if(visible){
+                      if(!panel.id) panel.id='bh3-panel-'+name;
+                      panel.setAttribute('role','tabpanel');
+                      panel.setAttribute('aria-labelledby','bh3-tab-'+name);
+                      var activeTab=nav.querySelector('[data-bh3-tab="'+name+'"]');
+                      if(activeTab) activeTab.setAttribute('aria-controls',panel.id);
+                    } else {
+                      panel.removeAttribute('role');
+                      panel.removeAttribute('aria-labelledby');
+                    }
                   });
                   if(focus){
                     var active=nav.querySelector('[data-bh3-tab="'+name+'"]');
