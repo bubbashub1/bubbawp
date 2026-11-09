@@ -195,9 +195,10 @@ final class BH_Google_Login_3 {
         $now = time();
         $issuer_ok = isset( $claims['iss'] ) && in_array( $claims['iss'], array( 'https://accounts.google.com', 'accounts.google.com' ), true );
         $aud_ok = isset( $claims['aud'] ) && ( is_string( $claims['aud'] ) ? hash_equals( BH_GOOGLE_CLIENT_ID, $claims['aud'] ) : ( is_array( $claims['aud'] ) && in_array( BH_GOOGLE_CLIENT_ID, $claims['aud'], true ) && isset( $claims['azp'] ) && hash_equals( BH_GOOGLE_CLIENT_ID, (string) $claims['azp'] ) ) );
-        $email_ok = ! empty( $claims['email'] ) && ! empty( $claims['email_verified'] );
+        $email_ok = ! empty( $claims['email'] ) && ( $claims['email_verified'] ?? false ) === true;
+        $azp_ok = ! isset( $claims['azp'] ) || hash_equals( BH_GOOGLE_CLIENT_ID, (string) $claims['azp'] );
         $nonce_ok = isset( $claims['nonce'] ) && hash_equals( $expected_nonce, (string) $claims['nonce'] );
-        if ( ! $issuer_ok || ! $aud_ok || ! $email_ok || ! $nonce_ok || empty( $claims['sub'] )
+        if ( ! $issuer_ok || ! $aud_ok || ! $azp_ok || ! $email_ok || ! $nonce_ok || empty( $claims['sub'] )
             || empty( $claims['exp'] ) || (int) $claims['exp'] <= $now
             || empty( $claims['iat'] ) || (int) $claims['iat'] > $now + 60
             || (int) $claims['iat'] < $now - 3600 ) {
