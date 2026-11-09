@@ -55,12 +55,12 @@ final class BH_Family_Hub_3 {
         $return_url = is_singular() ? get_permalink() : home_url( '/' );
         $login_url = wp_login_url( $return_url );
         $preview_enabled = defined('BH3_FAMILY_PRIVATE_PREVIEW') && BH3_FAMILY_PRIVATE_PREVIEW === true;
-        // Admins can inspect the complete front-end layout without impersonating a family
-        // or reading or changing any real family records.
+        // Administrators can preview the layout using only family-profile rows owned by
+        // their own signed-in WordPress account. The demo remains read-only.
         $admin_demo = $wp_signed_in && current_user_can( 'manage_options' ) && ( $preview_enabled || is_page( 'hub-demo' ) );
         $verified_family = $preview_enabled && $wp_signed_in && !$admin_demo && BH_Family_Identity_3::current_legacy_id() > 0;
         $private_preview = $preview_enabled && $wp_signed_in;
-        // The Hub Demo must not read any account preferences or personal family data.
+        // Preferences and legacy saved/planner records remain behind their existing preview/identity gates.
         $preferences = ($private_preview && !$admin_demo) ? BH_Family_Preferences_3::read() : array();
 
         $saved = $verified_family ? BH_Family_Read_Model_3::saved_ids() : array();
@@ -69,7 +69,7 @@ final class BH_Family_Hub_3 {
         // Read only that account's rows; do not rely on legacy identity mapping.
         $profiles = array('children' => array(), 'bumps' => array());
         $native_profile_error = false;
-        if ($wp_signed_in && !$admin_demo) {
+        if ($wp_signed_in) {
             global $wpdb;
             $native_table = $wpdb->prefix . 'bh_family_profiles';
             $native_exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($native_table))) === $native_table;
