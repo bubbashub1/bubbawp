@@ -170,7 +170,8 @@ final class BH_Admin_Home_3 {
             .bh-admin-card-planned .bh-admin-card-icon{background:#f3f1ec;color:#81745e}
             .bh-admin-card-limited .bh-admin-card-icon{background:#f1f3f8;color:#586b91}
             .bh-admin-card-check .bh-admin-card-icon{background:#f7f1e7;color:#8b7040}
-            .bh-admin-tool-group{margin:24px 0}.bh-admin-tool-group>h2{font-size:18px;margin:0 0 4px}.bh-admin-tool-group>p{font-size:13px;color:#66736b;margin:0 0 12px}.bh-admin-grid-tools{grid-template-columns:repeat(2,minmax(0,1fr))}.bh-admin-grid-tools .bh-admin-card{min-height:150px}\n            .bh-admin-technical{margin:24px 0 10px;padding:16px 18px;background:#f7f8f7;border:1px solid #e4e9e5;border-radius:12px}
+            .bh-admin-tool-group{margin:24px 0}.bh-admin-tool-group>h2{font-size:18px;margin:0 0 4px}.bh-admin-tool-group>p{font-size:13px;color:#66736b;margin:0 0 12px}.bh-admin-grid-tools{grid-template-columns:repeat(2,minmax(0,1fr))}.bh-admin-grid-tools .bh-admin-card{min-height:150px}
+            .bh-admin-technical{margin:24px 0 10px;padding:16px 18px;background:#f7f8f7;border:1px solid #e4e9e5;border-radius:12px}
             .bh-admin-technical summary{font-weight:600;cursor:pointer}
             .bh-admin-technical p{font-size:13px;color:#66736b}
             .bh-admin-note{font-size:12px;color:#718078;margin-top:18px}
