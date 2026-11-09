@@ -1,6 +1,7 @@
 <?php
 /** Staging-only editing and administrator-controlled publishing of activities. */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
+require_once __DIR__ . '/class-bh-activity-duplicates.php';
 final class BH_Activity_Edit_3 {
     private static function allowed() {
         return current_user_can( 'manage_options' ) && strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) === 'staging.bubbahub.co.uk';
@@ -118,6 +119,19 @@ final class BH_Activity_Edit_3 {
             wp_die( 'Add a title and slug before publishing.', '', array( 'response' => 400 ) );
         }
         global $wpdb;
+        if ( $next === 'published' ) {
+            $venue_ids = array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare(
+                "SELECT venue_id FROM `{$wpdb->prefix}activity_venues` WHERE activity_id = %d",
+                $id
+            ) ) );
+            $duplicate_matches = BH_Activity_Duplicates_3::find_matches( $row['title'], $venue_ids, $id );
+            if ( is_wp_error( $duplicate_matches ) ) {
+                wp_die( esc_html( $duplicate_matches->get_error_message() ), '', array( 'response' => 503 ) );
+            }
+            if ( ! empty( $duplicate_matches['exact'] ) ) {
+                wp_die( 'This activity cannot be published because another directory listing has the same title and venue. Please review the existing listing first.', 'Duplicate activity', array( 'response' => 409 ) );
+            }
+        }
         $data = array( 'status' => $next, 'updated_at' => current_time( 'mysql', true ) );
         // published_at is an optional parity column, absent from the base activities schema.
         if ( $next === 'published' ) {
