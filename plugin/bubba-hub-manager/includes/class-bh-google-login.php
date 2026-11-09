@@ -96,7 +96,7 @@ final class BH_Google_Login_3 {
             'code_challenge_method' => 'S256',
             'prompt' => 'select_account',
         );
-        wp_safe_redirect( 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query( $query, '', '&', PHP_QUERY_RFC3986 ) );
+        wp_redirect( 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query( $query, '', '&', PHP_QUERY_RFC3986 ) );
         exit;
     }
 
@@ -223,7 +223,6 @@ final class BH_Google_Login_3 {
         }
         $existing = get_user_by( 'email', $email );
         if ( $existing ) {
-            $this->unused = null;
             self::send_link_confirmation( (int) $existing->ID, $subject, $email );
         }
         $username_base = sanitize_user( current( explode( '@', $email ) ), true );
