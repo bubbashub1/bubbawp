@@ -1,9 +1,11 @@
 <?php
 /** Bubba Hub's existing seven-step listing workflow, adapted to the BH3 WordPress schema. */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
+require_once __DIR__ . '/class-bh-activity-duplicates.php';
 final class BH_Activity_Create_3 {
     private static function allowed() {
-        return current_user_can( 'manage_options' ) && strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) === 'staging.bubbahub.co.uk';
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) { return false; }
+        return current_user_can( 'manage_options' ) || ( is_user_logged_in() && current_user_can( 'read' ) && absint( get_user_meta( get_current_user_id(), 'bh3_organiser_id', true ) ) > 0 );
     }
     public static function register() {
         add_shortcode( 'bh_admin_activity_wizard', array( __CLASS__, 'render_frontend' ) );
@@ -20,6 +22,7 @@ final class BH_Activity_Create_3 {
     }
     public static function register_save() {
         add_action( 'admin_post_bh3_create_activity', array( __CLASS__, 'save' ) );
+        BH_Activity_Duplicates_3::register();
     }
     private static function field( $name, $label, $type = 'text', $value = '', $extra = '' ) {
         echo '<label class="bh3-field"><span>' . esc_html( $label ) . '</span>';
@@ -67,14 +70,17 @@ final class BH_Activity_Create_3 {
         if ( $open ) { echo '</div></div>'; }
     }
     public static function render() {
-        if ( ! current_user_can( 'manage_options' ) ) { wp_die( 'Permission denied.' ); }
+        if ( ! self::allowed() ) { wp_die( 'Please sign in with an approved leader account to create an activity.', '', array( 'response' => 403 ) ); }
         echo '<div class="wrap bh3-wizard"><h1>' . ( absint( $_GET['activity_id'] ?? 0 ) ? 'Edit draft activity' : 'Add activity' ) . '</h1>';
-        if ( ! self::allowed() ) { echo '<p>Activity creation is restricted to staging administrators.</p></div>'; return; }
-        if ( isset( $_GET['created'] ) ) {
+        if ( ! self::allowed() ) { echo '<p>Activity creation is available to approved leaders and the Bubba Hub team on staging.</p></div>'; return; }
+        if ( isset( $_GET['duplicate_review'] ) && absint( $_GET['duplicate_review'] ) ) {
+            echo '<div class="notice notice-warning"><p>Your activity has been sent to the Bubba Hub team for duplicate review. It will remain unpublished until the team makes a decision.</p></div>';
+        } elseif ( isset( $_GET['created'] ) ) {
             echo '<div class="notice notice-success"><p>Draft created successfully. ID: ' . esc_html( (string) absint( $_GET['created'] ) ) . '</p></div>';
         }
         global $wpdb;
         $edit_id = absint( $_GET['activity_id'] ?? 0 );
+        if ( $edit_id && ! current_user_can( 'manage_options' ) ) { wp_die( 'Please use the owner-scoped draft editor to edit an existing activity.', '', array( 'response' => 403 ) ); }
         $existing = null;
         $existing_venue_ids = array();
         $existing_sessions = array();
@@ -136,9 +142,15 @@ final class BH_Activity_Create_3 {
         if ( ! is_admin() ) { echo '<input type="hidden" name="bh3_frontend_wizard" value="1">'; }
         echo '<section class="bh3-panel" data-panel="0"><h2>Basics</h2><div class="bh3-fields">';
         self::field( 'title', 'Activity title', 'text', '', 'required maxlength="255"' );
-        echo '<label class="bh3-field"><span>Organiser</span><select name="organiser_id"><option value="0">Select organiser (optional)</option>';
-        foreach ( $organisers as $org ) { echo '<option value="' . esc_attr( (string) $org['id'] ) . '">' . esc_html( $org['name'] ) . '</option>'; }
-        echo '</select></label>';
+        $leader_organiser_id = current_user_can( 'manage_options' ) ? 0 : absint( get_user_meta( get_current_user_id(), 'bh3_organiser_id', true ) );
+        if ( $leader_organiser_id ) {
+            $leader_organiser_name = $wpdb->get_var( $wpdb->prepare( "SELECT name FROM `{$wpdb->prefix}organisers` WHERE id=%d", $leader_organiser_id ) );
+            echo '<label class="bh3-field"><span>Your organisation</span><input type="text" value="' . esc_attr( (string) $leader_organiser_name ) . '" readonly><input type="hidden" name="organiser_id" value="' . esc_attr( (string) $leader_organiser_id ) . '"></label>';
+        } else {
+            echo '<label class="bh3-field"><span>Organiser</span><select name="organiser_id"><option value="0">Select organiser (optional)</option>';
+            foreach ( $organisers as $org ) { echo '<option value="' . esc_attr( (string) $org['id'] ) . '">' . esc_html( $org['name'] ) . '</option>'; }
+            echo '</select></label>';
+        }
         self::field( 'slug', 'URL slug (leave blank to generate)', 'text', '', 'maxlength="255"' );
         self::custom_fields_for_step( 'basics', $bh3_custom_definitions, $bh3_custom_values );
         echo '</div></section>';
@@ -199,12 +211,13 @@ final class BH_Activity_Create_3 {
         echo '<div><h3>Weekly sessions</h3><p class="description">Switch on a day to add its session times. Add more than one time, or copy a session to another day.</p><div id="bh3-session-rows" class="bh3-day-grid"></div></div></div>';
         self::custom_fields_for_step( 'locations', $bh3_custom_definitions, $bh3_custom_values );
         echo '</section>';
-        echo '<section class="bh3-panel" data-panel="6" hidden><h2>Review your listing</h2><div class="bh3-review" id="bh3-review-summary">Review the fields above before saving.</div><p>This creates a draft only. Publishing remains administrator-controlled.</p></section>';
+        echo '<section class="bh3-panel" data-panel="6" hidden><h2>Review your listing</h2><div class="bh3-review" id="bh3-review-summary">Review the fields above before saving.</div><p>This creates a draft only. Publishing remains administrator-controlled.</p><div id="bh3-exact-duplicate-review" class="notice notice-warning" hidden><p><strong>This activity appears to already exist.</strong> A listing with the same title and venue is already in the directory.</p><p><label><input type="checkbox" id="bh3-duplicate-review-override" name="bh3_duplicate_review_override" value="1"> I believe this is a different activity. Please submit it for the Bubba Hub team to review.</label></p><p>Your listing will remain unpublished until the team approves it.</p></div></section>';
         echo '<div class="bh3-actions"><div><button type="button" class="button" id="bh3-prev" disabled>← Back</button> <button type="button" class="button button-primary" id="bh3-next">Continue →</button></div><button type="submit" class="button button-primary" id="bh3-submit" hidden>Save draft activity</button></div></form></div>';
         // Enqueue outside the shortcode HTML so wptexturize and content filters cannot alter JavaScript operators.
         wp_register_script( 'bh3-activity-wizard', false, array(), '1.0.1', true );
         wp_enqueue_script( 'bh3-activity-wizard' );
         wp_add_inline_script( 'bh3-activity-wizard',
+            'const bh3DuplicateCheck=' . wp_json_encode( array( 'ajaxUrl' => admin_url( 'admin-ajax.php' ), 'nonce' => wp_create_nonce( 'bh3_activity_duplicate_check' ) ) ) . ';' .
             'const bh3SavedListing=' . wp_json_encode( $existing ?: array() ) . ';' .
             'const bh3SavedVenues=' . wp_json_encode( $existing_venue_ids ) . ';' .
             'const bh3SavedSessions=' . wp_json_encode( $existing_sessions ) . ';',
@@ -214,7 +227,48 @@ final class BH_Activity_Create_3 {
 (function(){const form=document.getElementById("bh3-listing-wizard");if(!form)return;let step=0;const panels=[...form.querySelectorAll("[data-panel]")],nav=[...document.querySelectorAll(".bh3-steps [data-step]")],prev=document.getElementById("bh3-prev"),next=document.getElementById("bh3-next"),save=document.getElementById("bh3-submit"),summary=document.getElementById("bh3-review-summary");
         const missingCustom=n=>{for(const label of panels[n].querySelectorAll('label[data-bh3-required="1"]')){const el=label.querySelector("input,textarea,select");if(!el)continue;const filled=el.type==="checkbox"?el.checked:el.multiple?el.selectedOptions.length>0:String(el.value||"").trim()!=="";if(!filled)return el;}return null;};
         const show=n=>{n=Math.max(0,Math.min(6,n));let missing=null;if(n>step){for(let i=step;i<n;i++){missing=missingCustom(i);if(missing){n=i;break;}}}if(step===5&&n>5){for(const row of sessionRows.querySelectorAll('.bh3-session-row')){if(row.closest('.bh3-day-card:not(.is-on)'))continue;const day=row.querySelector('input[name$="[day]"]'),times=row.querySelectorAll('input[type=time]'),start=times[0],end=times[1];if(!day.value||!start.value||!end.value||end.value<=start.value){alert('Complete each weekly session and make sure its end time is later than its start.');(!day.value?day:!start.value?start:end).focus();return;}}}step=n;panels.forEach((p,i)=>p.hidden=i!==step);nav.forEach((b,i)=>b.setAttribute("aria-current",i===step?"step":"false"));prev.disabled=step===0;if(missing){alert('Please complete the required custom field before continuing.');missing.focus();}next.hidden=step===6;save.hidden=step!==6;if(step===6){const fields=[["Activity", "title"],["Category","category"],["Organiser","organiser_id"],["Age range","age_range"],["Price from","price_from"],["Contact email","contact_email"],["Website","website"]];summary.innerHTML=fields.map(([label,name])=>{const el=form.elements.namedItem(name);return "<p><strong>"+label+":</strong> "+String(el?.selectedOptions?.[0]?.textContent||el?.value||"—").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]))+"</p>"}).join("");}};
-        prev.addEventListener("click",()=>show(step-1));next.addEventListener("click",()=>{if(step===0&&!form.elements.namedItem("title").value.trim()){form.elements.namedItem("title").focus();return;}show(step+1)});nav.forEach(b=>b.addEventListener("click",()=>show(Number(b.dataset.step))));form.addEventListener("submit",e=>{if(!form.elements.namedItem("title").value.trim()){e.preventDefault();show(0);form.elements.namedItem("title").focus();}});
+        prev.addEventListener("click",()=>show(step-1));next.addEventListener("click",()=>{if(step===0&&!form.elements.namedItem("title").value.trim()){form.elements.namedItem("title").focus();return;}show(step+1)});nav.forEach(b=>b.addEventListener("click",()=>show(Number(b.dataset.step))));
+        let duplicateCheckPassed=false,duplicateCheckBusy=false;
+        form.addEventListener("submit",async e=>{
+            if(!form.elements.namedItem("title").value.trim()){e.preventDefault();show(0);form.elements.namedItem("title").focus();return;}
+            if(duplicateCheckPassed)return;
+            e.preventDefault();
+            if(duplicateCheckBusy)return;
+            duplicateCheckBusy=true;save.disabled=true;save.textContent="Checking directory…";
+            try{
+                const body=new URLSearchParams();
+                body.set("action","bh3_check_activity_duplicates");
+                body.set("nonce",bh3DuplicateCheck.nonce);
+                body.set("title",form.elements.namedItem("title").value.trim());
+                body.set("activity_id",form.elements.namedItem("activity_id")?.value||"0");
+                form.querySelectorAll('input[name="venue_ids[]"]:checked').forEach(el=>body.append("venue_ids[]",el.value));
+                const response=await fetch(bh3DuplicateCheck.ajaxUrl,{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/x-www-form-urlencoded; charset=UTF-8"},body:body.toString()});
+                const payload=await response.json();
+                if(!response.ok||!payload.success)throw new Error(payload?.data?.message||"The directory check could not be completed.");
+                const matches=payload.data||{};
+                if(matches.exact?.length){
+                    const details=matches.exact.map(item=>item.title+(item.venues?.length?" — "+item.venues.join(", "):"")).join("\\n");
+                    const reviewPanel=document.getElementById("bh3-exact-duplicate-review");
+                    const reviewTick=document.getElementById("bh3-duplicate-review-override");
+                    if(reviewPanel)reviewPanel.hidden=false;
+                    if(!reviewTick||!reviewTick.checked){
+                        alert("This activity already appears in the directory with the same title and venue.\\n\\n"+details+"\\n\\nPlease check the existing listing. If you believe yours is genuinely different, tick the team-review option and submit it for approval.");
+                        return;
+                    }
+                }
+                if(matches.potential?.length){
+                    const details=matches.potential.slice(0,8).map(item=>item.title+(item.venues?.length?" — "+item.venues.join(", "):" — venue not recorded")).join("\\n");
+                    const proceed=confirm("Potential duplicate found. One or more directory listings already use this activity title.\\n\\n"+details+"\\n\\nPlease check the directory before proceeding. If this is genuinely a different activity, choose OK to save it as a draft.");
+                    if(!proceed)return;
+                }
+                duplicateCheckPassed=true;
+                form.submit();
+            }catch(error){
+                alert((error&&error.message?error.message:"The directory check failed.")+"\\n\\nYour listing has not been saved. Please try again.");
+            }finally{
+                duplicateCheckBusy=false;save.disabled=false;save.textContent="Save draft activity";
+            }
+        });
         const venueSearch=document.getElementById("bh3-venue-search"),venueOptions=[...document.querySelectorAll(".bh3-venue-option")],sessionRows=document.getElementById("bh3-session-rows");
         venueSearch?.addEventListener("input",()=>{const q=venueSearch.value.trim().toLowerCase();venueOptions.forEach(row=>{row.hidden=q!==""&&!row.dataset.search.includes(q);});});
         const dayNames=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
@@ -313,10 +367,12 @@ BH3_WIZARD_SCRIPT
         $title = self::text_value( 'title', 255 );
         if ( $title === '' ) { wp_die( 'Enter an activity title.', '', array( 'response' => 400 ) ); }
         $edit_id = absint( $_POST['activity_id'] ?? 0 );
+        if ( $edit_id && ! current_user_can( 'manage_options' ) ) { wp_die( 'Leaders must use the owner-scoped draft editor to change an existing activity.', '', array( 'response' => 403 ) ); }
         if ( $edit_id && ! $wpdb->get_var( $wpdb->prepare( "SELECT id FROM `{$table}` WHERE id=%d AND status='draft' LIMIT 1", $edit_id ) ) ) {
             wp_die( 'Draft activity not found or no longer editable.', '', array( 'response' => 409 ) );
         }
-        $organiser_id = absint( $_POST['organiser_id'] ?? 0 );
+        $organiser_id = current_user_can( 'manage_options' ) ? absint( $_POST['organiser_id'] ?? 0 ) : absint( get_user_meta( get_current_user_id(), 'bh3_organiser_id', true ) );
+        if ( ! $organiser_id ) { wp_die( 'Your leader account is not linked to an organisation. Please contact the Bubba Hub team.', '', array( 'response' => 403 ) ); }
         if ( $organiser_id ) {
             $org_table = $wpdb->prefix . 'organisers';
             if ( ! $wpdb->get_var( $wpdb->prepare( "SELECT id FROM `{$org_table}` WHERE id=%d", $organiser_id ) ) ) { wp_die( 'Selected organiser does not exist.', '', array( 'response' => 400 ) ); }
@@ -342,6 +398,21 @@ BH3_WIZARD_SCRIPT
             if ( ! filter_var( $image_url, FILTER_VALIDATE_URL ) || ! in_array( strtolower( (string) wp_parse_url( $image_url, PHP_URL_SCHEME ) ), array( 'http', 'https' ), true ) ) { wp_die( 'One of the gallery image URLs is invalid.', '', array( 'response' => 400 ) ); }
         }
         $venue_ids = array_values( array_unique( array_filter( array_map( 'absint', (array) ( $_POST['venue_ids'] ?? array() ) ) ) ) );
+        $submitted_sessions_for_match = isset( $_POST['sessions'] ) && is_array( $_POST['sessions'] ) ? wp_unslash( $_POST['sessions'] ) : array();
+        foreach ( $submitted_sessions_for_match as $submitted_session ) {
+            if ( is_array( $submitted_session ) && ! empty( $submitted_session['venue_id'] ) ) {
+                $venue_ids[] = absint( $submitted_session['venue_id'] );
+            }
+        }
+        $venue_ids = array_values( array_unique( array_filter( $venue_ids ) ) );
+        $duplicate_matches = BH_Activity_Duplicates_3::find_matches( $title, $venue_ids, $edit_id );
+        if ( is_wp_error( $duplicate_matches ) ) {
+            wp_die( esc_html( $duplicate_matches->get_error_message() ), '', array( 'response' => 503 ) );
+        }
+        $duplicate_review_requested = ! empty( $duplicate_matches['exact'] ) && ! empty( $_POST['bh3_duplicate_review_override'] );
+        if ( ! empty( $duplicate_matches['exact'] ) && ! $duplicate_review_requested ) {
+            wp_die( 'A listing with this activity title and venue already exists. Please check the directory. If you believe this is genuinely different, use the team-review option.', 'Duplicate activity', array( 'response' => 409 ) );
+        }
         $sessions_input = isset( $_POST['sessions'] ) && is_array( $_POST['sessions'] ) ? wp_unslash( $_POST['sessions'] ) : array();
         $valid_sessions = array();
         foreach ( $sessions_input as $session ) {
@@ -436,11 +507,19 @@ BH3_WIZARD_SCRIPT
             $wpdb->query( 'ROLLBACK' );
             wp_die( 'Unable to save custom fields.', '', array( 'response' => 500 ) );
         }
+        $duplicate_review_id = 0;
+        if ( $duplicate_review_requested ) {
+            $duplicate_review_id = BH_Activity_Duplicate_Reviews_3::create_request( $activity_id, $duplicate_matches['exact'], get_current_user_id() );
+            if ( is_wp_error( $duplicate_review_id ) || ! $duplicate_review_id ) {
+                $wpdb->query( 'ROLLBACK' );
+                wp_die( 'The team review request could not be recorded. Your listing has not been submitted; please try again.', '', array( 'response' => 500 ) );
+            }
+        }
         if ( false === $wpdb->query( 'COMMIT' ) ) { $wpdb->query( 'ROLLBACK' ); wp_die( 'Unable to complete activity save.', '', array( 'response' => 500 ) ); }
         $frontend = isset( $_POST['bh3_frontend_wizard'] ) && (string) $_POST['bh3_frontend_wizard'] === '1';
         $destination = $frontend
-            ? add_query_arg( array( 'created' => $activity_id, 'edited' => $edit_id ? 1 : 0 ), home_url( '/leader/new-activity/' ) )
-            : add_query_arg( array( 'page' => 'bh3-add-activity', 'created' => $activity_id, 'edited' => $edit_id ? 1 : 0 ), admin_url( 'admin.php' ) );
+            ? add_query_arg( array( 'created' => $activity_id, 'edited' => $edit_id ? 1 : 0, 'duplicate_review' => $duplicate_review_id ? 1 : 0 ), home_url( '/leader/new-activity/' ) )
+            : add_query_arg( array( 'page' => 'bh3-add-activity', 'created' => $activity_id, 'edited' => $edit_id ? 1 : 0, 'duplicate_review' => $duplicate_review_id ? 1 : 0 ), admin_url( 'admin.php' ) );
         wp_safe_redirect( $destination );
         exit;
     }

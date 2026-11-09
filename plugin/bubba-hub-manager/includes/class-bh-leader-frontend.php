@@ -92,10 +92,10 @@ final class BH_Leader_Frontend_3 {
                 </select>
                 <button type="submit">Switch preview</button>
               </form>
-              <p class="bh-leader-muted">Admin-only staging preview. Activity editing remains restricted until the save permissions are updated.</p>
+              <p class="bh-leader-muted">Admin-only staging preview. New activity submissions use the same guided wizard and duplicate checks as leader accounts.</p>
             <?php endif; ?>
             <nav class="bh-leader-quick-actions" aria-label="Quick actions">
-                <a class="bh-leader-primary-action" href="<?php echo esc_url( $admin_preview ? home_url( '/leader/new-activity/' ) : home_url( '/leader/new/' ) ); ?>">+ Add activity</a>
+                <a class="bh-leader-primary-action" href="<?php echo esc_url( home_url( '/leader/new-activity/' ) ); ?>">+ Add activity</a>
                 <a href="<?php echo esc_url( add_query_arg( $admin_preview ? array( 'bh_preview_organiser' => $organiser_id ) : array(), home_url( '/leader/bookings/' ) ) ); ?>">View class calendar</a>
                 <a href="#my-activities">Manage activities</a>
                 <a href="<?php echo esc_url( home_url( '/leader/business/' ) ); ?>">My business</a>
@@ -128,8 +128,8 @@ final class BH_Leader_Frontend_3 {
                     </ul>
                 <?php endif; ?>
                 <div class="bh-leader-action-create">
-                    <div><strong>Ready to add another class?</strong><p class="bh-leader-muted">Start with the guided listing wizard and review your details before submitting.</p></div>
-                    <a class="bh-leader-primary-action" href="<?php echo esc_url( home_url( '/leader/new/' ) ); ?>">Create a listing</a>
+                    <div><strong>Ready to add another class?</strong><p class="bh-leader-muted">Start with the seven-step listing wizard. Bubba Hub checks for matching activities before you submit.</p></div>
+                    <a class="bh-leader-primary-action" href="<?php echo esc_url( home_url( '/leader/new-activity/' ) ); ?>">Create a listing</a>
                 </div>
             </section>
             <section class="bh-leader-overview" aria-label="Your next steps">
