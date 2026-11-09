@@ -39,6 +39,8 @@ final class BH_Manager_3 {
         require_once BUBBA_HUB_MANAGER_PATH . 'modules/Membership/class-bh-membership-registration.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-settings.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-workstream-settings.php';
+        require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-admin-home.php';
+        BH_Admin_Home_3::register();
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-developments-admin.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-field-manager.php';
         require_once BUBBA_HUB_MANAGER_PATH . 'includes/class-bh-directory-builder.php';
