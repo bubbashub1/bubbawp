@@ -201,7 +201,7 @@ final class BH_Activity_Create_3 {
         echo '<div><h3>Weekly sessions</h3><p class="description">Switch on a day to add its session times. Add more than one time, or copy a session to another day.</p><div id="bh3-session-rows" class="bh3-day-grid"></div></div></div>';
         self::custom_fields_for_step( 'locations', $bh3_custom_definitions, $bh3_custom_values );
         echo '</section>';
-        echo '<section class="bh3-panel" data-panel="6" hidden><h2>Review your listing</h2><div class="bh3-review" id="bh3-review-summary">Review the fields above before saving.</div><p>This creates a draft only. Publishing remains administrator-controlled.</p></section>';
+        echo '<section class="bh3-panel" data-panel="6" hidden><h2>Review your listing</h2><div class="bh3-review" id="bh3-review-summary">Review the fields above before saving.</div><p>This creates a draft only. Publishing remains administrator-controlled.</p><div id="bh3-exact-duplicate-review" class="notice notice-warning" hidden><p><strong>This activity appears to already exist.</strong> A listing with the same title and venue is already in the directory.</p><p><label><input type="checkbox" id="bh3-duplicate-review-override" name="bh3_duplicate_review_override" value="1"> I believe this is a different activity. Please submit it for the Bubba Hub team to review.</label></p><p>Your listing will remain unpublished until the team approves it.</p></div></section>';
         echo '<div class="bh3-actions"><div><button type="button" class="button" id="bh3-prev" disabled>← Back</button> <button type="button" class="button button-primary" id="bh3-next">Continue →</button></div><button type="submit" class="button button-primary" id="bh3-submit" hidden>Save draft activity</button></div></form></div>';
         // Enqueue outside the shortcode HTML so wptexturize and content filters cannot alter JavaScript operators.
         wp_register_script( 'bh3-activity-wizard', false, array(), '1.0.1', true );
@@ -238,8 +238,13 @@ final class BH_Activity_Create_3 {
                 const matches=payload.data||{};
                 if(matches.exact?.length){
                     const details=matches.exact.map(item=>item.title+(item.venues?.length?" — "+item.venues.join(", "):"")).join("\\n");
-                    alert("This looks like an existing listing with the same title and venue. It cannot be submitted as a duplicate.\\n\\n"+details+"\\n\\nPlease open the directory and edit or update the existing listing instead.");
-                    return;
+                    const reviewPanel=document.getElementById("bh3-exact-duplicate-review");
+                    const reviewTick=document.getElementById("bh3-duplicate-review-override");
+                    if(reviewPanel)reviewPanel.hidden=false;
+                    if(!reviewTick||!reviewTick.checked){
+                        alert("This activity already appears in the directory with the same title and venue.\\n\\n"+details+"\\n\\nPlease check the existing listing. If you believe yours is genuinely different, tick the team-review option and submit it for approval.");
+                        return;
+                    }
                 }
                 if(matches.potential?.length){
                     const details=matches.potential.slice(0,8).map(item=>item.title+(item.venues?.length?" — "+item.venues.join(", "):" — venue not recorded")).join("\\n");
@@ -392,8 +397,9 @@ BH3_WIZARD_SCRIPT
         if ( is_wp_error( $duplicate_matches ) ) {
             wp_die( esc_html( $duplicate_matches->get_error_message() ), '', array( 'response' => 503 ) );
         }
-        if ( ! empty( $duplicate_matches['exact'] ) ) {
-            wp_die( 'A listing with this activity title and venue already exists. Please check the directory and edit the existing listing instead of creating a duplicate.', 'Duplicate activity', array( 'response' => 409 ) );
+        $duplicate_review_requested = ! empty( $duplicate_matches['exact'] ) && ! empty( $_POST['bh3_duplicate_review_override'] );
+        if ( ! empty( $duplicate_matches['exact'] ) && ! $duplicate_review_requested ) {
+            wp_die( 'A listing with this activity title and venue already exists. Please check the directory. If you believe this is genuinely different, use the team-review option.', 'Duplicate activity', array( 'response' => 409 ) );
         }
         $sessions_input = isset( $_POST['sessions'] ) && is_array( $_POST['sessions'] ) ? wp_unslash( $_POST['sessions'] ) : array();
         $valid_sessions = array();
@@ -489,11 +495,19 @@ BH3_WIZARD_SCRIPT
             $wpdb->query( 'ROLLBACK' );
             wp_die( 'Unable to save custom fields.', '', array( 'response' => 500 ) );
         }
+        $duplicate_review_id = 0;
+        if ( $duplicate_review_requested ) {
+            $duplicate_review_id = BH_Activity_Duplicate_Reviews_3::create_request( $activity_id, $duplicate_matches['exact'], get_current_user_id() );
+            if ( is_wp_error( $duplicate_review_id ) || ! $duplicate_review_id ) {
+                $wpdb->query( 'ROLLBACK' );
+                wp_die( 'The team review request could not be recorded. Your listing has not been submitted; please try again.', '', array( 'response' => 500 ) );
+            }
+        }
         if ( false === $wpdb->query( 'COMMIT' ) ) { $wpdb->query( 'ROLLBACK' ); wp_die( 'Unable to complete activity save.', '', array( 'response' => 500 ) ); }
         $frontend = isset( $_POST['bh3_frontend_wizard'] ) && (string) $_POST['bh3_frontend_wizard'] === '1';
         $destination = $frontend
-            ? add_query_arg( array( 'created' => $activity_id, 'edited' => $edit_id ? 1 : 0 ), home_url( '/leader/new-activity/' ) )
-            : add_query_arg( array( 'page' => 'bh3-add-activity', 'created' => $activity_id, 'edited' => $edit_id ? 1 : 0 ), admin_url( 'admin.php' ) );
+            ? add_query_arg( array( 'created' => $activity_id, 'edited' => $edit_id ? 1 : 0, 'duplicate_review' => $duplicate_review_id ? 1 : 0 ), home_url( '/leader/new-activity/' ) )
+            : add_query_arg( array( 'page' => 'bh3-add-activity', 'created' => $activity_id, 'edited' => $edit_id ? 1 : 0, 'duplicate_review' => $duplicate_review_id ? 1 : 0 ), admin_url( 'admin.php' ) );
         wp_safe_redirect( $destination );
         exit;
     }
