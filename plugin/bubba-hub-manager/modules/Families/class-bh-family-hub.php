@@ -15,19 +15,6 @@ final class BH_Family_Hub_3 {
         add_action( 'init', array( __CLASS__, 'ensure_demo_page' ), 1 );
     }
 
-    public static function ensure_demo_page() {
-        if ( ! current_user_can( 'manage_options' ) ) { return; }
-        $existing = get_page_by_path( 'hub-demo', OBJECT, 'page' );
-        if ( $existing ) { return; }
-        wp_insert_post( array(
-            'post_type'    => 'page',
-            'post_status'  => 'private',
-            'post_title'   => 'Hub Demo',
-            'post_name'    => 'hub-demo',
-            'post_content' => '[bubbahub_family_hub]',
-        ) );
-    }
-
     public static function register_demo_route() {
         add_rewrite_rule( '^hub-demo/?$', 'index.php?pagename=hub-demo', 'top' );
         if ( get_option( 'bh3_family_hub_demo_route_version' ) !== '1' ) {
