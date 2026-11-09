@@ -1,6 +1,7 @@
 <?php
 /** Bubba Hub's existing seven-step listing workflow, adapted to the BH3 WordPress schema. */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
+require_once __DIR__ . '/class-bh-activity-duplicates.php';
 final class BH_Activity_Create_3 {
     private static function allowed() {
         return current_user_can( 'manage_options' ) && strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) === 'staging.bubbahub.co.uk';
@@ -20,6 +21,7 @@ final class BH_Activity_Create_3 {
     }
     public static function register_save() {
         add_action( 'admin_post_bh3_create_activity', array( __CLASS__, 'save' ) );
+        BH_Activity_Duplicates_3::register();
     }
     private static function field( $name, $label, $type = 'text', $value = '', $extra = '' ) {
         echo '<label class="bh3-field"><span>' . esc_html( $label ) . '</span>';
@@ -205,7 +207,8 @@ final class BH_Activity_Create_3 {
         wp_register_script( 'bh3-activity-wizard', false, array(), '1.0.1', true );
         wp_enqueue_script( 'bh3-activity-wizard' );
         wp_add_inline_script( 'bh3-activity-wizard',
-            'const bh3SavedListing=' . wp_json_encode( $existing ?: array() ) . ';' .
+            'const bh3DuplicateCheck=' . wp_json_encode( array( 'ajaxUrl' => admin_url( 'admin-ajax.php' ), 'nonce' => wp_create_nonce( 'bh3_activity_duplicate_check' ) ) ) . ';' .
+            'const bh3SavedListing=' . wp_json_encode( $existing ?: array() ) .';'
             'const bh3SavedVenues=' . wp_json_encode( $existing_venue_ids ) . ';' .
             'const bh3SavedSessions=' . wp_json_encode( $existing_sessions ) . ';',
             'before'
@@ -214,7 +217,43 @@ final class BH_Activity_Create_3 {
 (function(){const form=document.getElementById("bh3-listing-wizard");if(!form)return;let step=0;const panels=[...form.querySelectorAll("[data-panel]")],nav=[...document.querySelectorAll(".bh3-steps [data-step]")],prev=document.getElementById("bh3-prev"),next=document.getElementById("bh3-next"),save=document.getElementById("bh3-submit"),summary=document.getElementById("bh3-review-summary");
         const missingCustom=n=>{for(const label of panels[n].querySelectorAll('label[data-bh3-required="1"]')){const el=label.querySelector("input,textarea,select");if(!el)continue;const filled=el.type==="checkbox"?el.checked:el.multiple?el.selectedOptions.length>0:String(el.value||"").trim()!=="";if(!filled)return el;}return null;};
         const show=n=>{n=Math.max(0,Math.min(6,n));let missing=null;if(n>step){for(let i=step;i<n;i++){missing=missingCustom(i);if(missing){n=i;break;}}}if(step===5&&n>5){for(const row of sessionRows.querySelectorAll('.bh3-session-row')){if(row.closest('.bh3-day-card:not(.is-on)'))continue;const day=row.querySelector('input[name$="[day]"]'),times=row.querySelectorAll('input[type=time]'),start=times[0],end=times[1];if(!day.value||!start.value||!end.value||end.value<=start.value){alert('Complete each weekly session and make sure its end time is later than its start.');(!day.value?day:!start.value?start:end).focus();return;}}}step=n;panels.forEach((p,i)=>p.hidden=i!==step);nav.forEach((b,i)=>b.setAttribute("aria-current",i===step?"step":"false"));prev.disabled=step===0;if(missing){alert('Please complete the required custom field before continuing.');missing.focus();}next.hidden=step===6;save.hidden=step!==6;if(step===6){const fields=[["Activity", "title"],["Category","category"],["Organiser","organiser_id"],["Age range","age_range"],["Price from","price_from"],["Contact email","contact_email"],["Website","website"]];summary.innerHTML=fields.map(([label,name])=>{const el=form.elements.namedItem(name);return "<p><strong>"+label+":</strong> "+String(el?.selectedOptions?.[0]?.textContent||el?.value||"—").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]))+"</p>"}).join("");}};
-        prev.addEventListener("click",()=>show(step-1));next.addEventListener("click",()=>{if(step===0&&!form.elements.namedItem("title").value.trim()){form.elements.namedItem("title").focus();return;}show(step+1)});nav.forEach(b=>b.addEventListener("click",()=>show(Number(b.dataset.step))));form.addEventListener("submit",e=>{if(!form.elements.namedItem("title").value.trim()){e.preventDefault();show(0);form.elements.namedItem("title").focus();}});
+        prev.addEventListener("click",()=>show(step-1));next.addEventListener("click",()=>{if(step===0&&!form.elements.namedItem("title").value.trim()){form.elements.namedItem("title").focus();return;}show(step+1)});nav.forEach(b=>b.addEventListener("click",()=>show(Number(b.dataset.step))));
+        let duplicateCheckPassed=false,duplicateCheckBusy=false;
+        form.addEventListener("submit",async e=>{
+            if(!form.elements.namedItem("title").value.trim()){e.preventDefault();show(0);form.elements.namedItem("title").focus();return;}
+            if(duplicateCheckPassed)return;
+            e.preventDefault();
+            if(duplicateCheckBusy)return;
+            duplicateCheckBusy=true;save.disabled=true;save.textContent="Checking directory…";
+            try{
+                const body=new URLSearchParams();
+                body.set("action","bh3_check_activity_duplicates");
+                body.set("nonce",bh3DuplicateCheck.nonce);
+                body.set("title",form.elements.namedItem("title").value.trim());
+                body.set("activity_id",form.elements.namedItem("activity_id")?.value||"0");
+                form.querySelectorAll('input[name="venue_ids[]"]:checked').forEach(el=>body.append("venue_ids[]",el.value));
+                const response=await fetch(bh3DuplicateCheck.ajaxUrl,{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/x-www-form-urlencoded; charset=UTF-8"},body:body.toString()});
+                const payload=await response.json();
+                if(!response.ok||!payload.success)throw new Error(payload?.data?.message||"The directory check could not be completed.");
+                const matches=payload.data||{};
+                if(matches.exact?.length){
+                    const details=matches.exact.map(item=>item.title+(item.venues?.length?" — "+item.venues.join(", "):"")).join("\\n");
+                    alert("This looks like an existing listing with the same title and venue. It cannot be submitted as a duplicate.\\n\\n"+details+"\\n\\nPlease open the directory and edit or update the existing listing instead.");
+                    return;
+                }
+                if(matches.potential?.length){
+                    const details=matches.potential.slice(0,8).map(item=>item.title+(item.venues?.length?" — "+item.venues.join(", "):" — venue not recorded")).join("\\n");
+                    const proceed=confirm("Potential duplicate found. One or more directory listings already use this activity title.\\n\\n"+details+"\\n\\nPlease check the directory before proceeding. If this is genuinely a different activity, choose OK to save it as a draft.");
+                    if(!proceed)return;
+                }
+                duplicateCheckPassed=true;
+                form.submit();
+            }catch(error){
+                alert((error&&error.message?error.message:"The directory check failed.")+"\\n\\nYour listing has not been saved. Please try again.");
+            }finally{
+                duplicateCheckBusy=false;save.disabled=false;save.textContent="Save draft activity";
+            }
+        });
         const venueSearch=document.getElementById("bh3-venue-search"),venueOptions=[...document.querySelectorAll(".bh3-venue-option")],sessionRows=document.getElementById("bh3-session-rows");
         venueSearch?.addEventListener("input",()=>{const q=venueSearch.value.trim().toLowerCase();venueOptions.forEach(row=>{row.hidden=q!==""&&!row.dataset.search.includes(q);});});
         const dayNames=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
@@ -342,6 +381,13 @@ BH3_WIZARD_SCRIPT
             if ( ! filter_var( $image_url, FILTER_VALIDATE_URL ) || ! in_array( strtolower( (string) wp_parse_url( $image_url, PHP_URL_SCHEME ) ), array( 'http', 'https' ), true ) ) { wp_die( 'One of the gallery image URLs is invalid.', '', array( 'response' => 400 ) ); }
         }
         $venue_ids = array_values( array_unique( array_filter( array_map( 'absint', (array) ( $_POST['venue_ids'] ?? array() ) ) ) ) );
+        $duplicate_matches = BH_Activity_Duplicates_3::find_matches( $title, $venue_ids, $edit_id );
+        if ( is_wp_error( $duplicate_matches ) ) {
+            wp_die( esc_html( $duplicate_matches->get_error_message() ), '', array( 'response' => 503 ) );
+        }
+        if ( ! empty( $duplicate_matches['exact'] ) ) {
+            wp_die( 'A listing with this activity title and venue already exists. Please check the directory and edit the existing listing instead of creating a duplicate.', 'Duplicate activity', array( 'response' => 409 ) );
+        }
         $sessions_input = isset( $_POST['sessions'] ) && is_array( $_POST['sessions'] ) ? wp_unslash( $_POST['sessions'] ) : array();
         $valid_sessions = array();
         foreach ( $sessions_input as $session ) {
