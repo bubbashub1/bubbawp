@@ -295,7 +295,7 @@ final class BH_Family_Hub_3 {
           <?php endif; ?>
           <div class="bh3-family__grid">
             <?php foreach ( $sections as $section ) : ?>
-              <?php if ($private_preview && in_array($section[0], array('My family', 'Saved activities', 'Family planner'), true)) continue; ?>
+              <?php if (($private_preview || $admin_demo) && in_array($section[0], array('My family', 'Saved activities', 'Family planner'), true)) continue; ?>
               <article id="bh3-suggestions" class="bh3-family__card bh3-family__card--suggestions" data-bh3-section="overview">
                 <div class="bh3-family__section-heading"><div><span class="bh3-family__kicker"><?php echo esc_html__('DISCOVER', 'bubba-hub-manager'); ?></span><h2><?php echo esc_html__('Suggested activities for your family', 'bubba-hub-manager'); ?></h2></div></div>
                 <p><?php echo esc_html__('Published activities matched against your chosen interests, days and area.', 'bubba-hub-manager'); ?></p>
