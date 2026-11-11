@@ -50,6 +50,19 @@ final class BH_Activities_3 {
             ? sanitize_text_field( wp_unslash( $_GET[$param] ) ) : '';
         $term = substr( $term, 0, 100 );
         echo '<h4>' . esc_html( $kind === 'venue' ? 'Find existing venue' : 'Find existing organiser' ) . '</h4>';
+        if ( strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) === 'staging.bubbahub.co.uk' && in_array( 'status', $columns, true ) ) {
+            echo '<h2>Publish staging test activities</h2><p>Only test records #1 and #2 can be published here. No imports or other activity records are changed.</p>';
+            $test_rows = $wpdb->get_results( 'SELECT id, title, status FROM ' . $quoted . ' WHERE id IN (1,2) ORDER BY id ASC', ARRAY_A );
+            foreach ( (array) $test_rows as $test ) {
+                echo '<form method="post" style="margin-bottom:10px">';
+                wp_nonce_field( 'bh3_test_publish' );
+                echo '<strong>' . esc_html( (string) $test['title'] ) . '</strong> — ' . esc_html( (string) $test['status'] ) . ' ';
+                if ( $test['status'] === 'draft' ) {
+                    echo '<button class="button button-primary" name="bh3_test_publish" value="' . esc_attr( (string) $test['id'] ) . '" onclick="return confirm(\'Publish this test activity on staging?\')">Publish test activity</button>';
+                }
+                echo '</form>';
+            }
+        }
         echo '<form method="get"><input type="hidden" name="page" value="bh3-activities"><input type="hidden" name="bh3_activity_id" value="' . esc_attr( (string) absint( $_GET['bh3_activity_id'] ?? 0 ) ) . '">';
         echo '<label><span class="screen-reader-text">Search ' . esc_html( $kind ) . '</span><input type="search" name="' . esc_attr( $param ) . '" value="' . esc_attr( $term ) . '" placeholder="Search by name"></label> ';
         submit_button( 'Find ' . $kind, 'secondary', '', false );
@@ -308,6 +321,32 @@ final class BH_Activities_3 {
         echo '</details>';
         echo '<p><button type="button" class="button button-primary" disabled>Save changes (not available yet)</button></p></div>';
     }
+    /** Restricted staging QA publishing for the two known test records only. */
+    private static function test_publish( $table, $columns ) {
+        if ( ! isset( $_POST['bh3_test_publish'] ) ) { return; }
+        if ( ! current_user_can( 'manage_options' ) || strtolower( (string) wp_parse_url( home_url(), PHP_URL_HOST ) ) !== 'staging.bubbahub.co.uk' ) {
+            wp_die( esc_html__( 'Test publishing is only available to staging administrators.', 'bubba-hub-manager' ) );
+        }
+        check_admin_referer( 'bh3_test_publish' );
+        $id = absint( $_POST['bh3_test_publish'] );
+        if ( ! in_array( $id, array( 1, 2 ), true ) || ! in_array( 'status', $columns, true ) ) {
+            echo '<div class="notice notice-error"><p>Test publishing was not permitted for this record.</p></div>';
+            return;
+        }
+        global $wpdb;
+        $quoted = '`' . str_replace( '`', '``', $table ) . '`';
+        $status = $wpdb->get_var( $wpdb->prepare( 'SELECT status FROM ' . $quoted . ' WHERE id = %d LIMIT 1', $id ) );
+        if ( $status !== 'draft' ) {
+            echo '<div class="notice notice-warning"><p>Only existing draft test activities can be published here.</p></div>';
+            return;
+        }
+        $updated = $wpdb->update( $table, array( 'status' => 'published' ), array( 'id' => $id, 'status' => 'draft' ), array( '%s' ), array( '%d', '%s' ) );
+        if ( $updated === 1 ) {
+            echo '<div class="notice notice-success"><p>Test activity #' . esc_html( (string) $id ) . ' published on staging.</p></div>';
+        } else {
+            echo '<div class="notice notice-error"><p>Test activity was not updated. Please check its current status.</p></div>';
+        }
+    }
     public static function render() {
         if ( ! current_user_can( 'manage_options' ) ) { wp_die( esc_html__( 'Permission denied.', 'bubba-hub-manager' ) ); }
         global $wpdb;
@@ -329,6 +368,7 @@ final class BH_Activities_3 {
             echo '<div class="notice notice-warning inline"><p>Activity ID or title field not recognised. Confirm column mappings in Directory readiness.</p></div></div>';
             return;
         }
+        self::test_publish( $table, $columns );
         $detail_id = isset( $_GET['bh3_activity_id'] ) ? absint( $_GET['bh3_activity_id'] ) : 0;
         if ( $detail_id > 0 ) {
             self::detail( $table, $columns, $detail_id );
