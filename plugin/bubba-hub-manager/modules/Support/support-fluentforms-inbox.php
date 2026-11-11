@@ -70,7 +70,7 @@ add_action('admin_post_bh3_support_install_schema', static function (): void {
 });
 
 add_action('admin_menu', static function (): void {
-    add_submenu_page('bh-support-dashboard', __('Bubba Hub Enquiries', 'bubbahub'), __('Bubba Hub Enquiries', 'bubbahub'),
+    add_submenu_page('bh3-support-help', __('Bubba Hub Enquiries', 'bubbahub'), __('Bubba Hub Enquiries', 'bubbahub'),
         'manage_options', 'bh-support-enquiries', 'bh_support_enquiries_page');
 });
 
