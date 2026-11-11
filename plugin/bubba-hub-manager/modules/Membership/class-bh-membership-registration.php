@@ -105,6 +105,7 @@ final class BH_Membership_Registration_3 {
             <p class="bh-membership-comparison-note">Start with a free account and upgrade whenever you're ready. Pro membership is billed annually.</p>
             <p class="bh-membership-login">Already have an account? <a href="<?php echo esc_url( home_url( '/auth/' ) ); ?>">Log in</a>.</p>
             <p class="bh-membership-terms">Full payment, renewal and cancellation information will be shown before you complete checkout.</p>
+            <?php echo do_shortcode( '[bh_google_login]' ); ?>
         </section>
         <?php
         return (string) ob_get_clean();
