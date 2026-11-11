@@ -27,6 +27,11 @@ final class BH_Organisers_3 {
         if ( isset( $_GET['saved'] ) ) { echo '<div class="notice notice-success"><p>Organiser saved.</p></div>'; }
         echo '<p>Create and update organiser profiles. Deletion and account claiming are not enabled yet.</p>';
         echo '<h2>' . ( $id ? 'Edit organiser' : 'Add organiser' ) . '</h2>';
+        echo '<form method="get" action="' . esc_url( admin_url( 'admin.php' ) ) . '">';
+        echo '<input type="hidden" name="page" value="bh3-organisers"><input type="hidden" name="organiser_id" value="' . esc_attr( (string) $id ) . '">';
+        echo '<label for="user_search">Find WordPress user</label> <input id="user_search" type="search" name="user_search" value="' . esc_attr( sanitize_text_field( wp_unslash( $_GET['user_search'] ?? '' ) ) ) . '" placeholder="Name, username or email"> ';
+        submit_button( 'Find user', 'secondary', '', false );
+        echo '</form>';
         echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
         echo '<input type="hidden" name="action" value="bh3_save_organiser"><input type="hidden" name="organiser_id" value="' . esc_attr( (string) $id ) . '">';
         wp_nonce_field( 'bh3_save_organiser_' . $id );
@@ -38,9 +43,24 @@ final class BH_Organisers_3 {
         echo '<tr><th><label for="org_description">Description</label></th><td><textarea class="large-text" rows="6" id="org_description" name="description">' . esc_textarea( (string) ( $row['description'] ?? '' ) ) . '</textarea></td></tr>';
         $linked_users = $id ? get_users( array( 'meta_key' => 'bh3_organiser_id', 'meta_value' => (string) $id, 'number' => 2 ) ) : array();
         $linked = $linked_users ? $linked_users[0] : null;
+        $search_user = isset( $_GET['user_search'] ) && is_string( $_GET['user_search'] )
+            ? substr( sanitize_text_field( wp_unslash( $_GET['user_search'] ) ), 0, 100 ) : '';
         echo '<tr><th><label for="org_user">Linked WordPress user</label></th><td>';
-        echo '<input class="regular-text" id="org_user" name="linked_user" type="text" value="' . esc_attr( $linked ? $linked->user_login : '' ) . '" placeholder="Username or email" autocomplete="off">';
-        echo '<p class="description">Optional. Enter an existing WordPress username or email. Leave blank to unlink. Linking does not change user roles or grant dashboard permissions.</p></td></tr>';
+        echo '<select class="regular-text" id="org_user" name="linked_user_id">';
+        echo '<option value="0">No linked user</option>';
+        $options = array();
+        if ( $linked ) { $options[$linked->ID] = $linked; }
+        if ( strlen( trim( $search_user ) ) >= 2 ) {
+            $matches = get_users( array( 'search' => '*' . $search_user . '*',
+                'search_columns' => array( 'user_login', 'user_email', 'display_name' ), 'number' => 25 ) );
+            foreach ( $matches as $user ) { $options[$user->ID] = $user; }
+        }
+        foreach ( $options as $user ) {
+            echo '<option value="' . esc_attr( (string) $user->ID ) . '"' . selected( $linked && $linked->ID === $user->ID, true, false ) . '>' .
+                esc_html( $user->display_name . ' (' . $user->user_login . ')' ) . '</option>';
+        }
+        echo '</select><p class="description">Choose an existing account. Only administrators can link users; this does not grant editing permissions.</p>';
+        echo '<p>To find a user, search below first, then select the result above.</p></td></tr>';
         echo '</tbody></table>';
         submit_button( $id ? 'Update organiser' : 'Create organiser' );
         echo '</form>';
@@ -72,14 +92,12 @@ final class BH_Organisers_3 {
             strlen( $url ) > 2048 || ( $url && ! in_array( strtolower( (string) wp_parse_url( $url, PHP_URL_SCHEME ) ), array( 'http', 'https' ), true ) ) ) {
             wp_die( 'Invalid organiser details.', '', array( 'response' => 400 ) );
         }
-        $user_input = trim( sanitize_text_field( wp_unslash( $_POST['linked_user'] ?? '' ) ) );
-        $linked_user = null;
-        if ( $user_input !== '' ) {
-            $linked_user = get_user_by( 'login', $user_input );
-            if ( ! $linked_user && is_email( $user_input ) ) { $linked_user = get_user_by( 'email', $user_input ); }
-            if ( ! $linked_user ) { wp_die( 'WordPress user not found. Enter an existing username or email.', '', array( 'response' => 400 ) ); }
+        $user_id = absint( $_POST['linked_user_id'] ?? 0 );
+        $linked_user = $user_id ? get_user_by( 'id', $user_id ) : null;
+        if ( $user_id && ! $linked_user ) { wp_die( 'Selected WordPress user not found.', '', array( 'response' => 400 ) ); }
+        if ( $linked_user ) {
             $other = absint( get_user_meta( $linked_user->ID, 'bh3_organiser_id', true ) );
-            if ( $other && $other !== $id ) { wp_die( 'This WordPress user is already linked to another organiser.', '', array( 'response' => 409 ) ); }
+            if ( $other && $other !== $id ) { wp_die( 'This user is already linked to another organiser.', '', array( 'response' => 409 ) ); }
         }
         global $wpdb;
         $table = self::table();
