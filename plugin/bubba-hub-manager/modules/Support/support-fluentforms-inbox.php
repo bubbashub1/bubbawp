@@ -91,7 +91,7 @@ function bh_support_enquiries_page(): void {
         $entry_id = isset($_POST['bh_support_entry_id']) ? absint($_POST['bh_support_entry_id']) : 0;
         $status = isset($_POST['bh_support_status']) ? sanitize_key(wp_unslash($_POST['bh_support_status'])) : '';
         $allowed = ['new', 'in_progress', 'resolved'];
-        $configured = array_values(array_filter(array_map('absint', (array) get_option('bh_support_fluent_form_ids', []))));
+        $configured = array_values(array_filter(array_map('absint', (array) get_option('bh_support_fluent_form_ids', [4]))));
         $submissions_table = $wpdb->prefix . 'fluentform_submissions';
         if ($entry_id && in_array($status, $allowed, true) && $configured
             && get_option('bh_support_status_schema_version') === '2'
@@ -167,11 +167,11 @@ function bh_support_enquiries_page(): void {
             echo '<div class="notice ' . ($schema_result === 'error' ? 'notice-error' : 'notice-success') . '"><p>' . esc_html($schema_result === 'installed' ? 'Support workflow tables installed.' : ($schema_result === 'already' ? 'Support workflow tables already installed.' : 'Support workflow installation failed; inspect database logs.')) . '</p></div>';
         }
     }
-    echo '<p>' . esc_html__('Select the Fluent Forms form IDs used for support enquiries. Entries remain stored in Fluent Forms; this page shows limited metadata only. Open Fluent Forms to view private responses.', 'bubbahub') . '</p>';
+    echo '<p>' . esc_html__('Select the Fluent Forms form IDs used for support enquiries (Ask a Question is form 4). Responses remain stored in Fluent Forms. Select an entry number to review its details privately here.', 'bubbahub') . '</p>';
     echo '<form method="post">';
     wp_nonce_field('bh_support_form_settings');
     echo '<label for="bh_support_form_ids"><strong>' . esc_html__('Support form IDs (comma-separated)', 'bubbahub') . '</strong></label><br>';
-    echo '<input id="bh_support_form_ids" name="bh_support_form_ids" type="text" class="regular-text" value="' . esc_attr(implode(', ', $ids)) . '" placeholder="12, 15">';
+    echo '<input id="bh_support_form_ids" name="bh_support_form_ids" type="text" class="regular-text" value="' . esc_attr(implode(', ', $ids)) . '" placeholder="4">';
     echo ' <button class="button button-primary" name="bh_support_save_form_ids" value="1">' . esc_html__('Save', 'bubbahub') . '</button></form>';
     if (!$ids) {
         echo '<p>' . esc_html__('No support forms configured yet.', 'bubbahub') . '</p></div>';
@@ -253,6 +253,33 @@ function bh_support_enquiries_page(): void {
             echo '<a class="button" href="' . esc_url(add_query_arg(['page' => 'bh-support-enquiries', 'paged' => $i, 'bh_workflow' => $filter], admin_url('admin.php'))) . '">' . esc_html((string) $i) . '</a> ';
         }
         echo '</p>';
+    }
+    // Show private enquiry details only to administrators, and only for configured support forms.
+    $detail_entry = isset($_GET['bh_history_entry']) ? absint($_GET['bh_history_entry']) : 0;
+    if ($detail_entry) {
+        $detail = $wpdb->get_row($wpdb->prepare(
+            "SELECT id, form_id, response, created_at FROM `$table` WHERE id = %d", $detail_entry
+        ));
+        if ($detail && in_array((int) $detail->form_id, $ids, true)) {
+            $response = json_decode((string) $detail->response, true);
+            echo '<section style="max-width:950px;margin:24px 0;padding:22px;background:#fff;border:1px solid #cbd8d0;border-radius:12px">';
+            echo '<h2>' . esc_html(sprintf(__('Enquiry #%d', 'bubbahub'), $detail_entry)) . '</h2>';
+            echo '<p>' . esc_html(sprintf(__('Form #%d · Submitted %s', 'bubbahub'), $detail->form_id, $detail->created_at)) . '</p>';
+            if (is_array($response)) {
+                echo '<table class="widefat striped"><tbody>';
+                foreach ($response as $key => $value) {
+                    // Render text only; never interpret user-supplied HTML or links.
+                    $shown = is_scalar($value) ? (string) $value : wp_json_encode($value);
+                    echo '<tr><th scope="row" style="width:200px">' . esc_html(ucwords(str_replace('_', ' ', (string) $key))) . '</th><td style="white-space:pre-wrap;overflow-wrap:anywhere">' . esc_html($shown) . '</td></tr>';
+                }
+                echo '</tbody></table>';
+            } else {
+                echo '<p>' . esc_html__('The submission response could not be displayed. Open Fluent Forms to inspect it.', 'bubbahub') . '</p>';
+            }
+            echo '</section>';
+        } else {
+            echo '<div class="notice notice-error"><p>' . esc_html__('This enquiry is not available to the configured support inbox.', 'bubbahub') . '</p></div>';
+        }
     }
     $history_entry = isset($_GET['bh_history_entry']) ? absint($_GET['bh_history_entry']) : 0;
     if ($history_entry && get_option('bh_support_status_schema_version') === '2') {
